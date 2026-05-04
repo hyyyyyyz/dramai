@@ -87,6 +87,20 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     suggestedModel: 'openai/gpt-image-1',
     apiFlavor: 'openai-compatible',
   },
+  {
+    id: '302-image-seedream',
+    label: '302.AI · 即梦 Seedream 5.0 (字节，便宜)',
+    kind: 'text2image',
+    // 验证可用（2026-05）：POST https://api.302.ai/doubao/images/generations
+    //   { "model": "doubao-seedream-5-0-260128", "prompt": "...", ... }
+    // 是 OpenAI Images API 兼容变体，只是 path 在 /doubao/ 子路径下，
+    // model id 必须带 doubao- 前缀（302 网页 URL slug "seedream-5-0-260128" 不是 model id）。
+    baseUrl: 'https://api.302.ai/doubao',
+    suggestedModel: 'doubao-seedream-5-0-260128',
+    apiFlavor: 'openai-compatible',
+    notes:
+      '约 0.035 PTC/张，比 Nano Banana 便宜约 5 倍；纯文生图可用，图生图（参考图）当前不通——doubao 期望参考图是 URL 数组，dramai 现在传的是 base64 dataURL（locked character 暂时只能靠描述生效）',
+  },
 
   // === 文生图（Gemini 原生协议）===
   {
