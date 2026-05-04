@@ -35,34 +35,6 @@
 零后端意味着：你只要会 fork 这个仓库 + 启用 GitHub Pages，就拥有了**自己的私有部署**。
 你的数据、API Key 都不会经过任何中间服务器。
 
-## ✅ v0.4 已经能做的
-
-**素材到分镜（v0.1）**
-
-- 配置任意 OpenAI 兼容 LLM 服务商，一键测试连接。
-- 上传 `.docx` / `.txt` / `.md` / 图片做素材；流式 LLM + 容错 JSON 解析得到结构化分镜（含场景、旁白、英文 image prompt、出场角色、时长）。
-- 一键导出/导入整库 JSON 备份。
-
-**角色卡 + 文生图（v0.2）**
-
-- 多角色卡管理，每个角色可绑定参考图并锁定。
-- OpenAI 兼容文生图客户端；锁定角色的参考图自动作为图生图源图，多镜头里形象保持一致。
-- 单分镜 / 批量生图，全程可中止。
-
-**图生视频 + 运镜（v0.3）**
-
-- Kling 原生协议 + OpenAI 兼容图生视频协议双支持，Provider 里切。
-- 11 种运镜（pan / tilt / zoom / orbit / dolly + static）× 3 速度。
-- 单 / 批量生视频，async 轮询带 10 分钟超时；分镜行内嵌 `<video>` 播放。
-
-**合成 / 字幕 / 剪映导出（v0.4）**
-
-- FFmpeg.wasm 单线程拼成片（720p H.264，dynamic import 30MB 仅首次合成下载）。
-- SRT / VTT 字幕按分镜时长自动生成。
-- 剪映 / CapCut 草稿包 ZIP 导出（alpha · 含 mp4/图/srt/manifest）。
-
-🚧 **路上**：完整 i18n 翻译 / 真正可直接打开的剪映 .draft_content / TTS 旁白混音 / 模板库等，详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
-
 ## 🚀 完整教程 · 从注册到第一部短剧
 
 > 📌 **预计耗时**：首次配置 30 分钟 + 跑一次约 30 分钟（含等视频生成）
@@ -193,27 +165,6 @@ LLM        ¥0.x         （写分镜，便宜到忽略）
 
 > 旁白音频不在 dramai 里生成，**导出剪映 ZIP 后**用剪映自带的「文本朗读」/「AI 配音」给 SRT 字幕配音，**免费且中文音色丰富**。这是当前最省事的路径。
 
-### ⚠️ 已知踩坑（提前避免）
-
-- **新建 image2video provider 时，base URL 一定用 `api.302ai.cn` 国内中转**——直连 `api.302.ai` 在 `/volcengine/` 等子路径上 CORS 不通，请求会送达服务端（**扣 token**）但响应被浏览器拦截，dramai 看到 `Failed to fetch`。曾真实损失 ~8 PTC。
-- **Nano Banana 的 model id 不带 `-v1beta` 后缀**——302 网页上叫 "gemini-2.5-flash-image-v1beta（官方格式）"那是**产品命名**，真正请求里就用 `gemini-2.5-flash-image`。
-- **Seedream 的 model id 必须带 `doubao-` 前缀**——302 网页 URL slug `seedream-5-0-260128` 不是 model id，要用 `doubao-seedream-5-0-260128`。
-- **角色锁定（locked character 参考图）对 Seedream / Wan2.2 不生效**——这两家协议要求参考图是公网 URL，dramai 当前传 base64 dataURL，被忽略。要保持人物一致性，**写到 image_prompt 描述里**（"年轻乾隆，方圆脸，明黄龙袍"）比绑参考图更稳。
-- **剪映 ZIP 是 alpha**——当前是 mp4 + 图 + SRT + manifest 的 ZIP，需要手动在剪映里拖入新建项目。直接打开 `.draft_content` 的支持是 v0.5+ 计划。
-
-## 🧱 技术栈
-
-| 模块 | 选择                                        |
-| ---- | ------------------------------------------- |
-| 构建 | Vite 8 + TypeScript 6 + React 19            |
-| 状态 | Zustand 5 + persist 中间件                  |
-| 数据 | IndexedDB via Dexie 4 + dexie-react-hooks   |
-| 样式 | Tailwind CSS v4 (`@theme` + OKLCH 暗色)     |
-| 路由 | React Router v7（data router + basename）   |
-| i18n | i18next + react-i18next                     |
-| AI   | OpenAI 兼容 API（用户自填 base URL 与 key） |
-| 部署 | GitHub Pages + GitHub Actions               |
-
 ## 🚀 本地开发
 
 ```bash
@@ -238,18 +189,6 @@ npm run dev
 | `npm run typecheck`               | 仅类型检查                    |
 | `npm run lint` / `lint:fix`       | ESLint                        |
 | `npm run format` / `format:check` | Prettier                      |
-
-## 🌐 部署到 GitHub Pages
-
-仓库已经包含 `.github/workflows/deploy.yml`，**push 到 `main` 分支后会自动部署**到
-`https://<your-username>.github.io/dramai/`。一次性配置：
-
-1. **Settings → Pages → Build and deployment → Source** 选择 `GitHub Actions`。
-2. （可选）`Settings → Actions → General → Workflow permissions` 选择
-   `Read and write permissions`。
-3. 推一次代码，等 Actions 跑完即可。
-
-更详细的部署说明（含自定义域名、CDN、CORS 等）在 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
 
 ## 🧠 核心概念
 
