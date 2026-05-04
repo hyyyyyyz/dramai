@@ -6,6 +6,68 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-04
+
+End-to-end pipeline closed: storyboard → image → video → composed cut +
+subtitles + 剪映/CapCut draft package. Browser-side, no backend.
+
+### Added (v0.2 → v0.4 condensed)
+
+**v0.2 — Character cards + text-to-image**
+
+- Character CRUD with per-character reference image binding and a
+  `locked` toggle. Locked characters' reference Blobs are forwarded as
+  `image` / `image_url` / `reference_images` fields when generating
+  that shot's frame, giving the model a consistency hint across
+  providers (OpenAI Images, Flux, Nano Banana, SDXL, etc.).
+- OpenAI-compatible `/v1/images/generations` client with `b64_json`
+  response default + URL fallback download.
+- Per-shot and batch "generate image" buttons with abort, inline
+  error surfacing, and live thumbnails in the storyboard list.
+
+**v0.3 — Image-to-video + camera movement**
+
+- `Provider.apiFlavor` selector ('openai-compatible' | 'kling' |
+  'runway') exposed in Settings for image2video providers.
+- Two-protocol video stack: full Kling submit/poll
+  (`/v1/videos/image2video`), plus a generic OpenAI-compatible path
+  (`/videos/generations`) with multi-field task-id and video-url
+  extraction. Runway falls back to the generic path until its native
+  client lands.
+- 11 `CameraMovement` types (static / pan / tilt / zoom / orbit /
+  dolly) × 3 speeds; per-shot inline select; mapped to English
+  instructions injected into the video prompt.
+- Storyboard rows now play the generated mp4 inline; per-shot and
+  batch "generate video" buttons with abort and 10-min timeout.
+- Async task handle persisted on the Storyboard row so a refresh
+  doesn't lose the in-flight task (resume UI lands later).
+
+**v0.4 — Composition + subtitles + 剪映/CapCut export**
+
+- FFmpeg.wasm single-thread loader as a dynamic import; ~30MB core is
+  fetched from jsdelivr only on the first compose click. GitHub Pages
+  doesn't allow COOP/COEP so we deliberately use the single-thread
+  build (slower, but works everywhere).
+- `concatVideos`: per-clip transcode to a uniform H.264 / 720p / 24
+  fps with letterbox padding, then concat-demuxer + copy. The composed
+  mp4 is persisted as a project asset; "重新合成" cleans up the old
+  one.
+- SRT and VTT exporters: time axis built from each shot's
+  `durationSec`, sourced from the LLM-emitted `narration`.
+- 剪映/CapCut draft package (alpha): a single ZIP with `assets/`
+  (per-shot mp4 / image), `subtitles.srt`, `manifest.json`, and a
+  plain README guiding manual import. Direct .draft_content support is
+  on the v0.5+ list.
+
+### Changed
+
+- `Provider` schema gains optional `apiFlavor`.
+- `Storyboard` schema gains optional `cameraParams` and
+  `pendingVideoTask`. No DB version bump needed (both are optional
+  fields on existing index spec).
+- Initial JS bundle 685 kB / 219 kB gzip (FFmpeg + jszip lazy
+  chunked).
+
 ## [0.1.0] - 2026-05-04
 
 The first usable end-to-end milestone: drop in your raw material, write
@@ -73,6 +135,7 @@ own OpenAI-compatible LLM — all in the browser.
 - `vite.config.ts` configured with `base = "/dramai/"` for GitHub Pages.
 - Initial documentation: ARCHITECTURE.md, DEPLOYMENT.md, PROVIDERS.md, ROADMAP.md.
 
-[Unreleased]: https://github.com/hyyyyyyz/dramai/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/hyyyyyyz/dramai/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.0
 [0.1.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.1.0
 [0.0.1]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.0.1

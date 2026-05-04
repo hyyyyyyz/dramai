@@ -13,7 +13,7 @@
 [在线 Demo](https://hyyyyyyz.github.io/dramai/)（部署后可用）
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen)](./docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-v0.4.0-brightgreen)](./docs/ROADMAP.md)
 [![Made with React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -35,15 +35,33 @@
 零后端意味着：你只要会 fork 这个仓库 + 启用 GitHub Pages，就拥有了**自己的私有部署**。
 你的数据、API Key 都不会经过任何中间服务器。
 
-## ✅ v0.1 已经能做的
+## ✅ v0.4 已经能做的
 
-- 配置任意 OpenAI 兼容 LLM 服务商（OpenRouter / 302.AI / 词元 / OpenAI / 自定义），一键测试连接。
-- 新建项目、上传 `.docx` / `.txt` / `.md` / 图片做素材，自动文本抽取 + 缩略图。
-- 一句话提示词 → 流式 LLM → 容错 JSON 解析 → 落库为分镜列表（含场景描述、旁白、英文 image prompt、出场角色、时长）。
-- 一键导出整个本地库为 JSON 备份；支持 merge / replace 两种导入模式。
-- 中英双语 UI（首页、关于、404、顶栏脚部已双语；功能页 v0.2 完整翻译扫尾）。
+**素材到分镜（v0.1）**
 
-🚧 **路上**：v0.2 角色卡 + 文生图 / v0.3 图生视频 / v0.4 剪映导出。详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
+- 配置任意 OpenAI 兼容 LLM 服务商，一键测试连接。
+- 上传 `.docx` / `.txt` / `.md` / 图片做素材；流式 LLM + 容错 JSON 解析得到结构化分镜（含场景、旁白、英文 image prompt、出场角色、时长）。
+- 一键导出/导入整库 JSON 备份。
+
+**角色卡 + 文生图（v0.2）**
+
+- 多角色卡管理，每个角色可绑定参考图并锁定。
+- OpenAI 兼容文生图客户端；锁定角色的参考图自动作为图生图源图，多镜头里形象保持一致。
+- 单分镜 / 批量生图，全程可中止。
+
+**图生视频 + 运镜（v0.3）**
+
+- Kling 原生协议 + OpenAI 兼容图生视频协议双支持，Provider 里切。
+- 11 种运镜（pan / tilt / zoom / orbit / dolly + static）× 3 速度。
+- 单 / 批量生视频，async 轮询带 10 分钟超时；分镜行内嵌 `<video>` 播放。
+
+**合成 / 字幕 / 剪映导出（v0.4）**
+
+- FFmpeg.wasm 单线程拼成片（720p H.264，dynamic import 30MB 仅首次合成下载）。
+- SRT / VTT 字幕按分镜时长自动生成。
+- 剪映 / CapCut 草稿包 ZIP 导出（alpha · 含 mp4/图/srt/manifest）。
+
+🚧 **路上**：完整 i18n 翻译 / 真正可直接打开的剪映 .draft_content / TTS 旁白混音 / 模板库等，详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
 
 ## 🧱 技术栈
 
@@ -110,10 +128,10 @@ npm run dev
 | ------ | --------------------------------------- | --------- |
 | v0.0.1 | 项目骨架 + GitHub Pages 部署            | ✅ 已发布 |
 | v0.1   | 文本/文件/参考图 → 分镜脚本（LLM 流式） | ✅ 已发布 |
-| v0.2   | 角色卡 + 文生图                         | 🚧 规划中 |
-| v0.3   | 图生视频 + 运镜                         | 🚧 规划中 |
-| v0.4   | 视频合成 + 字幕 + 剪映导出              | 🚧 规划中 |
-| v0.5   | 性能 / 文档 / 模板库打磨                | 🚧 规划中 |
+| v0.2   | 角色卡 + 文生图                         | ✅ 已发布 |
+| v0.3   | 图生视频 + 运镜                         | ✅ 已发布 |
+| v0.4   | 视频合成 + 字幕 + 剪映导出              | ✅ 已发布 |
+| v0.5   | 性能 / 文档 / 模板库 / 完整 i18n        | 🚧 规划中 |
 
 完整路线图见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
 
