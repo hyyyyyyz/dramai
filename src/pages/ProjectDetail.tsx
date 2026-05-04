@@ -13,6 +13,7 @@ import { MaterialList } from '@/components/upload/MaterialList'
 import { MaterialUploadArea } from '@/components/upload/MaterialUploadArea'
 import { StoryboardGenerator } from '@/components/storyboard/StoryboardGenerator'
 import { StoryboardList } from '@/components/storyboard/StoryboardList'
+import { BatchImageButton } from '@/components/storyboard/BatchImageButton'
 import { db } from '@/core/storage/db'
 import { deleteProject, updateProject } from '@/core/storage/projects'
 import type { Project, ProjectStatus } from '@/types/domain'
@@ -147,27 +148,28 @@ export function ProjectDetailPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <StoryboardGenerator project={project} />
-          <div className="border-t border-border pt-5">
+          <div className="flex flex-col gap-4 border-t border-border pt-5">
+            <BatchImageButton projectId={project.id} />
             <StoryboardList projectId={project.id} />
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-dashed">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-4 w-4 text-accent" />
-            角色卡（v0.2）
+            角色卡
           </CardTitle>
           <CardDescription>
-            为关键角色绑定参考图，让多镜头里形象保持一致。当前 v0.1 还未实现编辑界面，
-            生成时所有角色按 LLM 自由发挥。
+            为关键角色绑定参考图并锁定，分镜生图时会以参考图作为图生图源图，保持形象
+            在多镜头里一致。
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Link to={`/projects/${project.id}/characters`}>
-            <Button variant="ghost" size="sm" className="gap-1.5">
-              <Users className="h-3.5 w-3.5" /> 进入角色页（占位）
+            <Button variant="secondary" size="sm" className="gap-1.5">
+              <Users className="h-3.5 w-3.5" /> 进入角色页
             </Button>
           </Link>
         </CardContent>
