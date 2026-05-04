@@ -31,8 +31,11 @@ export function ProviderCard({ provider, onEdit }: Props) {
     const r = await testProvider(provider)
     setTesting(false)
     if (r.ok) {
-      const summary =
-        r.modelCount && r.modelCount > 0 ? `连接 OK · 探测到 ${r.modelCount} 个模型` : '连接 OK'
+      const summary = r.warning
+        ? r.warning
+        : r.modelCount && r.modelCount > 0
+          ? `连接 OK · 探测到 ${r.modelCount} 个模型`
+          : '连接 OK'
       setResult({ ok: true, msg: summary })
       update(provider.id, { lastVerifiedAt: Date.now() })
     } else {
