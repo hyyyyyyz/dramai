@@ -12,6 +12,15 @@ import { useSettingsStore } from '@/store/settings'
 import { wipeAll } from '@/core/storage/db'
 import type { Provider, ProviderKind } from '@/types/domain'
 
+/** 没有任何 provider 时显示给用户的占位文案，按类型给出"何时会用到"。 */
+const KIND_EMPTY_HINT: Record<ProviderKind, string> = {
+  llm: '核心 · 必须配 — 用于把你的素材生成结构化分镜（v0.1 已可用）',
+  text2image:
+    '可选 · v0.2 用 — 把每个分镜的 image_prompt 渲染成画面（推荐 nano banana / Flux / SDXL）',
+  image2video: '可选 · v0.3 用 — 把分镜图变成 5 秒短片（推荐 Kling / Vidu / Runway / Hailuo）',
+  imageEdit: '可选 · v0.3+ 用 — 微调画面细节（如换背景、补元素）',
+}
+
 export function SettingsPage() {
   const providers = useSettingsStore((s) => s.providers)
   const addProvider = useSettingsStore((s) => s.addProvider)
@@ -80,7 +89,6 @@ export function SettingsPage() {
         <CardContent className="flex flex-col gap-5">
           {(Object.keys(PROVIDER_KIND_LABEL) as ProviderKind[]).map((kind) => {
             const list = grouped[kind]
-            if (list.length === 0 && kind !== 'llm') return null
             return (
               <div key={kind}>
                 <div className="mb-2 flex items-center gap-2">
@@ -90,9 +98,7 @@ export function SettingsPage() {
                   <Badge variant="muted">{list.length}</Badge>
                 </div>
                 {list.length === 0 ? (
-                  <p className="text-sm text-muted">
-                    还没有配置 · 这是核心，请先添加一个 LLM 服务商。
-                  </p>
+                  <p className="text-sm text-muted">{KIND_EMPTY_HINT[kind]}</p>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {list.map((p) => (
