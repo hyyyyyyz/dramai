@@ -27,8 +27,13 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
 
+      # We use `npm install` rather than `npm ci` because npm 11 occasionally
+      # produces lockfiles with missing platform-optional packages
+      # (notably @emnapi/* under @napi-rs/wasm-runtime). `npm install`
+      # tolerates this; `npm ci` does not. .npmrc pins include=optional
+      # to keep drift minimal.
       - name: Install dependencies
-        run: npm ci
+        run: npm install --prefer-offline --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
