@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, Pencil, Trash2, Users, Workflow } from 'lucide-react'
+import { ArrowLeft, FolderOpen, Pencil, ScrollText, Trash2, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +9,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Modal } from '@/components/ui/modal'
 import { Textarea } from '@/components/ui/textarea'
+import { MaterialList } from '@/components/upload/MaterialList'
+import { MaterialUploadArea } from '@/components/upload/MaterialUploadArea'
+import { StoryboardGenerator } from '@/components/storyboard/StoryboardGenerator'
+import { StoryboardList } from '@/components/storyboard/StoryboardList'
 import { db } from '@/core/storage/db'
 import { deleteProject, updateProject } from '@/core/storage/projects'
 import type { Project, ProjectStatus } from '@/types/domain'
@@ -113,23 +117,57 @@ export function ProjectDetailPage() {
         </div>
       </div>
 
-      <Card className="border-dashed">
+      <Card>
         <CardHeader>
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent/15 text-accent">
-            <Workflow className="h-5 w-5" />
-          </div>
-          <CardTitle>等待 v0.1 工作流接入</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FolderOpen className="h-4 w-4 text-accent" />
+            素材
+          </CardTitle>
           <CardDescription>
-            v0.1 起这里是项目工作台：素材上传（doc/txt/md/img）、Prompt 输入框、
-            分镜列表（流式增量渲染）、单条重生、阶段状态条。
+            上传 doc / txt / md 文档作为剧情底稿，或者上传参考图。所有文件保存在 浏览器
+            IndexedDB，不会上传到任何服务器。
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-muted">
-          <p>· 需要先在 设置 里配置一个 LLM 服务商</p>
-          <p>· 需要在「角色」里登记主要出场角色（v0.2 落地）</p>
+        <CardContent className="flex flex-col gap-4">
+          <MaterialUploadArea projectId={project.id} />
+          <MaterialList projectId={project.id} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ScrollText className="h-4 w-4 text-accent" />
+            分镜生成
+          </CardTitle>
+          <CardDescription>
+            把素材 + 一句话指令喂给当前激活的 LLM，得到结构化分镜（场景描述、旁白、
+            生图提示词、出场角色）。重新生成会清空当前分镜。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          <StoryboardGenerator project={project} />
+          <div className="border-t border-border pt-5">
+            <StoryboardList projectId={project.id} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-dashed">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-accent" />
+            角色卡（v0.2）
+          </CardTitle>
+          <CardDescription>
+            为关键角色绑定参考图，让多镜头里形象保持一致。当前 v0.1 还未实现编辑界面，
+            生成时所有角色按 LLM 自由发挥。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <Link to={`/projects/${project.id}/characters`}>
-            <Button variant="ghost" size="sm" className="mt-2 gap-1.5">
-              <Users className="h-3.5 w-3.5" /> 角色卡（v0.2）
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <Users className="h-3.5 w-3.5" /> 进入角色页（占位）
             </Button>
           </Link>
         </CardContent>
