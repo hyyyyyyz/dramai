@@ -26,7 +26,7 @@
     "url": "https://github.com/hyyyyyyz/dramai/issues"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0 <25.0.0"
   },
   "scripts": {
     "dev": "vite",
