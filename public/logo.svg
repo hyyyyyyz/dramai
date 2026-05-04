@@ -1,61 +1,85 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" role="img" aria-label="dramai · AI short-drama studio">
   <title>dramai</title>
   <defs>
-    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#7c5cff"/>
-      <stop offset="55%" stop-color="#5b8cff"/>
-      <stop offset="100%" stop-color="#22d3ee"/>
+    <!-- 彩云渐变：粉 → 橙 → 黄 → 薄荷 → 天蓝 → 淡紫，模仿彩云体的多色立体感 -->
+    <linearGradient id="cloud" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#ff9eaa"/>
+      <stop offset="20%"  stop-color="#ffb86c"/>
+      <stop offset="40%"  stop-color="#ffe66d"/>
+      <stop offset="60%"  stop-color="#a8e6cf"/>
+      <stop offset="80%"  stop-color="#94d2ff"/>
+      <stop offset="100%" stop-color="#c8b6ff"/>
     </linearGradient>
+
+    <!-- 暗色背景渐变（让彩色字浮起来） -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#16131f"/>
+      <stop offset="0%"   stop-color="#1a1530"/>
       <stop offset="100%" stop-color="#0b0b0f"/>
     </linearGradient>
+
+    <!-- 装饰元素的弱化渐变 -->
     <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.35"/>
+      <stop offset="0%"   stop-color="#ff9eaa" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#94d2ff" stop-opacity="0.35"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#7c5cff" stop-opacity="0"/>
+
+    <!-- 软阴影：让字像"飘"在彩云上 -->
+    <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10"
+                    flood-color="#ff9eaa" flood-opacity="0.30"/>
+    </filter>
+
+    <!-- 中心的彩色光晕 -->
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.55">
+      <stop offset="0%"  stop-color="#ffe66d" stop-opacity="0.20"/>
+      <stop offset="55%" stop-color="#ff9eaa" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#c8b6ff" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
   <!-- background -->
   <rect width="1280" height="320" rx="36" fill="url(#bg)"/>
-  <!-- soft purple glow behind title -->
-  <ellipse cx="640" cy="170" rx="520" ry="170" fill="url(#glow)"/>
+  <!-- 中心彩色光晕 -->
+  <ellipse cx="640" cy="170" rx="540" ry="180" fill="url(#glow)"/>
 
-  <!-- left: storyboard frame stack (代表分镜) -->
-  <g stroke="url(#frame)" stroke-width="2.5" fill="none">
-    <rect x="80"  y="100" width="92" height="58" rx="7"/>
-    <rect x="108" y="135" width="92" height="58" rx="7"/>
-    <rect x="136" y="170" width="92" height="58" rx="7"/>
+  <!-- 左：分镜框 stack -->
+  <g stroke="url(#frame)" stroke-width="2.5" fill="none" stroke-linejoin="round">
+    <rect x="80"  y="100" width="92" height="58" rx="8"/>
+    <rect x="108" y="135" width="92" height="58" rx="8"/>
+    <rect x="136" y="170" width="92" height="58" rx="8"/>
   </g>
 
-  <!-- right: film strip + play triangle (代表成片) -->
+  <!-- 右：胶片格子 + 播放三角 -->
   <g fill="url(#frame)">
-    <rect x="1060" y="106" width="78" height="48" rx="6"/>
-    <rect x="1090" y="138" width="78" height="48" rx="6"/>
-    <rect x="1120" y="170" width="78" height="48" rx="6"/>
+    <rect x="1060" y="106" width="78" height="48" rx="7"/>
+    <rect x="1090" y="138" width="78" height="48" rx="7"/>
+    <rect x="1120" y="170" width="78" height="48" rx="7"/>
   </g>
-  <path d="M 1118 200 L 1170 220 L 1118 240 Z" fill="url(#brand)" opacity="0.85"/>
+  <path d="M 1118 200 L 1170 220 L 1118 240 Z" fill="#ffe66d" opacity="0.85"/>
 
-  <!-- main wordmark -->
-  <text x="640" y="158"
-        font-family="'Inter','SF Pro Display','PingFang SC','Hiragino Sans GB','Microsoft YaHei',system-ui,sans-serif"
-        font-weight="900" font-size="180" letter-spacing="-8"
-        fill="url(#brand)" text-anchor="middle" dominant-baseline="central">
-    dramai
-  </text>
+  <!-- ====== 主标题：彩云体 dramai ====== -->
+  <!-- 通过两层 text 模拟彩云体：外层白色粗描边（云朵感），内层彩虹渐变填充。 -->
+  <g filter="url(#soft-shadow)" font-family="'Inter','SF Pro Rounded','Quicksand','PingFang SC','Hiragino Sans GB','Microsoft YaHei',system-ui,sans-serif" font-weight="900" font-size="180" letter-spacing="-6" text-anchor="middle" dominant-baseline="central">
+    <!-- 外白圈：圆润描边形成"云"的外轮廓 -->
+    <text x="640" y="158" fill="none" stroke="#ffffff" stroke-width="14" stroke-linejoin="round" stroke-opacity="0.92" paint-order="stroke">dramai</text>
+    <!-- 内薄粉描边：增加立体层次（彩云字体经典做法） -->
+    <text x="640" y="158" fill="none" stroke="#ff9eaa" stroke-width="6" stroke-linejoin="round" stroke-opacity="0.85" paint-order="stroke">dramai</text>
+    <!-- 彩虹渐变填充 -->
+    <text x="640" y="158" fill="url(#cloud)">dramai</text>
+  </g>
 
-  <!-- tagline -->
-  <text x="640" y="248"
+  <!-- tagline：保持灰色，避免跟彩色主体打架 -->
+  <text x="640" y="252"
         font-family="'Inter','PingFang SC',system-ui,sans-serif"
         font-weight="500" font-size="22" letter-spacing="6" fill="#a4a5b3"
         text-anchor="middle" dominant-baseline="central">
     AI SHORT-DRAMA STUDIO  ·  浏览器内的 AI 短剧工作台
   </text>
 
-  <!-- subtle accent dot under tagline -->
-  <circle cx="640" cy="280" r="2.5" fill="url(#brand)"/>
+  <!-- 副点缀小圆点（彩色） -->
+  <g>
+    <circle cx="608" cy="280" r="2.5" fill="#ff9eaa"/>
+    <circle cx="640" cy="280" r="2.5" fill="#ffe66d"/>
+    <circle cx="672" cy="280" r="2.5" fill="#94d2ff"/>
+  </g>
 </svg>
