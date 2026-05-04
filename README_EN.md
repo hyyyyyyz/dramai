@@ -13,7 +13,7 @@ Pure front-end. Zero backend. Fork & deploy to GitHub Pages in minutes.
 [Live Demo](https://hyyyyyyz.github.io/dramai/) (after first deployment)
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen)](./docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-v0.4.0-brightgreen)](./docs/ROADMAP.md)
 
 </div>
 

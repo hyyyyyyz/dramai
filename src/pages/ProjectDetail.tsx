@@ -14,6 +14,8 @@ import { MaterialUploadArea } from '@/components/upload/MaterialUploadArea'
 import { StoryboardGenerator } from '@/components/storyboard/StoryboardGenerator'
 import { StoryboardList } from '@/components/storyboard/StoryboardList'
 import { BatchImageButton } from '@/components/storyboard/BatchImageButton'
+import { BatchVideoButton } from '@/components/storyboard/BatchVideoButton'
+import { CompositionCard } from '@/components/composition/CompositionCard'
 import { db } from '@/core/storage/db'
 import { deleteProject, updateProject } from '@/core/storage/projects'
 import type { Project, ProjectStatus } from '@/types/domain'
@@ -149,11 +151,16 @@ export function ProjectDetailPage() {
         <CardContent className="flex flex-col gap-5">
           <StoryboardGenerator project={project} />
           <div className="flex flex-col gap-4 border-t border-border pt-5">
-            <BatchImageButton projectId={project.id} />
+            <div className="flex flex-wrap gap-3">
+              <BatchImageButton projectId={project.id} />
+              <BatchVideoButton projectId={project.id} />
+            </div>
             <StoryboardList projectId={project.id} />
           </div>
         </CardContent>
       </Card>
+
+      <CompositionCard project={project} />
 
       <Card>
         <CardHeader>
