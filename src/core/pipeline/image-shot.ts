@@ -1,4 +1,5 @@
-import { generateImage, ImageRequestError } from '@/core/image/client'
+import { ImageRequestError } from '@/core/image/client'
+import { generateImage } from '@/core/image/factory'
 import { db } from '@/core/storage/db'
 import { createAsset, deleteAsset } from '@/core/storage/assets'
 import { updateStoryboard } from '@/core/storage/storyboards'

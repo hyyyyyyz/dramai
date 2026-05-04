@@ -1,7 +1,7 @@
 {
   "name": "dramai",
   "private": false,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "description": "Open-source, no-backend AI short-drama studio in your browser. Turn docs / images / a sentence into a structured storyboard, images, and video clips — all powered by OpenAI-compatible APIs.",
   "keywords": [

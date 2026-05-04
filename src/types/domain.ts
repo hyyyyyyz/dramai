@@ -8,8 +8,15 @@
 
 export type ProviderKind = 'llm' | 'text2image' | 'image2video' | 'imageEdit'
 
-/** 协议风格。仅 image2video / video2video 用得到——决定 submit/poll 的字段名。 */
-export type ApiFlavor = 'openai-compatible' | 'kling' | 'runway'
+/**
+ * 协议风格。
+ *  - 'openai-compatible' (默认)  → /v1/chat/completions、/v1/images/generations 等
+ *  - 'gemini'                    → 文生图走 /v1beta/models/{model}:generateContent
+ *                                  （302 上的 Nano Banana / Imagen / Google AI Studio 等）
+ *  - 'kling'                     → image2video 走 /v1/videos/image2video（Kling 原生）
+ *  - 'runway'                    → image2video Runway 原生（v0.4 暂回退到通用）
+ */
+export type ApiFlavor = 'openai-compatible' | 'gemini' | 'kling' | 'runway'
 
 export interface Provider {
   id: string
