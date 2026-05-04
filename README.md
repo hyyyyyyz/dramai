@@ -63,6 +63,39 @@
 
 🚧 **路上**：完整 i18n 翻译 / 真正可直接打开的剪映 .draft_content / TTS 旁白混音 / 模板库等，详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
 
+## 🎯 已验证组合（2026-05-04 端到端跑通）
+
+下面这套配置是经过**真人实测**从素材 → 分镜 → 图 → 视频 → 成片 → 剪映 ZIP 全流程跑通的，**强烈推荐新用户照抄**——dramai 内置预设也只保留这 4 个：
+
+| 角色           | 服务商                         | Base URL                    | Model                        | API 协议风格       | 价格档          |
+| -------------- | ------------------------------ | --------------------------- | ---------------------------- | ------------------ | --------------- |
+| LLM 写分镜     | DeepSeek 直连                  | `https://api.deepseek.com`  | `deepseek-chat`              | OpenAI 兼容        | 极便宜          |
+| 文生图         | 302.AI · 即梦 Seedream 5.0     | `https://api.302.ai/doubao` | `doubao-seedream-5-0-260128` | OpenAI 兼容        | ~0.035 PTC/张   |
+| 文生图（备选） | 302.AI · Nano Banana           | `https://api.302.ai`        | `gemini-2.5-flash-image`     | **Gemini 原生**    | ~0.2-0.5 PTC/张 |
+| 图生视频       | 302.AI · 通义万相 Wan2.2 Flash | `https://api.302ai.cn`      | `wan2.2-i2v-flash`           | **阿里 DashScope** | ~0.04 PTC/秒    |
+
+**单部 30 秒短剧成本预估**（6 个分镜 / 720P）：
+
+```
+LLM        ¥0.x         （写分镜，便宜到忽略）
+文生图      6 × 0.035 PTC = 0.21 PTC ≈ ¥1.5
+图生视频    6 × 1 PTC ≈ 6 PTC ≈ ¥40         ← 大头在这里（Wan2.2-flash 5秒720P 约 0.2 PTC）
+合成      免费（FFmpeg.wasm 在你浏览器跑）
+配音      免费（导入剪映 → AI 配音内置）
+─────────────────────────
+总计       约 ¥40-50 一部
+```
+
+> 旁白音频不在 dramai 里生成，**导出剪映 ZIP 后**用剪映自带的「文本朗读」/「AI 配音」给 SRT 字幕配音，**免费且中文音色丰富**。这是当前最省事的路径。
+
+### ⚠️ 已知踩坑（提前避免）
+
+- **新建 image2video provider 时，base URL 一定用 `api.302ai.cn` 国内中转**——直连 `api.302.ai` 在 `/volcengine/` 等子路径上 CORS 不通，请求会送达服务端（**扣 token**）但响应被浏览器拦截，dramai 看到 `Failed to fetch`。曾真实损失 ~8 PTC。
+- **Nano Banana 的 model id 不带 `-v1beta` 后缀**——302 网页上叫 "gemini-2.5-flash-image-v1beta（官方格式）"那是**产品命名**，真正请求里就用 `gemini-2.5-flash-image`。
+- **Seedream 的 model id 必须带 `doubao-` 前缀**——302 网页 URL slug `seedream-5-0-260128` 不是 model id，要用 `doubao-seedream-5-0-260128`。
+- **角色锁定（locked character 参考图）对 Seedream / Wan2.2 不生效**——这两家协议要求参考图是公网 URL，dramai 当前传 base64 dataURL，被忽略。要保持人物一致性，**写到 image_prompt 描述里**（"年轻乾隆，方圆脸，明黄龙袍"）比绑参考图更稳。
+- **剪映 ZIP 是 alpha**——当前是 mp4 + 图 + SRT + manifest 的 ZIP，需要手动在剪映里拖入新建项目。直接打开 `.draft_content` 的支持是 v0.5+ 计划。
+
 ## 🧱 技术栈
 
 | 模块 | 选择                                        |
