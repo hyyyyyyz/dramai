@@ -1,8 +1,6 @@
 <div align="center">
 
-# dramai
-
-**浏览器内的开源 AI 短剧工作台**
+<img src="./public/logo.svg" alt="dramai · AI short-drama studio in your browser" width="720" />
 
 文本 / 文档 / 参考图 → 分镜脚本 → 角色一致的图 → 视频片段 → 一键导出剪映草稿
 全程纯前端、零后端、可直接 fork 部署到 GitHub Pages。

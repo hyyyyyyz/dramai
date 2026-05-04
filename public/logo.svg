@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" role="img" aria-label="dramai · AI short-drama studio">
+  <title>dramai</title>
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c5cff"/>
+      <stop offset="55%" stop-color="#5b8cff"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#16131f"/>
+      <stop offset="100%" stop-color="#0b0b0f"/>
+    </linearGradient>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.35"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#7c5cff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="1280" height="320" rx="36" fill="url(#bg)"/>
+  <!-- soft purple glow behind title -->
+  <ellipse cx="640" cy="170" rx="520" ry="170" fill="url(#glow)"/>
+
+  <!-- left: storyboard frame stack (代表分镜) -->
+  <g stroke="url(#frame)" stroke-width="2.5" fill="none">
+    <rect x="80"  y="100" width="92" height="58" rx="7"/>
+    <rect x="108" y="135" width="92" height="58" rx="7"/>
+    <rect x="136" y="170" width="92" height="58" rx="7"/>
+  </g>
+
+  <!-- right: film strip + play triangle (代表成片) -->
+  <g fill="url(#frame)">
+    <rect x="1060" y="106" width="78" height="48" rx="6"/>
+    <rect x="1090" y="138" width="78" height="48" rx="6"/>
+    <rect x="1120" y="170" width="78" height="48" rx="6"/>
+  </g>
+  <path d="M 1118 200 L 1170 220 L 1118 240 Z" fill="url(#brand)" opacity="0.85"/>
+
+  <!-- main wordmark -->
+  <text x="640" y="158"
+        font-family="'Inter','SF Pro Display','PingFang SC','Hiragino Sans GB','Microsoft YaHei',system-ui,sans-serif"
+        font-weight="900" font-size="180" letter-spacing="-8"
+        fill="url(#brand)" text-anchor="middle" dominant-baseline="central">
+    dramai
+  </text>
+
+  <!-- tagline -->
+  <text x="640" y="248"
+        font-family="'Inter','PingFang SC',system-ui,sans-serif"
+        font-weight="500" font-size="22" letter-spacing="6" fill="#a4a5b3"
+        text-anchor="middle" dominant-baseline="central">
+    AI SHORT-DRAMA STUDIO  ·  浏览器内的 AI 短剧工作台
+  </text>
+
+  <!-- subtle accent dot under tagline -->
+  <circle cx="640" cy="280" r="2.5" fill="url(#brand)"/>
+</svg>
