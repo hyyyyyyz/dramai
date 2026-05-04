@@ -1,28 +1,34 @@
-/* dramai global styles
- * Tailwind 会在 v0.1 的样式里程碑接入，现阶段先用最小手写 CSS
- * 保证骨架页能跑、能上色、能在 GitHub Pages 上展示。
- */
+@import 'tailwindcss';
+@plugin "tailwindcss-animate";
 
+/* 默认强制深色配色（和落地页风格一致），未来可加切换。 */
 :root {
   color-scheme: dark;
-  --bg: #0b0b0f;
-  --bg-soft: #131319;
-  --fg: #ececf2;
-  --fg-soft: #a4a5b3;
-  --accent: #7c5cff;
-  --accent-soft: rgba(124, 92, 255, 0.18);
-  --border: rgba(255, 255, 255, 0.08);
-  --radius: 14px;
-  font-family:
-    'Inter',
-    'PingFang SC',
-    'Hiragino Sans GB',
-    'Microsoft YaHei',
-    system-ui,
-    -apple-system,
+}
+
+@theme {
+  --font-sans:
+    'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, -apple-system,
     sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+
+  --color-background: oklch(0.16 0.01 280);
+  --color-background-soft: oklch(0.2 0.013 280);
+  --color-background-soft-2: oklch(0.24 0.014 280);
+  --color-foreground: oklch(0.95 0.005 280);
+  --color-muted: oklch(0.7 0.015 280);
+  --color-muted-foreground: oklch(0.78 0.015 280);
+  --color-accent: oklch(0.7 0.18 290);
+  --color-accent-foreground: oklch(0.97 0.005 280);
+  --color-accent-cyan: oklch(0.85 0.13 200);
+  --color-border: oklch(0.32 0.014 280 / 50%);
+  --color-input: oklch(0.27 0.014 280);
+  --color-ring: oklch(0.7 0.18 290);
+  --color-destructive: oklch(0.62 0.22 27);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
 }
 
 * {
@@ -34,95 +40,26 @@ body,
 #root {
   margin: 0;
   min-height: 100%;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  color: var(--accent);
+  color: inherit;
   text-decoration: none;
 }
-a:hover {
-  text-decoration: underline;
+
+::selection {
+  background: color-mix(in oklab, var(--color-accent) 35%, transparent);
 }
 
-.app-shell {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 64px 24px 96px;
-  display: flex;
-  flex-direction: column;
-  gap: 48px;
-}
-
-.app-hero h1 {
-  font-size: 40px;
-  margin: 12px 0 12px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.app-hero-sub {
-  color: var(--fg-soft);
-  font-weight: 500;
-  font-size: 22px;
-}
-
-.app-hero p {
-  color: var(--fg-soft);
-  line-height: 1.7;
-  max-width: 720px;
-}
-
-.app-tag {
-  display: inline-block;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: var(--accent-soft);
-  color: var(--accent);
-  padding: 4px 10px;
-  border-radius: 999px;
-}
-
-.app-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.app-card {
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px 22px;
-}
-
-.app-card h2 {
-  margin: 0 0 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--fg);
-}
-
-.app-card p {
-  margin: 0;
-  color: var(--fg-soft);
-  line-height: 1.6;
-  font-size: 14px;
-}
-
-.app-footer {
-  border-top: 1px solid var(--border);
-  padding-top: 20px;
-  color: var(--fg-soft);
-  font-size: 13px;
-}
-
-.app-footer code {
-  background: var(--bg-soft);
-  padding: 2px 6px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  margin-left: 6px;
+/* 渐变标题工具类，给 Hero 用 */
+.text-gradient-brand {
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-cyan) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
