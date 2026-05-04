@@ -21,6 +21,14 @@ export interface ProviderPreset {
 export const PROVIDER_PRESETS: ProviderPreset[] = [
   // === LLM ===
   {
+    id: 'deepseek-llm',
+    label: 'DeepSeek 直连 (LLM)',
+    kind: 'llm',
+    baseUrl: 'https://api.deepseek.com',
+    suggestedModel: 'deepseek-chat',
+    notes: 'CORS 友好，官方直连，中文极强 + 便宜',
+  },
+  {
     id: 'openrouter-llm',
     label: 'OpenRouter (LLM)',
     kind: 'llm',
