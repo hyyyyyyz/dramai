@@ -117,7 +117,30 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
       '⚠️ base URL 不带 /v1（Gemini 协议自己的路径就是 /v1beta/models/{model}:generateContent）',
   },
 
-  // === 图生视频（Kling 原生协议示例；具体 base URL 以 302 模型卡为准）===
+  // === 图生视频 ===
+  {
+    id: '302-i2v-seedance-fast',
+    label: '302.AI · 即梦 Seedance 2.0 Fast (字节，便宜)',
+    kind: 'image2video',
+    // 验证可用（2026-05）：POST https://api.302.ai/volcengine/api/v3/contents/generations/tasks
+    //   { model, content[], ratio, duration, resolution, generate_audio, watermark }
+    // 起始帧支持 base64 dataURL（example 5），dramai 直接发；
+    // 提交得 { id: "cgt-..." }，再 GET .../tasks/{id} 轮询。
+    baseUrl: 'https://api.302.ai',
+    suggestedModel: 'doubao-seedance-2-0-fast-260128',
+    apiFlavor: 'volcengine',
+    notes:
+      '⚠️ base URL 不带任何子路径（client 自动拼 /volcengine/api/v3/...）；价格 ~6.5 PTC/1M token，5 秒 720p 通常几毛到 1 块多',
+  },
+  {
+    id: '302-i2v-seedance-pro',
+    label: '302.AI · 即梦 Seedance 2.0 (标准版)',
+    kind: 'image2video',
+    baseUrl: 'https://api.302.ai',
+    suggestedModel: 'doubao-seedance-2-0-260128',
+    apiFlavor: 'volcengine',
+    notes: '比 Fast 版贵约 20%，画质更稳定',
+  },
   {
     id: '302-i2v-kling',
     label: '302.AI · Kling (图生视频)',

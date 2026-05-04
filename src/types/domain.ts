@@ -13,10 +13,13 @@ export type ProviderKind = 'llm' | 'text2image' | 'image2video' | 'imageEdit'
  *  - 'openai-compatible' (默认)  → /v1/chat/completions、/v1/images/generations 等
  *  - 'gemini'                    → 文生图走 /v1beta/models/{model}:generateContent
  *                                  （302 上的 Nano Banana / Imagen / Google AI Studio 等）
+ *  - 'volcengine'                → 火山方舟（字节即梦 Seedance / Doubao 视频）
+ *                                  POST /volcengine/api/v3/contents/generations/tasks
+ *                                  + GET 轮询；body 用 multimodal content 数组
  *  - 'kling'                     → image2video 走 /v1/videos/image2video（Kling 原生）
  *  - 'runway'                    → image2video Runway 原生（v0.4 暂回退到通用）
  */
-export type ApiFlavor = 'openai-compatible' | 'gemini' | 'kling' | 'runway'
+export type ApiFlavor = 'openai-compatible' | 'gemini' | 'volcengine' | 'kling' | 'runway'
 
 export interface Provider {
   id: string
