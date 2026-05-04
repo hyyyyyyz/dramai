@@ -13,7 +13,7 @@ Pure front-end. Zero backend. Fork & deploy to GitHub Pages in minutes.
 [Live Demo](https://hyyyyyyz.github.io/dramai/) (after first deployment)
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-v0.0.1%20skeleton-orange)](./docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen)](./docs/ROADMAP.md)
 
 </div>
 
@@ -32,15 +32,26 @@ Pure front-end. Zero backend. Fork & deploy to GitHub Pages in minutes.
 Zero backend means: fork the repo + enable GitHub Pages = your own private deployment.
 Your data and API keys never leave your browser.
 
+## ✅ What v0.1 already does
+
+- Configure any OpenAI-compatible LLM provider (OpenRouter / 302.AI / ciyuan / OpenAI / custom) with one-click presets and a real connectivity probe.
+- Create projects; upload `.docx` / `.txt` / `.md` / images as raw material with auto text extraction + image thumbnails.
+- One-line prompt → streaming LLM → tolerant JSON parse → persisted storyboard list (scene text, narration, English image prompt, characters, duration).
+- Export the entire local database to a single JSON, restore via `merge` or `replace`.
+- Bilingual UI (zh-CN / EN). Marketing pages and chrome are translated; functional pages get full translation in v0.2.
+
+🚧 **On the way**: v0.2 character cards + text-to-image / v0.3 image-to-video / v0.4 CapCut export. See [docs/ROADMAP.md](./docs/ROADMAP.md).
+
 ## 🧱 Stack
 
 | Module  | Choice                                              |
 | ------- | --------------------------------------------------- |
 | Build   | Vite 8 + TypeScript 6 + React 19                    |
-| State   | Zustand (lands in v0.1)                             |
-| Storage | IndexedDB via Dexie.js (lands in v0.1)              |
-| Styling | Tailwind CSS + shadcn/ui (lands in v0.1)            |
-| Routing | React Router v7 (lands in v0.1)                     |
+| State   | Zustand 5 + persist                                 |
+| Storage | IndexedDB via Dexie 4 + dexie-react-hooks           |
+| Styling | Tailwind CSS v4 (`@theme` + OKLCH dark)             |
+| Routing | React Router v7 (data router + basename)            |
+| i18n    | i18next + react-i18next                             |
 | AI      | Any OpenAI-compatible endpoint (you bring your key) |
 | Hosting | GitHub Pages + GitHub Actions                       |
 
@@ -70,14 +81,14 @@ See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for custom domains, CDN, CORS not
 
 ## 🗺️ Roadmap
 
-| Version | Scope                                             | Status         |
-| ------- | ------------------------------------------------- | -------------- |
-| v0.0.1  | Project skeleton + GH Pages deploy                | ⌛ in progress |
-| v0.1    | Text/file/image → storyboard (streaming LLM)      | 🚧 planned     |
-| v0.2    | Character cards + text-to-image                   | 🚧 planned     |
-| v0.3    | Image-to-video + camera motion                    | 🚧 planned     |
-| v0.4    | Video stitching + subtitles + CapCut draft export | 🚧 planned     |
-| v0.5    | Performance / docs / template library polish      | 🚧 planned     |
+| Version | Scope                                             | Status      |
+| ------- | ------------------------------------------------- | ----------- |
+| v0.0.1  | Project skeleton + GH Pages deploy                | ✅ released |
+| v0.1    | Text/file/image → storyboard (streaming LLM)      | ✅ released |
+| v0.2    | Character cards + text-to-image                   | 🚧 planned  |
+| v0.3    | Image-to-video + camera motion                    | 🚧 planned  |
+| v0.4    | Video stitching + subtitles + CapCut draft export | 🚧 planned  |
+| v0.5    | Performance / docs / template library polish      | 🚧 planned  |
 
 ## 🤝 Contributing
 

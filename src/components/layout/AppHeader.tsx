@@ -1,26 +1,29 @@
 import { NavLink, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Settings as SettingsIcon } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/button'
 import { BrandMark } from '@/components/layout/BrandMark'
 import { GithubIcon } from '@/components/icons/GithubIcon'
-
-const NAV_ITEMS = [
-  { label: '首页', to: '/' },
-  { label: '项目', to: '/projects' },
-  { label: '设置', to: '/settings' },
-  { label: '关于', to: '/about' },
-] as const
+import { LocaleSwitcher } from '@/components/layout/LocaleSwitcher'
 
 export function AppHeader() {
+  const { t } = useTranslation()
+  const NAV_ITEMS = [
+    { label: t('nav.home'), to: '/' },
+    { label: t('nav.projects'), to: '/projects' },
+    { label: t('nav.settings'), to: '/settings' },
+    { label: t('nav.about'), to: '/about' },
+  ]
+
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2 group">
+        <Link to="/" className="group flex items-center gap-2">
           <BrandMark className="h-7 w-7" />
-          <span className="text-base font-semibold tracking-tight">dramai</span>
+          <span className="text-base font-semibold tracking-tight">{t('brand.name')}</span>
           <span className="hidden rounded-full bg-background-soft-2 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline-block">
-            v0.0.1
+            v0.1.0
           </span>
         </Link>
 
@@ -44,16 +47,17 @@ export function AppHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1">
+          <LocaleSwitcher />
           <Link to="/settings" className="sm:hidden">
-            <Button variant="ghost" size="icon" aria-label="设置">
+            <Button variant="ghost" size="icon" aria-label={t('nav.settings')}>
               <SettingsIcon />
             </Button>
           </Link>
           <a href="https://github.com/hyyyyyyz/dramai" target="_blank" rel="noreferrer noopener">
             <Button variant="outline" size="sm" className="gap-2">
               <GithubIcon />
-              <span className="hidden sm:inline">GitHub</span>
+              <span className="hidden sm:inline">{t('nav.github')}</span>
             </Button>
           </a>
         </div>

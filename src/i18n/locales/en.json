@@ -1,0 +1,63 @@
+{
+  "brand": {
+    "name": "dramai",
+    "tagline": "An AI short-drama studio that runs entirely in your browser"
+  },
+  "nav": {
+    "home": "Home",
+    "projects": "Projects",
+    "settings": "Settings",
+    "about": "About",
+    "github": "GitHub",
+    "language": "Language"
+  },
+  "home": {
+    "tag": "v0.1 · in-browser · zero-backend",
+    "heroLineA": "Turn your",
+    "heroStory": "story",
+    "heroLineB": "into an editable",
+    "heroDrama": "AI short drama",
+    "intro": "dramai is an open-source short-drama studio that runs entirely in your browser. Drop in text / docs / reference images, write a one-liner, and let your own OpenAI-compatible endpoint produce a structured storyboard, images, and clips — without any middleman server.",
+    "ctaNew": "New project",
+    "ctaSettings": "Configure your API",
+    "ctaStar": "Star on GitHub",
+    "feature1Title": "Drop in your raw material",
+    "feature1Desc": "Upload doc / txt / md or reference images, then describe the vibe you want.",
+    "feature2Title": "LLM-drafted storyboard",
+    "feature2Desc": "Scene text, narration, image prompts, camera moves — generated, then editable.",
+    "feature3Title": "Character cards, consistent shots",
+    "feature3Desc": "Lock a character to a reference image; other roles stay random but different.",
+    "feature4Title": "Shots → video clips",
+    "feature4Desc": "OpenAI Images / Runway / Kling compatible — wire up the whole pipeline with one click.",
+    "pipelineTitle": "From raw material to final cut, six stages",
+    "pipelineDesc": "Pause, roll back, or rerun any stage. v0.1 ships up to storyboard generation; the rest land in v0.2–v0.4.",
+    "pipelineStages": [
+      "Upload material",
+      "Generate storyboard",
+      "Character consistency",
+      "Text-to-image",
+      "Image-to-video",
+      "CapCut export"
+    ]
+  },
+  "footer": {
+    "summary": "dramai · Apache-2.0 · in-browser AI short-drama studio · local-first data",
+    "buildOn": "Built on React 19 + Vite 8 · Hosted at"
+  },
+  "about": {
+    "title": "About dramai",
+    "intro": "dramai is a 100% client-side, open-source AI short-drama studio. It chains \"upload material → storyboard → text-to-image → image-to-video → CapCut export\" — your data lives only in your browser, and AI calls go straight to the OpenAI-compatible endpoint you configured. Zero backend; fork and deploy to GitHub Pages in minutes.",
+    "thanksTitle": "Acknowledgements",
+    "thanksDesc": "Architecture and product shape borrow ideas from these two projects:",
+    "thanksAi_storyDesc": "Pipeline-chain + AI-client abstraction.",
+    "thanksDirector_aiDesc": "Character-consistency \"three-view\" technique and video-pipeline docs.",
+    "joinTitle": "Join in",
+    "joinDesc": "Issues, PRs, and docs are all welcome. Apache-2.0 licensed, commercial-friendly.",
+    "joinCta": "See it on GitHub"
+  },
+  "notFound": {
+    "title": "This scene didn't make the cut",
+    "desc": "The page you tried doesn't exist — or it's in a script that ships after v0.2.",
+    "back": "Back home"
+  }
+}

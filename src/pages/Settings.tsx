@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Database, KeyRound, Plus, Server, ShieldAlert } from 'lucide-react'
+import { Archive, Database, KeyRound, Plus, Server, ShieldAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/modal'
 import { ProviderForm, type ProviderDraft } from '@/components/settings/ProviderForm'
 import { ProviderCard } from '@/components/settings/ProviderCard'
 import { PROVIDER_KIND_LABEL } from '@/components/settings/PROVIDER_PRESETS'
+import { BackupRestore } from '@/components/settings/BackupRestore'
 import { useSettingsStore } from '@/store/settings'
 import { wipeAll } from '@/core/storage/db'
 import type { Provider, ProviderKind } from '@/types/domain'
@@ -108,12 +109,28 @@ export function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
+            <Archive className="h-4 w-4 text-accent" />
+            备份与恢复
+          </CardTitle>
+          <CardDescription>
+            把所有项目 / 分镜 / 角色 / 素材 / 资源打包成单个 JSON 文件，方便跨浏览器迁移 或
+            versioned snapshot。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BackupRestore />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-accent" />
             数据与隐私
           </CardTitle>
           <CardDescription>
             API Key 存在 localStorage（仅本机）。项目 / 角色 / 分镜 / 资源等存在
-            IndexedDB（仅本机）。下面这两块一旦清空就找不回来了。
+            IndexedDB（仅本机）。下面这块一旦清空就找不回来了 —— 建议先用「导出全部」备份。
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">

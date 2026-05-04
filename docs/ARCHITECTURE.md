@@ -1,7 +1,7 @@
 # Architecture
 
-> 本文档描述 `dramai` 的整体架构。当前是 v0.0.1 骨架阶段；标记 🚧 的部分会在
-> 后续里程碑里逐步落地。
+> 本文档描述 `dramai` 的整体架构（写于 v0.1.0）。标记 🚧 的部分会在后续里程碑里
+> 逐步落地。
 
 ## 1. 设计原则
 
@@ -19,13 +19,13 @@
 ┌──────────────────────────────────────────────┐
 │              UI Layer (React)                │  pages / components
 ├──────────────────────────────────────────────┤
-│           State Layer (Zustand) 🚧           │  store/*
+│           State Layer (Zustand)              │  store/*
 ├──────────────────────────────────────────────┤
 │             Core (Business)                  │  src/core/*
 │  ┌──────────┬──────────┬──────────────────┐  │
 │  │ pipeline │ prompts  │ parsers / export │  │
 │  ├──────────┴──────────┴──────────────────┤  │
-│  │     llm    │   image    │   video      │  │  AI clients
+│  │     llm    │   image 🚧 │   video 🚧   │  │  AI clients
 │  ├────────────┴────────────┴──────────────┤  │
 │  │             storage (Dexie)            │  │  IndexedDB schema
 │  └────────────────────────────────────────┘  │
@@ -38,33 +38,39 @@
                服务商 endpoint
 ```
 
-## 3. 关键抽象（v0.1 起落地）
+## 3. 关键抽象
+
+v0.1 实际落地的核心是 **OpenAI 兼容 LLM 流式客户端** + **责任链 Pipeline**，
+对应 `src/core/llm/*` 与 `src/core/pipeline/storyboard.ts`：
 
 ```ts
-// src/core/llm/types.ts
-export interface BaseAIClient {
-  validateConfig(): Promise<boolean>
-  healthCheck(): Promise<boolean>
-}
+// src/core/llm/client.ts
+export async function* streamChat(
+  provider: Pick<Provider, 'baseUrl' | 'apiKey' | 'model'>,
+  request: ChatRequest,
+): AsyncGenerator<ChatChunk, ChatResult, void>
 
-export interface LLMClient extends BaseAIClient {
-  chat(req: ChatRequest): AsyncIterable<ChatChunk>
-}
+// src/core/pipeline/storyboard.ts
+export async function* generateStoryboards(
+  input: RunInput,
+): AsyncGenerator<StoryboardEvent, void, void>
+```
 
-export interface Text2ImageClient extends BaseAIClient {
+`StoryboardEvent` 是一个 tagged union（`starting | streaming | parsing |
+persisting | done | error`），UI 端用 `for await` 消费即可显示进度，并随时
+`AbortController.abort()` 中止。
+
+🚧 v0.2+ 将引入 `Text2ImageClient` / `Image2VideoClient` 抽象，复用同样的
+`Provider` + AsyncGenerator 模式：
+
+```ts
+export interface Text2ImageClient {
   generate(req: T2IRequest): Promise<T2IResult>
 }
 
-export interface Image2VideoClient extends BaseAIClient {
+export interface Image2VideoClient {
   generate(req: I2VRequest): Promise<I2VTaskHandle>
   poll(handle: I2VTaskHandle): Promise<I2VResult>
-}
-
-export interface PipelineStage<I, O> {
-  name: StageName
-  validate(ctx: PipelineContext<I>): Promise<void>
-  process(ctx: PipelineContext<I>): Promise<O>
-  onFailure(ctx: PipelineContext<I>, err: unknown): Promise<void>
 }
 ```
 
@@ -83,23 +89,26 @@ parse → rewrite → storyboard → image → camera → video
 | `camera`     | 分镜 + 风格                          | 运镜参数（时长、移动、缩放） |
 | `video`      | 分镜图 + 运镜 + 视频提示词           | 视频片段                     |
 
-每个阶段实现 `PipelineStage` 接口；`PipelineOrchestrator`（v0.1 落地）负责
-顺序调度、重试、暂停/恢复。
+v0.1 已实现 `parse → storyboard`；后面四阶段进入 v0.2-v0.4 路线图。
 
-## 5. 数据模型 (IndexedDB / Dexie) 🚧
+## 5. 数据模型（IndexedDB / Dexie v1）
+
+实际 schema 在 `src/core/storage/db.ts`，v0.1.0 版本号为 1：
 
 ```
-projects           id, title, summary, createdAt, updatedAt, settings
-characters         id, projectId, name, refImageId?, prompt, isProtagonist
-materials          id, projectId, kind(doc|txt|md|image), name, blobId
-storyboards        id, projectId, sequence, sceneText, narration,
-                   imagePrompt, cameraParams, characterIds, durationSec
-assets             id, kind(image|video), blob (Blob), meta
-generations        id, stageName, status, input, output, retry, error
-settings           singleton: providers[], activeProvider, theme, locale
+projects      id, status, createdAt, updatedAt
+characters    id, projectId, role, locked, createdAt
+materials     id, projectId, kind, createdAt
+storyboards   id, projectId, status, [projectId+sequence]
+assets        id, projectId, kind, createdAt    -- Blob 直接存，不外切
+generations   id, projectId, stageName, status, createdAt
 ```
 
-详细 schema 见 [docs/DATA_MODEL.md](./DATA_MODEL.md)（v0.1 起补充）。
+完整字段定义见 `src/types/domain.ts`。Provider 配置不在 IndexedDB，而在
+`localStorage` 的 `dramai-settings` key 下（zustand persist 中间件托管）。
+
+备份/恢复实现在 `src/core/export/json.ts`：所有表 + Blob 序列化为单个 JSON
+（Blob 用 base64），导入支持 merge / replace 两种模式。
 
 ## 6. 安全模型
 
@@ -108,25 +117,33 @@ settings           singleton: providers[], activeProvider, theme, locale
 - 大文件资源（图、视频）用 Blob + IndexedDB 存储，可一键导出/清理。
 - XSS：所有 AI 返回内容渲染前严格转义；不使用 `dangerouslySetInnerHTML`。
 
-## 7. 项目结构
+## 7. 项目结构（v0.1.0 实际状态）
 
 ```
 src/
-  main.tsx
-  App.tsx
-  pages/        Home / Projects / Project / Characters / Settings / About 🚧
-  components/   ui / upload / editor / storyboard / character / progress 🚧
+  main.tsx                     i18n 初始化 + 路由 RouterProvider
+  router.tsx                   createBrowserRouter，basename 来自 BASE_URL
+  pages/                       Home / Projects / ProjectDetail / Characters / Settings / About / NotFound
+  components/
+    ui/                        Button / Card / Badge / Input / Textarea / Label / Select / Modal
+    icons/                     GithubIcon (lucide 1.x 不再含品牌)
+    layout/                    AppLayout / AppHeader / AppFooter / BrandMark / LocaleSwitcher
+    settings/                  ProviderForm / ProviderCard / BackupRestore / PROVIDER_PRESETS
+    projects/                  ProjectCard / ProjectCreateDialog
+    upload/                    MaterialUploadArea / MaterialList
+    storyboard/                StoryboardGenerator / StoryboardList
   core/
-    pipeline/   orchestrator + stages
-    prompts/    模板
-    llm/ image/ video/    AI 客户端
-    parsers/    docx / md / txt
-    storage/    Dexie schema + CRUD
-    export/     jianying / json / zip
-  store/        Zustand stores
-  hooks/
-  lib/          工具
-  types/        公共类型
-  styles/       全局样式
-  i18n/         zh-CN / en
+    pipeline/storyboard.ts     生成分镜的 AsyncGenerator 编排
+    prompts/storyboard.ts      system + user 模板
+    llm/                       types / sse / client / test-connection
+    image/                     🚧 v0.2 起
+    video/                     🚧 v0.3 起
+    parsers/                   docx (lazy) / text / image / index
+    storage/                   db / projects / characters (后续) / materials / storyboards / assets
+    export/json.ts             备份/恢复
+  store/settings.ts            zustand provider 配置 + 持久化
+  i18n/                        index + locales/zh-CN.json + locales/en.json
+  lib/cn.ts                    clsx + tailwind-merge
+  types/domain.ts              域模型类型契约
+  styles/globals.css           Tailwind v4 + @theme + 暗色 OKLCH
 ```

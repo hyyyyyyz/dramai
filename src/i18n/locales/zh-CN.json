@@ -1,0 +1,56 @@
+{
+  "brand": {
+    "name": "dramai",
+    "tagline": "浏览器内的 AI 短剧工作台"
+  },
+  "nav": {
+    "home": "首页",
+    "projects": "项目",
+    "settings": "设置",
+    "about": "关于",
+    "github": "GitHub",
+    "language": "语言"
+  },
+  "home": {
+    "tag": "v0.1 · 浏览器内 · 零后端",
+    "heroLineA": "把你的",
+    "heroStory": "故事",
+    "heroLineB": "一句话变成可剪辑的",
+    "heroDrama": "AI 短剧",
+    "intro": "dramai 是一个跑在浏览器里的开源短剧工作台。文本、文档、参考图三样素材 + 一句话提示词，调用你自己的 OpenAI 兼容服务商，从分镜脚本直到视频片段，全程不经任何中间服务器。",
+    "ctaNew": "新建项目",
+    "ctaSettings": "先去配置 API",
+    "ctaStar": "在 GitHub 上 Star",
+    "feature1Title": "把素材丢进来",
+    "feature1Desc": "上传 doc / txt / md，或者贴入参考图，再加一句你想要的短剧风格。",
+    "feature2Title": "LLM 生成结构化分镜",
+    "feature2Desc": "场景描述、旁白、生图提示词、运镜参数，一次生成，可手动微调。",
+    "feature3Title": "角色卡，多镜不变形",
+    "feature3Desc": "为关键角色绑定参考图，其它角色随机但与主角不同。",
+    "feature4Title": "分镜图 → 视频片段",
+    "feature4Desc": "OpenAI Images / Runway / 可灵兼容，一键串起完整 pipeline。",
+    "pipelineTitle": "从素材到成片，六个阶段",
+    "pipelineDesc": "每个阶段都可暂停、回滚、单独重跑。v0.1 已实现到「分镜生成」，剩下阶段在 v0.2-v0.4 落地。",
+    "pipelineStages": ["上传素材", "生成分镜", "角色一致性", "文生图", "图生视频", "剪映导出"]
+  },
+  "footer": {
+    "summary": "dramai · Apache-2.0 · 浏览器内的 AI 短剧工作台 · 数据本地优先",
+    "buildOn": "构建于 React 19 + Vite 8 · 部署于"
+  },
+  "about": {
+    "title": "关于 dramai",
+    "intro": "dramai 是一个 100% 跑在浏览器里的开源 AI 短剧工作台。它把「上传素材 → 生成分镜 → 文生图 → 图生视频 → 剪映导出」的流程串起来，所有数据存在你自己的浏览器里，所有 AI 调用直接打到你自己配置的 OpenAI 兼容服务商。零后端，可以直接 fork 后部署到 GitHub Pages。",
+    "thanksTitle": "致谢",
+    "thanksDesc": "架构与产品形态借鉴自这两个开源项目：",
+    "thanksAi_storyDesc": "Pipeline 责任链与 AI 客户端抽象层的设计思路。",
+    "thanksDirector_aiDesc": "人物一致性「三视图」方案、视频生成完整流程文档。",
+    "joinTitle": "参与共建",
+    "joinDesc": "所有 issue / PR / 文档贡献都欢迎。Apache-2.0 许可证，商用友好。",
+    "joinCta": "在 GitHub 上看看"
+  },
+  "notFound": {
+    "title": "这一幕没拍出来",
+    "desc": "你访问的页面不存在，或者它还在 v0.2 之后的剧本里。",
+    "back": "回到首页"
+  }
+}

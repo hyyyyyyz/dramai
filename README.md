@@ -13,7 +13,7 @@
 [在线 Demo](https://hyyyyyyz.github.io/dramai/)（部署后可用）
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-v0.0.1%20skeleton-orange)](./docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-v0.1.0-brightgreen)](./docs/ROADMAP.md)
 [![Made with React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -35,15 +35,26 @@
 零后端意味着：你只要会 fork 这个仓库 + 启用 GitHub Pages，就拥有了**自己的私有部署**。
 你的数据、API Key 都不会经过任何中间服务器。
 
+## ✅ v0.1 已经能做的
+
+- 配置任意 OpenAI 兼容 LLM 服务商（OpenRouter / 302.AI / 词元 / OpenAI / 自定义），一键测试连接。
+- 新建项目、上传 `.docx` / `.txt` / `.md` / 图片做素材，自动文本抽取 + 缩略图。
+- 一句话提示词 → 流式 LLM → 容错 JSON 解析 → 落库为分镜列表（含场景描述、旁白、英文 image prompt、出场角色、时长）。
+- 一键导出整个本地库为 JSON 备份；支持 merge / replace 两种导入模式。
+- 中英双语 UI（首页、关于、404、顶栏脚部已双语；功能页 v0.2 完整翻译扫尾）。
+
+🚧 **路上**：v0.2 角色卡 + 文生图 / v0.3 图生视频 / v0.4 剪映导出。详见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
+
 ## 🧱 技术栈
 
 | 模块 | 选择                                        |
 | ---- | ------------------------------------------- |
 | 构建 | Vite 8 + TypeScript 6 + React 19            |
-| 状态 | Zustand（v0.1 起接入）                      |
-| 数据 | IndexedDB via Dexie.js（v0.1 起接入）       |
-| 样式 | Tailwind CSS + shadcn/ui（v0.1 起接入）     |
-| 路由 | React Router v7（v0.1 起接入）              |
+| 状态 | Zustand 5 + persist 中间件                  |
+| 数据 | IndexedDB via Dexie 4 + dexie-react-hooks   |
+| 样式 | Tailwind CSS v4 (`@theme` + OKLCH 暗色)     |
+| 路由 | React Router v7（data router + basename）   |
+| i18n | i18next + react-i18next                     |
 | AI   | OpenAI 兼容 API（用户自填 base URL 与 key） |
 | 部署 | GitHub Pages + GitHub Actions               |
 
@@ -97,8 +108,8 @@ npm run dev
 
 | 版本   | 范围                                    | 状态      |
 | ------ | --------------------------------------- | --------- |
-| v0.0.1 | 项目骨架 + GitHub Pages 部署            | ⌛ 进行中 |
-| v0.1   | 文本/文件/参考图 → 分镜脚本（LLM 流式） | 🚧 规划中 |
+| v0.0.1 | 项目骨架 + GitHub Pages 部署            | ✅ 已发布 |
+| v0.1   | 文本/文件/参考图 → 分镜脚本（LLM 流式） | ✅ 已发布 |
 | v0.2   | 角色卡 + 文生图                         | 🚧 规划中 |
 | v0.3   | 图生视频 + 运镜                         | 🚧 规划中 |
 | v0.4   | 视频合成 + 字幕 + 剪映导出              | 🚧 规划中 |
