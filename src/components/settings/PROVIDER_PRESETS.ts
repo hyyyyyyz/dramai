@@ -119,6 +119,39 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
 
   // === 图生视频 ===
   {
+    id: '302-i2v-wan-flash',
+    label: '⭐ 302.AI · 通义万相 Wan2.2 Flash (最便宜 · 阿里)',
+    kind: 'image2video',
+    // 阿里 DashScope 协议：POST /aliyun/api/v1/services/aigc/video-generation/video-synthesis
+    //   body: { model, input:{prompt, img_url}, parameters:{resolution, duration, prompt_extend, watermark} }
+    //   resp: { output: { task_id, task_status: "PENDING" } }
+    //   GET /aliyun/api/v1/tasks/{task_id} 轮询
+    // 起始帧支持 data:image/...;base64 dataURL，dramai 直接发本地 Blob。
+    // 价格：5 秒 720P ≈ 0.2 PTC（比 Seedance Fast 便宜 8 倍）。dramai client 默认传 720P。
+    baseUrl: 'https://api.302ai.cn',
+    suggestedModel: 'wan2.2-i2v-flash',
+    apiFlavor: 'aliyun',
+    notes: '🟢 性价比之王：5 秒 720P 仅 0.2 PTC，6 个分镜 ≈ 1.2 PTC（¥8 左右）；duration 固定 5 秒',
+  },
+  {
+    id: '302-i2v-wan-plus',
+    label: '302.AI · 通义万相 Wan2.2 Plus (画质更稳)',
+    kind: 'image2video',
+    baseUrl: 'https://api.302ai.cn',
+    suggestedModel: 'wan2.2-i2v-plus',
+    apiFlavor: 'aliyun',
+    notes: '5 秒 1080P 0.75 PTC；duration 固定 5 秒',
+  },
+  {
+    id: '302-i2v-wan-2-7',
+    label: '302.AI · 通义万相 Wan2.7 (最新)',
+    kind: 'image2video',
+    baseUrl: 'https://api.302ai.cn',
+    suggestedModel: 'wan2.7-i2v',
+    apiFlavor: 'aliyun',
+    notes: '当前最新版，5 秒 720P 0.5 PTC',
+  },
+  {
     id: '302-i2v-seedance-fast',
     label: '302.AI · 即梦 Seedance 2.0 Fast (字节，便宜)',
     kind: 'image2video',

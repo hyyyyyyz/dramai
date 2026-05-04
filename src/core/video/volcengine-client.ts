@@ -80,6 +80,7 @@ export function createVolcengineClient(
         const msg = err instanceof Error ? err.message : String(err)
         throw new Error(
           `${msg} · 可能是 CORS 拦截：请求大概率已送达 302 并扣 token，但浏览器拿不到响应。建议：(1) 切 base URL 到 https://api.302ai.cn 国内中转；(2) 去 302 后台对账，必要时申诉退款；(3) 暂停继续点击，避免再次扣费`,
+          { cause: err },
         )
       }
       if (!res.ok) {

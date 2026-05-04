@@ -19,7 +19,13 @@ export type ProviderKind = 'llm' | 'text2image' | 'image2video' | 'imageEdit'
  *  - 'kling'                     → image2video 走 /v1/videos/image2video（Kling 原生）
  *  - 'runway'                    → image2video Runway 原生（v0.4 暂回退到通用）
  */
-export type ApiFlavor = 'openai-compatible' | 'gemini' | 'volcengine' | 'kling' | 'runway'
+export type ApiFlavor =
+  | 'openai-compatible'
+  | 'gemini'
+  | 'volcengine'
+  | 'aliyun'
+  | 'kling'
+  | 'runway'
 
 export interface Provider {
   id: string
