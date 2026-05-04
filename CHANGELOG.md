@@ -6,6 +6,38 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-04
+
+Hot patch surfaced by a real test: 302.AI exposes Nano Banana
+(gemini-2.5-flash-image) under Google's native generateContent
+protocol, not the OpenAI Images API. The dramai text2image client
+only spoke OpenAI Images, so calls returned `503 -10008 当前无可用
+模型`.
+
+### Added
+
+- `ApiFlavor` enum gains `'gemini'`.
+- `src/core/image/gemini-client.ts`: full
+  `POST /v1beta/models/{model}:generateContent` client; sends both
+  `Authorization: Bearer` and `x-goog-api-key` headers for
+  cross-platform compatibility (302 / Google AI Studio / Vertex AI).
+  Reference images via `inline_data` parts; decodes returned
+  `inline_data` into Blobs (snake_case + camelCase tolerant).
+- `src/core/image/factory.ts`: dispatches on `Provider.apiFlavor`.
+- `ProviderForm` now exposes the API-flavor selector for `text2image`
+  too. Per-kind filtering keeps the menu short.
+- `PROVIDER_PRESETS` adds 302.AI presets for Nano Banana (Gemini),
+  Flux + GPT Image 1 (OpenAI-compat), Kling (native) + generic i2v
+  fallback. Each preset can pin its `apiFlavor` and the form
+  auto-applies on click.
+- Preset notes call out the gotcha: Gemini-flavor base URL must NOT
+  include `/v1` — the protocol path is `/v1beta/models/...`.
+
+### Changed
+
+- `src/core/pipeline/image-shot.ts` switched from the OpenAI-compat
+  client to the new factory.
+
 ## [0.4.0] - 2026-05-04
 
 End-to-end pipeline closed: storyboard → image → video → composed cut +
@@ -135,7 +167,8 @@ own OpenAI-compatible LLM — all in the browser.
 - `vite.config.ts` configured with `base = "/dramai/"` for GitHub Pages.
 - Initial documentation: ARCHITECTURE.md, DEPLOYMENT.md, PROVIDERS.md, ROADMAP.md.
 
-[Unreleased]: https://github.com/hyyyyyyz/dramai/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/hyyyyyyz/dramai/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.1
 [0.4.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.0
 [0.1.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.1.0
 [0.0.1]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.0.1

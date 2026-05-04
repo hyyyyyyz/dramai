@@ -23,7 +23,7 @@ export function AppHeader() {
           <BrandMark className="h-7 w-7" />
           <span className="text-base font-semibold tracking-tight">{t('brand.name')}</span>
           <span className="hidden rounded-full bg-background-soft-2 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline-block">
-            v0.4.0
+            v0.4.1
           </span>
         </Link>
 
