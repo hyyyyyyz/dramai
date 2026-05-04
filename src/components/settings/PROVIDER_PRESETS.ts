@@ -90,13 +90,17 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
 
   // === 文生图（Gemini 原生协议）===
   {
-    id: '302-image-nano-banana',
+    id: '302-image-nano-banana-v1beta',
     label: '302.AI · Nano Banana (Gemini 文生图)',
     kind: 'text2image',
     baseUrl: 'https://api.302.ai',
-    suggestedModel: 'gemini-2.5-flash-image',
+    // ⚠️ 302 上"官方格式"专用 model id 必须带 -v1beta 后缀；
+    // 不带后缀的 `gemini-2.5-flash-image` 是 302 自家"原版格式"，路径是
+    // /google/v1/models/...，跟 generateContent 不通。
+    suggestedModel: 'gemini-2.5-flash-image-v1beta',
     apiFlavor: 'gemini',
-    notes: '⚠️ base URL 不带 /v1，因为 Gemini 协议路径是 /v1beta/models/{model}:generateContent',
+    notes:
+      '⚠️ base URL 不带 /v1；模型名要带 -v1beta 后缀（302 把官方 generateContent 路径专门挂到这个 id）',
   },
 
   // === 图生视频（Kling 原生协议示例；具体 base URL 以 302 模型卡为准）===
