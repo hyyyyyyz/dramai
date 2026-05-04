@@ -9,7 +9,13 @@ import {
   PROVIDER_PRESETS,
   type ProviderPreset,
 } from '@/components/settings/PROVIDER_PRESETS'
-import type { Provider, ProviderKind } from '@/types/domain'
+import type { ApiFlavor, Provider, ProviderKind } from '@/types/domain'
+
+const API_FLAVOR_LABEL: Record<ApiFlavor, string> = {
+  'openai-compatible': 'OpenAI 兼容（默认 · 用于 302.AI 透传 / 多数聚合平台）',
+  kling: 'Kling 原生（image2video 专用 · POST /v1/videos/image2video）',
+  runway: 'Runway 原生（暂未完整接入，先按 OpenAI 兼容兜底）',
+}
 
 export type ProviderDraft = Omit<Provider, 'id' | 'lastVerifiedAt'>
 
@@ -27,6 +33,7 @@ export function ProviderForm({ initial, onCancel, onSubmit, submitLabel = '保�
   const [apiKey, setApiKey] = useState(initial?.apiKey ?? '')
   const [model, setModel] = useState(initial?.model ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
+  const [apiFlavor, setApiFlavor] = useState<ApiFlavor>(initial?.apiFlavor ?? 'openai-compatible')
 
   const applyPreset = (preset: ProviderPreset) => {
     setLabel(preset.label)
@@ -46,6 +53,7 @@ export function ProviderForm({ initial, onCancel, onSubmit, submitLabel = '保�
       apiKey: apiKey.trim(),
       model: model.trim(),
       notes: notes.trim() || undefined,
+      apiFlavor: kind === 'image2video' ? apiFlavor : undefined,
     })
   }
 
@@ -119,6 +127,19 @@ export function ProviderForm({ initial, onCancel, onSubmit, submitLabel = '保�
           placeholder="例如：gpt-4o-mini"
         />
       </Label>
+
+      {kind === 'image2video' && (
+        <Label>
+          API 协议风格
+          <Select value={apiFlavor} onChange={(e) => setApiFlavor(e.target.value as ApiFlavor)}>
+            {(Object.keys(API_FLAVOR_LABEL) as ApiFlavor[]).map((f) => (
+              <option key={f} value={f}>
+                {API_FLAVOR_LABEL[f]}
+              </option>
+            ))}
+          </Select>
+        </Label>
+      )}
 
       <Label>
         备注（可选）

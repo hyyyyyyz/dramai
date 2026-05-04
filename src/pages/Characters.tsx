@@ -4,13 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Plus, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CharacterCard } from '@/components/character/CharacterCard'
 import { CharacterEditDialog } from '@/components/character/CharacterEditDialog'
 import { db } from '@/core/storage/db'
@@ -25,10 +19,7 @@ export function CharactersPage() {
     null,
   )
   const characters = useLiveQuery<Character[], Character[]>(
-    async () =>
-      projectId
-        ? db.characters.where('projectId').equals(projectId).toArray()
-        : [],
+    async () => (projectId ? db.characters.where('projectId').equals(projectId).toArray() : []),
     [projectId],
     [],
   )

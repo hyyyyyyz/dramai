@@ -133,9 +133,7 @@ function EditForm({ projectId, initial, onClose }: FormProps) {
             />
             <span>
               锁定参考图（保持形象一致）
-              {!referenceAssetId && (
-                <span className="ml-1 text-xs text-muted">需先上传参考图</span>
-              )}
+              {!referenceAssetId && <span className="ml-1 text-xs text-muted">需先上传参考图</span>}
             </span>
           </label>
         </div>

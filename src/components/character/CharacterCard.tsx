@@ -22,16 +22,11 @@ interface Props {
 export function CharacterCard({ character, onEdit }: Props) {
   const asset = useLiveQuery<Asset | undefined, null>(
     async () =>
-      character.referenceAssetId
-        ? db.assets.get(character.referenceAssetId)
-        : undefined,
+      character.referenceAssetId ? db.assets.get(character.referenceAssetId) : undefined,
     [character.referenceAssetId],
     null,
   )
-  const previewUrl = useMemo(
-    () => (asset ? getObjectURL(asset) : null),
-    [asset],
-  )
+  const previewUrl = useMemo(() => (asset ? getObjectURL(asset) : null), [asset])
 
   useEffect(() => {
     if (!asset) return

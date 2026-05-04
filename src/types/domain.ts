@@ -8,6 +8,9 @@
 
 export type ProviderKind = 'llm' | 'text2image' | 'image2video' | 'imageEdit'
 
+/** 协议风格。仅 image2video / video2video 用得到——决定 submit/poll 的字段名。 */
+export type ApiFlavor = 'openai-compatible' | 'kling' | 'runway'
+
 export interface Provider {
   id: string
   label: string
@@ -16,6 +19,8 @@ export interface Provider {
   apiKey: string
   model: string
   notes?: string
+  /** 默认 'openai-compatible'。仅 image2video provider 上影响行为。 */
+  apiFlavor?: ApiFlavor
   /** 仅在测试连接成功后写入。 */
   lastVerifiedAt?: number
 }
@@ -63,6 +68,26 @@ export interface Material {
   createdAt: number
 }
 
+export type CameraMovement =
+  | 'static'
+  | 'pan_left'
+  | 'pan_right'
+  | 'tilt_up'
+  | 'tilt_down'
+  | 'zoom_in'
+  | 'zoom_out'
+  | 'orbit_left'
+  | 'orbit_right'
+  | 'dolly_in'
+  | 'dolly_out'
+
+export type CameraSpeed = 'slow' | 'normal' | 'fast'
+
+export interface CameraParams {
+  movement: CameraMovement
+  speed?: CameraSpeed
+}
+
 export interface Storyboard {
   id: string
   projectId: string
@@ -75,6 +100,17 @@ export interface Storyboard {
   durationSec?: number
   imageAssetId?: string
   videoAssetId?: string
+  /** 运镜参数。v0.3 起；旧分镜没有则按 static 处理。 */
+  cameraParams?: CameraParams
+  /**
+   * 异步视频任务句柄，用于刷新页面后恢复轮询。
+   * 任务结束后清空。
+   */
+  pendingVideoTask?: {
+    taskId: string
+    apiFlavor: ApiFlavor
+    submittedAt: number
+  }
   status: 'pending' | 'image-ready' | 'video-ready' | 'failed'
 }
 

@@ -3,12 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Loader2, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { parseImageFile } from '@/core/parsers/image'
-import {
-  createAsset,
-  deleteAsset,
-  getObjectURL,
-  releaseObjectURL,
-} from '@/core/storage/assets'
+import { createAsset, deleteAsset, getObjectURL, releaseObjectURL } from '@/core/storage/assets'
 import { db } from '@/core/storage/db'
 import type { Asset } from '@/types/domain'
 
@@ -29,10 +24,7 @@ export function ReferenceImageUploader({ projectId, value, onChange }: Props) {
     [value],
     null,
   )
-  const previewUrl = useMemo(
-    () => (asset ? getObjectURL(asset) : null),
-    [asset],
-  )
+  const previewUrl = useMemo(() => (asset ? getObjectURL(asset) : null), [asset])
 
   // 卸载时回收 ObjectURL（asset 切换时也回收旧的）
   useEffect(() => {
@@ -98,11 +90,7 @@ export function ReferenceImageUploader({ projectId, value, onChange }: Props) {
           disabled={busy}
           className="flex h-40 w-40 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-background-soft/40 text-xs text-muted transition-colors hover:border-accent/40 hover:bg-background-soft hover:text-foreground"
         >
-          {busy ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Upload className="h-5 w-5" />
-          )}
+          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
           点击上传参考图
         </button>
       )}
