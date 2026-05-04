@@ -1,0 +1,60 @@
+{
+  "name": "dramai",
+  "private": false,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Open-source, no-backend AI short-drama studio in your browser. Turn docs / images / a sentence into a structured storyboard, images, and video clips — all powered by OpenAI-compatible APIs.",
+  "keywords": [
+    "ai",
+    "short-drama",
+    "storyboard",
+    "video",
+    "react",
+    "vite",
+    "openai",
+    "indexeddb",
+    "github-pages"
+  ],
+  "author": "hyyyyyyz",
+  "license": "Apache-2.0",
+  "homepage": "https://hyyyyyyz.github.io/dramai/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyyyyyyz/dramai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hyyyyyyz/dramai/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json,md}\" \"docs/**/*.md\" \"*.md\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json,md}\" \"docs/**/*.md\" \"*.md\""
+  },
+  "dependencies": {
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.5.0",
+    "prettier": "^3.3.3",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.58.2",
+    "vite": "^8.0.10"
+  }
+}

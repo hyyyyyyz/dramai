@@ -1,0 +1,30 @@
+dramai
+Copyright 2026 hyyyyyyz and dramai contributors
+
+This product includes software developed at the dramai project
+(https://github.com/hyyyyyyz/dramai).
+
+Licensed under the Apache License, Version 2.0 (the "License").
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+------------------------------------------------------------------------
+
+Architectural inspiration:
+
+  * xhongc/ai_story        — pipeline / AI client abstraction
+                             (https://github.com/xhongc/ai_story)
+                             Licensed under CC BY-NC-SA 4.0.
+                             dramai is an independent re-implementation
+                             in TypeScript / browser-only; no source code
+                             from xhongc/ai_story is incorporated.
+
+  * freestylefly/director_ai — character-consistency triple-view technique
+                               and video-pipeline documentation
+                               (https://github.com/freestylefly/director_ai)
+                               Licensed under its respective terms.
+                               No source code from director_ai is
+                               incorporated into dramai.
+
+This NOTICE file is informational only and does not modify the License.

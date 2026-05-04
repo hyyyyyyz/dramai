@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 问题讨论 / Discussions
+    url: https://github.com/hyyyyyyz/dramai/discussions
+    about: 不太确定是 bug 还是特性？先到讨论区聊聊。
+  - name: 🔐 安全漏洞 / Security
+    url: https://github.com/hyyyyyyz/dramai/security/advisories/new
+    about: 私下报告安全漏洞（不要写在公开 issue）。

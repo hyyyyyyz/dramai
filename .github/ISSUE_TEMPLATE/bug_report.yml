@@ -1,0 +1,68 @@
+name: 🐛 Bug Report
+description: 报告一个 bug / Report a bug
+title: '[Bug] '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢花时间报告 bug。
+        Thanks for taking the time to report a bug.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 现象 / What happened?
+      description: 简单描述出错时发生了什么。
+      placeholder: 例：在分镜列表点 "重新生成" 后页面崩溃。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      placeholder: |
+        1. 打开 /projects/new
+        2. 上传一个 docx 文件
+        3. 点击「生成分镜」
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为 / Expected behavior
+
+  - type: input
+    id: version
+    attributes:
+      label: dramai 版本 / Version
+      placeholder: 'v0.0.1 或 commit SHA'
+
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器 / Browser
+      placeholder: 'Chrome 130 / Firefox 132 / Safari 18'
+
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统 / OS
+      placeholder: 'macOS 15 / Windows 11 / Ubuntu 24.04'
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 控制台日志 / Console logs
+      render: shell
+
+  - type: checkboxes
+    id: acks
+    attributes:
+      label: 确认 / Acknowledgements
+      options:
+        - label: 我已搜索过现有 issue，没有相同的 bug
+          required: true
