@@ -64,12 +64,24 @@ export function createVolcengineClient(
         watermark: false,
       }
 
-      const res = await fetch(`${root}/volcengine/api/v3/contents/generations/tasks`, {
-        method: 'POST',
-        headers: jsonHeaders(provider.apiKey),
-        body: JSON.stringify(body),
-        signal: req.signal,
-      })
+      let res: Response
+      try {
+        res = await fetch(`${root}/volcengine/api/v3/contents/generations/tasks`, {
+          method: 'POST',
+          headers: jsonHeaders(provider.apiKey),
+          body: JSON.stringify(body),
+          signal: req.signal,
+        })
+      } catch (err) {
+        // fetch 在 CORS 拦截或网络层失败时直接 throw TypeError "Failed to fetch"。
+        // 重要：这种情况下请求**已经送达服务端**并触发任务（火山方舟会扣 token），
+        // 只是浏览器拒收响应。务必告诉用户去后台看账单。
+        if (err instanceof Error && err.name === 'AbortError') throw err
+        const msg = err instanceof Error ? err.message : String(err)
+        throw new Error(
+          `${msg} · 可能是 CORS 拦截：请求大概率已送达 302 并扣 token，但浏览器拿不到响应。建议：(1) 切 base URL 到 https://api.302ai.cn 国内中转；(2) 去 302 后台对账，必要时申诉退款；(3) 暂停继续点击，避免再次扣费`,
+        )
+      }
       if (!res.ok) {
         throw new Error(
           `Volcengine submit HTTP ${res.status}: ${(await safeText(res)).slice(0, 280)}`,

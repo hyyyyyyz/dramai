@@ -122,24 +122,28 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     id: '302-i2v-seedance-fast',
     label: '302.AI · 即梦 Seedance 2.0 Fast (字节，便宜)',
     kind: 'image2video',
-    // 验证可用（2026-05）：POST https://api.302.ai/volcengine/api/v3/contents/generations/tasks
+    // ⚠️ 默认走国内中转 api.302ai.cn —— 直连 api.302.ai 在 /volcengine/ 路径上
+    // 浏览器会被 CORS 拦截：请求成功送达且扣 token，但响应没 CORS 头被浏览器拒收，
+    // dramai 看到 "Failed to fetch" 但 token 已经被扣（已发生过实际损失，2026-05）。
+    // 协议（来自 302 OpenAPI Spec）：
+    //   POST {base}/volcengine/api/v3/contents/generations/tasks
     //   { model, content[], ratio, duration, resolution, generate_audio, watermark }
-    // 起始帧支持 base64 dataURL（example 5），dramai 直接发；
-    // 提交得 { id: "cgt-..." }，再 GET .../tasks/{id} 轮询。
-    baseUrl: 'https://api.302.ai',
+    //   起始帧支持 base64 dataURL（spec example 5），dramai 直接发，无需图床。
+    //   返回 { id: "cgt-..." }，再 GET .../tasks/{id} 轮询。
+    baseUrl: 'https://api.302ai.cn',
     suggestedModel: 'doubao-seedance-2-0-fast-260128',
     apiFlavor: 'volcengine',
     notes:
-      '⚠️ base URL 不带任何子路径（client 自动拼 /volcengine/api/v3/...）；价格 ~6.5 PTC/1M token，5 秒 720p 通常几毛到 1 块多',
+      '⚠️ 用国内中转 api.302ai.cn（直连 .ai 域名 CORS 不通会扣钱无结果）；价格 ~6.5 PTC/1M token，5 秒 720p 通常几毛到 1 块多',
   },
   {
     id: '302-i2v-seedance-pro',
     label: '302.AI · 即梦 Seedance 2.0 (标准版)',
     kind: 'image2video',
-    baseUrl: 'https://api.302.ai',
+    baseUrl: 'https://api.302ai.cn',
     suggestedModel: 'doubao-seedance-2-0-260128',
     apiFlavor: 'volcengine',
-    notes: '比 Fast 版贵约 20%，画质更稳定',
+    notes: '比 Fast 版贵约 20%，画质更稳定；同样用 .cn 中转避开 CORS',
   },
   {
     id: '302-i2v-kling',
