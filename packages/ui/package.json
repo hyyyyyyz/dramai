@@ -19,8 +19,11 @@
     "./v2/base.css": "./src/v2/styles/base.css"
   },
   "scripts": {
+    "dev": "vite --config preview/vite.config.ts",
+    "build": "vite build --config preview/vite.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "test": "vitest run",
     "build:fonts": "node scripts/build-fonts.mjs"
   },
   "dependencies": {
