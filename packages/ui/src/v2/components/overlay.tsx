@@ -16,7 +16,14 @@ export interface OverlayProps {
   className?: string
   /** 默认 true：点击遮罩关闭。涉及不可逆操作的确认框请设为 false。 */
   dismissOnBackdrop?: boolean
-  closeLabel?: string
+  /** 关闭按钮的无障碍名称（如「关闭」/ "Close"）。组件库不内置任何语言，必须由调用方传入。 */
+  closeLabel: string
+  /** 没有 title 时，对话框的无障碍名称。有 title 时用不上。 */
+  'aria-label'?: string
+  /** 内容区内边距：md = 24px（默认），none = 贴边（内容自己管间距，如任务面板、列表）。 */
+  padding?: 'md' | 'none'
+  /** 内容区额外的类名，会和内边距类合并，后者可被覆盖。 */
+  bodyClassName?: string
 }
 
 interface OverlayShellProps extends OverlayProps {
@@ -34,7 +41,10 @@ function OverlayShell({
   footer,
   className,
   dismissOnBackdrop = true,
-  closeLabel = '关闭',
+  closeLabel,
+  padding = 'md',
+  bodyClassName,
+  'aria-label': ariaLabel,
   frameClassName,
   panelClassName,
 }: OverlayShellProps) {
@@ -46,7 +56,10 @@ function OverlayShell({
 
   return createPortal(
     <div
-      className={cn('fixed inset-0 z-50 animate-fade-in bg-scrim', frameClassName)}
+      className={cn(
+        'fixed inset-0 z-50 animate-fade-in bg-scrim motion-reduce:animate-none',
+        frameClassName,
+      )}
       onMouseDown={(e) => {
         if (dismissOnBackdrop && e.target === e.currentTarget) onClose()
       }}
@@ -56,6 +69,7 @@ function OverlayShell({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
+        aria-label={title ? undefined : ariaLabel}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
         className={cn(
@@ -83,7 +97,11 @@ function OverlayShell({
             </IconButton>
           </div>
         )}
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">{children}</div>
+        <div
+          className={cn('min-h-0 flex-1 overflow-y-auto', padding === 'md' && 'p-6', bodyClassName)}
+        >
+          {children}
+        </div>
         {footer && (
           <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-6 py-4">
             {footer}
@@ -108,7 +126,7 @@ export function Modal({ size = 'md', ...props }: ModalProps) {
       {...props}
       frameClassName="flex items-center justify-center p-4"
       panelClassName={cn(
-        'w-full animate-pop-in rounded-xl max-h-[calc(100dvh-32px)]',
+        'w-full animate-pop-in rounded-xl max-h-[calc(100dvh-32px)] motion-reduce:animate-none',
         modalSize[size],
       )}
     />
@@ -127,8 +145,8 @@ export function Drawer({ side = 'right', ...props }: DrawerProps) {
       frameClassName={side === 'right' ? 'flex justify-end' : 'flex items-end'}
       panelClassName={
         side === 'right'
-          ? 'h-full w-full max-w-sm animate-slide-in-right border-l border-border'
-          : 'max-h-[85dvh] w-full animate-slide-in-bottom rounded-t-xl border-t border-border'
+          ? 'h-full w-full max-w-sm animate-slide-in-right border-l border-border motion-reduce:animate-none'
+          : 'max-h-[85dvh] w-full animate-slide-in-bottom rounded-t-xl border-t border-border motion-reduce:animate-none'
       }
     />
   )

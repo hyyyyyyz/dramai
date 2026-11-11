@@ -46,7 +46,7 @@ export function Notice({
       className={cn(noticeVariants({ tone }), className)}
       {...props}
     >
-      <Icon {...iconProps} aria-hidden className="mt-[3px] shrink-0" />
+      <Icon {...iconProps} aria-hidden className="mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1">
         {title && <p className="font-medium">{title}</p>}
         {children && <div className={cn(title && 'text-muted-foreground')}>{children}</div>}

@@ -38,13 +38,13 @@ export function Checkbox({ indeterminate = false, label, className, ...props }: 
       />
       <Check
         size={12}
-        strokeWidth={2}
+        strokeWidth={1.5}
         aria-hidden
         className="pointer-events-none absolute inset-0 m-auto text-accent-foreground opacity-0 peer-checked:opacity-100 peer-indeterminate:hidden"
       />
       <Minus
         size={12}
-        strokeWidth={2}
+        strokeWidth={1.5}
         aria-hidden
         className="pointer-events-none absolute inset-0 m-auto hidden text-accent-foreground peer-indeterminate:block"
       />

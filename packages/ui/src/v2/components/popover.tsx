@@ -20,10 +20,16 @@ export interface PopoverProps {
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
   placement?: Placement
+  /** 浮层的类名。 */
   className?: string
+  /** 触发元素撑满父容器宽度（如侧栏里的集切换器）。默认是行内，宽度随内容。 */
+  block?: boolean
+  /** 浮层至少和触发元素一样宽。 */
+  matchAnchorWidth?: boolean
   /** 浮层的无障碍角色，Menu 用 "menu"。 */
   role?: 'dialog' | 'menu'
-  'aria-label'?: string
+  /** 浮层的无障碍名称（对话框和菜单都需要一个名字）。 */
+  'aria-label': string
 }
 
 /** 弹出层：点外部或按 Esc 关闭，关闭后焦点回到触发元素。内容自由，用于筛选、简短表单。 */
@@ -35,6 +41,8 @@ export function Popover({
   onOpenChange,
   placement = 'bottom-start',
   className,
+  block = false,
+  matchAnchorWidth = false,
   role = 'dialog',
   ...rest
 }: PopoverProps) {
@@ -83,7 +91,7 @@ export function Popover({
 
   return (
     <>
-      <span ref={anchor} className="inline-flex">
+      <span ref={anchor} className={block ? 'flex w-full' : 'inline-flex'}>
         {el}
       </span>
       {isOpen &&
@@ -94,9 +102,14 @@ export function Popover({
             role={role}
             tabIndex={-1}
             aria-label={rest['aria-label']}
-            style={{ top: pos.top, left: pos.left, visibility: pos.ready ? 'visible' : 'hidden' }}
+            style={{
+              top: pos.top,
+              left: pos.left,
+              minWidth: matchAnchorWidth && pos.ready ? pos.anchorWidth : undefined,
+              visibility: pos.ready ? 'visible' : 'hidden',
+            }}
             className={cn(
-              'fixed z-50 min-w-40 animate-fade-in rounded-lg border border-border-strong bg-surface p-1 text-foreground shadow-pop outline-none',
+              'fixed z-50 min-w-40 animate-fade-in rounded-lg motion-reduce:animate-none border border-border-strong bg-surface p-1 text-foreground shadow-pop outline-none',
               className,
             )}
           >

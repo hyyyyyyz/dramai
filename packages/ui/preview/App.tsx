@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   Bell,
+  ChevronDown,
   Copy,
   Film,
   Image as ImageIcon,
@@ -82,7 +83,7 @@ export function App() {
   useEffect(() => applyRootTheme(theme), [theme])
 
   return (
-    <ToastProvider>
+    <ToastProvider dismissLabel="关闭" regionLabel="通知">
       <div className="min-h-dvh bg-background text-foreground">
         <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-4 px-4 py-3 md:px-6">
@@ -401,7 +402,12 @@ function Gallery() {
           <Checkbox label="未选中" />
           <Checkbox label="禁用" disabled />
         </Row>
-        <CopyField value="npx dramai@latest start" aria-label="启动命令" />
+        <CopyField
+          value="npx dramai@latest start"
+          aria-label="启动命令"
+          copyLabel="复制"
+          copiedLabel="已复制"
+        />
       </Section>
 
       <Section title="分段控件与标签页">
@@ -691,6 +697,30 @@ function OverlayDemo() {
           ]}
         />
       </Row>
+      <Row label="Popover block + matchAnchorWidth（侧栏里的集切换器：触发元素撑满父容器，浮层同宽）">
+        <div className="w-60 rounded-lg border border-border bg-surface p-2">
+          <Popover
+            block
+            matchAnchorWidth
+            placement="bottom-start"
+            aria-label="切换集"
+            trigger={
+              <Button variant="secondary" className="w-full justify-between">
+                第 3 集 · 雨夜码头
+                <ChevronDown {...iconProps} aria-hidden />
+              </Button>
+            }
+          >
+            <ul className="text-base">
+              {['第 1 集', '第 2 集', '第 3 集'].map((t) => (
+                <li key={t} className="rounded-sm px-2 py-1.5 hover:bg-surface-2">
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </Popover>
+        </div>
+      </Row>
       <Row label="Modal / Drawer / Toast">
         <Button variant="secondary" onClick={() => setModal(true)}>
           打开弹窗
@@ -716,6 +746,7 @@ function OverlayDemo() {
       <Modal
         open={modal}
         onClose={() => setModal(false)}
+        closeLabel="关闭"
         title="新建项目"
         description="项目的画幅和风格之后仍可修改。"
         footer={
@@ -743,6 +774,7 @@ function OverlayDemo() {
         onClose={() => setDanger(false)}
         size="sm"
         dismissOnBackdrop={false}
+        closeLabel="关闭"
         title="删除项目？"
         description="项目的全部镜头、资产和版本都会删除，无法恢复。"
         footer={
@@ -759,13 +791,19 @@ function OverlayDemo() {
       <Drawer
         open={drawer}
         onClose={() => setDrawer(false)}
+        closeLabel="关闭"
+        padding="none"
         title="任务"
         description="3 个进行中，1 个失败"
       >
-        <div className="flex flex-col gap-3">
-          <Progress indeterminate aria-label="视频生成中" />
-          <p className="text-sm text-muted-foreground">任务面板在 ≤1180px 时以抽屉出现。</p>
-        </div>
+        <ul className="divide-y divide-border">
+          {['第 3 集 · 镜头 4 视频', '第 3 集 · 镜头 5 视频', '角色「林夏」设定图'].map((t) => (
+            <li key={t} className="flex flex-col gap-2 px-6 py-3">
+              <span className="text-base">{t}</span>
+              <Progress indeterminate aria-label={t} />
+            </li>
+          ))}
+        </ul>
       </Drawer>
     </>
   )

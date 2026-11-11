@@ -24,13 +24,31 @@ export interface MenuProps {
   trigger: ReactElement<Record<string, unknown>>
   items: (MenuItem | 'separator')[]
   placement?: Placement
-  'aria-label'?: string
+  /** 菜单的无障碍名称，必填。 */
+  'aria-label': string
+  /** 触发元素撑满父容器宽度。 */
+  block?: boolean
+  matchAnchorWidth?: boolean
 }
 
 /** 菜单：镜头的更多操作、服务商预设。方向键移动，Enter / 空格选择，Esc 关闭。 */
-export function Menu({ trigger, items, placement = 'bottom-end', ...rest }: MenuProps) {
+export function Menu({
+  trigger,
+  items,
+  placement = 'bottom-end',
+  block,
+  matchAnchorWidth,
+  ...rest
+}: MenuProps) {
   return (
-    <Popover trigger={trigger} placement={placement} role="menu" aria-label={rest['aria-label']}>
+    <Popover
+      trigger={trigger}
+      placement={placement}
+      role="menu"
+      aria-label={rest['aria-label']}
+      block={block}
+      matchAnchorWidth={matchAnchorWidth}
+    >
       {(close) => <MenuList items={items} close={close} />}
     </Popover>
   )

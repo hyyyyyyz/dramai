@@ -6,6 +6,7 @@ import {
   Button,
   Checkbox,
   Chip,
+  CopyField,
   Drawer,
   Field,
   Frame,
@@ -14,7 +15,9 @@ import {
   Menu,
   Modal,
   Pill,
+  Popover,
   Progress,
+  Skeleton,
   SegmentedControl,
   Switch,
   Tabs,
@@ -184,6 +187,7 @@ function ModalHarness({ dismissOnBackdrop }: { dismissOnBackdrop?: boolean }) {
       <Modal
         open={open}
         onClose={() => setOpen(false)}
+        closeLabel="关闭"
         title="新建项目"
         dismissOnBackdrop={dismissOnBackdrop}
         footer={<Button onClick={() => setOpen(false)}>完成</Button>}
@@ -230,7 +234,7 @@ describe('Modal / Drawer', () => {
 
   it('Drawer 同样是对话框', () => {
     render(
-      <Drawer open onClose={() => {}} title="任务">
+      <Drawer open onClose={() => {}} closeLabel="关闭" title="任务">
         内容
       </Drawer>,
     )
@@ -244,6 +248,7 @@ describe('Menu / Tooltip / Toast', () => {
     const onDelete = vi.fn()
     render(
       <Menu
+        aria-label="镜头操作"
         trigger={<button>更多</button>}
         items={[
           { key: 'edit', label: '修改', onSelect: onEdit },
@@ -289,7 +294,7 @@ describe('Menu / Tooltip / Toast', () => {
       )
     }
     render(
-      <ToastProvider>
+      <ToastProvider dismissLabel="关闭" regionLabel="通知">
         <Fire />
       </ToastProvider>,
     )
@@ -297,5 +302,98 @@ describe('Menu / Tooltip / Toast', () => {
     expect(screen.getByRole('status')).toHaveTextContent('已复制')
     await userEvent.click(screen.getByRole('button', { name: '关闭' }))
     expect(screen.queryByRole('status')).toBeNull()
+  })
+})
+
+describe('Modal / Drawer 内边距与无障碍名称', () => {
+  it('padding 默认 md，none 时内容区贴边，bodyClassName 可追加', () => {
+    const { rerender } = render(
+      <Modal open onClose={() => {}} closeLabel="Close" title="T">
+        <span data-testid="c">x</span>
+      </Modal>,
+    )
+    expect(screen.getByTestId('c').parentElement).toHaveClass('p-6')
+    rerender(
+      <Modal
+        open
+        onClose={() => {}}
+        closeLabel="Close"
+        title="T"
+        padding="none"
+        bodyClassName="py-2"
+      >
+        <span data-testid="c">x</span>
+      </Modal>,
+    )
+    const body = screen.getByTestId('c').parentElement!
+    expect(body).not.toHaveClass('p-6')
+    expect(body).toHaveClass('py-2')
+  })
+
+  it('关闭按钮的名称完全由调用方传入，组件不内置语言', () => {
+    render(
+      <Drawer open onClose={() => {}} closeLabel="Close panel" title="Tasks">
+        x
+      </Drawer>,
+    )
+    expect(screen.getByRole('button', { name: 'Close panel' })).toBeInTheDocument()
+  })
+
+  it('没有 title 时用 aria-label 作为对话框名称', () => {
+    render(
+      <Modal open onClose={() => {}} closeLabel="Close" aria-label="Quick view">
+        x
+      </Modal>,
+    )
+    expect(screen.getByRole('dialog', { name: 'Quick view' })).toBeInTheDocument()
+  })
+})
+
+describe('Popover block', () => {
+  it('block 让触发元素的包裹层撑满宽度，默认是行内', () => {
+    const { container, rerender } = render(
+      <Popover aria-label="切换" trigger={<button>集</button>}>
+        x
+      </Popover>,
+    )
+    expect(container.firstElementChild).toHaveClass('inline-flex')
+    rerender(
+      <Popover aria-label="切换" block trigger={<button>集</button>}>
+        x
+      </Popover>,
+    )
+    expect(container.firstElementChild).toHaveClass('flex', 'w-full')
+  })
+})
+
+describe('CopyField', () => {
+  it('按钮文字由调用方传入，复制成功后切换', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    })
+    render(<CopyField value="npx dramai" copyLabel="Copy" copiedLabel="Copied" />)
+    await userEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument()
+  })
+})
+
+describe('动画规范：唯一的循环动画是不确定进度条', () => {
+  it('Frame 进行中没有旋转图标，底边是装饰性的不确定进度条', () => {
+    const { container } = render(<Frame status="running" statusLabel="生成中" />)
+    expect(container.querySelector('.animate-spin')).toBeNull()
+    expect(container.querySelector('.animate-busy-slide')).not.toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent('生成中')
+  })
+
+  it('Button loading 用底边进度条，没有旋转图标', () => {
+    const { container } = render(<Button loading>提交</Button>)
+    expect(container.querySelector('.animate-spin')).toBeNull()
+    expect(container.querySelector('.animate-busy-slide')).not.toBeNull()
+  })
+
+  it('Skeleton 是静态色块', () => {
+    const { container } = render(<Skeleton className="h-4" />)
+    expect(container.firstElementChild?.className).not.toMatch(/animate-/)
   })
 })

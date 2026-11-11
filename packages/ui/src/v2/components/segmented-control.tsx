@@ -16,7 +16,8 @@ export interface SegmentedControlProps<T extends string> {
   value?: T
   defaultValue?: T
   onValueChange?: (value: T) => void
-  'aria-label'?: string
+  /** 控件的无障碍名称，必填（如「画幅」）。 */
+  'aria-label': string
   className?: string
 }
 

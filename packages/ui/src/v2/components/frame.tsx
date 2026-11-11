@@ -1,7 +1,8 @@
 import type { ComponentProps, CSSProperties, ReactNode } from 'react'
-import { AlertTriangle, Clock, Loader, Play } from 'lucide-react'
+import { AlertTriangle, Clock, Play } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { iconProps } from '../lib/icon'
+import { BusyBar } from './progress'
 
 export type FrameRatio = '9:16' | '16:9' | '1:1'
 
@@ -31,7 +32,8 @@ export interface FrameProps extends ComponentProps<'div'> {
   placeholder?: ReactNode
 }
 
-const statusIcon = { queued: Clock, running: Loader, failed: AlertTriangle } as const
+// 进行中不放图标：旋转的图标是第二种循环动画，状态靠文字和底边的不确定进度条表达
+const statusIcon = { queued: Clock, failed: AlertTriangle } as const
 
 /**
  * 画幅容器：按 aspect-ratio 渲染 9:16 / 16:9 / 1:1。
@@ -51,7 +53,7 @@ export function Frame({
   ...props
 }: FrameProps) {
   const empty = !src
-  const StatusIcon = status ? statusIcon[status] : null
+  const StatusIcon = status && status !== 'running' ? statusIcon[status] : null
   return (
     <div
       className={cn(
@@ -92,7 +94,7 @@ export function Frame({
           </span>
         </>
       )}
-      {status && StatusIcon && (
+      {status && (
         <div
           role="status"
           className={cn(
@@ -102,13 +104,10 @@ export function Frame({
               : 'bg-[oklch(0.12_0.005_70/0.72)]',
           )}
         >
-          <StatusIcon
-            {...iconProps}
-            size={18}
-            aria-hidden
-            className={cn(status === 'running' && 'animate-spin motion-reduce:animate-none')}
-          />
+          {StatusIcon && <StatusIcon {...iconProps} size={18} aria-hidden />}
           {statusLabel}
+          {/* 进行中：服务商在处理、没有精确进度，用系统里唯一的循环动画——不确定进度条，贴在画框底边 */}
+          {status === 'running' && <BusyBar className="absolute inset-x-0 bottom-0 bg-white/20" />}
         </div>
       )}
       {children}

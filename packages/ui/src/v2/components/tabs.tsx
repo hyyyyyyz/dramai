@@ -18,7 +18,7 @@ interface TabsContextValue {
 const TabsContext = createContext<TabsContextValue | null>(null)
 function useTabs() {
   const ctx = useContext(TabsContext)
-  if (!ctx) throw new Error('Tabs 子组件必须放在 <Tabs> 里')
+  if (!ctx) throw new Error('Tabs sub-components must be rendered inside <Tabs>')
   return ctx
 }
 

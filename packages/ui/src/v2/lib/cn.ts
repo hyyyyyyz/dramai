@@ -19,7 +19,6 @@ const twMerge = extendTailwindMerge({
             'slide-in-right',
             'slide-in-bottom',
             'toast-in',
-            'skeleton',
           ],
         },
       ],

@@ -47,6 +47,29 @@ Noto Sans SC 只有 700 一个字重（只给标题 `font-display`），101 片 
 - 图标统一 lucide-react，线宽 1.5，界面内 16px：`<Icon {...iconProps} />`。
 - 过渡只写具体属性，用 `duration-(--duration-fast) ease-standard`。
 
+## 语言与无障碍
+
+组件库**不内置任何语言**：所有可见文字和无障碍名称都由调用方传入（应用侧用 i18n 提供），类型上是必填项：
+
+- `Modal` / `Drawer`：`closeLabel`（没有 `title` 时再给 `aria-label`）
+- `ToastProvider`：`dismissLabel`、`regionLabel`
+- `CopyField`：`copyLabel`、`copiedLabel`
+- `Progress` / `SegmentedProgress` / `SegmentedControl` / `Menu` / `Popover`：`aria-label`
+- `IconButton`：`label`
+
+`tests/rules.test.ts` 会扫描源码，组件里出现中文字符就失败。品牌组件里的 `aria-label="dramai"` 是产品名，不算语言。
+
+## 动画
+
+整个系统唯一的循环动画是不确定进度条（`animate-busy-slide`）：`Progress indeterminate`、`Frame` 进行中的底边、`Button loading` 的底边。
+没有旋转图标，`Skeleton` 是静态色块；弹窗 / 抽屉 / 浮层 / 通知的进入动画在 `prefers-reduced-motion` 下关闭。
+同一份测试会拦住 `animate-spin|pulse|bounce|ping` 与任何别的 `infinite` 动画。
+
+## 布局相关
+
+- `Modal` / `Drawer`：`padding="md"`（默认 24px）或 `"none"`（内容自己管间距，如任务面板），另有 `bodyClassName`。
+- `Popover` / `Menu` / `Tooltip`：触发元素默认行内；`block` 撑满父容器；`matchAnchorWidth` 让浮层至少和触发元素一样宽。
+
 ## 预览
 
 ```bash

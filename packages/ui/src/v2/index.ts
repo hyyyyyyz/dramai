@@ -13,7 +13,6 @@ export { Wordmark } from './brand/Wordmark'
 export { Button, type ButtonProps } from './components/button'
 export { buttonVariants } from './components/button-variants'
 export { IconButton, type IconButtonProps } from './components/icon-button'
-export { Spinner } from './components/spinner'
 export { Pill, type PillProps } from './components/pill'
 export { Chip, type ChipProps } from './components/chip'
 export {

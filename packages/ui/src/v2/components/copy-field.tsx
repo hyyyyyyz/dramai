@@ -11,8 +11,10 @@ export interface CopyFieldProps {
   value: string
   /** 复制成功后的回调（比如弹 toast）。 */
   onCopied?: () => void
-  copyLabel?: string
-  copiedLabel?: string
+  /** 按钮文字（如「复制」/ "Copy"）。组件库不内置语言，必须传入。 */
+  copyLabel: string
+  /** 复制成功后的按钮文字（如「已复制」/ "Copied"）。 */
+  copiedLabel: string
   className?: string
   'aria-label'?: string
 }
@@ -21,8 +23,8 @@ export interface CopyFieldProps {
 export function CopyField({
   value,
   onCopied,
-  copyLabel = '复制',
-  copiedLabel = '已复制',
+  copyLabel,
+  copiedLabel,
   className,
   ...rest
 }: CopyFieldProps) {

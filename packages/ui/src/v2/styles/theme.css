@@ -186,7 +186,6 @@
   --animate-slide-in-right: slide-in-right var(--duration-slow) var(--ease-standard);
   --animate-slide-in-bottom: slide-in-bottom var(--duration-slow) var(--ease-standard);
   --animate-toast-in: toast-in var(--duration-slow) var(--ease-standard);
-  --animate-skeleton: skeleton 1.6s ease-in-out infinite;
 
   @keyframes busy-slide {
     from {
@@ -221,11 +220,6 @@
     from {
       opacity: 0;
       transform: translateY(8px);
-    }
-  }
-  @keyframes skeleton {
-    50% {
-      opacity: 0.5;
     }
   }
 }

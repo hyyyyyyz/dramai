@@ -6,6 +6,8 @@ export interface AnchoredPosition {
   top: number
   left: number
   placement: Placement
+  /** 触发元素的宽度，用于让浮层至少一样宽。 */
+  anchorWidth: number
   ready: boolean
 }
 
@@ -22,7 +24,13 @@ export function useAnchored(
   floating: RefObject<HTMLElement | null>,
   placement: Placement = 'bottom-start',
 ): AnchoredPosition {
-  const [pos, setPos] = useState<AnchoredPosition>({ top: 0, left: 0, placement, ready: false })
+  const [pos, setPos] = useState<AnchoredPosition>({
+    top: 0,
+    left: 0,
+    placement,
+    anchorWidth: 0,
+    ready: false,
+  })
 
   useLayoutEffect(() => {
     if (!open) return
@@ -57,6 +65,7 @@ export function useAnchored(
         top,
         left,
         placement: (align === 'center' ? side : `${side}-${align}`) as Placement,
+        anchorWidth: a.width,
         ready: true,
       })
     }

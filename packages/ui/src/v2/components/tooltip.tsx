@@ -18,10 +18,18 @@ export interface TooltipProps {
   placement?: Placement
   /** 悬停多久后出现，ms。键盘聚焦立即出现。 */
   delay?: number
+  /** 触发元素撑满父容器宽度。 */
+  block?: boolean
 }
 
 /** 提示：只放补充说明，不放必须读到的信息（触屏没有悬停）。鼠标悬停与键盘聚焦都会出现，Esc 收起。 */
-export function Tooltip({ content, children, placement = 'top', delay = 400 }: TooltipProps) {
+export function Tooltip({
+  content,
+  children,
+  placement = 'top',
+  delay = 400,
+  block = false,
+}: TooltipProps) {
   const [open, setOpen] = useState(false)
   const anchor = useRef<HTMLSpanElement>(null)
   const floating = useRef<HTMLDivElement>(null)
@@ -48,7 +56,7 @@ export function Tooltip({ content, children, placement = 'top', delay = 400 }: T
       {/* 事件挂在包裹层上：mouseenter / focusin 冒泡，不需要改动触发元素的 ref */}
       <span
         ref={anchor}
-        className="inline-flex"
+        className={block ? 'flex w-full' : 'inline-flex'}
         onMouseEnter={() => show(false)}
         onMouseLeave={hide}
         onFocus={() => show(true)}

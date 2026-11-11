@@ -13,10 +13,14 @@ interface ToastItem extends ToastOptions {
 /** 在应用根部包一层，之后任何地方 `useToast()`。 */
 export function ToastProvider({
   children,
-  dismissLabel = '关闭',
+  dismissLabel,
+  regionLabel,
 }: {
   children: ReactNode
-  dismissLabel?: string
+  /** 每条通知上关闭按钮的无障碍名称。组件库不内置语言，必须传入。 */
+  dismissLabel: string
+  /** 通知区域的无障碍名称（屏幕阅读器的地标）。 */
+  regionLabel: string
 }) {
   const [items, setItems] = useState<ToastItem[]>([])
   const seq = useRef(0)
@@ -35,7 +39,7 @@ export function ToastProvider({
       {createPortal(
         <div
           role="region"
-          aria-label="通知"
+          aria-label={regionLabel}
           className="pointer-events-none fixed right-4 bottom-4 z-70 flex w-[min(360px,calc(100vw-32px))] flex-col gap-2"
         >
           {items.map((t) => (
@@ -68,7 +72,7 @@ function ToastView({
   return (
     <div
       role="status"
-      className="pointer-events-auto flex animate-toast-in items-start gap-3 rounded-lg border border-border-strong bg-surface p-3 text-foreground shadow-pop"
+      className="pointer-events-auto flex animate-toast-in items-start motion-reduce:animate-none gap-3 rounded-lg border border-border-strong bg-surface p-3 text-foreground shadow-pop"
     >
       <Icon
         {...iconProps}
