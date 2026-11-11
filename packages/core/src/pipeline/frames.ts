@@ -9,6 +9,7 @@ import { CAMERA_PHRASE_ZH } from './camera.ts'
 import type { PipelineDeps } from './deps.ts'
 import { llmJson } from './deps.ts'
 import { episodeShots } from './entities.ts'
+import { notFoundError } from '../errors.ts'
 
 /**
  * 步骤 4：镜头提示词。每个镜头得到“首帧语义槽 + 视频动作增量槽 + 变化幅度（+ 尾帧槽）”（A4.4 / A4.5 / A17）。
@@ -117,7 +118,7 @@ export async function generateShotPrompts(
   options: FramesOptions = {},
 ): Promise<FramesResult> {
   const episode = await deps.store.episodes.get(episodeId)
-  if (!episode) throw new Error(`episode not found: ${episodeId}`)
+  if (!episode) throw notFoundError('episode', episodeId)
   const project = (await deps.store.projects.get(episode.projectId))!
   const all = await episodeShots(deps.store, episodeId)
   const assets = await deps.store.assets.listByProject(project.id)

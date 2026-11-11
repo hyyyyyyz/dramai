@@ -17,6 +17,7 @@ import { countChars, splitTextByBudget } from '../parsers/chapters.ts'
 import type { PipelineDeps } from './deps.ts'
 import { llmJson } from './deps.ts'
 import { episodeSourceText } from './episodes.ts'
+import { DomainError, notFoundError } from '../errors.ts'
 
 /**
  * 步骤 2：一集 → 场 → 分镜段落。
@@ -187,10 +188,14 @@ export async function breakdownEpisode(
   options: BreakdownOptions = {},
 ): Promise<BreakdownResult> {
   const episode = await deps.store.episodes.get(episodeId)
-  if (!episode) throw new Error(`episode not found: ${episodeId}`)
+  if (!episode) throw notFoundError('episode', episodeId)
   const project = (await deps.store.projects.get(episode.projectId))!
   const source = await episodeSourceText(deps, episode)
-  if (!source.trim()) throw new Error(`episode ${episodeId} has no source text to break down`)
+  if (!source.trim())
+    throw new DomainError(
+      'EPISODE_HAS_NO_SOURCE',
+      `episode ${episodeId} has no source text to break down`,
+    )
 
   const parts = splitTextByBudget(source, options.maxCharsPerCall ?? 5000)
   const assets = await deps.store.assets.listByProject(project.id)

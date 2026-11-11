@@ -9,6 +9,7 @@ import { hasBlockingIssues } from '../timeline/issues.ts'
 import type { TimelineIssue } from '../timeline/issues.ts'
 import { usToSec } from '../timeline/document.ts'
 import { buildEpisodeSubtitles } from './subtitles.ts'
+import { notFoundError } from '../errors.ts'
 
 /**
  * 素材包导出（mp4、图、字幕、清单的压缩包）。用户拖进剪映等软件手动拼，也是将来剪映草稿的输入。
@@ -42,7 +43,7 @@ export async function exportMaterialPackage(
   options: { includeImages?: boolean; includeCut?: boolean; markExported?: boolean } = {},
 ): Promise<Uint8Array> {
   const episode = await deps.store.episodes.get(episodeId)
-  if (!episode) throw new Error(`episode not found: ${episodeId}`)
+  if (!episode) throw notFoundError('episode', episodeId)
   const reading = await readEpisodeTimeline(deps, episodeId)
   if (hasBlockingIssues(reading.issues)) throw new ExportBlockedError(reading.issues)
 

@@ -1,0 +1,45 @@
+{
+  "name": "@dramai/server",
+  "private": true,
+  "version": "0.4.1",
+  "type": "module",
+  "description": "dramai local server: SQLite store, files, secrets, HTTP routes (Hono), SSE.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "dramai-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "dev": "node --conditions=dramai-source --experimental-strip-types --disable-warning=ExperimentalWarning --watch src/dev.ts"
+  },
+  "dependencies": {
+    "@dramai/api": "workspace:*",
+    "@dramai/core": "workspace:*",
+    "@hono/node-server": "catalog:",
+    "hono": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@dramai/eslint-config": "workspace:*",
+    "@dramai/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "jszip": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

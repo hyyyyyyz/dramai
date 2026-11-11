@@ -2,6 +2,7 @@ import { readImageSize } from './image-size.ts'
 
 import type { Chapter, MaterialKind } from '../domain/material.ts'
 import { countChars, detectChapters, normalizeText } from './chapters.ts'
+import { DomainError } from '../errors.ts'
 
 export type { MaterialKind }
 
@@ -87,9 +88,10 @@ export async function parseMaterial(input: {
         })
       } catch (err) {
         // 旧版 .doc（OLE）格式 mammoth 不支持，会走到这里。
-        throw new Error(
+        throw new DomainError(
+          'MATERIAL_PARSE_FAILED',
           `无法解析文档 ${input.name}：${err instanceof Error ? err.message : String(err)}`,
-          { cause: err },
+          { cause: err, details: { name: input.name } },
         )
       }
     }

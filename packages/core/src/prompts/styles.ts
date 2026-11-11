@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 import type { StyleSnapshot } from '../domain/project.ts'
+import { DomainError } from '../errors.ts'
 
 /**
  * 风格预设（数据文件 `styles.json`）。预设只是给用户省手敲：可以不用、手写、或留空让 LLM 从素材推断。
@@ -122,7 +123,14 @@ export function expandStyle(
       }
     case 'template': {
       const preset = catalog.get(choice.templateId)
-      if (!preset) throw new Error(`unknown style template: ${choice.templateId}`)
+      if (!preset)
+        throw new DomainError(
+          'UNKNOWN_STYLE_TEMPLATE',
+          `unknown style template: ${choice.templateId}`,
+          {
+            details: { templateId: choice.templateId },
+          },
+        )
       return {
         source: 'template',
         templateId: preset.id,

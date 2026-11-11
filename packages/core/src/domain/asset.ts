@@ -1,5 +1,6 @@
 import type { AssetId, FileRef, ProjectId, ShotId } from './common.ts'
 import type { MediaSlot } from './media.ts'
+import { DomainError } from '../errors.ts'
 
 export const ASSET_KINDS = ['character', 'location', 'prop', 'costume'] as const
 export type AssetKind = (typeof ASSET_KINDS)[number]
@@ -159,7 +160,10 @@ export function decideCandidate(
   options: { linkSource?: 'auto' | 'manual' } = {},
 ): EntityCandidate {
   if (candidate.status !== 'pending') {
-    throw new Error(`candidate ${candidate.id} is already handled (${candidate.status})`)
+    throw new DomainError(
+      'CANDIDATE_ALREADY_HANDLED',
+      `candidate ${candidate.id} is already handled (${candidate.status})`,
+    )
   }
   const base = { ...candidate, handledAt: now }
   switch (decision.action) {

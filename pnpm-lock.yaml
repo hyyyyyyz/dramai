@@ -9,6 +9,9 @@ catalogs:
     '@eslint/js':
       specifier: ^10.0.1
       version: 10.0.1
+    '@hono/node-server':
+      specifier: ^2.1.7
+      version: 2.1.7
     '@types/node':
       specifier: ^24.12.2
       version: 24.12.2
@@ -30,6 +33,9 @@ catalogs:
     globals:
       specifier: ^17.5.0
       version: 17.6.0
+    hono:
+      specifier: ^4.13.0
+      version: 4.13.18
     jszip:
       specifier: ^3.10.1
       version: 3.10.1
@@ -69,6 +75,31 @@ importers:
         specifier: ^3.3.3
         version: 3.8.3
 
+  packages/api:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@dramai/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@dramai/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.12.2
+      eslint:
+        specifier: 'catalog:'
+        version: 10.3.0(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.12(@types/node@24.12.2)(vite@8.0.10(@types/node@24.12.2)(jiti@2.6.1))
+
   packages/core:
     dependencies:
       jszip:
@@ -93,6 +124,46 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.3.0(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.12(@types/node@24.12.2)(vite@8.0.10(@types/node@24.12.2)(jiti@2.6.1))
+
+  packages/server:
+    dependencies:
+      '@dramai/api':
+        specifier: workspace:*
+        version: link:../api
+      '@dramai/core':
+        specifier: workspace:*
+        version: link:../core
+      '@hono/node-server':
+        specifier: 'catalog:'
+        version: 2.1.7(hono@4.13.18)
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.18
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@dramai/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@dramai/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.12.2
+      eslint:
+        specifier: 'catalog:'
+        version: 10.3.0(jiti@2.6.1)
+      jszip:
+        specifier: 'catalog:'
+        version: 3.10.1
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -387,6 +458,12 @@ packages:
   '@ffmpeg/util@0.12.2':
     resolution: {integrity: sha512-ouyoW+4JB7WxjeZ2y6KpRvB+dLp7Cp4ro8z0HIVpZVCM7AwFlHa0c4R8Y/a4M3wMqATpYKhC7lSFHQ0T11MEDw==}
     engines: {node: '>=18.x'}
+
+  '@hono/node-server@2.1.7':
+    resolution: {integrity: sha512-Wr0E6S+v2Bw9FkpGNP5BQ5QbJvclUa06UVehd65WFZe6XeJwbrKQQ5wPDevc0IC+QyzbO7v3Llh5uo45IZcSnA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -998,6 +1075,10 @@ packages:
 
   hermes-parser@0.25.1:
     resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
+
+  hono@4.13.18:
+    resolution: {integrity: sha512-H9q/E1XizaWstJxUW881dmLxEj+t/TrGGnyxINkm4+sK0qUwsMtFdo2BWI9Vs3cIS19MU6b6iCijoUoEf4f3DA==}
+    engines: {node: '>=16.9.0'}
 
   html-parse-stringify@3.0.1:
     resolution: {integrity: sha512-KknJ50kTInJ7qIScF3jeaFRpMpE8/lfiTdzf/twXyPBLAGrLRTmkz3AdTnKeh40X8k9L2fdYwEp/42WGXIRGcg==}
@@ -1742,6 +1823,10 @@ snapshots:
 
   '@ffmpeg/util@0.12.2': {}
 
+  '@hono/node-server@2.1.7(hono@4.13.18)':
+    dependencies:
+      hono: 4.13.18
+
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -2306,6 +2391,8 @@ snapshots:
   hermes-parser@0.25.1:
     dependencies:
       hermes-estree: 0.25.1
+
+  hono@4.13.18: {}
 
   html-parse-stringify@3.0.1:
     dependencies:

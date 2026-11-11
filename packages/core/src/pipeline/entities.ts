@@ -17,6 +17,7 @@ import { orderedShotIds } from '../domain/factories.ts'
 import type { Store } from '../ports/index.ts'
 import type { PipelineDeps } from './deps.ts'
 import { llmJson } from './deps.ts'
+import { DomainError, notFoundError } from '../errors.ts'
 
 /**
  * 步骤 3：实体。逐镜抽取候选 → 跨镜合并（对照已登记资产库）→ 变体分析 → 人工确认。
@@ -139,7 +140,7 @@ const clamp01 = (n: number | undefined, fallback: number) =>
 
 export async function episodeShots(store: Store, episodeId: string): Promise<Shot[]> {
   const episode = await store.episodes.get(episodeId)
-  if (!episode) throw new Error(`episode not found: ${episodeId}`)
+  if (!episode) throw notFoundError('episode', episodeId)
   const project = (await store.projects.get(episode.projectId))!
   const scenes = new Map((await store.scenes.listByProject(project.id)).map((s) => [s.id, s]))
   const shots = new Map((await store.shots.listByProject(project.id)).map((s) => [s.id, s]))
@@ -157,11 +158,12 @@ export async function extractEntities(
   options: ExtractOptions = {},
 ): Promise<ExtractResult> {
   const episode = await deps.store.episodes.get(episodeId)
-  if (!episode) throw new Error(`episode not found: ${episodeId}`)
+  if (!episode) throw notFoundError('episode', episodeId)
   const projectId = episode.projectId
   const project = (await deps.store.projects.get(projectId))!
   const shots = await episodeShots(deps.store, episodeId)
-  if (shots.length === 0) throw new Error(`episode ${episodeId} has no shots yet`)
+  if (shots.length === 0)
+    throw new DomainError('EPISODE_HAS_NO_SHOTS', `episode ${episodeId} has no shots yet`)
   const library = await deps.store.assets.listByProject(projectId)
   let llmCalls = 0
 
@@ -556,7 +558,7 @@ export async function confirmCandidate(
   options: ConfirmOptions = {},
 ): Promise<{ candidate: EntityCandidate; asset?: Asset }> {
   const cand = await deps.store.candidates.get(candidateId)
-  if (!cand) throw new Error(`candidate not found: ${candidateId}`)
+  if (!cand) throw notFoundError('candidate', candidateId)
   const now = deps.clock.now()
   let resolved: CandidateDecision
   let asset: Asset | undefined
@@ -566,10 +568,13 @@ export async function confirmCandidate(
   } else if (decision.action === 'link') {
     const target = await deps.store.assets.get(decision.assetId)
     if (!target || target.deletedAt || target.projectId !== cand.projectId) {
-      throw new Error(`asset not found: ${decision.assetId}`)
+      throw notFoundError('asset', decision.assetId)
     }
     if (target.kind !== cand.kind)
-      throw new Error(`cannot link a ${cand.kind} candidate to a ${target.kind} asset`)
+      throw new DomainError(
+        'KIND_MISMATCH',
+        `cannot link a ${cand.kind} candidate to a ${target.kind} asset`,
+      )
     resolved = { action: 'link', assetId: target.id }
   } else {
     const name = (options.name ?? cand.name).trim()
@@ -577,8 +582,10 @@ export async function confirmCandidate(
       (a) => a.kind === cand.kind && normalizeEntityName(a.name) === normalizeEntityName(name),
     )
     if (dupe)
-      throw new Error(
+      throw new DomainError(
+        'ASSET_NAME_TAKEN',
         `an asset named "${name}" already exists; link to it instead of creating a duplicate`,
+        { details: { assetId: dupe.id } },
       )
     resolved = { action: 'accept_new', createdAssetId: deps.ids.next('asset') }
   }
@@ -753,9 +760,12 @@ export async function undoCandidateLink(
   options: ConfirmOptions = {},
 ): Promise<UndoLinkResult> {
   const cand = await deps.store.candidates.get(candidateId)
-  if (!cand) throw new Error(`candidate not found: ${candidateId}`)
+  if (!cand) throw notFoundError('candidate', candidateId)
   if (cand.status !== 'linked' || !cand.linkedAssetId) {
-    throw new Error(`candidate ${candidateId} is not linked (${cand.status})`)
+    throw new DomainError(
+      'CANDIDATE_NOT_LINKED',
+      `candidate ${candidateId} is not linked (${cand.status})`,
+    )
   }
   const assetId = cand.linkedAssetId
   const removedVariants: string[] = []

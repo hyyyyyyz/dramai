@@ -37,6 +37,7 @@ import { hasBlockingIssues, readTimelineIssues } from '../timeline/issues.ts'
 import type { TimelineIssue } from '../timeline/issues.ts'
 import type { PipelineDeps } from './deps.ts'
 import { episodeShots } from './entities.ts'
+import { notFoundError } from '../errors.ts'
 
 /**
  * 步骤 7：合成。从时间线文档出发——摆放（纯函数）驱动 ffmpeg 渲染。
@@ -65,7 +66,7 @@ export async function ensureTimeline(
   episodeId: string,
 ): Promise<TimelineDocument> {
   const episode = await deps.store.episodes.get(episodeId)
-  if (!episode) throw new Error(`episode not found: ${episodeId}`)
+  if (!episode) throw notFoundError('episode', episodeId)
   const existing = (await deps.store.timelines.listByProject(episode.projectId)).find(
     (t) => t.episodeId === episodeId,
   )
@@ -173,7 +174,8 @@ export async function readEpisodeTimeline(
   const episode = (await deps.store.episodes.get(episodeId))!
   const projection = await loadProjection(deps.store, episode.projectId)
   const rev = revision ? doc.revisions.find((r) => r.number === revision) : headRevision(doc)
-  if (!rev) throw new Error(`unknown revision: ${revision}`)
+  if (!rev)
+    throw notFoundError('timeline_revision', String(revision), `unknown revision: ${revision}`)
   const shots = rev.content.clips
     .map((c) => projection.shots.get(c.shotId))
     .filter((s): s is Shot => s !== undefined)

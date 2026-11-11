@@ -1,0 +1,36 @@
+{
+  "name": "@dramai/api",
+  "private": true,
+  "version": "0.4.1",
+  "type": "module",
+  "description": "dramai front/back contract: zod schemas, event types and a typed client. Browser- and Node-safe; imports nothing from the server or core.",
+  "license": "Apache-2.0",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "dramai-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@dramai/eslint-config": "workspace:*",
+    "@dramai/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

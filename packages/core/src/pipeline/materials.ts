@@ -3,6 +3,7 @@ import { allocateNumber } from '../domain/factories.ts'
 import type { Material } from '../domain/material.ts'
 import { parseMaterial } from '../parsers/material.ts'
 import type { PipelineDeps } from './deps.ts'
+import { notFoundError } from '../errors.ts'
 
 export interface IngestedMaterial {
   material: Material
@@ -20,7 +21,7 @@ export async function ingestMaterial(
   file: { name: string; bytes: Uint8Array; mime?: string },
 ): Promise<IngestedMaterial> {
   const project = await deps.store.projects.get(projectId)
-  if (!project) throw new Error(`project not found: ${projectId}`)
+  if (!project) throw notFoundError('project', projectId)
   const parsed = await parseMaterial(file)
   const id = deps.ids.next('mat')
   const path = `materials/${id}/${file.name.replace(/[^\w.一-龥-]+/g, '_')}`

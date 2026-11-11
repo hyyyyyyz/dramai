@@ -14,6 +14,7 @@ import type {
   StaleChange,
   StaleReason,
 } from './types.ts'
+import { DomainError } from '../errors.ts'
 
 /**
  * 产物时效（A18）。
@@ -124,6 +125,8 @@ export function buildExpectations(
       upstream: refKeys,
       requiredUpstream: refKeys,
       blockedBy: structuralGaps(imageInputs),
+      // 作者上传的分镜图：按图本身登记，不随描述 / 画风 / 设定图变化失效（和设定图一致）。
+      uploaded: currentVersion(shot.image)?.source === 'uploaded',
     })
 
     const videoInputs = resolveInputs(projection, { kind: 'shot_video', shotId: shot.id })
@@ -234,13 +237,19 @@ export function buildRecord(input: {
   now: number
 }): ArtifactRecord {
   if (input.expectation.blockedBy && input.expectation.blockedBy.length > 0) {
-    throw new Error(
+    throw new DomainError(
+      'ARTIFACT_INPUTS_BLOCKED',
       `cannot register ${input.expectation.key}: inputs are blocked (${input.expectation.blockedBy.join(', ')})`,
+      { details: { key: input.expectation.key, blockedBy: input.expectation.blockedBy } },
     )
   }
   const digest = computeDigest(input.expectation, input.upstreamRecords)
   if (!digest) {
-    throw new Error(`cannot register ${input.expectation.key}: required upstream is missing`)
+    throw new DomainError(
+      'ARTIFACT_UPSTREAM_MISSING',
+      `cannot register ${input.expectation.key}: required upstream is missing`,
+      { details: { key: input.expectation.key } },
+    )
   }
   return {
     schemaVersion: SCHEMA_VERSIONS.artifact,

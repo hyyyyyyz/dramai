@@ -12,7 +12,7 @@ import type {
 import type { ExecutorDeps } from '../providers/executor.ts'
 import type { ChatMessage } from '../providers/protocols/openai-chat.ts'
 import type { AuthContext, ProviderConfig } from '../providers/types.ts'
-import { chatOnce } from '../providers/llm.ts'
+import { streamChat } from '../providers/llm.ts'
 import { parseJsonLoose } from '../util/json-loose.ts'
 import type { z } from 'zod'
 
@@ -26,6 +26,8 @@ export interface LlmRequest {
   jsonMode?: boolean
   temperature?: number
   signal?: AbortSignal
+  /** 流式增量回调（可选）：server 用它把文本步骤的输出实时推给前端。回调里抛错不影响请求。 */
+  onDelta?: (delta: string, accumulated: string) => void
 }
 
 export interface LlmClient {
@@ -76,12 +78,20 @@ export function createProviderLlm(
   return {
     async complete(req) {
       const auth = await authFor(deps, config)
-      const res = await chatOnce(
+      const stream = streamChat(
         auth,
         { messages: req.messages, jsonMode: req.jsonMode, temperature: req.temperature },
         { ...deps.executor, signal: req.signal },
       )
-      return { text: res.text }
+      while (true) {
+        const next = await stream.next()
+        if (next.done) return { text: next.value.text }
+        try {
+          req.onDelta?.(next.value.delta, next.value.accumulated)
+        } catch {
+          /* 观察者出错不能影响生成 */
+        }
+      }
     },
   }
 }

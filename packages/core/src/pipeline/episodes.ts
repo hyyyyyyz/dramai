@@ -5,6 +5,7 @@ import type { Chapter, Material } from '../domain/material.ts'
 import { chaptersOrSections, windowChapters } from '../parsers/chapters.ts'
 import type { PipelineDeps } from './deps.ts'
 import { llmJson } from './deps.ts'
+import { notFoundError } from '../errors.ts'
 
 /**
  * 步骤 1：原文 → 分集规划。
@@ -61,7 +62,7 @@ export async function planEpisodes(
   options: PlanEpisodesOptions = {},
 ): Promise<PlanEpisodesResult> {
   const project = await deps.store.projects.get(projectId)
-  if (!project) throw new Error(`project not found: ${projectId}`)
+  if (!project) throw notFoundError('project', projectId)
   const targetChars = options.targetChars ?? 2500
   const materials = (await deps.store.materials.listByProject(projectId)).filter(
     (m) => m.kind !== 'image' && m.text.trim().length > 0,

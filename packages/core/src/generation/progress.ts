@@ -4,6 +4,7 @@ import type { CandidateProgress } from '../domain/asset.ts'
 import { currentVersion } from '../domain/media.ts'
 import type { EpisodeStatus } from '../domain/project.ts'
 import type { ProjectProjection } from './projection.ts'
+import { notFoundError } from '../errors.ts'
 
 /**
  * 集的进度汇总：**算出来的，不单独存**。
@@ -38,7 +39,7 @@ export function episodeProgress(
   reports?: ReadonlyMap<string, ArtifactReport>,
 ): EpisodeProgress {
   const episode = projection.episodes.get(episodeId)
-  if (!episode) throw new Error(`episode not found: ${episodeId}`)
+  if (!episode) throw notFoundError('episode', episodeId)
 
   const scenes = episode.sceneOrder
     .map((id) => projection.scenes.get(id))

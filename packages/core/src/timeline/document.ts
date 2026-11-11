@@ -8,6 +8,7 @@ import type {
   TimelineDocument,
   TimelineRevision,
 } from '../domain/timeline.ts'
+import { notFoundError } from '../errors.ts'
 
 /**
  * 时间线文档（A8）：追加式、不可变的修订；回滚 = 以旧修订的内容追加新修订。
@@ -119,7 +120,12 @@ export function rollbackTo(
   input: { author: RevisionAuthor; now: number },
 ): TimelineDocument {
   const old = doc.revisions.find((r) => r.number === revisionNumber)
-  if (!old) throw new Error(`unknown revision: ${revisionNumber}`)
+  if (!old)
+    throw notFoundError(
+      'timeline_revision',
+      String(revisionNumber),
+      `unknown revision: ${revisionNumber}`,
+    )
   return appendRevision(doc, {
     content: old.content,
     summary: `回滚到修订 ${revisionNumber}`,
@@ -136,7 +142,7 @@ export function moveClip(
 ): RevisionContent {
   const clips = [...content.clips]
   const from = clips.findIndex((c) => c.id === clipId)
-  if (from < 0) throw new Error(`unknown clip: ${clipId}`)
+  if (from < 0) throw notFoundError('timeline_clip', clipId, `unknown clip: ${clipId}`)
   const [c] = clips.splice(from, 1)
   clips.splice(Math.max(0, Math.min(clips.length, toIndex)), 0, c)
   return { ...content, clips }
@@ -147,7 +153,8 @@ export function updateClip(
   clipId: string,
   patch: Partial<Omit<TimelineClip, 'id' | 'shotId'>>,
 ): RevisionContent {
-  if (!content.clips.some((c) => c.id === clipId)) throw new Error(`unknown clip: ${clipId}`)
+  if (!content.clips.some((c) => c.id === clipId))
+    throw notFoundError('timeline_clip', clipId, `unknown clip: ${clipId}`)
   return { ...content, clips: content.clips.map((c) => (c.id === clipId ? { ...c, ...patch } : c)) }
 }
 

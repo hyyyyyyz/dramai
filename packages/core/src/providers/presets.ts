@@ -12,7 +12,6 @@ import type { ProviderConfig, ProviderKind } from './types.ts'
  *
  * 加预设前请：(1) 真实跑过；(2) 价格用过；(3) base URL + 协议 + model id 都验证；
  *           (4) 写进 notes 与 verifiedAt。
- * 现在请求由本地服务发出，不再受浏览器 CORS 限制；以下备注中提到 CORS 的部分是当年在浏览器里的结论，保留作历史记录。
  */
 export interface ProviderPreset {
   id: string
@@ -35,7 +34,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     protocol: 'openai-chat',
     baseUrl: 'https://api.deepseek.com',
     suggestedModel: 'deepseek-chat',
-    notes: 'CORS 友好，官方直连，中文极强 + 便宜。验证 2026-05',
+    notes: '官方直连，中文极强 + 便宜。验证 2026-05',
     verifiedAt: '2026-05-04',
     knownLimitations: ['纯文本模型：不接受图片输入，参考图无法作为多模态上下文传入。'],
   },

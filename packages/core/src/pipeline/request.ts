@@ -84,6 +84,7 @@ import { episodeSourceText } from './episodes.ts'
 import { episodeShots } from './entities.ts'
 import { hasNarration } from '../domain/voice.ts'
 import type { ProviderConfig } from '../providers/types.ts'
+import { notFoundError } from '../errors.ts'
 
 export interface EpisodePlan {
   assetSheets?: ProviderConfig
@@ -107,7 +108,7 @@ export async function episodeTargets(
   plan: EpisodePlan,
 ): Promise<AdmissionTarget[]> {
   const episode = await deps.store.episodes.get(episodeId)
-  if (!episode) throw new Error(`episode not found: ${episodeId}`)
+  if (!episode) throw notFoundError('episode', episodeId)
   const projection = await loadProjection(deps.store, episode.projectId)
   const reports = evaluateArtifacts(projection)
   const shots = await episodeShots(deps.store, episodeId)

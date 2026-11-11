@@ -11,6 +11,7 @@ import type {
   ShotId,
 } from '../domain/index.ts'
 import type { Store } from '../ports/index.ts'
+import { notFoundError } from '../errors.ts'
 
 /**
  * 项目投影：把一个项目的当前状态一次性读成内存里的只读视图。
@@ -32,7 +33,7 @@ export interface ProjectProjection {
 
 export async function loadProjection(store: Store, projectId: string): Promise<ProjectProjection> {
   const project = await store.projects.get(projectId)
-  if (!project) throw new Error(`project not found: ${projectId}`)
+  if (!project) throw notFoundError('project', projectId)
   const [episodes, scenes, shots, assets, refs, artifacts, candidates, timelines] =
     await Promise.all([
       store.episodes.listByProject(projectId),

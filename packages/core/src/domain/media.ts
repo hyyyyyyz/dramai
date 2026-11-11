@@ -1,4 +1,5 @@
 import type { FileRef, JobId, MediaFacts, VersionId } from './common.ts'
+import { DomainError, notFoundError } from '../errors.ts'
 
 /**
  * 生成物版本历史（A7）。
@@ -59,7 +60,7 @@ export function appendVersion(
   options: { makeCurrent?: boolean } = {},
 ): MediaSlot {
   if (slot.versions.some((v) => v.id === version.id)) {
-    throw new Error(`version id already exists: ${version.id}`)
+    throw new DomainError('VERSION_EXISTS', `version id already exists: ${version.id}`)
   }
   return {
     currentVersionId: options.makeCurrent === false ? slot.currentVersionId : version.id,
@@ -70,7 +71,7 @@ export function appendVersion(
 /** 回滚/切换当前版本。版本必须存在。 */
 export function setCurrentVersion(slot: MediaSlot, versionId: VersionId): MediaSlot {
   if (!slot.versions.some((v) => v.id === versionId)) {
-    throw new Error(`unknown version: ${versionId}`)
+    throw notFoundError('media_version', versionId, `unknown version: ${versionId}`)
   }
   return { ...slot, currentVersionId: versionId }
 }
