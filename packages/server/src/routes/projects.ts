@@ -1,8 +1,18 @@
-import { createProject, NO_STYLE, isInFlight } from '@dramai/core'
-import type { Project, StyleSnapshot } from '@dramai/core'
+import { createHash } from 'node:crypto'
+import {
+  createProject,
+  expandStyle,
+  localizeStyleSnapshot,
+  NO_STYLE,
+  isInFlight,
+} from '@dramai/core'
+import type { Locale, Project, StyleSnapshot } from '@dramai/core'
 import type { StyleChoice } from '@dramai/api'
 import type { ServerContext } from '../context.ts'
 import { badRequest, conflict, HttpError, notFound } from '../errors.ts'
+import { localeOf } from '../locale.ts'
+import { formFile, formString } from '../handle.ts'
+import { sniffImage } from '../services/sheets.ts'
 import type { RouteRegistry } from '../handle.ts'
 import { loadProjectView, toArtifactReports, toProjectListItem } from '../services/project-views.ts'
 import { OK, requireProject } from './common.ts'
@@ -47,6 +57,9 @@ function resolveStyle(ctx: ServerContext, choice: StyleChoice): StyleSnapshot {
         expandedAt: now,
       }
     }
+    case 'reference_image':
+      // 参考图要先上传（projects.setStyleReference）；创建项目时还没有图。
+      throw missingStyleReference()
     case 'custom':
       return {
         source: 'custom',
@@ -56,6 +69,33 @@ function resolveStyle(ctx: ServerContext, choice: StyleChoice): StyleSnapshot {
         expandedAt: now,
       }
   }
+}
+
+function missingStyleReference(): HttpError {
+  return new HttpError(
+    400,
+    'STYLE_REFERENCE_MISSING',
+    '参考图风格需要先上传一张图片：先创建项目，再调用 projects.setStyleReference 上传。',
+  )
+}
+
+/** 项目里存的风格快照带着创建时的中文名称：展示时把内置的那部分换成请求的语言，用户写的原样返回。 */
+function localizeProject<T extends { style: StyleSnapshot }>(
+  ctx: ServerContext,
+  project: T,
+  locale: Locale,
+): T {
+  return { ...project, style: localizeStyleSnapshot(project.style, ctx.catalog.styles, locale) }
+}
+
+/** 删掉不再使用的风格参考图（切换到别的风格，或换了一张新的）。 */
+async function dropStyleReference(
+  ctx: ServerContext,
+  project: Project,
+  keepPath?: string,
+): Promise<void> {
+  const path = project.style.referenceFile?.path
+  if (path && path !== keepPath) await ctx.files.remove(project.id, path).catch(() => {})
 }
 
 async function checkNarrationVoice(
@@ -69,12 +109,14 @@ async function checkNarrationVoice(
 }
 
 function registerProjectCrud(r: RouteRegistry, ctx: ServerContext): void {
-  r.handle('projects.list', async ({ query }) => {
+  r.handle('projects.list', async ({ query, c }) => {
+    const locale = await localeOf(ctx, c)
     const projects = await ctx.store.projects.list({ includeDeleted: query?.includeDeleted })
-    return { items: await Promise.all(projects.map((p) => toProjectListItem(ctx, p))) }
+    const items = await Promise.all(projects.map((p) => toProjectListItem(ctx, p)))
+    return { items: items.map((p) => localizeProject(ctx, p, locale)) }
   })
 
-  r.handle('projects.create', async ({ body }) => {
+  r.handle('projects.create', async ({ body, c }) => {
     await checkNarrationVoice(ctx, body.narrationVoice)
     const now = ctx.clock.now()
     const project = createProject({
@@ -91,19 +133,29 @@ function registerProjectCrud(r: RouteRegistry, ctx: ServerContext): void {
       : project
     await ctx.store.projects.put(created)
     ctx.bus.changed('project', { projectId: created.id, ids: [created.id], op: 'created' })
-    return created
+    return localizeProject(ctx, created, await localeOf(ctx, c))
   })
 
-  r.handle('projects.get', ({ params }) => requireProject(ctx, params.projectId))
+  r.handle('projects.get', async ({ params, c }) =>
+    localizeProject(ctx, await requireProject(ctx, params.projectId), await localeOf(ctx, c)),
+  )
 
-  r.handle('projects.update', async ({ params, body }) => {
+  r.handle('projects.update', async ({ params, body, c }) => {
     const cur = await requireProject(ctx, params.projectId)
     await checkNarrationVoice(ctx, body.narrationVoice)
     const next: Project = { ...cur, updatedAt: ctx.clock.now() }
     if (body.name !== undefined) next.name = body.name.trim()
     if (body.summary !== undefined) next.summary = body.summary ?? undefined
     if (body.aspectRatio !== undefined) next.aspectRatio = body.aspectRatio
-    if (body.style !== undefined) next.style = resolveStyle(ctx, body.style)
+    if (body.style?.source === 'reference_image') {
+      // 只允许对已经上传过参考图的项目改名称；换图用 projects.setStyleReference。
+      if (cur.style.source !== 'reference_image' || !cur.style.referenceFile) {
+        throw missingStyleReference()
+      }
+      next.style = { ...cur.style, label: body.style.label ?? cur.style.label }
+    } else if (body.style !== undefined) {
+      next.style = resolveStyle(ctx, body.style)
+    }
     if (body.narrationDelivery !== undefined) next.narrationDelivery = body.narrationDelivery
     if (body.narrationVoice !== undefined) {
       if (body.narrationVoice === null) delete next.narrationVoice
@@ -112,7 +164,40 @@ function registerProjectCrud(r: RouteRegistry, ctx: ServerContext): void {
     // 画幅、画风、旁白音色改了，不用在这里处理：已有产物会按依据变化自动判为过期。
     await ctx.store.projects.put(next)
     ctx.bus.changed('project', { projectId: next.id, ids: [next.id], op: 'updated' })
-    return next
+    // 换到别的风格了：之前上传的参考图不再需要。
+    if (body.style && body.style.source !== 'reference_image') await dropStyleReference(ctx, cur)
+    return localizeProject(ctx, next, await localeOf(ctx, c))
+  })
+
+  /**
+   * 上传 / 替换参考图风格（multipart：`file`，可选 `label`）。图片存在项目文件夹的 `style/` 下，
+   * 读取用 `project.style.referenceFile.path` + 文件接口；生成图片时它作为画风参考图传给模型。
+   * 换图会让用这张参考图风格生成的图判为过期（依据里带着图片内容的哈希）。
+   */
+  r.handle('projects.setStyleReference', async ({ params, form, c }) => {
+    const cur = await requireProject(ctx, params.projectId)
+    const file = await formFile(form, 'file')
+    const img = sniffImage(file.bytes)
+    const label = formString(form, 'label')?.trim() || undefined
+    if (label && label.length > 40) throw badRequest('名称不能超过 40 个字符')
+    const sha = createHash('sha256').update(file.bytes).digest('hex')
+    const path = `style/reference-${sha.slice(0, 12)}.${img.ext}`
+    const info = await ctx.files.put(cur.id, path, file.bytes)
+    const referenceFile = { path, mime: img.mime, bytes: info.bytes, sha256: info.sha256 }
+    const keepLabel = cur.style.source === 'reference_image' ? cur.style.label : undefined
+    const next: Project = {
+      ...cur,
+      style: expandStyle(
+        ctx.catalog.styles,
+        { source: 'reference_image', referenceFile, label: label ?? keepLabel },
+        ctx.clock.now(),
+      ),
+      updatedAt: ctx.clock.now(),
+    }
+    await ctx.store.projects.put(next)
+    await dropStyleReference(ctx, cur, path)
+    ctx.bus.changed('project', { projectId: next.id, ids: [next.id], op: 'updated' })
+    return localizeProject(ctx, next, await localeOf(ctx, c))
   })
 
   r.handle('projects.delete', async ({ params }) => {
@@ -124,15 +209,15 @@ function registerProjectCrud(r: RouteRegistry, ctx: ServerContext): void {
     return OK
   })
 
-  r.handle('projects.restore', async ({ params }) => {
+  r.handle('projects.restore', async ({ params, c }) => {
     const cur = await ctx.store.projects.get(params.projectId)
     if (!cur) throw notFound('项目', params.projectId)
-    if (cur.deletedAt === undefined) return cur
+    if (cur.deletedAt === undefined) return localizeProject(ctx, cur, await localeOf(ctx, c))
     const next: Project = { ...cur, updatedAt: ctx.clock.now() }
     delete next.deletedAt
     await ctx.store.projects.put(next)
     ctx.bus.changed('project', { projectId: next.id, ids: [next.id], op: 'created' })
-    return next
+    return localizeProject(ctx, next, await localeOf(ctx, c))
   })
 
   r.handle('projects.purge', async ({ params }) => {

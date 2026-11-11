@@ -3,7 +3,7 @@ import type { JobStatus } from '@dramai/core'
 import type { ServerContext } from '../context.ts'
 import { badRequest, conflict, notFound } from '../errors.ts'
 import type { RouteRegistry } from '../handle.ts'
-import { jobView, toJobItem } from '../services/job-views.ts'
+import { jobView, jobViews } from '../services/job-views.ts'
 import { registerGenerateRoutes } from './generate.ts'
 import { registerImportRoutes } from './import.ts'
 
@@ -16,6 +16,8 @@ const MESSAGES: Record<string, string> = {
   NOT_FAILED: '只有失败的任务才能这样操作。',
   NOTHING_TO_RESUME: '这个任务没有可续接的上游任务（或上游已确认失败），请直接重新生成。',
   CONFIRM_RECHARGE_REQUIRED: '重新生成可能再次计费，需要确认。',
+  NOT_RUNNING: '任务还在排队，没有花钱：直接取消即可，不需要“忽略结果”。',
+  NOT_APPLICABLE: '只有生成图片 / 视频 / 配音的付费任务才有“忽略结果”。',
 }
 
 /** 把队列的失败结果翻成 HTTP：不存在 → 404；状态不允许 → 409（稳定错误码，前端据此给出下一步）。 */
@@ -44,7 +46,7 @@ export function registerJobRoutes(r: RouteRegistry, ctx: ServerContext): void {
       if (bad) throw badRequest(`未知的任务状态：${bad}`)
     }
     const jobs = await ctx.queue.list({ projectId: query.projectId, status })
-    const items = jobs.map((j) => toJobItem(j, j.queuePosition))
+    const items = await jobViews(ctx, jobs)
     const filtered =
       query.needsAttention === undefined
         ? items
@@ -80,6 +82,12 @@ export function registerJobRoutes(r: RouteRegistry, ctx: ServerContext): void {
 
   r.handle('jobs.acknowledge', async ({ params }) => {
     const res = await ctx.queue.acknowledge(params.jobId)
+    if (!res.ok) fail(params.jobId, res)
+    return jobView(ctx, res.job)
+  })
+
+  r.handle('jobs.ignoreResult', async ({ params, body }) => {
+    const res = await ctx.queue.ignoreResult(params.jobId, body.ignore ?? true)
     if (!res.ok) fail(params.jobId, res)
     return jobView(ctx, res.job)
   })

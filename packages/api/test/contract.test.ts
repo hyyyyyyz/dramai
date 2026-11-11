@@ -172,3 +172,73 @@ describe('event stream client', () => {
     expect(resyncs).toEqual(['buffer_overflow'])
   })
 })
+
+describe('frontend gap contract additions', () => {
+  it('has the new routes with the shapes the frontend relies on', async () => {
+    const { routes } = await import('../src/index.ts')
+    expect(routes['episodes.create']).toMatchObject({
+      method: 'POST',
+      path: '/api/projects/:projectId/episodes',
+    })
+    expect(routes['projects.setStyleReference']).toMatchObject({
+      method: 'POST',
+      body: 'multipart',
+    })
+    expect(routes['jobs.ignoreResult']).toMatchObject({
+      method: 'POST',
+      path: '/api/jobs/:jobId/ignore-result',
+    })
+  })
+
+  it('styleChoice accepts reference_image; jobTarget is a closed set of structured kinds', async () => {
+    const { styleChoice, jobTarget } = await import('../src/index.ts')
+    expect(styleChoice.parse({ source: 'reference_image' })).toEqual({ source: 'reference_image' })
+    expect(styleChoice.parse({ source: 'reference_image', label: '我的' })).toMatchObject({
+      label: '我的',
+    })
+    for (const t of [
+      {
+        kind: 'shot',
+        shotId: 's',
+        shotIndex: 1,
+        shotNumber: 3,
+        sceneId: 'sc',
+        episodeId: 'e',
+        episodeNumber: 1,
+        episodeTitle: '一',
+      },
+      { kind: 'asset', assetId: 'a', assetKind: 'character', name: '林夏', variantName: '冬装' },
+      { kind: 'episode', episodeId: 'e', episodeNumber: 1, episodeTitle: '一' },
+      { kind: 'project' },
+      { kind: 'removed', entity: 'shot', id: 's' },
+    ]) {
+      expect(jobTarget.parse(t)).toEqual(t)
+    }
+    expect(jobTarget.safeParse({ kind: 'sentence', text: '生成分镜图' }).success).toBe(false)
+  })
+
+  it('the new error codes are documented', async () => {
+    const { ERROR_CODES } = await import('../src/index.ts')
+    for (const code of ['STYLE_REFERENCE_MISSING', 'NOT_RUNNING', 'NOT_APPLICABLE'] as const) {
+      expect(ERROR_CODES[code].status).toBeGreaterThanOrEqual(400)
+    }
+  })
+
+  it('the client sends the locale header', async () => {
+    const { createClient } = await import('../src/index.ts')
+    let seen: Headers | undefined
+    const client = createClient({
+      baseUrl: 'http://x',
+      locale: 'en',
+      validate: false,
+      fetch: (async (_url: unknown, init?: RequestInit) => {
+        seen = new Headers(init?.headers)
+        return new Response(JSON.stringify({ groups: [] }), {
+          headers: { 'content-type': 'application/json' },
+        })
+      }) as typeof fetch,
+    })
+    await client.call('styles.list')
+    expect(seen?.get('x-dramai-locale')).toBe('en')
+  })
+})

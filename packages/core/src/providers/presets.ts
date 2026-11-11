@@ -1,3 +1,4 @@
+import type { Locale } from '../i18n.ts'
 import type { ProviderConfig, ProviderKind } from './types.ts'
 
 /**
@@ -24,6 +25,8 @@ export interface ProviderPreset {
   /** 最近一次验证日期（ISO）。 */
   verifiedAt: string
   knownLimitations: string[]
+  /** 其他语言的内置文案（中文是源语言）。 */
+  i18n?: { en?: { label: string; notes: string; knownLimitations: string[] } }
 }
 
 export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
@@ -37,6 +40,15 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     notes: '官方直连，中文极强 + 便宜。验证 2026-05',
     verifiedAt: '2026-05-04',
     knownLimitations: ['纯文本模型：不接受图片输入，参考图无法作为多模态上下文传入。'],
+    i18n: {
+      en: {
+        label: 'DeepSeek direct (LLM)',
+        notes: 'Official direct connection, strong Chinese and cheap. Verified 2026-05',
+        knownLimitations: [
+          'Text-only model: it does not accept image input, so reference images cannot be passed as multimodal context.',
+        ],
+      },
+    },
   },
   {
     id: '302-image-seedream',
@@ -51,6 +63,16 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     knownLimitations: [
       '参考图（角色一致性）经此路径不生效：服务商期望参考图是 URL 而不是 base64。需要多参考图一致性时请换用 Nano Banana。',
     ],
+    i18n: {
+      en: {
+        label: '302.AI · Seedream 5.0 (ByteDance, cheap)',
+        notes:
+          'About 0.035 PTC per image. Verified 2026-05. Note: locked character reference images currently do not work — doubao expects reference images as URLs, not base64',
+        knownLimitations: [
+          'Reference images (character consistency) do not take effect on this route: the provider expects reference images as URLs rather than base64. Use Nano Banana when you need multi-reference consistency.',
+        ],
+      },
+    },
   },
   {
     id: '302-image-nano-banana',
@@ -63,6 +85,16 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
       '⚠️ base URL 不带 /v1（Gemini 协议自己的路径就是 /v1beta/models/{model}:generateContent）。约 0.2-0.5 PTC/张，比 Seedream 贵但指令跟随更精准。验证 2026-05',
     verifiedAt: '2026-05-04',
     knownLimitations: ['单价是 0.2–0.5 PTC 的区间，成本估算只能给出区间。'],
+    i18n: {
+      en: {
+        label: '302.AI · Nano Banana (Gemini image)',
+        notes:
+          "⚠️ The base URL has no /v1 (the Gemini protocol's own path is /v1beta/models/{model}:generateContent). About 0.2–0.5 PTC per image: pricier than Seedream but follows instructions more precisely. Verified 2026-05",
+        knownLimitations: [
+          'The price is a 0.2–0.5 PTC range, so cost estimates can only give a range.',
+        ],
+      },
+    },
   },
   {
     id: '302-i2v-wan-flash',
@@ -75,6 +107,17 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
       '🟢 性价比之王：5 秒 720P 仅约 0.2 PTC，6 个分镜 ≈ 1.2 PTC（¥8 左右）；duration 固定 5 秒。验证 2026-05',
     verifiedAt: '2026-05-04',
     knownLimitations: ['时长固定 5 秒；不支持首尾帧；不带人声。', '输出比例跟随起始帧。'],
+    i18n: {
+      en: {
+        label: '⭐ 302.AI · Wan2.2 Flash (cheapest · Alibaba)',
+        notes:
+          '🟢 Best value: 5 s at 720P costs about 0.2 PTC, so 6 shots ≈ 1.2 PTC (around ¥8). Duration is fixed at 5 seconds. Verified 2026-05',
+        knownLimitations: [
+          'Fixed 5-second duration; no first/last-frame control; no spoken voice.',
+          'Output aspect ratio follows the start frame.',
+        ],
+      },
+    },
   },
 ]
 
@@ -103,5 +146,46 @@ export function configFromPreset(
     notes: preset.notes,
     verifiedAt: preset.verifiedAt,
     knownLimitations: [...preset.knownLimitations],
+  }
+}
+
+// === 本地化 ===
+
+/** 预设的某一语言版本（没有翻译回退中文）。 */
+export function localizeProviderPreset(
+  preset: ProviderPreset,
+  locale: Locale,
+): Pick<ProviderPreset, 'label' | 'notes' | 'knownLimitations'> {
+  const t = locale === 'en' ? preset.i18n?.en : undefined
+  return {
+    label: t?.label ?? preset.label,
+    notes: t?.notes ?? preset.notes,
+    knownLimitations: t?.knownLimitations ?? preset.knownLimitations,
+  }
+}
+
+/**
+ * 由预设创建的服务商配置，创建时把预设的中文文案复制进了配置。展示时：没被用户改过的那几项
+ * （名称、备注、已知限制，和预设原文一致）换成对应语言；用户改过的原样返回。
+ */
+export function localizeProviderConfig(
+  config: Pick<ProviderConfig, 'presetId' | 'label' | 'notes' | 'knownLimitations'>,
+  locale: Locale,
+): { label: string; notes?: string; knownLimitations?: string[] } {
+  const preset = config.presetId
+    ? PROVIDER_PRESETS.find((p) => p.id === config.presetId)
+    : undefined
+  if (!preset || locale === 'zh') {
+    return { label: config.label, notes: config.notes, knownLimitations: config.knownLimitations }
+  }
+  const t = localizeProviderPreset(preset, locale)
+  const sameLimits =
+    config.knownLimitations !== undefined &&
+    config.knownLimitations.length === preset.knownLimitations.length &&
+    config.knownLimitations.every((x, i) => x === preset.knownLimitations[i])
+  return {
+    label: config.label === preset.label ? t.label : config.label,
+    notes: config.notes === preset.notes ? t.notes : config.notes,
+    knownLimitations: sameLimits ? t.knownLimitations : config.knownLimitations,
   }
 }

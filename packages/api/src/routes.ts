@@ -45,6 +45,11 @@ export const styleChoice = z.discriminatedUnion('source', [
     description: z.string().min(1),
     imageKeywords: z.string().optional(),
   }),
+  /**
+   * 参考图风格：先用 `projects.setStyleReference` 上传图片。这里只用于“已经上传过”的项目更新名称（label）；
+   * 创建项目时不能直接选（还没有图）——先创建，再上传。
+   */
+  z.object({ source: z.literal('reference_image'), label: z.string().min(1).max(40).optional() }),
 ])
 export type StyleChoice = z.infer<typeof styleChoice>
 
@@ -219,6 +224,10 @@ export const routes = {
   'projects.delete': route('DELETE', '/api/projects/:projectId', { response: ok }),
   'projects.restore': route('POST', '/api/projects/:projectId/restore', { response: S.project }),
   'projects.purge': route('DELETE', '/api/projects/:projectId/purge', { response: ok }),
+  'projects.setStyleReference': route('POST', '/api/projects/:projectId/style-reference', {
+    body: 'multipart',
+    response: S.project,
+  }),
   'projects.artifacts': route('GET', '/api/projects/:projectId/artifacts', {
     response: items(S.artifactReport),
   }),
@@ -246,6 +255,15 @@ export const routes = {
   // 集
   'episodes.list': route('GET', '/api/projects/:projectId/episodes', {
     response: items(episodeWithProgress),
+  }),
+  'episodes.create': route('POST', '/api/projects/:projectId/episodes', {
+    body: z.object({
+      title: z.string().max(60).optional(),
+      summary: z.string().max(2000).optional(),
+      /** 插在这一集之前；缺省加在最后。 */
+      beforeEpisodeId: z.string().optional(),
+    }),
+    response: episodeWithProgress,
   }),
   'episodes.get': route('GET', '/api/episodes/:episodeId', {
     response: z.object({
@@ -498,6 +516,10 @@ export const routes = {
   }),
   'jobs.resume': route('POST', '/api/jobs/:jobId/resume', { response: S.jobListItem }),
   'jobs.acknowledge': route('POST', '/api/jobs/:jobId/acknowledge', { response: S.jobListItem }),
+  'jobs.ignoreResult': route('POST', '/api/jobs/:jobId/ignore-result', {
+    body: z.object({ ignore: z.boolean().optional() }),
+    response: S.jobListItem,
+  }),
 
   // 导入
   'import.legacy': route('POST', '/api/import/legacy', {

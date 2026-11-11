@@ -409,6 +409,9 @@ export const job = z.object({
   resumeFrom: z.enum(['poll', 'download']).optional(),
   error: jobError.optional(),
   acknowledgedAt: z.number().optional(),
+  /** 运行中的付费任务被标记“忽略结果”：照常跑完、产物进版本历史，但不自动成为当前版本。 */
+  ignoreResult: z.boolean().optional(),
+  ignoredAt: z.number().optional(),
   createdAt: z.number(),
   startedAt: z.number().optional(),
   finishedAt: z.number().optional(),
@@ -416,10 +419,54 @@ export const job = z.object({
 })
 export type Job = z.infer<typeof job>
 
-/** 列表里的任务：带排队位置，以及“需处理”标记（失败且未知悉）。 */
+/**
+ * 任务作用在什么上（结构化，文案由前端按语言拼；名称是用户自己填的，原样返回）。
+ * 目标已被删除时是 `removed`（任务历史还在，但对象没了）。
+ */
+export const jobTarget = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('shot'),
+    shotId: z.string(),
+    /** 在这一集里是第几个镜头（播出顺序，从 1 起）。 */
+    shotIndex: z.number(),
+    /** 项目内的镜头编号（单调发号，删除后不复用）。 */
+    shotNumber: z.number(),
+    shotTitle: z.string().optional(),
+    sceneId: z.string(),
+    episodeId: z.string(),
+    episodeNumber: z.number(),
+    episodeTitle: z.string(),
+  }),
+  z.object({
+    kind: z.literal('asset'),
+    assetId: z.string(),
+    assetKind: assetKind,
+    name: z.string(),
+    /** 衍生形态的设定图 / 编辑任务：形态名。 */
+    variantName: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal('episode'),
+    episodeId: z.string(),
+    episodeNumber: z.number(),
+    episodeTitle: z.string(),
+  }),
+  z.object({ kind: z.literal('project') }),
+  z.object({
+    kind: z.literal('removed'),
+    entity: z.enum(['shot', 'asset', 'episode']),
+    id: z.string(),
+  }),
+])
+export type JobTarget = z.infer<typeof jobTarget>
+
+/** 列表里的任务：带排队位置、目标、“需处理”标记（失败且未知悉），以及“结果被忽略”的实际状态。 */
 export const jobListItem = job.extend({
   queuePosition: z.number().optional(),
   needsAttention: z.boolean(),
+  target: jobTarget,
+  /** 结果被忽略：运行中 = 已标记，会在结束时生效；结束后 = 实际没有成为当前版本（`result.ignored`）。 */
+  resultIgnored: z.boolean(),
 })
 export type JobListItem = z.infer<typeof jobListItem>
 

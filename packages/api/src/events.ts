@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { job } from './schemas.ts'
+import { job, jobTarget } from './schemas.ts'
 
 /**
  * SSE 事件（`GET /api/events`）。
@@ -26,7 +26,8 @@ export const serverEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('hello'), epoch: z.string(), serverTime: z.number() }),
   /** 服务端补不齐你错过的事件（缓冲区已溢出，或服务重启过）：整体刷新。 */
   z.object({ type: z.literal('resync'), reason: z.enum(['epoch_changed', 'buffer_overflow']) }),
-  z.object({ type: z.literal('job.updated'), job }),
+  /** `target` 是任务作用的对象（结构化）；新任务第一次出现就带着，前端不必为它再请求一次。 */
+  z.object({ type: z.literal('job.updated'), job, target: jobTarget.optional() }),
   z.object({
     type: z.literal('job.progress'),
     jobId: z.string(),

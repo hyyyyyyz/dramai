@@ -408,6 +408,8 @@ export function fakeProviders(
     holdPolls: false,
     /** 提交请求发出后一直不返回（模拟请求已送达但连接断了：结果不明）。 */
     holdSubmits: false,
+    /** 图片请求等这个 promise 结束才返回（模拟生成很慢）。 */
+    imageGate: undefined as Promise<void> | undefined,
   }
   let images = 0
   let tasks = 0
@@ -424,6 +426,7 @@ export function fakeProviders(
     }
     requests.push({ method, url, body })
     if (url.includes(':generateContent')) {
+      if (faults.imageGate) await faults.imageGate
       if (faults.failImages > 0) {
         faults.failImages--
         return new Response('upstream exploded', { status: 500 })

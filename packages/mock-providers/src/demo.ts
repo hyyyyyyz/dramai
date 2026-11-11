@@ -7,6 +7,8 @@ import { defaultSleep } from '@dramai/core'
 import { createServer } from '@dramai/server'
 import { FAULT_KINDS } from './config.ts'
 import type { FaultKind, MockConfig, MockKind } from './config.ts'
+import { DEMO_NOTICE, demoProviders, resolveUserPath } from './demo-lib.ts'
+import type { DemoLang } from './demo-lib.ts'
 import { startMockProviders } from './server.ts'
 
 /**
@@ -22,8 +24,10 @@ const HELP = `用法：pnpm demo [选项]
   --port <n>          界面 / 接口端口（默认 8787）
   --mock-port <n>     模拟服务商端口（默认 8788）
   --data-dir <path>   演示数据目录（默认 ~/.dramai-demo，与正式数据完全分开）
-  --fresh             启动前清空演示数据目录
   --static-dir <p>    同时托管前端构建产物
+                      相对路径按你执行命令时所在的目录解析，不是按包目录
+  --fresh             启动前清空演示数据目录
+  --lang <zh|en>      演示服务商的名称和终端提示用哪种语言（默认 zh；界面里的提示两种语言都带）
   --latency <ms>      每个请求的固定延迟
   --jitter <ms>       再随机加 0..jitter 毫秒
   --video-ms <ms>     视频任务从提交到完成要多久（默认 3000）
@@ -47,6 +51,7 @@ const { values } = parseArgs({
     port: { type: 'string' },
     'mock-port': { type: 'string' },
     'data-dir': { type: 'string' },
+    lang: { type: 'string' },
     fresh: { type: 'boolean' },
     'static-dir': { type: 'string' },
     latency: { type: 'string' },
@@ -87,7 +92,15 @@ const list = <T extends string>(
   return items as T[]
 }
 
-const dataDir = values['data-dir'] ?? process.env.DRAMAI_DEMO_DIR ?? join(homedir(), '.dramai-demo')
+const lang = (values.lang ?? 'zh') as DemoLang
+if (lang !== 'zh' && lang !== 'en') fail(`--lang 只支持 zh / en，收到 "${values.lang}"`)
+
+// 相对路径按用户执行命令时所在的目录解析（pnpm 会先切到包目录，见 resolveUserPath）。
+const dataDir = resolveUserPath(
+  values['data-dir'] ?? process.env.DRAMAI_DEMO_DIR ?? join(homedir(), '.dramai-demo'),
+)
+const staticDir = values['static-dir'] ? resolveUserPath(values['static-dir']) : undefined
+
 const config: Partial<MockConfig> = {
   latencyMs: num(values.latency, 'latency'),
   jitterMs: num(values.jitter, 'jitter'),
@@ -99,9 +112,6 @@ const config: Partial<MockConfig> = {
 }
 for (const k of Object.keys(config) as Array<keyof MockConfig>)
   if (config[k] === undefined) delete config[k]
-
-const NOTICE =
-  '演示模式：服务商是本机的模拟服务，不会产生任何费用，生成的是占位内容（不是真实作品）。'
 
 if (values.fresh) await rm(dataDir, { recursive: true, force: true })
 
@@ -115,8 +125,9 @@ const server = await createServer({
   dataDir,
   host: '127.0.0.1',
   port: num(values.port, 'port') ?? 8787,
-  staticDir: values['static-dir'],
-  demo: { notice: NOTICE },
+  staticDir,
+  // 提示语两种语言都带：界面按用户的语言取（见 /api/system 的 demo.notice）。
+  demo: { notice: DEMO_NOTICE },
   // 演示里把服务商轮询间隔压到 1.5 秒以内，不然每个视频要等 10 秒起步。
   executor: { sleep: (ms, signal) => defaultSleep(Math.min(ms, 1500), signal) },
   logger: console,
@@ -128,56 +139,21 @@ const server = await createServer({
 // 服务商配置：走正常的接口创建，指向模拟服务商，和用户自己加的配置没有任何区别。
 const client = createClient({ baseUrl: server.url })
 const KEY = 'mock-key-not-a-secret'
-const wanted = [
-  {
-    label: '演示 · 大模型（DeepSeek 风格）',
-    kind: 'llm',
-    protocol: 'openai-chat',
-    model: 'deepseek-chat',
-  },
-  {
-    label: '演示 · 文生图（Nano Banana 风格）',
-    kind: 'image',
-    protocol: 'gemini-image',
-    model: 'gemini-2.5-flash-image',
-    accept: ['mode:i2i', 'refImages', 'aspectRatio'],
-  },
-  {
-    label: '演示 · 文生图（Seedream 风格）',
-    kind: 'image',
-    protocol: 'openai-images',
-    model: 'doubao-seedream-5-0-260128',
-  },
-  {
-    label: '演示 · 图生视频（Wan Flash 风格）',
-    kind: 'video',
-    protocol: 'aliyun-video',
-    model: 'wan2.2-i2v-flash',
-  },
-  {
-    label: '演示 · 图生视频（Seedance 风格，带人声）',
-    kind: 'video',
-    protocol: 'volcengine-video',
-    model: 'doubao-seedance-2-0-fast-260128',
-    accept: ['mode:i2v', 'firstFrame', 'duration', 'resolution'],
-  },
-  {
-    label: '演示 · 配音',
-    kind: 'tts',
-    protocol: 'openai-tts',
-    model: 'tts-1',
-    accept: ['mode:tts'],
-  },
-] as const
+const isDemoLabel = (label: string) => label.startsWith('演示') || label.startsWith('Demo')
 const existing = (await client.call('providers.list')).items
-for (const w of wanted) {
-  const found = existing.find((p) => p.label === w.label)
+for (const w of demoProviders(lang)) {
+  // 用 kind + protocol + model 认已有的演示配置：换了语言 / 端口重启，只更新名称和地址，不重复创建。
+  const found = existing.find(
+    (p) =>
+      p.kind === w.kind && p.protocol === w.protocol && p.model === w.model && isDemoLabel(p.label),
+  )
   if (found) {
-    if (found.baseUrl !== mock.url)
+    if (found.baseUrl !== mock.url || found.label !== w.label) {
       await client.call('providers.update', {
         params: { providerId: found.id },
-        body: { baseUrl: mock.url },
+        body: { baseUrl: mock.url, label: w.label },
       })
+    }
     continue
   }
   const created = await client.call('providers.create', {
@@ -190,7 +166,7 @@ for (const w of wanted) {
       apiKey: KEY,
     },
   })
-  if ('accept' in w) {
+  if (w.accept) {
     await client.call('providers.acceptUnverified', {
       params: { providerId: created.id },
       body: { keys: [...w.accept] },
@@ -199,29 +175,47 @@ for (const w of wanted) {
 }
 
 const bar = '═'.repeat(64)
-console.log(`\n${bar}`)
-console.log('  DRAMAI · 演示模式')
-console.log(bar)
-console.log('  这是演示：所有“AI 服务商”都是本机的模拟服务，不会产生任何费用。')
-console.log('  生成的图片、视频、配音都是占位内容（带编号的色块、测试画面、简单音调），')
-console.log('  大模型的分集 / 分镜是本地规则算出来的——只用来走通整条流程，不是真实作品。')
-console.log(bar)
-console.log(`  界面 / 接口     ${server.url}`)
-console.log(`  模拟服务商      ${mock.url}   （控制面 ${mock.url}/__mock/state）`)
-console.log(`  演示数据目录    ${dataDir}   （与正式数据分开；--fresh 清空）`)
 const c = mock.config
-console.log(
-  `  延迟 ${c.latencyMs}ms${c.jitterMs ? `+0..${c.jitterMs}ms` : ''} · 视频 ${c.videoMs}ms · 随机失败 ${Math.round(c.failureRate * 100)}%${c.failureRate ? `（${c.failureKinds.join('/')} → ${c.failureOn.join('/')}，种子 ${c.seed}）` : ''}`,
-)
-console.log('  想让某个请求失败：在提示词里写 [[mock:rate_limit]]；更多见 pnpm demo --help')
-if (!(await mockHasFfmpeg()))
-  console.log('  ⚠ 没找到 ffmpeg：占位视频和成片合成都需要它（安装后重启）。')
-console.log(`${bar}\n`)
-
-async function mockHasFfmpeg(): Promise<boolean> {
-  const info = await client.call('system.get')
-  return info.ffmpeg.found
+const zh = lang === 'zh'
+console.log(`\n${bar}`)
+console.log(zh ? '  DRAMAI · 演示模式' : '  DRAMAI · DEMO MODE')
+console.log(bar)
+if (zh) {
+  console.log('  这是演示：所有“AI 服务商”都是本机的模拟服务，不会产生任何费用。')
+  console.log('  生成的图片、视频、配音都是占位内容（带编号的色块、测试画面、简单音调），')
+  console.log('  大模型的分集 / 分镜是本地规则算出来的——只用来走通整条流程，不是真实作品。')
+} else {
+  console.log('  This is a demo: every "AI provider" is a local simulation. Nothing is charged.')
+  console.log('  Images, videos and voice-overs are placeholders (numbered colour blocks, test')
+  console.log(
+    '  patterns, simple tones); episodes and shots come from local rules — not real work.',
+  )
 }
+console.log(bar)
+console.log(`  ${zh ? '界面 / 接口  ' : 'App / API     '} ${server.url}`)
+console.log(
+  `  ${zh ? '模拟服务商  ' : 'Mock providers'} ${mock.url}   (${zh ? '控制面' : 'control'} ${mock.url}/__mock/state)`,
+)
+console.log(
+  `  ${zh ? '演示数据目录' : 'Demo data dir'} ${dataDir}   (${zh ? '与正式数据分开；--fresh 清空' : 'separate from real data; --fresh wipes it'})`,
+)
+if (staticDir) console.log(`  ${zh ? '前端文件    ' : 'Static files '} ${staticDir}`)
+console.log(
+  `  ${zh ? '延迟' : 'latency'} ${c.latencyMs}ms${c.jitterMs ? `+0..${c.jitterMs}ms` : ''} · ${zh ? '视频' : 'video'} ${c.videoMs}ms · ${zh ? '随机失败' : 'random failures'} ${Math.round(c.failureRate * 100)}%${c.failureRate ? ` (${c.failureKinds.join('/')} → ${c.failureOn.join('/')}, seed ${c.seed})` : ''}`,
+)
+console.log(
+  zh
+    ? '  想让某个请求失败：在提示词里写 [[mock:rate_limit]]；更多见 pnpm demo --help'
+    : '  Make one request fail: put [[mock:rate_limit]] in a prompt; see pnpm demo --help',
+)
+if (!(await client.call('system.get')).ffmpeg.found) {
+  console.log(
+    zh
+      ? '  ⚠ 没找到 ffmpeg：占位视频和成片合成都需要它（安装后重启）。'
+      : '  ⚠ ffmpeg not found: placeholder videos and cut composition need it (install, then restart).',
+  )
+}
+console.log(`${bar}\n`)
 
 let stopping = false
 const stop = async () => {

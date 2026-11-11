@@ -6,7 +6,7 @@ import {
   targetId,
 } from '@dramai/core'
 import type { EpisodePlan, Episode, PipelineStep, ProviderConfig, ProviderKind } from '@dramai/core'
-import { currentVersion } from '@dramai/core'
+import { allocateNumber, createEpisode, currentVersion } from '@dramai/core'
 import type { ServerContext } from '../context.ts'
 import { badRequest, conflict, HttpError } from '../errors.ts'
 import type { RouteRegistry } from '../handle.ts'
@@ -29,6 +29,43 @@ export function registerEpisodeRoutes(r: RouteRegistry, ctx: ServerContext): voi
     return {
       items: view.episodesInOrder().map((e) => ({ ...e, progress: view.progressOf(e.id) })),
     }
+  })
+
+  r.handle('episodes.create', async ({ params, body }) => {
+    const project = await requireProject(ctx, params.projectId)
+    if (body.beforeEpisodeId && !project.episodeOrder.includes(body.beforeEpisodeId)) {
+      throw new HttpError(404, 'NOT_FOUND', `分集不存在：${body.beforeEpisodeId}`, {
+        entity: 'episode',
+        id: body.beforeEpisodeId,
+      })
+    }
+    const episode = await ctx.store.transaction(async (tx) => {
+      const fresh = (await tx.projects.get(project.id))!
+      const { project: counted, number } = allocateNumber(fresh, 'episode')
+      const now = ctx.clock.now()
+      const created: Episode = {
+        ...createEpisode({
+          id: ctx.ids.next('ep'),
+          projectId: project.id,
+          number,
+          // 编号是单调发号、不复用的；没起标题就用编号，用户随时可以改。
+          title: body.title?.trim() || `第 ${number} 集`,
+          now,
+        }),
+        ...(body.summary?.trim() ? { summary: body.summary.trim() } : {}),
+      }
+      const order = [...counted.episodeOrder]
+      const at = body.beforeEpisodeId ? order.indexOf(body.beforeEpisodeId) : -1
+      if (at >= 0) order.splice(at, 0, created.id)
+      else order.push(created.id)
+      await tx.episodes.put(created)
+      await tx.projects.put({ ...counted, episodeOrder: order, updatedAt: now })
+      return created
+    })
+    ctx.bus.changed('episode', { projectId: project.id, ids: [episode.id], op: 'created' })
+    ctx.bus.changed('project', { projectId: project.id, ids: [project.id], op: 'updated' })
+    const view = await loadProjectView(ctx, project.id)
+    return { ...episode, progress: view.progressOf(episode.id) }
   })
 
   r.handle('episodes.get', async ({ params }) => {

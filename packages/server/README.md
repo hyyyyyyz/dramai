@@ -74,6 +74,47 @@ WebUI / 容器场景没有系统加密可用，靠文件权限和数据目录隔
 请求体（含上传文件）在进入事务前已读完。例外：`providers.test`（要等外部网络）、`generate.preflight`、`episodes.preflight`（只读）。
 事务期间别的读写排队——本地单用户场景下串行就是想要的语义。测试里用“拉长读”的方式证明：去掉事务包装，并发编辑会丢更新。
 
+## 任务的目标（谁的任务）
+
+`jobs.list` / `jobs.get` 的每个任务带结构化的 `target`（`@dramai/api` 的 `jobTarget`），`job.updated` 事件也带着，文案由前端按语言拼：
+
+| `target.kind` | 字段                                                                                                                                                |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shot`        | `shotId`、`shotIndex`（这一集里第几个，从 1 起）、`shotNumber`（项目内编号）、`shotTitle?`、`sceneId`、`episodeId`、`episodeNumber`、`episodeTitle` |
+| `asset`       | `assetId`、`assetKind`、`name`、`variantName?`（衍生形态的设定图 / 编辑）                                                                           |
+| `episode`     | `episodeId`、`episodeNumber`、`episodeTitle`（合成等整集任务）                                                                                      |
+| `project`     | 分集规划等整个项目的任务                                                                                                                            |
+| `removed`     | 目标已被删除（`entity`、`id`）——任务历史还在                                                                                                        |
+
+名称 / 标题是用户自己填的，原样返回。
+
+## 忽略结果（运行中的付费任务）
+
+已发往服务商的调用无法撤回，所以运行中的付费任务不能取消，只能 `POST /api/jobs/:id/ignore-result`（`{ ignore?: boolean }`，缺省 `true`，`false` = 反悔）：
+
+- 任务**照常跑完**，产物**照常保存进版本历史**（钱已经花了，不能丢）；
+- 但**不自动成为当前版本**（槽的 `currentVersionId` 不动），也**不登记为当前产物**（产物状态保持原样）；
+- 任务结束后 `result.ignored = true`、`resultIgnored = true`；运行期间 `ignoreResult: true` 表示“已标记，结束时生效”；
+- 之后用户随时可以从版本历史里手动选用它（`shots.setCurrentVersion` / `assets.setCurrentSheet`）：它成为当前版本，产物记录用**这个版本自己的依据摘要**登记——依据和现在不一致就如实显示过期，不会因为被选中而冒充最新；
+- 适用：运行中、产出媒体版本的付费任务（图 / 视频 / 配音 / 设定图）。排队中的任务（还没花钱）直接取消（`NOT_RUNNING`）；已结束的用选版本（`ALREADY_FINISHED`）；文本 / 合成任务没有这个概念（`NOT_APPLICABLE`）；
+- 标记与落库的判断在同一个事务里，不会错过；重试 / 恢复原任务会清掉标记。极小的窗口：处理器已落库、任务状态还没改成 succeeded 的瞬间标记不会生效——此时 `result.ignored` 如实是 `false`。
+
+## 参考图风格
+
+`projects.setStyleReference`（multipart：`file`，可选 `label`）上传 / 替换项目的参考图风格：图片存在项目文件夹 `style/reference-<哈希>.<扩展名>`，`project.style` 变成 `{ source: 'reference_image', label, referenceFile }`；读取就是 `project.style.referenceFile.path` + 文件接口（`client.fileUrl`）。生成图片时它作为画风参考图传给模型；**图片内容的哈希是图片依据的一部分**——换了参考图，用它生成的图判为过期。
+
+- 创建项目时不能直接选（还没有图）：先创建，再上传（`STYLE_REFERENCE_MISSING`）；
+- `projects.update` 可传 `{ source: 'reference_image', label? }` 只改名称；换图再调一次上传；改成别的风格会删掉不再使用的参考图文件。
+
+## 语言（内置数据中英两种）
+
+风格预设、服务商预设的名称 / 备注 / 已知限制、项目里存的内置风格名（“未指定 / 自定义 / 风格参考图”）、演示模式提示语都有中英文（中文是源语言，缺翻译回退中文）。
+**用户自己填写的内容永远原样返回**；只有和内置原文一致（没被改过）的文案才会被翻译——例如由预设创建的服务商，名称 / 备注 / 限制没改就按语言显示，改过的就是用户的文字。
+
+请求用哪种语言：`?lang=en` 或请求头 `X-Dramai-Locale: en`（`createClient({ locale })`）→ 应用设置里的 `locale` → `Accept-Language` → 中文。画面关键词（`imageKeywords`）是提示词素材，不翻译。
+受影响的接口：`styles.list`、`presets.list`、`providers.*`、`projects.*`（`style.label` / `style.description`）、`system.get`（`demo.notice`）。
+没有翻译的：错误响应里的 `message`（前端按 `code` 展示自己的文案）、ffmpeg 缺失说明（`system.get.ffmpeg.missing`）。
+
 ## 错误
 
 响应统一是 `{ error: { code, message, details? } }`。**前端按 `code` 分支，不要按 `message`**。
@@ -84,97 +125,100 @@ core 的业务错误是 `DomainError`（`code` + `kind`：not_found / conflict /
 
 契约在 `@dramai/api`（`routes`）。服务端用 `RouteRegistry.handle(name, fn)` 绑定：路径参数 / 查询 / 请求体按契约校验（400），处理函数返回值的类型就是契约响应类型；测试里 `validateResponses: true` 会把响应也按 schema 校验。
 
-| 方法   | 路径                                             | 名称                                |
-| ------ | ------------------------------------------------ | ----------------------------------- |
-| GET    | `/api/system`                                    | `system.get`                        |
-| GET    | `/api/settings`                                  | `settings.get`                      |
-| PUT    | `/api/settings`                                  | `settings.update`                   |
-| GET    | `/api/styles`                                    | `styles.list`                       |
-| GET    | `/api/presets`                                   | `presets.list`                      |
-| GET    | `/api/providers`                                 | `providers.list`                    |
-| POST   | `/api/providers`                                 | `providers.create`                  |
-| POST   | `/api/providers/from-preset`                     | `providers.fromPreset`              |
-| GET    | `/api/providers/:providerId`                     | `providers.get`                     |
-| PATCH  | `/api/providers/:providerId`                     | `providers.update`                  |
-| DELETE | `/api/providers/:providerId`                     | `providers.delete`                  |
-| PUT    | `/api/providers/:providerId/key`                 | `providers.setKey`                  |
-| DELETE | `/api/providers/:providerId/key`                 | `providers.clearKey`                |
-| POST   | `/api/providers/:providerId/test`                | `providers.test`                    |
-| GET    | `/api/providers/:providerId/capability`          | `providers.capability`              |
-| PUT    | `/api/providers/:providerId/accepted-unverified` | `providers.acceptUnverified`        |
-| GET    | `/api/projects`                                  | `projects.list`                     |
-| POST   | `/api/projects`                                  | `projects.create`                   |
-| GET    | `/api/projects/:projectId`                       | `projects.get`                      |
-| PATCH  | `/api/projects/:projectId`                       | `projects.update`                   |
-| DELETE | `/api/projects/:projectId`                       | `projects.delete`                   |
-| POST   | `/api/projects/:projectId/restore`               | `projects.restore`                  |
-| DELETE | `/api/projects/:projectId/purge`                 | `projects.purge`                    |
-| GET    | `/api/projects/:projectId/artifacts`             | `projects.artifacts`                |
-| GET    | `/api/projects/:projectId/materials`             | `materials.list`                    |
-| POST   | `/api/projects/:projectId/materials`             | `materials.upload` (multipart)      |
-| GET    | `/api/materials/:materialId/text`                | `materials.text`                    |
-| DELETE | `/api/materials/:materialId`                     | `materials.delete`                  |
-| GET    | `/api/projects/:projectId/episodes`              | `episodes.list`                     |
-| GET    | `/api/episodes/:episodeId`                       | `episodes.get`                      |
-| PATCH  | `/api/episodes/:episodeId`                       | `episodes.update`                   |
-| DELETE | `/api/episodes/:episodeId`                       | `episodes.delete`                   |
-| PUT    | `/api/projects/:projectId/episode-order`         | `episodes.reorder`                  |
-| POST   | `/api/projects/:projectId/episodes/plan`         | `episodes.plan`                     |
-| POST   | `/api/episodes/:episodeId/breakdown`             | `episodes.breakdown`                |
-| POST   | `/api/episodes/:episodeId/entities`              | `episodes.extractEntities`          |
-| POST   | `/api/episodes/:episodeId/shot-prompts`          | `episodes.generatePrompts`          |
-| POST   | `/api/episodes/:episodeId/preflight`             | `episodes.preflight`                |
-| POST   | `/api/episodes/:episodeId/compose`               | `episodes.compose`                  |
-| GET    | `/api/episodes/:episodeId/artifacts`             | `episodes.artifacts`                |
-| POST   | `/api/episodes/:episodeId/scenes`                | `scenes.create`                     |
-| PATCH  | `/api/scenes/:sceneId`                           | `scenes.update`                     |
-| DELETE | `/api/scenes/:sceneId`                           | `scenes.delete`                     |
-| PUT    | `/api/episodes/:episodeId/scene-order`           | `scenes.reorder`                    |
-| POST   | `/api/scenes/:sceneId/shots`                     | `shots.create`                      |
-| GET    | `/api/shots/:shotId`                             | `shots.get`                         |
-| PATCH  | `/api/shots/:shotId`                             | `shots.update`                      |
-| DELETE | `/api/shots/:shotId`                             | `shots.delete`                      |
-| PUT    | `/api/shots/:shotId/refs`                        | `shots.setRefs`                     |
-| PUT    | `/api/scenes/:sceneId/shot-order`                | `shots.reorder`                     |
-| POST   | `/api/shots/:shotId/move`                        | `shots.move`                        |
-| PUT    | `/api/shots/:shotId/current-version`             | `shots.setCurrentVersion`           |
-| POST   | `/api/shots/:shotId/image`                       | `shots.uploadImage` (multipart)     |
-| GET    | `/api/projects/:projectId/assets`                | `assets.list`                       |
-| POST   | `/api/projects/:projectId/assets`                | `assets.create`                     |
-| GET    | `/api/assets/:assetId`                           | `assets.get`                        |
-| PATCH  | `/api/assets/:assetId`                           | `assets.update`                     |
-| DELETE | `/api/assets/:assetId`                           | `assets.delete`                     |
-| POST   | `/api/assets/:assetId/originals`                 | `assets.uploadOriginal` (multipart) |
-| POST   | `/api/assets/:assetId/sheet`                     | `assets.uploadSheet` (multipart)    |
-| PUT    | `/api/assets/:assetId/sheet/current`             | `assets.setCurrentSheet`            |
-| POST   | `/api/assets/:assetId/voice`                     | `assets.uploadVoice` (multipart)    |
-| POST   | `/api/assets/:assetId/variants`                  | `variants.create`                   |
-| PATCH  | `/api/assets/:assetId/variants/:variantName`     | `variants.update`                   |
-| DELETE | `/api/assets/:assetId/variants/:variantName`     | `variants.delete`                   |
-| GET    | `/api/projects/:projectId/candidates`            | `candidates.list`                   |
-| POST   | `/api/candidates/:candidateId/accept`            | `candidates.accept`                 |
-| POST   | `/api/candidates/:candidateId/link`              | `candidates.link`                   |
-| POST   | `/api/candidates/:candidateId/ignore`            | `candidates.ignore`                 |
-| POST   | `/api/candidates/:candidateId/undo-link`         | `candidates.undoLink`               |
-| GET    | `/api/episodes/:episodeId/timeline`              | `timeline.get`                      |
-| PUT    | `/api/episodes/:episodeId/timeline`              | `timeline.update`                   |
-| POST   | `/api/episodes/:episodeId/timeline/rollback`     | `timeline.rollback`                 |
-| POST   | `/api/episodes/:episodeId/timeline/sync`         | `timeline.sync`                     |
-| POST   | `/api/episodes/:episodeId/timeline/bgm`          | `timeline.uploadBgm` (multipart)    |
-| POST   | `/api/projects/:projectId/preflight`             | `generate.preflight`                |
-| POST   | `/api/projects/:projectId/generate`              | `generate.submit`                   |
-| GET    | `/api/jobs`                                      | `jobs.list`                         |
-| GET    | `/api/jobs/:jobId`                               | `jobs.get`                          |
-| POST   | `/api/jobs/:jobId/cancel`                        | `jobs.cancel`                       |
-| POST   | `/api/jobs/:jobId/retry`                         | `jobs.retry`                        |
-| POST   | `/api/jobs/:jobId/resume`                        | `jobs.resume`                       |
-| POST   | `/api/jobs/:jobId/acknowledge`                   | `jobs.acknowledge`                  |
-| POST   | `/api/import/legacy`                             | `import.legacy` (multipart)         |
-| GET    | `/api/projects/:projectId/files/*`               | `file` (非 JSON)                    |
-| GET    | `/api/episodes/:episodeId/export/srt`            | `srt` (非 JSON)                     |
-| GET    | `/api/episodes/:episodeId/export/vtt`            | `vtt` (非 JSON)                     |
-| GET    | `/api/episodes/:episodeId/export/package`        | `package` (非 JSON)                 |
-| GET    | `/api/episodes/:episodeId/export/cut`            | `cut` (非 JSON)                     |
-| GET    | `/api/events`                                    | `events` (非 JSON)                  |
+| 方法   | 路径                                             | 名称                                     |
+| ------ | ------------------------------------------------ | ---------------------------------------- |
+| GET    | `/api/system`                                    | `system.get`                             |
+| GET    | `/api/settings`                                  | `settings.get`                           |
+| PUT    | `/api/settings`                                  | `settings.update`                        |
+| GET    | `/api/styles`                                    | `styles.list`                            |
+| GET    | `/api/presets`                                   | `presets.list`                           |
+| GET    | `/api/providers`                                 | `providers.list`                         |
+| POST   | `/api/providers`                                 | `providers.create`                       |
+| POST   | `/api/providers/from-preset`                     | `providers.fromPreset`                   |
+| GET    | `/api/providers/:providerId`                     | `providers.get`                          |
+| PATCH  | `/api/providers/:providerId`                     | `providers.update`                       |
+| DELETE | `/api/providers/:providerId`                     | `providers.delete`                       |
+| PUT    | `/api/providers/:providerId/key`                 | `providers.setKey`                       |
+| DELETE | `/api/providers/:providerId/key`                 | `providers.clearKey`                     |
+| POST   | `/api/providers/:providerId/test`                | `providers.test`                         |
+| GET    | `/api/providers/:providerId/capability`          | `providers.capability`                   |
+| PUT    | `/api/providers/:providerId/accepted-unverified` | `providers.acceptUnverified`             |
+| GET    | `/api/projects`                                  | `projects.list`                          |
+| POST   | `/api/projects`                                  | `projects.create`                        |
+| GET    | `/api/projects/:projectId`                       | `projects.get`                           |
+| PATCH  | `/api/projects/:projectId`                       | `projects.update`                        |
+| DELETE | `/api/projects/:projectId`                       | `projects.delete`                        |
+| POST   | `/api/projects/:projectId/restore`               | `projects.restore`                       |
+| DELETE | `/api/projects/:projectId/purge`                 | `projects.purge`                         |
+| POST   | `/api/projects/:projectId/style-reference`       | `projects.setStyleReference` (multipart) |
+| GET    | `/api/projects/:projectId/artifacts`             | `projects.artifacts`                     |
+| GET    | `/api/projects/:projectId/materials`             | `materials.list`                         |
+| POST   | `/api/projects/:projectId/materials`             | `materials.upload` (multipart)           |
+| GET    | `/api/materials/:materialId/text`                | `materials.text`                         |
+| DELETE | `/api/materials/:materialId`                     | `materials.delete`                       |
+| GET    | `/api/projects/:projectId/episodes`              | `episodes.list`                          |
+| POST   | `/api/projects/:projectId/episodes`              | `episodes.create`                        |
+| GET    | `/api/episodes/:episodeId`                       | `episodes.get`                           |
+| PATCH  | `/api/episodes/:episodeId`                       | `episodes.update`                        |
+| DELETE | `/api/episodes/:episodeId`                       | `episodes.delete`                        |
+| PUT    | `/api/projects/:projectId/episode-order`         | `episodes.reorder`                       |
+| POST   | `/api/projects/:projectId/episodes/plan`         | `episodes.plan`                          |
+| POST   | `/api/episodes/:episodeId/breakdown`             | `episodes.breakdown`                     |
+| POST   | `/api/episodes/:episodeId/entities`              | `episodes.extractEntities`               |
+| POST   | `/api/episodes/:episodeId/shot-prompts`          | `episodes.generatePrompts`               |
+| POST   | `/api/episodes/:episodeId/preflight`             | `episodes.preflight`                     |
+| POST   | `/api/episodes/:episodeId/compose`               | `episodes.compose`                       |
+| GET    | `/api/episodes/:episodeId/artifacts`             | `episodes.artifacts`                     |
+| POST   | `/api/episodes/:episodeId/scenes`                | `scenes.create`                          |
+| PATCH  | `/api/scenes/:sceneId`                           | `scenes.update`                          |
+| DELETE | `/api/scenes/:sceneId`                           | `scenes.delete`                          |
+| PUT    | `/api/episodes/:episodeId/scene-order`           | `scenes.reorder`                         |
+| POST   | `/api/scenes/:sceneId/shots`                     | `shots.create`                           |
+| GET    | `/api/shots/:shotId`                             | `shots.get`                              |
+| PATCH  | `/api/shots/:shotId`                             | `shots.update`                           |
+| DELETE | `/api/shots/:shotId`                             | `shots.delete`                           |
+| PUT    | `/api/shots/:shotId/refs`                        | `shots.setRefs`                          |
+| PUT    | `/api/scenes/:sceneId/shot-order`                | `shots.reorder`                          |
+| POST   | `/api/shots/:shotId/move`                        | `shots.move`                             |
+| PUT    | `/api/shots/:shotId/current-version`             | `shots.setCurrentVersion`                |
+| POST   | `/api/shots/:shotId/image`                       | `shots.uploadImage` (multipart)          |
+| GET    | `/api/projects/:projectId/assets`                | `assets.list`                            |
+| POST   | `/api/projects/:projectId/assets`                | `assets.create`                          |
+| GET    | `/api/assets/:assetId`                           | `assets.get`                             |
+| PATCH  | `/api/assets/:assetId`                           | `assets.update`                          |
+| DELETE | `/api/assets/:assetId`                           | `assets.delete`                          |
+| POST   | `/api/assets/:assetId/originals`                 | `assets.uploadOriginal` (multipart)      |
+| POST   | `/api/assets/:assetId/sheet`                     | `assets.uploadSheet` (multipart)         |
+| PUT    | `/api/assets/:assetId/sheet/current`             | `assets.setCurrentSheet`                 |
+| POST   | `/api/assets/:assetId/voice`                     | `assets.uploadVoice` (multipart)         |
+| POST   | `/api/assets/:assetId/variants`                  | `variants.create`                        |
+| PATCH  | `/api/assets/:assetId/variants/:variantName`     | `variants.update`                        |
+| DELETE | `/api/assets/:assetId/variants/:variantName`     | `variants.delete`                        |
+| GET    | `/api/projects/:projectId/candidates`            | `candidates.list`                        |
+| POST   | `/api/candidates/:candidateId/accept`            | `candidates.accept`                      |
+| POST   | `/api/candidates/:candidateId/link`              | `candidates.link`                        |
+| POST   | `/api/candidates/:candidateId/ignore`            | `candidates.ignore`                      |
+| POST   | `/api/candidates/:candidateId/undo-link`         | `candidates.undoLink`                    |
+| GET    | `/api/episodes/:episodeId/timeline`              | `timeline.get`                           |
+| PUT    | `/api/episodes/:episodeId/timeline`              | `timeline.update`                        |
+| POST   | `/api/episodes/:episodeId/timeline/rollback`     | `timeline.rollback`                      |
+| POST   | `/api/episodes/:episodeId/timeline/sync`         | `timeline.sync`                          |
+| POST   | `/api/episodes/:episodeId/timeline/bgm`          | `timeline.uploadBgm` (multipart)         |
+| POST   | `/api/projects/:projectId/preflight`             | `generate.preflight`                     |
+| POST   | `/api/projects/:projectId/generate`              | `generate.submit`                        |
+| GET    | `/api/jobs`                                      | `jobs.list`                              |
+| GET    | `/api/jobs/:jobId`                               | `jobs.get`                               |
+| POST   | `/api/jobs/:jobId/cancel`                        | `jobs.cancel`                            |
+| POST   | `/api/jobs/:jobId/retry`                         | `jobs.retry`                             |
+| POST   | `/api/jobs/:jobId/resume`                        | `jobs.resume`                            |
+| POST   | `/api/jobs/:jobId/acknowledge`                   | `jobs.acknowledge`                       |
+| POST   | `/api/jobs/:jobId/ignore-result`                 | `jobs.ignoreResult`                      |
+| POST   | `/api/import/legacy`                             | `import.legacy` (multipart)              |
+| GET    | `/api/projects/:projectId/files/*`               | `file` (非 JSON)                         |
+| GET    | `/api/episodes/:episodeId/export/srt`            | `srt` (非 JSON)                          |
+| GET    | `/api/episodes/:episodeId/export/vtt`            | `vtt` (非 JSON)                          |
+| GET    | `/api/episodes/:episodeId/export/package`        | `package` (非 JSON)                      |
+| GET    | `/api/episodes/:episodeId/export/cut`            | `cut` (非 JSON)                          |
+| GET    | `/api/events`                                    | `events` (非 JSON)                       |
 
-multipart 上传的文件字段统一叫 `file`（`assets.uploadSheet` 可选 `variantName`；`import.legacy` 可选 `projectIds`、`allowDuplicate`）。
+multipart 上传的文件字段统一叫 `file`（`assets.uploadSheet` 可选 `variantName`；`projects.setStyleReference` 可选 `label`；`import.legacy` 可选 `projectIds`、`allowDuplicate`）。

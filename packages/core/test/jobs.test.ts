@@ -264,6 +264,69 @@ describe('cancel semantics: only queued jobs; a running job keeps its result', (
   })
 })
 
+describe('ignoring the result of a running paid job', () => {
+  const running = async () => {
+    const g = gate()
+    const env = setup({ handlers: { op: async () => void (await g.promise) } })
+    const { job: j } = await env.queue.enqueue(job())
+    await env.worker.tick()
+    await waitFor(async () => (await env.queue.get(j.id))?.status === 'running')
+    return { ...env, j, g }
+  }
+
+  it('flags a running paid media job; the job still runs to the end', async () => {
+    const { queue, worker, j, g } = await running()
+    const res = await queue.ignoreResult(j.id)
+    expect(res).toMatchObject({
+      ok: true,
+      changed: true,
+      job: { ignoreResult: true, status: 'running' },
+    })
+    expect((await queue.get(j.id))?.ignoredAt).toBeTypeOf('number')
+    g.release()
+    await worker.idle()
+    expect((await queue.get(j.id))?.status).toBe('succeeded')
+  })
+
+  it('is idempotent and can be undone while the job is running', async () => {
+    const { queue, j } = await running()
+    await queue.ignoreResult(j.id)
+    expect(await queue.ignoreResult(j.id)).toMatchObject({ ok: true, changed: false })
+    expect(await queue.ignoreResult(j.id, false)).toMatchObject({ ok: true, changed: true })
+    expect((await queue.get(j.id))?.ignoreResult).toBeUndefined()
+    expect(await queue.ignoreResult(j.id, false)).toMatchObject({ ok: true, changed: false })
+  })
+
+  it('refuses queued jobs (cancel them), finished jobs (switch the version instead), unknown ids and non-media jobs', async () => {
+    const { queue, worker } = setup({ handlers: { op: async () => {} } })
+    const { job: queued } = await queue.enqueue(job())
+    expect(await queue.ignoreResult(queued.id)).toEqual({ ok: false, reason: 'NOT_RUNNING' })
+    await worker.tick()
+    await worker.idle()
+    expect(await queue.ignoreResult(queued.id)).toEqual({ ok: false, reason: 'ALREADY_FINISHED' })
+    expect(await queue.ignoreResult('nope')).toEqual({ ok: false, reason: 'NOT_FOUND' })
+    const { job: text } = await queue.enqueue(job({ type: 'text', paid: false, operation: 'x' }))
+    expect(await queue.ignoreResult(text.id)).toEqual({ ok: false, reason: 'NOT_APPLICABLE' })
+    const { job: render } = await queue.enqueue(job({ type: 'render', operation: 'compose' }))
+    expect(await queue.ignoreResult(render.id)).toEqual({ ok: false, reason: 'NOT_APPLICABLE' })
+  })
+
+  it('retry and resume of a failed job start clean (the flag does not leak into the next attempt)', async () => {
+    const { queue, jobs, ports } = setup()
+    const { job: j } = await queue.enqueue(job())
+    await jobs.transition(j.id, ['queued'], { status: 'running', updatedAt: ports.clock.now() })
+    await queue.ignoreResult(j.id)
+    await jobs.transition(j.id, ['running'], {
+      status: 'failed',
+      providerJobId: 'up-1',
+      error: { category: 'delivery_failed', code: 'POLL_FAILED', message: 'x', recoverable: true },
+      updatedAt: ports.clock.now(),
+    })
+    expect(await queue.resume(j.id)).toMatchObject({ ok: true })
+    expect((await queue.get(j.id))?.ignoreResult).toBeUndefined()
+  })
+})
+
 describe('failure mapping in the worker', () => {
   const run = async (handler: JobHandler, over: Partial<NewJob> = {}) => {
     const env = setup({ handlers: { op: handler } })

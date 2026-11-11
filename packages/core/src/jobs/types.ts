@@ -99,6 +99,14 @@ export interface Job {
    * 只是一个提醒开关：不改变任务状态，也不影响重试 / 恢复原任务。重试或恢复会清掉它（新的失败要重新提醒）。
    */
   acknowledgedAt?: number
+  /**
+   * “忽略结果”（运行中的付费任务无法取消，只能这样）：任务照常跑完，产物照常保存进版本历史（钱已经花了，不能丢），
+   * 但**不自动成为当前版本**、也不登记为当前产物。用户之后仍可从版本历史里手动选用它。
+   * 只在任务运行期间设置；任务结束时处理器按它决定是否自动采用，并把实际结果写进 `result.ignored`。
+   * 重试 / 恢复原任务会清掉它。
+   */
+  ignoreResult?: boolean
+  ignoredAt?: number
   createdAt: number
   startedAt?: number
   finishedAt?: number

@@ -24,6 +24,7 @@ import type {
   IdGenerator,
   JobHandler,
   LlmClient,
+  Localized,
   LocateOptions,
   PipelineDeps,
   SecretStore,
@@ -33,6 +34,7 @@ import { bodyLimit } from 'hono/body-limit'
 import type { ServerContext, FfmpegState } from './context.ts'
 import { DomainError } from '@dramai/core'
 import { fromDomainError, HttpError } from './errors.ts'
+import { EnrichingEventSink } from './events/enriching-sink.ts'
 import { EventBus } from './events/event-bus.ts'
 import { RouteRegistry, stubMissing } from './handle.ts'
 import { staticFiles } from './http/static.ts'
@@ -47,6 +49,7 @@ import { createSecurity } from './security.ts'
 import { FileSecretStore } from './secrets.ts'
 import type { SecretCipher } from './secrets.ts'
 import { ProviderService } from './services/providers.ts'
+import { createTargetResolver } from './services/job-views.ts'
 import { SettingsService } from './services/settings.ts'
 import { FsFileStore } from './storage/files.ts'
 import { openSqliteStore } from './storage/sqlite-store.ts'
@@ -67,7 +70,7 @@ export interface CreateServerOptions {
   version?: string
   desktop?: boolean
   /** 演示模式标记：只用于让界面显示提示，服务端行为不因它改变。 */
-  demo?: { notice: string }
+  demo?: { notice: string | Localized }
 
   // —— 可替换的实现 / 测试注入 ——
   /** 密钥存储（桌面版换成系统加密 / 钥匙串）。 */
@@ -164,6 +167,8 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       ffmpeg.error = err instanceof Error ? err.message : String(err)
     }
 
+    const targets = createTargetResolver(store)
+    const events = new EnrichingEventSink(bus, (job) => targets.resolve(job))
     const settings = new SettingsService(store)
     const providers = new ProviderService({
       store,
@@ -182,7 +187,14 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       desktop: options.desktop ?? false,
       startedAt: clock.now(),
       tokenRequired: security.tokenRequired,
-      demo: options.demo,
+      demo: options.demo
+        ? {
+            notice:
+              typeof options.demo.notice === 'string'
+                ? { zh: options.demo.notice }
+                : options.demo.notice,
+          }
+        : undefined,
     }
 
     const jobTag = new AsyncLocalStorage<JobTag>()
@@ -198,7 +210,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       secrets,
       clock,
       ids,
-      events: bus,
+      events,
       catalog,
       llm: undefined as never,
       providers: { get: (id) => store!.providers.get(id), list: () => store!.providers.list() },
@@ -244,13 +256,13 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
         },
       } satisfies LlmClient)
 
-    const queue = new JobQueue({ jobs: store.jobs, clock, ids, events: bus })
+    const queue = new JobQueue({ jobs: store.jobs, clock, ids, events })
 
     // 1. 恢复上次没有结局的任务（有上游任务号 → 续轮询；付费且无任务号 → 标记结果不明，绝不重投）。
     await recoverRunningJobs({
       jobs: store.jobs,
       clock,
-      events: bus,
+      events,
       listProviderConfigs: () => store!.providers.list(),
     })
 
@@ -275,7 +287,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
     worker = new JobWorker({
       jobs: store.jobs,
       clock,
-      events: bus,
+      events,
       handlers,
       lanes: options.lanes,
       intervalMs: options.workerIntervalMs,
@@ -295,6 +307,8 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       files,
       secrets,
       bus,
+      events,
+      targets,
       clock,
       ids,
       catalog,
@@ -385,6 +399,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
           httpServer.closeAllConnections()
         })
         await worker!.stop({ waitForActive: closeOptions.graceful !== false })
+        await events.idle()
         bus!.dispose()
         store!.close()
         await lock.release()

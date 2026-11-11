@@ -63,7 +63,7 @@ export function buildExpectations(
         appearance: asset.appearance,
         styling: asset.styling,
         description: asset.description,
-        style: projection.project.style.imageKeywords,
+        style: styleBasis(projection),
         originals: asset.originals.map((o) => o.sha256),
       },
       upstream: [],
@@ -89,7 +89,7 @@ export function buildExpectations(
           description: variant.description,
           // 实际送进编辑的指令（含并入的服装描述）才是改变成品内容的输入。
           instruction: inputs.prompt,
-          style: projection.project.style.imageKeywords,
+          style: styleBasis(projection),
         },
         // 由编辑生成的衍生依赖本体资产图（必需）与关联服装的资产图（可选）；作者上传的成品不随它们失效。
         upstream: variant.origin === 'edit' ? [sheetKey, ...(costumeKey ? [costumeKey] : [])] : [],
@@ -114,7 +114,7 @@ export function buildExpectations(
       basis: {
         prompt: imageInputs.prompt,
         aspect: imageInputs.aspectRatio,
-        style: projection.project.style.imageKeywords,
+        style: styleBasis(projection),
         // 引用集合（含顺序）本身也是依据的一部分。
         refs: imageInputs.references.map((r) => ({
           assetId: r.assetId,
@@ -302,6 +302,14 @@ function structuralGaps(inputs: ResolvedInputs): string[] | undefined {
     .map((g) => g.code)
     .filter((c) => STRUCTURAL.has(c))
   return codes.length > 0 ? codes : undefined
+}
+
+/** 画风依据：关键词；参考图画风再加上图片内容的哈希（换了参考图，已有的图就该判为过期）。 */
+function styleBasis(projection: ProjectProjection): string {
+  const style = projection.project.style
+  return style.referenceFile
+    ? `${style.imageKeywords}|ref:${style.referenceFile.sha256}`
+    : style.imageKeywords
 }
 
 function evaluateOne(

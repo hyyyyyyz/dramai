@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildExpectations, buildRecord } from '../artifacts/staleness.ts'
-import type { ArtifactExpectation } from '../artifacts/types.ts'
+import type { ArtifactExpectation, ArtifactRecord } from '../artifacts/types.ts'
 import type { Asset } from '../domain/asset.ts'
 import type { AspectRatio, FileRef, MediaFacts } from '../domain/common.ts'
 import { deriveVoiceOwner } from '../domain/voice.ts'
@@ -18,6 +18,7 @@ import { artifactKeyOf, blockingGaps, resolveInputs } from '../generation/inputs
 import type { GenerationTarget, ResolvedInputs, ResolvedReference } from '../generation/inputs.ts'
 import { loadProjection } from '../generation/projection.ts'
 import type { ProjectProjection } from '../generation/projection.ts'
+import type { Store } from '../ports/index.ts'
 import { JobFailure } from '../jobs/worker.ts'
 import type { JobContext, JobHandler } from '../jobs/worker.ts'
 import { runProviderJob } from '../jobs/provider-job.ts'
@@ -268,15 +269,16 @@ async function storeVersion(
   return { version, file }
 }
 
-async function registerArtifact(
+/** 造出产物记录（不写库）。生成期间上游变了，就如实判为过期。 */
+function buildArtifact(
   deps: PipelineDeps,
   projection: ProjectProjection,
   expectation: ArtifactExpectation | undefined,
   stored: Stored,
   facts?: MediaFacts,
-): Promise<string | undefined> {
+): ArtifactRecord | undefined {
   if (!expectation) return undefined
-  const rec = buildRecord({
+  return buildRecord({
     projectId: projection.project.id,
     expectation,
     // 用开始时的上游快照：生成期间上游变了，就如实判为过期。
@@ -286,9 +288,14 @@ async function registerArtifact(
     facts,
     now: deps.clock.now(),
   })
-  await deps.store.artifacts.put(rec)
-  deps.events?.emit({ type: 'artifact.changed', projectId: projection.project.id, key: rec.key })
-  return rec.basisDigest
+}
+
+/**
+ * 落库时是否按“忽略结果”处理——在落库的事务里读任务，和用户的“忽略”动作串行，不会错过。
+ * 被忽略：版本照常进历史，但不成为当前版本，也不登记为当前产物。
+ */
+async function resultIgnored(tx: Store, ctx: JobContext): Promise<boolean> {
+  return (await tx.jobs.get(ctx.job.id))?.ignoreResult === true
 }
 
 async function setShotStage(
@@ -554,16 +561,21 @@ async function doImageJob(
   }
 
   // --- 落库：新版本追加到槽里（旧版本原样保留）+ 登记产物 ---
-  const digest = await registerArtifact(deps, projection, expectation, stored, facts)
-  stored.version.basisDigest = digest
+  const record = buildArtifact(deps, projection, expectation, stored, facts)
+  stored.version.basisDigest = record?.basisDigest
+  let adopted = true
   await deps.store.transaction(async (tx) => {
     const now = deps.clock.now()
+    // 被用户标记“忽略结果”：版本进历史，但不成为当前版本，也不登记为当前产物。
+    adopted = !(await resultIgnored(tx, ctx))
+    const keep = { makeCurrent: adopted }
+    if (record && adopted) await tx.artifacts.put(record)
     if (target.kind === 'shot_image') {
       const shot = await tx.shots.get(target.shotId)
       if (!shot) throw gone('镜头')
       await tx.shots.put({
         ...shot,
-        image: appendVersion(shot.image, stored.version),
+        image: appendVersion(shot.image, stored.version, keep),
         updatedAt: now,
       })
     } else {
@@ -573,7 +585,7 @@ async function doImageJob(
         const idx = a.variants.findIndex((v) => v.name === target.variantName)
         if (idx < 0) throw gone('衍生形态')
         const variants = a.variants.map((v, i) =>
-          i === idx ? { ...v, sheet: appendVersion(v.sheet, stored.version) } : v,
+          i === idx ? { ...v, sheet: appendVersion(v.sheet, stored.version, keep) } : v,
         )
         await tx.assets.put({ ...a, variants, updatedAt: now })
       } else {
@@ -582,11 +594,12 @@ async function doImageJob(
           views[ev.view] = appendVersion(
             views[ev.view] ?? { currentVersionId: null, versions: [] },
             ev.stored.version,
+            keep,
           )
         }
         await tx.assets.put({
           ...a,
-          sheet: appendVersion(a.sheet, stored.version),
+          sheet: appendVersion(a.sheet, stored.version, keep),
           sheetLayout: layout === 'single' ? a.sheetLayout : layout,
           sheetViews: extraViews.length > 0 ? views : a.sheetViews,
           updatedAt: now,
@@ -594,8 +607,16 @@ async function doImageJob(
       }
     }
   })
+  if (record && adopted) {
+    deps.events?.emit({ type: 'artifact.changed', projectId: record.projectId, key: record.key })
+  }
   return {
-    result: { versionId: stored.version.id, path: stored.file.path, views: extraViews.length },
+    result: {
+      versionId: stored.version.id,
+      path: stored.file.path,
+      views: extraViews.length,
+      ...(adopted ? {} : { ignored: true }),
+    },
   }
 }
 
@@ -730,18 +751,30 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
     facts,
     withNativeAudio: withAudio,
   })
-  stored.version.basisDigest = await registerArtifact(deps, projection, expectation, stored, facts)
+  const record = buildArtifact(deps, projection, expectation, stored, facts)
+  stored.version.basisDigest = record?.basisDigest
+  let adopted = true
   await deps.store.transaction(async (tx) => {
     const s = await tx.shots.get(shotId)
     if (!s) throw gone('镜头')
+    adopted = !(await resultIgnored(tx, ctx))
+    if (record && adopted) await tx.artifacts.put(record)
     await tx.shots.put({
       ...s,
-      video: appendVersion(s.video, stored.version),
+      video: appendVersion(s.video, stored.version, { makeCurrent: adopted }),
       updatedAt: deps.clock.now(),
     })
   })
+  if (record && adopted) {
+    deps.events?.emit({ type: 'artifact.changed', projectId: record.projectId, key: record.key })
+  }
   return {
-    result: { versionId: stored.version.id, path: stored.file.path, withNativeAudio: withAudio },
+    result: {
+      versionId: stored.version.id,
+      path: stored.file.path,
+      withNativeAudio: withAudio,
+      ...(adopted ? {} : { ignored: true }),
+    },
   }
 }
 
@@ -834,21 +867,29 @@ async function doAudioJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
     config,
     facts,
   })
-  stored.version.basisDigest = await registerArtifact(deps, projection, expectation, stored, facts)
+  const record = buildArtifact(deps, projection, expectation, stored, facts)
+  stored.version.basisDigest = record?.basisDigest
+  let adopted = true
   await deps.store.transaction(async (tx) => {
     const s = await tx.shots.get(shotId)
     if (!s) throw gone('镜头')
+    adopted = !(await resultIgnored(tx, ctx))
+    if (record && adopted) await tx.artifacts.put(record)
     await tx.shots.put({
       ...s,
-      narrationAudio: appendVersion(s.narrationAudio, stored.version),
+      narrationAudio: appendVersion(s.narrationAudio, stored.version, { makeCurrent: adopted }),
       updatedAt: deps.clock.now(),
     })
   })
+  if (record && adopted) {
+    deps.events?.emit({ type: 'artifact.changed', projectId: record.projectId, key: record.key })
+  }
   return {
     result: {
       versionId: stored.version.id,
       path: stored.file.path,
       durationSec: facts?.durationSec,
+      ...(adopted ? {} : { ignored: true }),
     },
   }
 }

@@ -1,4 +1,5 @@
 import type {
+  Localized,
   Catalog,
   Clock,
   FfmpegCapabilities,
@@ -12,6 +13,8 @@ import type {
   SecretStore,
 } from '@dramai/core'
 import type { EventBus } from './events/event-bus.ts'
+import type { EnrichingEventSink } from './events/enriching-sink.ts'
+import type { TargetResolver } from './services/job-views.ts'
 import type { SettingsService } from './services/settings.ts'
 import type { ProviderService } from './services/providers.ts'
 import type { FsFileStore } from './storage/files.ts'
@@ -27,7 +30,7 @@ export interface ServerConfig {
   startedAt: number
   tokenRequired: boolean
   /** 演示模式（由演示入口传入）；正式启动路径不设。 */
-  demo?: { notice: string }
+  demo?: { notice: Localized }
 }
 
 export interface FfmpegState {
@@ -44,6 +47,9 @@ export interface ServerContext {
   files: FsFileStore
   secrets: SecretStore
   bus: EventBus
+  /** core 事件的出口（`job.updated` 带上任务目标）；任务队列、worker、流水线都发到这里。 */
+  events: EnrichingEventSink
+  targets: TargetResolver
   clock: Clock
   ids: IdGenerator
   catalog: Catalog

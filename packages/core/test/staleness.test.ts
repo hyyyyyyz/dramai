@@ -294,6 +294,42 @@ describe('what does NOT go into the basis (changing it must not cause repeat spe
     }
   })
 
+  it('a reference-image style: the picture (its hash) is part of the basis; other styles are unaffected', async () => {
+    const w = await makeWorld()
+    await produceEverything(w)
+    const status = async (key: ArtifactKey) => evaluateArtifacts(await w.reload()).get(key)?.status
+    expect(await status(img(w.shot))).toBe('current')
+
+    const file = (sha: string) => ({
+      path: `style/reference-${sha}.png`,
+      mime: 'image/png',
+      bytes: 3,
+      sha256: sha,
+    })
+    const project = (await w.ports.store.projects.get(w.project.id))!
+    const withRef = (sha: string) => ({
+      ...project,
+      style: {
+        ...project.style,
+        source: 'reference_image' as const,
+        label: '风格参考图',
+        referenceFile: file(sha),
+      },
+    })
+    await w.ports.store.projects.put(withRef('a'.repeat(64)))
+    // 改成参考图风格：依据变了，已有的图判为过期（和换画风关键词一样）
+    expect(await status(img(w.shot))).toBe('stale')
+    await registerKind(w, 'shot_image')
+    expect(await status(img(w.shot))).toBe('current')
+    // 换了一张参考图：关键词没变，但图片内容变了
+    await w.ports.store.projects.put(withRef('b'.repeat(64)))
+    expect(await status(img(w.shot))).toBe('stale')
+    // 同一张图再放一次不算变
+    await registerKind(w, 'shot_image')
+    await w.ports.store.projects.put(withRef('b'.repeat(64)))
+    expect(await status(img(w.shot))).toBe('current')
+  })
+
   it('narration audio is the opposite: voice, speed and provider ARE in the basis', async () => {
     const w = await makeWorld()
     await produceEverything(w)

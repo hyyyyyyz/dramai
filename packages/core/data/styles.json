@@ -9,33 +9,68 @@
           "id": "shonen",
           "label": "少年热血漫",
           "description": "少年热血漫，色彩饱和，动作幅度大，光影对比强",
-          "imageKeywords": "anime style, shonen manga, vibrant saturated colors, dynamic action pose, cel shading, dramatic rim light, motion lines"
+          "imageKeywords": "anime style, shonen manga, vibrant saturated colors, dynamic action pose, cel shading, dramatic rim light, motion lines",
+          "i18n": {
+            "en": {
+              "label": "Shonen action manga",
+              "description": "Shonen action manga: saturated colors, big dynamic poses, strong light and shadow contrast"
+            }
+          }
         },
         {
           "id": "iyashikei",
           "label": "治愈日常漫",
           "description": "治愈日常漫，柔光，淡雅色调，温馨氛围",
-          "imageKeywords": "anime style, iyashikei slice-of-life, soft pastel colors, gentle natural lighting, warm cozy atmosphere"
+          "imageKeywords": "anime style, iyashikei slice-of-life, soft pastel colors, gentle natural lighting, warm cozy atmosphere",
+          "i18n": {
+            "en": {
+              "label": "Healing slice-of-life",
+              "description": "Healing slice-of-life manga: soft light, pale muted tones, warm and cozy mood"
+            }
+          }
         },
         {
           "id": "xianxia",
           "label": "古风仙侠漫",
           "description": "古风仙侠漫，水墨笔触，飘逸长袍，云雾缭绕",
-          "imageKeywords": "wuxia anime, ink wash painting style, flowing hanfu robes, misty mountains, traditional Chinese aesthetic"
+          "imageKeywords": "wuxia anime, ink wash painting style, flowing hanfu robes, misty mountains, traditional Chinese aesthetic",
+          "i18n": {
+            "en": {
+              "label": "Classical xianxia",
+              "description": "Classical Chinese xianxia manga: ink-brush strokes, flowing robes, drifting mist"
+            }
+          }
         },
         {
           "id": "school",
           "label": "校园青春漫",
           "description": "校园青春漫，制服，朝阳/黄昏光线，明亮色彩",
-          "imageKeywords": "anime style, japanese high school uniform, golden hour lighting, bright cheerful colors, slice of life"
+          "imageKeywords": "anime style, japanese high school uniform, golden hour lighting, bright cheerful colors, slice of life",
+          "i18n": {
+            "en": {
+              "label": "School romance manga",
+              "description": "School romance manga: uniforms, sunrise or dusk light, bright colors"
+            }
+          }
         },
         {
           "id": "kawaii",
           "label": "萌系 Q 版",
           "description": "萌系 Q 版，圆润线条，糖果色，可爱",
-          "imageKeywords": "kawaii anime, chibi style, candy pastel colors, rounded soft shapes, cute mascot characters"
+          "imageKeywords": "kawaii anime, chibi style, candy pastel colors, rounded soft shapes, cute mascot characters",
+          "i18n": {
+            "en": {
+              "label": "Cute chibi",
+              "description": "Cute chibi style: rounded lines, candy colors, adorable"
+            }
+          }
         }
-      ]
+      ],
+      "i18n": {
+        "en": {
+          "label": "Anime / Animation"
+        }
+      }
     },
     {
       "id": "realistic",
@@ -45,33 +80,68 @@
           "id": "modern_drama",
           "label": "现代都市短剧",
           "description": "现代都市短剧，写实人像，自然光",
-          "imageKeywords": "cinematic photo, modern urban drama, realistic portrait, natural lighting, contemporary fashion, shot on full frame"
+          "imageKeywords": "cinematic photo, modern urban drama, realistic portrait, natural lighting, contemporary fashion, shot on full frame",
+          "i18n": {
+            "en": {
+              "label": "Modern urban drama",
+              "description": "Modern urban drama: realistic portraits, natural light"
+            }
+          }
         },
         {
           "id": "mystery_realistic",
           "label": "悬疑写实",
           "description": "悬疑写实，冷色调，戏剧性阴影，电影感",
-          "imageKeywords": "cinematic photo, dark mystery thriller, cool color grading, low-key dramatic shadows, film grain"
+          "imageKeywords": "cinematic photo, dark mystery thriller, cool color grading, low-key dramatic shadows, film grain",
+          "i18n": {
+            "en": {
+              "label": "Suspense realism",
+              "description": "Suspense realism: cool tones, dramatic shadows, cinematic feel"
+            }
+          }
         },
         {
           "id": "lyrical",
           "label": "文艺写实",
           "description": "文艺写实，柔和散景，胶片质感",
-          "imageKeywords": "cinematic photo, lyrical film aesthetic, soft bokeh, kodak film grain, golden hour, gentle composition"
+          "imageKeywords": "cinematic photo, lyrical film aesthetic, soft bokeh, kodak film grain, golden hour, gentle composition",
+          "i18n": {
+            "en": {
+              "label": "Lyrical realism",
+              "description": "Lyrical realism: soft bokeh, film texture"
+            }
+          }
         },
         {
           "id": "documentary",
           "label": "纪录片 / 新闻感",
           "description": "纪录片 / 新闻感，自然纪实，颗粒感",
-          "imageKeywords": "documentary photography, photojournalistic, natural lighting, candid moment, subtle film grain, neutral color grading"
+          "imageKeywords": "documentary photography, photojournalistic, natural lighting, candid moment, subtle film grain, neutral color grading",
+          "i18n": {
+            "en": {
+              "label": "Documentary / news look",
+              "description": "Documentary or news look: natural and candid, film grain"
+            }
+          }
         },
         {
           "id": "vlog",
           "label": "Vlog / 短视频",
           "description": "Vlog / 短视频，明亮饱和，年轻镜头语言",
-          "imageKeywords": "vlog style, bright saturated colors, wide angle, handheld feel, youthful contemporary aesthetic"
+          "imageKeywords": "vlog style, bright saturated colors, wide angle, handheld feel, youthful contemporary aesthetic",
+          "i18n": {
+            "en": {
+              "label": "Vlog / short video",
+              "description": "Vlog or short-video look: bright saturated colors, youthful camera language"
+            }
+          }
         }
-      ]
+      ],
+      "i18n": {
+        "en": {
+          "label": "Realistic drama"
+        }
+      }
     },
     {
       "id": "art",
@@ -81,33 +151,68 @@
           "id": "ink_wash",
           "label": "水墨画",
           "description": "水墨画风，留白，毛笔笔触",
-          "imageKeywords": "traditional chinese ink wash painting, sumi-e, brush strokes, negative space, monochrome with subtle ink gradient"
+          "imageKeywords": "traditional chinese ink wash painting, sumi-e, brush strokes, negative space, monochrome with subtle ink gradient",
+          "i18n": {
+            "en": {
+              "label": "Ink wash painting",
+              "description": "Ink wash painting: generous negative space, brush strokes"
+            }
+          }
         },
         {
           "id": "oil_painting",
           "label": "油画",
           "description": "油画质感，厚涂笔触，古典构图",
-          "imageKeywords": "oil painting, thick impasto brush strokes, classical composition, painterly texture, museum lighting"
+          "imageKeywords": "oil painting, thick impasto brush strokes, classical composition, painterly texture, museum lighting",
+          "i18n": {
+            "en": {
+              "label": "Oil painting",
+              "description": "Oil painting texture: thick impasto strokes, classical composition"
+            }
+          }
         },
         {
           "id": "cg_3d",
           "label": "3D CG 动画",
           "description": "3D CG 动画，皮克斯/迪士尼质感",
-          "imageKeywords": "3D CG animation, pixar disney style, subsurface scattering, soft global illumination, polished render"
+          "imageKeywords": "3D CG animation, pixar disney style, subsurface scattering, soft global illumination, polished render",
+          "i18n": {
+            "en": {
+              "label": "3D CG animation",
+              "description": "3D CG animation: Pixar / Disney-like quality"
+            }
+          }
         },
         {
           "id": "pixel_art",
           "label": "像素艺术",
           "description": "像素艺术，低分辨率方块，复古游戏感",
-          "imageKeywords": "pixel art, low-resolution sprites, 16-bit retro game aesthetic, limited palette, dithering"
+          "imageKeywords": "pixel art, low-resolution sprites, 16-bit retro game aesthetic, limited palette, dithering",
+          "i18n": {
+            "en": {
+              "label": "Pixel art",
+              "description": "Pixel art: low-resolution blocks, retro-game feel"
+            }
+          }
         },
         {
           "id": "low_poly",
           "label": "低多边形",
           "description": "低多边形，简洁色块，几何感",
-          "imageKeywords": "low poly 3D, geometric flat shading, minimalist color blocks, isometric perspective"
+          "imageKeywords": "low poly 3D, geometric flat shading, minimalist color blocks, isometric perspective",
+          "i18n": {
+            "en": {
+              "label": "Low poly",
+              "description": "Low poly: clean color blocks, geometric feel"
+            }
+          }
         }
-      ]
+      ],
+      "i18n": {
+        "en": {
+          "label": "Art styles"
+        }
+      }
     },
     {
       "id": "thematic",
@@ -117,33 +222,68 @@
           "id": "cyberpunk",
           "label": "Cyberpunk 赛博朋克",
           "description": "Cyberpunk 赛博朋克，霓虹冷光，雨夜街景",
-          "imageKeywords": "cyberpunk, neon lights, rainy night street, holographic billboards, futuristic dystopia, synthwave color palette"
+          "imageKeywords": "cyberpunk, neon lights, rainy night street, holographic billboards, futuristic dystopia, synthwave color palette",
+          "i18n": {
+            "en": {
+              "label": "Cyberpunk",
+              "description": "Cyberpunk: neon cold light, rainy night streets"
+            }
+          }
         },
         {
           "id": "steampunk",
           "label": "Steampunk 蒸汽朋克",
           "description": "Steampunk 蒸汽朋克，黄铜机械，维多利亚",
-          "imageKeywords": "steampunk, brass clockwork machinery, victorian aesthetic, sepia tones, gears and pistons"
+          "imageKeywords": "steampunk, brass clockwork machinery, victorian aesthetic, sepia tones, gears and pistons",
+          "i18n": {
+            "en": {
+              "label": "Steampunk",
+              "description": "Steampunk: brass machinery, Victorian"
+            }
+          }
         },
         {
           "id": "fairy_tale",
           "label": "童话绘本",
           "description": "童话绘本，温暖手绘，柔和色彩",
-          "imageKeywords": "storybook illustration, children's picture book, warm hand-drawn texture, gentle pastel colors, whimsical"
+          "imageKeywords": "storybook illustration, children's picture book, warm hand-drawn texture, gentle pastel colors, whimsical",
+          "i18n": {
+            "en": {
+              "label": "Fairy-tale picture book",
+              "description": "Fairy-tale picture book: warm hand-drawn look, soft colors"
+            }
+          }
         },
         {
           "id": "horror",
           "label": "恐怖悬念",
           "description": "恐怖悬念，暗调，迷雾，戏剧性光线",
-          "imageKeywords": "horror cinematic, dark eerie atmosphere, mist and fog, dramatic backlight, desaturated colors"
+          "imageKeywords": "horror cinematic, dark eerie atmosphere, mist and fog, dramatic backlight, desaturated colors",
+          "i18n": {
+            "en": {
+              "label": "Horror suspense",
+              "description": "Horror suspense: dark tones, fog, dramatic lighting"
+            }
+          }
         },
         {
           "id": "retro_80s",
           "label": "复古 80s",
           "description": "复古 80s，VHS 颗粒，霓虹紫粉",
-          "imageKeywords": "retro 80s aesthetic, vhs grain, neon magenta and cyan, synthwave, vaporwave palette"
+          "imageKeywords": "retro 80s aesthetic, vhs grain, neon magenta and cyan, synthwave, vaporwave palette",
+          "i18n": {
+            "en": {
+              "label": "Retro 80s",
+              "description": "Retro 80s: VHS grain, neon purple and pink"
+            }
+          }
         }
-      ]
+      ],
+      "i18n": {
+        "en": {
+          "label": "Themed"
+        }
+      }
     }
   ]
 }

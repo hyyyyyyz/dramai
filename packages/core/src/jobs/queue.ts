@@ -54,6 +54,13 @@ export type AcknowledgeResult =
   | { ok: true; job: Job; alreadyAcknowledged: boolean }
   | { ok: false; reason: 'NOT_FOUND' | 'NOT_FAILED' }
 
+export type IgnoreResultOutcome =
+  | { ok: true; job: Job; changed: boolean }
+  | {
+      ok: false
+      reason: 'NOT_FOUND' | 'NOT_RUNNING' | 'ALREADY_FINISHED' | 'NOT_APPLICABLE'
+    }
+
 export type ResumeResult =
   | { ok: true; job: Job }
   | { ok: false; reason: 'NOT_FOUND' | 'NOT_FAILED' | 'NOTHING_TO_RESUME' }
@@ -177,6 +184,8 @@ export class JobQueue {
       progress: undefined,
       error: undefined,
       acknowledgedAt: undefined,
+      ignoreResult: undefined,
+      ignoredAt: undefined,
       providerJobId: undefined,
       resultUrl: undefined,
       resumeFrom: undefined,
@@ -211,6 +220,32 @@ export class JobQueue {
     return { ok: true, job: updated, alreadyAcknowledged: false }
   }
 
+  /**
+   * 忽略 / 取消忽略运行中的付费任务的结果（见 `Job.ignoreResult`）。
+   * - 只对运行中、产出媒体版本的付费任务（图 / 视频 / 配音）有意义；
+   * - 排队中的任务用“取消”（还没花钱）；已结束的任务用“切换当前版本”；
+   * - 幂等：重复设置返回 `changed: false`。
+   */
+  async ignoreResult(id: JobId, ignore = true): Promise<IgnoreResultOutcome> {
+    const job = await this.deps.jobs.get(id)
+    if (!job) return { ok: false, reason: 'NOT_FOUND' }
+    if (!job.paid || !(job.type === 'image' || job.type === 'video' || job.type === 'audio')) {
+      return { ok: false, reason: 'NOT_APPLICABLE' }
+    }
+    if (job.status === 'queued') return { ok: false, reason: 'NOT_RUNNING' }
+    if (job.status !== 'running') return { ok: false, reason: 'ALREADY_FINISHED' }
+    if ((job.ignoreResult === true) === ignore) return { ok: true, job, changed: false }
+    const now = this.deps.clock.now()
+    const updated = await this.deps.jobs.transition(id, ['running'], {
+      ignoreResult: ignore ? true : undefined,
+      ignoredAt: ignore ? now : undefined,
+      updatedAt: now,
+    })
+    if (!updated) return { ok: false, reason: 'ALREADY_FINISHED' }
+    this.publish(updated)
+    return { ok: true, job: updated, changed: true }
+  }
+
   /** 恢复原任务：续上已有的上游任务号/结果地址，不重新提交。 */
   async resume(id: JobId): Promise<ResumeResult> {
     const job = await this.deps.jobs.get(id)
@@ -225,6 +260,8 @@ export class JobQueue {
       stage: undefined,
       error: undefined,
       acknowledgedAt: undefined,
+      ignoreResult: undefined,
+      ignoredAt: undefined,
       resumeFrom: job.resultUrl ? 'download' : 'poll',
       finishedAt: undefined,
       updatedAt: now,

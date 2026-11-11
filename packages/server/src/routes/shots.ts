@@ -11,11 +11,12 @@ import {
   setCurrentVersion,
   versionFilePath,
 } from '@dramai/core'
-import type { MediaSlot, MediaVersion, Shot, ShotAssetRef, Store } from '@dramai/core'
+import type { MediaSlot, MediaVersion, Shot, ShotAssetRef } from '@dramai/core'
 import type { ServerContext } from '../context.ts'
 import { badRequest, HttpError } from '../errors.ts'
 import { formFile } from '../handle.ts'
 import type { RouteRegistry } from '../handle.ts'
+import { registerVersionArtifact } from '../services/artifacts.ts'
 import {
   afterStructureChange,
   assertNotBusy,
@@ -222,7 +223,13 @@ export function registerShotRoutes(r: RouteRegistry, ctx: ServerContext): void {
     const next: Shot = { ...shot, [field]: switched, updatedAt: ctx.clock.now() }
     await ctx.store.transaction(async (tx) => {
       await tx.shots.put(next)
-      await repointArtifact(tx, shot.projectId, `${SLOT_KEY[slotName]}:${shot.id}`, version)
+      await registerVersionArtifact(
+        ctx,
+        tx,
+        shot.projectId,
+        `${SLOT_KEY[slotName]}:${shot.id}`,
+        version,
+      )
     })
     ctx.bus.changed('shot', { projectId: shot.projectId, ids: [shot.id], op: 'updated' })
     ctx.bus.emit({
@@ -310,20 +317,3 @@ function clearable<K extends keyof Shot>(
 }
 
 /** 当前版本切换后，产物登记要跟着指向这个版本的文件（下游据它的内容哈希判断是否过期）。 */
-async function repointArtifact(
-  tx: Store,
-  projectId: string,
-  key: string,
-  version: MediaVersion,
-): Promise<void> {
-  const rec = await tx.artifacts.get(projectId, key)
-  if (!rec) return
-  await tx.artifacts.put({
-    ...rec,
-    file: version.file,
-    versionId: version.id,
-    contentHash: version.file.sha256,
-    basisDigest: version.basisDigest ?? rec.basisDigest,
-    facts: version.facts ?? rec.facts,
-  })
-}

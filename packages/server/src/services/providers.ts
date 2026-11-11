@@ -1,9 +1,15 @@
 import type { ProviderConfigDto } from '@dramai/api'
-import { configFromPreset, PROVIDER_PRESETS, testProvider } from '@dramai/core'
+import {
+  configFromPreset,
+  localizeProviderConfig,
+  PROVIDER_PRESETS,
+  testProvider,
+} from '@dramai/core'
 import type {
   Clock,
   ExecutorDeps,
   IdGenerator,
+  Locale,
   ModelRegistry,
   ProviderConfig,
   ProviderKind,
@@ -34,13 +40,18 @@ export class ProviderService {
     this.d = deps
   }
 
-  async toDto(cfg: ProviderConfig): Promise<ProviderConfigDto> {
+  /** 对外的视图：Key 只给掩码；由预设创建且没被改过的名称 / 备注 / 限制按 `locale` 翻译，用户改过的原样返回。 */
+  async toDto(cfg: ProviderConfig, locale: Locale = 'zh'): Promise<ProviderConfigDto> {
     const key = cfg.secretRef ? await this.d.secrets.get(cfg.secretRef) : undefined
     const { capabilityOverrides, ...withRef } = cfg
     const rest: Omit<ProviderConfig, 'secretRef'> & { secretRef?: string } = withRef
     delete rest.secretRef
+    const shown = localizeProviderConfig(cfg, locale)
     return {
       ...rest,
+      label: shown.label,
+      ...(shown.notes === undefined ? {} : { notes: shown.notes }),
+      ...(shown.knownLimitations === undefined ? {} : { knownLimitations: shown.knownLimitations }),
       ...(capabilityOverrides ? { capabilityOverrides: { ...capabilityOverrides } } : {}),
       hasKey: key !== undefined && key !== '',
       keyMask: maskSecret(key),

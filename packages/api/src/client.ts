@@ -59,6 +59,12 @@ export interface ClientOptions {
   /** 访问令牌（监听非回环地址时必需）。浏览器里通常用 cookie，不用传。 */
   token?: string
   fetch?: typeof fetch
+  /**
+   * 内置数据（风格预设名称、服务商备注、演示提示语……）要哪种语言：`zh` / `en`。
+   * 发成请求头 `X-Dramai-Locale`；不给则服务端依次看应用设置里的语言、`Accept-Language`，最后用中文。
+   * 用户自己填写的内容永远原样返回，不受它影响。
+   */
+  locale?: string
   /** 用 schema 校验响应（默认开：服务端和前端漂移时第一时间发现）。 */
   validate?: boolean
 }
@@ -97,8 +103,10 @@ export function createClient(options: ClientOptions = {}) {
   const doFetch = options.fetch ?? ((...a: Parameters<typeof fetch>) => fetch(...a))
   const validate = options.validate !== false
 
-  const authHeaders = (): Record<string, string> =>
-    options.token ? { Authorization: `Bearer ${options.token}` } : {}
+  const authHeaders = (): Record<string, string> => ({
+    ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+    ...(options.locale ? { 'X-Dramai-Locale': options.locale } : {}),
+  })
 
   async function call<N extends RouteName>(name: N, ...args: CallArgs<N>): Promise<CallOutput<N>> {
     const def = routes[name] as RouteDef

@@ -44,18 +44,18 @@ export async function syncSheetArtifact(
     await ctx.store.artifacts.delete(projectId, key)
   } else {
     try {
-      await ctx.store.artifacts.put(
-        buildRecord({
-          projectId,
-          expectation,
-          upstreamRecords: projection.artifacts,
-          file: version.file,
-          versionId: version.id,
-          origin: version.source === 'uploaded' ? 'uploaded' : 'generated',
-          facts: version.facts,
-          now: ctx.clock.now(),
-        }),
-      )
+      const rec = buildRecord({
+        projectId,
+        expectation,
+        upstreamRecords: projection.artifacts,
+        file: version.file,
+        versionId: version.id,
+        origin: version.source === 'uploaded' ? 'uploaded' : 'generated',
+        facts: version.facts,
+        now: ctx.clock.now(),
+      })
+      // 用这个版本自己的依据摘要：选用旧版本 / 被忽略的版本时，依据不一致就如实显示过期。
+      await ctx.store.artifacts.put({ ...rec, basisDigest: version.basisDigest ?? rec.basisDigest })
     } catch {
       await ctx.store.artifacts.delete(projectId, key)
     }

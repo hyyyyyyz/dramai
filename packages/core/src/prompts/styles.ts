@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 import type { StyleSnapshot } from '../domain/project.ts'
 import { DomainError } from '../errors.ts'
+import type { Locale } from '../i18n.ts'
 
 /**
  * 风格预设（数据文件 `styles.json`）。预设只是给用户省手敲：可以不用、手写、或留空让 LLM 从素材推断。
@@ -10,18 +11,25 @@ import { DomainError } from '../errors.ts'
 
 export const STYLE_SCHEMA_VERSION = 1
 
+/** 内置文案的其他语言版本（中文是源语言，写在 label / description 上）。 */
+export interface StylePresetI18n {
+  en?: { label: string; description: string }
+}
+
 export interface StylePreset {
   id: string
   label: string
   description: string
   /** 英文画面关键词，作为视觉基底。 */
   imageKeywords: string
+  i18n?: StylePresetI18n
 }
 
 export interface StylePresetGroup {
   id: string
   label: string
   presets: StylePreset[]
+  i18n?: { en?: { label: string } }
 }
 
 const fileSchema = z.object({
@@ -30,12 +38,16 @@ const fileSchema = z.object({
     z.object({
       id: z.string(),
       label: z.string(),
+      i18n: z.object({ en: z.object({ label: z.string() }).optional() }).optional(),
       presets: z.array(
         z.object({
           id: z.string().min(1),
           label: z.string().min(1),
           description: z.string(),
           imageKeywords: z.string().min(1),
+          i18n: z
+            .object({ en: z.object({ label: z.string(), description: z.string() }).optional() })
+            .optional(),
         }),
       ),
     }),
@@ -74,7 +86,7 @@ export class StyleCatalog {
     for (const og of other.groups) {
       let target = groups.find((g) => g.id === og.id)
       if (!target) {
-        target = { id: og.id, label: og.label, presets: [] }
+        target = { id: og.id, label: og.label, i18n: og.i18n, presets: [] }
         groups.push(target)
       }
       for (const p of og.presets) {
@@ -161,4 +173,53 @@ export function expandStyle(
         expandedAt: now,
       }
   }
+}
+
+// === 本地化 ===
+
+export function localizeStylePreset(
+  preset: StylePreset,
+  locale: Locale,
+): Pick<StylePreset, 'label' | 'description'> {
+  const t = locale === 'en' ? preset.i18n?.en : undefined
+  return { label: t?.label ?? preset.label, description: t?.description ?? preset.description }
+}
+
+export function localizeStyleGroup(group: StylePresetGroup, locale: Locale): string {
+  return (locale === 'en' ? group.i18n?.en?.label : undefined) ?? group.label
+}
+
+/** 快照里内置的文案（“未指定”“自定义”“风格参考图”）。 */
+const BUILT_IN_STYLE_LABELS: Record<string, { en: string }> = {
+  未指定: { en: 'Unspecified' },
+  自定义: { en: 'Custom' },
+  风格参考图: { en: 'Style reference image' },
+}
+
+/**
+ * 项目里存的风格快照带着创建时的中文名称。展示时：
+ * - 模板风格且名称 / 描述没被用户改过 → 换成目录里对应语言的版本；
+ * - 内置的“未指定 / 自定义 / 风格参考图” → 换成对应语言；
+ * - 用户自己写的名称、描述原样返回。
+ */
+export function localizeStyleSnapshot(
+  style: StyleSnapshot,
+  catalog: StyleCatalog,
+  locale: Locale,
+): StyleSnapshot {
+  if (locale === 'zh') return style
+  const builtIn = BUILT_IN_STYLE_LABELS[style.label]
+  if (style.source === 'template' && style.templateId) {
+    const preset = catalog.get(style.templateId)
+    if (preset) {
+      const t = localizeStylePreset(preset, locale)
+      return {
+        ...style,
+        label: style.label === preset.label ? t.label : style.label,
+        description: style.description === preset.description ? t.description : style.description,
+      }
+    }
+  }
+  if (style.source !== 'template' && builtIn) return { ...style, label: builtIn.en }
+  return style
 }
