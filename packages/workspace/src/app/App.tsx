@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import type { DramaiClient } from '@dramai/api'
+import { useTranslation } from 'react-i18next'
 import { RouterProvider } from 'react-router/dom'
 import { ToastProvider } from '@dramai/ui/v2'
 import { ApiProvider } from '@/data/api-context'
@@ -26,13 +27,14 @@ export function App({
   queryClient?: QueryClient
   client?: DramaiClient
 }) {
+  const { t } = useTranslation()
   const client = useMemo(() => queryClient ?? createQueryClient(), [queryClient])
   const router = useMemo(() => createAppRouter(), [])
   return (
     <QueryClientProvider client={client}>
       <ApiProvider client={api}>
         <EventSyncProvider>
-          <ToastProvider>
+          <ToastProvider dismissLabel={t('common.close')} regionLabel={t('common.notifications')}>
             <Gate>
               <RouterProvider router={router} />
             </Gate>

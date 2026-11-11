@@ -1,6 +1,7 @@
 export default {
   common: {
     close: '关闭',
+    notifications: '通知',
     cancel: '取消',
     save: '保存',
     delete: '删除',

@@ -1,6 +1,7 @@
 export default {
   common: {
     close: 'Close',
+    notifications: 'Notifications',
     cancel: 'Cancel',
     save: 'Save',
     delete: 'Delete',

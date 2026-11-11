@@ -25,7 +25,10 @@ export function renderApp(ui: ReactElement, opts: { client: DramaiClient; route?
     <QueryClientProvider client={queryClient}>
       <ApiProvider client={opts.client}>
         <EventSyncProvider>
-          <ToastProvider>
+          <ToastProvider
+            dismissLabel={i18n.t('common.close')}
+            regionLabel={i18n.t('common.notifications')}
+          >
             <JobOpsProvider>
               <MemoryRouter initialEntries={[opts.route ?? '/']}>{ui}</MemoryRouter>
             </JobOpsProvider>
