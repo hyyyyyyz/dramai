@@ -29,6 +29,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @dramai/workspace dev",
+    "dev:demo": "pnpm --filter @dramai/workspace dev --demo",
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "lint:fix": "pnpm -r --if-present lint:fix",
@@ -37,7 +38,8 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "webui": "pnpm --filter @dramai/webui start"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

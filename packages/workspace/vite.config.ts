@@ -1,53 +1,25 @@
-import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { defaultClientConditions, defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import fs from 'node:fs'
-import { createRequire } from 'node:module'
 import path from 'node:path'
 
-// favicon 的源文件在 @dramai/ui 里；构建 / 开发时仍以 /favicon.svg 提供，保持原有 URL 不变。
-function brandFavicon(): Plugin {
-  const file = createRequire(import.meta.url).resolve('@dramai/ui/brand/favicon.svg')
-  return {
-    name: 'dramai:brand-favicon',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const url = (req.url ?? '').split('?')[0]
-        if (url === '/favicon.svg' || url === `${server.config.base}favicon.svg`) {
-          res.setHeader('Content-Type', 'image/svg+xml')
-          res.end(fs.readFileSync(file))
-          return
-        }
-        next()
-      })
-    },
-    generateBundle() {
-      this.emitFile({ type: 'asset', fileName: 'favicon.svg', source: fs.readFileSync(file) })
-    },
-  }
-}
+// 开发时 /api 代理到本地服务（默认 8787，可用 DRAMAI_API 覆盖）。
+// 不改 Host / Origin：服务端按同源校验写请求，代理保持原样即可通过。
+// 构建产物由 @dramai/server 在根路径托管，所以 base 固定为 '/'。
+const api = process.env.DRAMAI_API ?? 'http://127.0.0.1:8787'
 
-// GitHub Pages 部署在 https://hyyyyyyz.github.io/dramai/
-// 因此默认 base = "/dramai/"。本地或自托管时可用 VITE_BASE 覆盖。
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  const base = env.VITE_BASE ?? '/dramai/'
-
-  return {
-    base,
-    plugins: [react(), tailwindcss(), brandFavicon()],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, './src'),
-      },
-    },
-    server: {
-      port: 5173,
-      open: false,
-    },
-    build: {
-      target: 'es2022',
-      sourcemap: true,
-    },
-  }
+export default defineConfig({
+  base: '/',
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: { '@': path.resolve(import.meta.dirname, 'src') },
+    // 前端依赖 @dramai/api 的源码，不要求先构建它。
+    conditions: [...defaultClientConditions, 'dramai-source'],
+  },
+  server: {
+    port: 5173,
+    strictPort: false,
+    proxy: { '/api': { target: api, changeOrigin: false } },
+  },
+  build: { target: 'es2022', sourcemap: true },
 })
