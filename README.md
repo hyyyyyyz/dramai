@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/hyyyyyyz/dramai/main/packages/ui/src/brand/logo.svg" alt="dramai · AI short-drama studio in your browser" width="720" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./packages/ui/src/brand/banner-ink.svg" />
+  <img src="./packages/ui/src/brand/banner-paper.svg" alt="dramai · 在本机运行的开源 AI 短剧工作室" width="720" />
+</picture>
 
 文本 / 文档 / 参考图 → 分镜脚本 → 角色一致的图 → 视频片段 → 一键导出剪映草稿
 全程纯前端、零后端、可直接 fork 部署到 GitHub Pages。

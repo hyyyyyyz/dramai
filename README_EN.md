@@ -1,6 +1,9 @@
 <div align="center">
 
-# dramai
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./packages/ui/src/brand/banner-ink.svg" />
+  <img src="./packages/ui/src/brand/banner-paper.svg" alt="dramai · an open-source AI short-drama studio that runs on your machine" width="720" />
+</picture>
 
 **An open-source AI short-drama studio that runs entirely in your browser.**
 

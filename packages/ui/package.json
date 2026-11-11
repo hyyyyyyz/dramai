@@ -11,8 +11,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./styles/globals.css": "./src/styles/globals.css",
-    "./brand/favicon.svg": "./src/brand/favicon.svg",
-    "./brand/logo.svg": "./src/brand/logo.svg"
+    "./brand/*": "./src/brand/*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
