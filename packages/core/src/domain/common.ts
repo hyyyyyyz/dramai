@@ -38,6 +38,7 @@ export const SCHEMA_VERSIONS = {
   shot: 1,
   asset: 1,
   candidate: 1,
+  material: 1,
   job: 1,
   artifact: 1,
   timeline: 1,

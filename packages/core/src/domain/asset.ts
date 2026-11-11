@@ -40,8 +40,12 @@ export interface Asset {
   appearance?: string
   styling?: string
   description?: string
-  /** 资产图（sheet）：带版本列表。后续所有生成以它为条件。 */
+  /** 资产图（sheet）：带版本列表。后续所有生成以它为条件。逐角度版式下它是正面图。 */
   sheet: MediaSlot
+  /** 设定图版式：`multi_view` 一张图含多视角；`per_angle` 逐角度单图（`sheet` 为正面，其余在 `sheetViews`）。 */
+  sheetLayout?: 'multi_view' | 'per_angle'
+  /** 逐角度版式的其余视角。 */
+  sheetViews?: Partial<Record<'side' | 'back', MediaSlot>>
   /** 用户上传的原图——只作为生成资产图的输入，不能顶替资产图。 */
   originals: FileRef[]
   /** 角色音色参考音频（A9 预留，可空）。 */
@@ -94,6 +98,8 @@ export interface EntityCandidate {
   aliases: string[]
   /** 0..1 的数值。高/中/低三档用 `confidenceBand` 换算，阈值见 `CONFIDENCE_THRESHOLDS`。 */
   confidence?: number
+  /** 外貌 / 外观描述（抽取阶段写的，确认为资产时带过去）。 */
+  appearance?: string
   evidence?: string
   /** 出现在哪些镜头。 */
   shotIds: ShotId[]
@@ -103,6 +109,15 @@ export interface EntityCandidate {
   suggestedMatch?: MatchSuggestion
   /** status = linked 时指向被关联的已有资产。 */
   linkedAssetId?: AssetId
+  /**
+   * 关联是怎么来的：`auto` = 抽取时按“名字 / 别名完全一致”自动关联的；`manual` = 用户手动关联的。
+   * 自动关联可能错（两个不同的人可能同名），所以要能和手动区分开，并且可以撤销（见 `undoCandidateLink`）。
+   */
+  linkSource?: 'auto' | 'manual'
+  /** 关联时并入目标资产的别名（撤销时要还回去）。 */
+  aliasesAdded?: string[]
+  /** 关联时给目标资产创建的衍生形态名（撤销时一并移除——仅当它还没有设定图）。 */
+  variantsCreated?: string[]
   /** status = accepted_new 时指向新建的资产。 */
   createdAssetId?: AssetId
   handledAt?: number
@@ -141,6 +156,7 @@ export function decideCandidate(
   candidate: EntityCandidate,
   decision: CandidateDecision,
   now: number,
+  options: { linkSource?: 'auto' | 'manual' } = {},
 ): EntityCandidate {
   if (candidate.status !== 'pending') {
     throw new Error(`candidate ${candidate.id} is already handled (${candidate.status})`)
@@ -150,7 +166,12 @@ export function decideCandidate(
     case 'accept_new':
       return { ...base, status: 'accepted_new', createdAssetId: decision.createdAssetId }
     case 'link':
-      return { ...base, status: 'linked', linkedAssetId: decision.assetId }
+      return {
+        ...base,
+        status: 'linked',
+        linkedAssetId: decision.assetId,
+        linkSource: options.linkSource ?? 'manual',
+      }
     case 'ignore':
       return { ...base, status: 'ignored' }
   }
@@ -181,7 +202,7 @@ export function candidateProgress(
   return out
 }
 
-const normalizeName = (s: string) =>
+export const normalizeEntityName = (s: string) =>
   s
     .normalize('NFKC')
     .toLowerCase()
@@ -197,13 +218,13 @@ export function suggestMatch(
   assets: readonly Pick<Asset, 'id' | 'kind' | 'name' | 'aliases' | 'deletedAt'>[],
 ): MatchSuggestion | undefined {
   const cNames = [candidate.name, ...candidate.aliases]
-    .map((t) => ({ raw: t, norm: normalizeName(t) }))
+    .map((t) => ({ raw: t, norm: normalizeEntityName(t) }))
     .filter((n) => n.norm)
   let best: MatchSuggestion | undefined
   for (const asset of assets) {
     if (asset.kind !== candidate.kind || asset.deletedAt) continue
     const aNames = [asset.name, ...asset.aliases]
-      .map((t) => ({ raw: t, norm: normalizeName(t) }))
+      .map((t) => ({ raw: t, norm: normalizeEntityName(t) }))
       .filter((n) => n.norm)
     const basis: MatchBasis[] = []
     let score = 0

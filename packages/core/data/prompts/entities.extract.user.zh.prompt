@@ -1,0 +1,10 @@
+---
+id: entities.extract.user
+locale: zh
+schemaVersion: 1
+description: 实体抽取的用户消息
+---
+作品：{{projectName}}（风格：{{styleLabel}}）
+
+# 这一批的镜头
+{{shotsBlock}}

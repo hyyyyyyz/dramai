@@ -1,12 +1,19 @@
 import { readImageSize } from './image-size.ts'
 
-export type MaterialKind = 'doc' | 'txt' | 'md' | 'image'
+import type { Chapter, MaterialKind } from '../domain/material.ts'
+import { countChars, detectChapters, normalizeText } from './chapters.ts'
+
+export type { MaterialKind }
 
 export interface ParsedMaterial {
   kind: MaterialKind
   name: string
-  /** 解析后的纯文本（image 为空字符串）。 */
+  /** 解析后的纯文本（image 为空字符串）。**不截断**。 */
   text: string
+  /** 字数（不含空白）。 */
+  charCount: number
+  /** 识别出的章节（没有标题则为空）。 */
+  chapters: Chapter[]
   /** 图片尺寸（读不出则缺省）。 */
   size?: { width: number; height: number }
   mimeType: string
@@ -72,12 +79,12 @@ export async function parseMaterial(input: {
       const mammoth = await import('mammoth')
       try {
         const result = await mammoth.extractRawText({ buffer: Buffer.from(input.bytes) })
-        return {
+        return withText({
           kind,
           name: input.name,
           text: result.value.trim(),
           mimeType: input.mime || DOCX_MIME,
-        }
+        })
       } catch (err) {
         // 旧版 .doc（OLE）格式 mammoth 不支持，会走到这里。
         throw new Error(
@@ -92,6 +99,8 @@ export async function parseMaterial(input: {
         kind,
         name: input.name,
         text: '',
+        charCount: 0,
+        chapters: [],
         size: size ? { width: size.width, height: size.height } : undefined,
         mimeType: input.mime || size?.mime || 'image/*',
       }
@@ -103,12 +112,17 @@ export async function parseMaterial(input: {
         .decode(input.bytes)
         .replace(/^\uFEFF/, '')
         .trim()
-      return {
+      return withText({
         kind,
         name: input.name,
         text,
         mimeType: input.mime || (kind === 'md' ? 'text/markdown' : 'text/plain'),
-      }
+      })
     }
   }
+}
+
+function withText(p: Omit<ParsedMaterial, 'charCount' | 'chapters'>): ParsedMaterial {
+  const text = normalizeText(p.text)
+  return { ...p, text, charCount: countChars(text), chapters: detectChapters(text) }
 }

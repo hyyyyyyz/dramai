@@ -37,6 +37,13 @@ export function targetId(target: GenerationTarget): string {
   }
 }
 
+/** 产物清单里的键：变体设定图是 `variant_sheet:`，其余与 `targetId` 相同。 */
+export function artifactKeyOf(target: GenerationTarget): string {
+  return target.kind === 'asset_sheet' && target.variantName
+    ? `variant_sheet:${target.assetId}/${target.variantName}`
+    : targetId(target)
+}
+
 export type GapCode =
   | 'TARGET_NOT_FOUND'
   | 'ASSET_NOT_REGISTERED'

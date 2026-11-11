@@ -90,7 +90,27 @@ describe('template engine', () => {
 
 describe('prompt library: data files loaded at runtime', () => {
   it('loads the bundled prompts with their metadata', () => {
-    expect(catalog.prompts.ids()).toEqual(['storyboard.system', 'storyboard.user'])
+    expect(catalog.prompts.ids()).toEqual([
+      'assets.sheet.character',
+      'assets.sheet.costume',
+      'assets.sheet.location',
+      'assets.sheet.prop',
+      'assets.variant.edit',
+      'entities.extract.system',
+      'entities.extract.user',
+      'entities.merge.system',
+      'entities.merge.user',
+      'entities.variants.system',
+      'entities.variants.user',
+      'episodes.plan.system',
+      'episodes.plan.user',
+      'shots.breakdown.system',
+      'shots.breakdown.user',
+      'shots.frames.system',
+      'shots.frames.user',
+      'storyboard.system',
+      'storyboard.user',
+    ])
     expect(catalog.prompts.meta('storyboard.system')).toMatchObject({
       locale: 'zh',
       schemaVersion: PROMPT_SCHEMA_VERSION,

@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { ArtifactRecord } from '../artifacts/types.ts'
 import type {
+  Material,
+  TimelineDocument,
   Asset,
   EntityCandidate,
   Episode,
@@ -26,7 +28,9 @@ import type {
   IdGenerator,
   JobFilter,
   JobRepo,
+  MaterialRepo,
   ProjectRepo,
+  TimelineRepo,
   SceneRepo,
   SecretStore,
   ShotAssetRefRepo,
@@ -151,6 +155,8 @@ interface State {
   shots: MemoryTable<Shot>
   assets: MemoryTable<Asset>
   candidates: MemoryTable<EntityCandidate>
+  materials: MemoryTable<Material>
+  timelines: MemoryTable<TimelineDocument>
   jobs: MemoryTable<Job>
   refs: Map<string, ShotAssetRef[]>
   artifacts: Map<string, ArtifactRecord>
@@ -164,6 +170,8 @@ function newState(): State {
     shots: new MemoryTable(),
     assets: new MemoryTable(),
     candidates: new MemoryTable(),
+    materials: new MemoryTable(),
+    timelines: new MemoryTable(),
     jobs: new MemoryTable(),
     refs: new Map(),
     artifacts: new Map(),
@@ -247,6 +255,22 @@ export class MemoryStore implements Store {
     put: async (c) => this.state.candidates.put(c),
     listByProject: async (pid) => this.state.candidates.all().filter((c) => c.projectId === pid),
     delete: async (id) => this.state.candidates.delete(id),
+  }
+  materials: MaterialRepo = {
+    get: async (id) => this.state.materials.get(id),
+    put: async (m) => this.state.materials.put(m),
+    listByProject: async (pid) =>
+      this.state.materials
+        .all()
+        .filter((m) => m.projectId === pid)
+        .sort((a, b) => a.number - b.number),
+    delete: async (id) => this.state.materials.delete(id),
+  }
+  timelines: TimelineRepo = {
+    get: async (id) => this.state.timelines.get(id),
+    put: async (d) => this.state.timelines.put(d),
+    listByProject: async (pid) => this.state.timelines.all().filter((d) => d.projectId === pid),
+    delete: async (id) => this.state.timelines.delete(id),
   }
   artifacts: ArtifactRepo = {
     get: async (pid, key) => {

@@ -196,6 +196,8 @@ export type CostEstimate =
 export interface CostQuery {
   count?: number
   seconds?: number
+  /** 处理的字符数（按千字计价的文本 / 配音服务）。 */
+  chars?: number
   resolution?: string
 }
 
@@ -215,6 +217,10 @@ export function estimateCost(profile: ModelProfile | undefined, query: CostQuery
     case 'per_second':
       if (query.seconds === undefined) return { priced: false, reason: '按秒计价但没有给时长' }
       quantity = query.seconds * (query.count ?? 1)
+      break
+    case 'per_1k_chars':
+      if (query.chars === undefined) return { priced: false, reason: '按千字计价但没有给字数' }
+      quantity = (query.chars / 1000) * (query.count ?? 1)
       break
     default:
       return { priced: false, reason: `暂不支持按 ${entry.unit} 估算` }

@@ -1,0 +1,11 @@
+---
+id: assets.sheet.prop
+locale: zh
+schemaVersion: 1
+description: 道具设定图（单件静物）
+---
+{{#if styleKeywords}}画风：{{styleKeywords}}。{{/if}}
+道具设定图，道具名：{{name}}。
+{{#if appearance}}外观：{{appearance}}。{{/if}}
+版式：纯净浅灰或白色背景，只呈现这一件物品本体，居中，三分之四视角，材质与细节清晰。
+画面中没有人物、手和其他物品，不要文字和水印。

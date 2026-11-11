@@ -500,42 +500,72 @@ realFfmpeg('native ffmpeg (real binary, lavfi test sources)', () => {
       expect(res.info).toMatchObject({ width: 234, height: 416 }) // 9:16 在步长 2 下比例零误差的最近值
     })
 
-    if (caps_hasBurnIn()) {
-      it('burns subtitles in when libass is available', async () => {
-        const out = f('burn.mp4')
-        await burnSubtitles(env, { input: f('a_audio.mp4'), srtPath: f('subs.srt'), output: out })
-        expect(await probeMedia(bins, out)).toMatchObject({
-          width: 320,
-          height: 240,
-          hasAudio: true,
-        })
+    // 两个测试都会注册；各自按 ffmpeg 有没有 libass 决定运行还是跳过（并说明原因）。
+    // 有 libass 的环境（CI 装的 ffmpeg 通常有）运行真实烧录；没有的环境运行“缺能力要明确报错”。
+    it('burns subtitles in when libass is available (skipped otherwise)', async (ctx) => {
+      if (!caps.features.subtitleBurnIn) {
+        console.warn('[media tests] real burn-in test SKIPPED: this ffmpeg has no libass.')
+        return ctx.skip('ffmpeg has no libass')
+      }
+      const out = f('burn.mp4')
+      await burnSubtitles(env, { input: f('a_audio.mp4'), srtPath: f('subs.srt'), output: out })
+      expect(await probeMedia(bins, out)).toMatchObject({ width: 320, height: 240, hasAudio: true })
+      // 字幕真的画上去了：下方区域的亮度和没烧录的相比有变化
+      const bottom = async (file: string) => {
+        const r = await runProcess(bins.ffmpeg, [
+          '-hide_banner',
+          '-ss',
+          '0.3',
+          '-i',
+          file,
+          '-vf',
+          'crop=320:60:0:180,signalstats,metadata=print:key=lavfi.signalstats.YAVG',
+          '-frames:v',
+          '1',
+          '-f',
+          'null',
+          '-',
+        ])
+        return Number(/YAVG=([\d.]+)/.exec(r.stderr + r.stdout)![1])
+      }
+      expect(Math.abs((await bottom(out)) - (await bottom(f('a_audio.mp4'))))).toBeGreaterThan(0.2)
+      // 经 composeSequence 也能烧
+      const res = await composeSequence(env, {
+        clips: [f('a_audio.mp4')],
+        aspectRatio: '9:16',
+        shortSide: 240,
+        output: f('cut_burn_ok.mp4'),
+        subtitles: { srtPath: f('subs.srt'), mode: 'burn' },
       })
-    } else {
-      it('burn-in without libass fails loudly, says what to do, and does not silently skip', async () => {
-        console.warn(
-          '[media tests] this ffmpeg has no libass: the burn-in render test is replaced by the capability-error check.',
-        )
-        const err = await burnSubtitles(env, {
-          input: f('a_audio.mp4'),
-          srtPath: f('subs.srt'),
-          output: f('burn.mp4'),
-        }).catch((e) => e)
-        expect(err).toBeInstanceOf(MediaCapabilityError)
-        expect((err as MediaCapabilityError).feature).toBe('subtitleBurnIn')
-        expect((err as Error).message).toMatch(/libass/)
-        expect((err as Error).message).toMatch(/软字幕|SRT|libass 的构建/)
-        // compose 在做任何渲染之前就拒绝，也不会偷偷降级成软字幕
-        await expect(
-          composeSequence(env, {
-            clips: [f('a_audio.mp4')],
-            aspectRatio: '9:16',
-            shortSide: 240,
-            output: f('cut_burn.mp4'),
-            subtitles: { srtPath: f('subs.srt'), mode: 'burn' },
-          }),
-        ).rejects.toBeInstanceOf(MediaCapabilityError)
-      })
-    }
+      expect(res.subtitleMode).toBe('burn')
+    })
+
+    it('burn-in without libass fails loudly, says what to do, and does not silently skip (skipped where libass exists)', async (ctx) => {
+      if (caps.features.subtitleBurnIn)
+        return ctx.skip('ffmpeg has libass — the real burn-in test runs instead')
+      console.warn(
+        '[media tests] this ffmpeg has no libass: checking the capability error instead of a real burn-in.',
+      )
+      const err = await burnSubtitles(env, {
+        input: f('a_audio.mp4'),
+        srtPath: f('subs.srt'),
+        output: f('burn.mp4'),
+      }).catch((e) => e)
+      expect(err).toBeInstanceOf(MediaCapabilityError)
+      expect((err as MediaCapabilityError).feature).toBe('subtitleBurnIn')
+      expect((err as Error).message).toMatch(/libass/)
+      expect((err as Error).message).toMatch(/软字幕|SRT|libass 的构建/)
+      // compose 在做任何渲染之前就拒绝，也不会偷偷降级成软字幕
+      await expect(
+        composeSequence(env, {
+          clips: [f('a_audio.mp4')],
+          aspectRatio: '9:16',
+          shortSide: 240,
+          output: f('cut_burn.mp4'),
+          subtitles: { srtPath: f('subs.srt'), mode: 'burn' },
+        }),
+      ).rejects.toBeInstanceOf(MediaCapabilityError)
+    })
   })
 
   describe('reference image compression with the real encoder', () => {
@@ -617,16 +647,3 @@ realFfmpeg('native ffmpeg (real binary, lavfi test sources)', () => {
     })
   })
 })
-
-function caps_hasBurnIn(): boolean {
-  // describe 体在收集阶段同步执行，这里同步探测一次 libass 是否可用来选择测试分支。
-  if (!located) return false
-  const { spawnSync } = require_child_process()
-  const r = spawnSync(located.ffmpeg, ['-hide_banner', '-filters'], { encoding: 'utf8' })
-  return /\bsubtitles\b/.test(r.stdout ?? '')
-}
-
-import { createRequire } from 'node:module'
-function require_child_process() {
-  return createRequire(import.meta.url)('node:child_process') as typeof import('node:child_process')
-}

@@ -1,4 +1,6 @@
 import type {
+  Material,
+  TimelineDocument,
   Asset,
   AssetId,
   EntityCandidate,
@@ -81,6 +83,20 @@ export interface CandidateRepo {
   delete(id: string): Promise<void>
 }
 
+export interface MaterialRepo {
+  get(id: string): Promise<Material | undefined>
+  put(material: Material): Promise<void>
+  listByProject(projectId: ProjectId): Promise<Material[]>
+  delete(id: string): Promise<void>
+}
+
+export interface TimelineRepo {
+  get(id: string): Promise<TimelineDocument | undefined>
+  put(doc: TimelineDocument): Promise<void>
+  listByProject(projectId: ProjectId): Promise<TimelineDocument[]>
+  delete(id: string): Promise<void>
+}
+
 export interface ArtifactRepo {
   get(projectId: ProjectId, key: string): Promise<ArtifactRecord | undefined>
   put(record: ArtifactRecord): Promise<void>
@@ -143,6 +159,8 @@ export interface Store {
   assets: AssetRepo
   shotRefs: ShotAssetRefRepo
   candidates: CandidateRepo
+  materials: MaterialRepo
+  timelines: TimelineRepo
   artifacts: ArtifactRepo
   jobs: JobRepo
   transaction<T>(fn: (tx: Store) => Promise<T>): Promise<T>

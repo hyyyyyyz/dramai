@@ -3,6 +3,7 @@ import type {
   Asset,
   EntityCandidate,
   Episode,
+  TimelineDocument,
   Project,
   Scene,
   Shot,
@@ -25,20 +26,24 @@ export interface ProjectProjection {
   refs: Map<ShotId, ShotAssetRef[]>
   artifacts: Map<string, ArtifactRecord>
   candidates: Map<string, EntityCandidate>
+  /** 每集的时间线（按 episodeId）。 */
+  timelines: Map<string, TimelineDocument>
 }
 
 export async function loadProjection(store: Store, projectId: string): Promise<ProjectProjection> {
   const project = await store.projects.get(projectId)
   if (!project) throw new Error(`project not found: ${projectId}`)
-  const [episodes, scenes, shots, assets, refs, artifacts, candidates] = await Promise.all([
-    store.episodes.listByProject(projectId),
-    store.scenes.listByProject(projectId),
-    store.shots.listByProject(projectId),
-    store.assets.listByProject(projectId),
-    store.shotRefs.listByProject(projectId),
-    store.artifacts.listByProject(projectId),
-    store.candidates.listByProject(projectId),
-  ])
+  const [episodes, scenes, shots, assets, refs, artifacts, candidates, timelines] =
+    await Promise.all([
+      store.episodes.listByProject(projectId),
+      store.scenes.listByProject(projectId),
+      store.shots.listByProject(projectId),
+      store.assets.listByProject(projectId),
+      store.shotRefs.listByProject(projectId),
+      store.artifacts.listByProject(projectId),
+      store.candidates.listByProject(projectId),
+      store.timelines.listByProject(projectId),
+    ])
   const refMap = new Map<ShotId, ShotAssetRef[]>()
   for (const r of refs) {
     const list = refMap.get(r.shotId) ?? []
@@ -54,5 +59,6 @@ export async function loadProjection(store: Store, projectId: string): Promise<P
     refs: refMap,
     artifacts: new Map(artifacts.map((a) => [a.key, a])),
     candidates: new Map(candidates.map((c) => [c.id, c])),
+    timelines: new Map(timelines.map((t) => [t.episodeId, t])),
   }
 }

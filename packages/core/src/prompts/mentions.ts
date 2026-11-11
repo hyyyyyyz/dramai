@@ -84,3 +84,13 @@ export function resolveMentionsFromLlm(llmText: string, assets: readonly Mention
   }
   return out
 }
+
+/** 库内文本 → 给图像 / 视频模型看的文本：`@{id}` 换成资产名（不带 @），变体写成“名字（形态名）”。 */
+export function renderMentionsPlain(storedText: string, assets: readonly MentionAsset[]): string {
+  const byId = new Map(assets.map((a) => [a.id, a]))
+  return storedText.replace(ID_TOKEN, (whole, id: string, variant?: string) => {
+    const asset = byId.get(id)
+    if (!asset) return whole
+    return variant ? `${asset.name}（${variant}）` : asset.name
+  })
+}

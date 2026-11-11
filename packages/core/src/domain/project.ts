@@ -29,6 +29,7 @@ export interface ProjectCounters {
   scene: number
   shot: number
   asset: number
+  material: number
 }
 
 export interface Project {
@@ -49,6 +50,8 @@ export interface Project {
   /** 播出顺序（"分集账本"）。顺序不放在 Episode 上。 */
   episodeOrder: EpisodeId[]
   counters: ProjectCounters
+  /** 从 v0.4 备份导入时记下来源，避免重复导入。 */
+  importedFrom?: { format: 'dramai-backup'; version: number; legacyProjectId: string }
   createdAt: number
   updatedAt: number
   /** 已删除项目进回收目录，保留期内可恢复。 */
@@ -89,6 +92,8 @@ export interface Episode {
   /** 项目内单调发号，不复用；不是播出顺序。 */
   number: number
   title: string
+  /** 一两句剧情概要（分集规划产出）。 */
+  summary?: string
   /** 对应原文的章节/行范围，可空。 */
   sourceRange?: { materialId?: string; startLine?: number; endLine?: number }
   status: EpisodeStatus

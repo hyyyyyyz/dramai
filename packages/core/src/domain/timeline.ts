@@ -1,7 +1,8 @@
 import type { EpisodeId, ShotId } from './common.ts'
 
 /**
- * 剪辑时间线（A8）——**阶段 2 只预留类型，不含行为**，阶段 5 实现。
+ * 剪辑时间线（A8）。2B 实现：创建、追加修订、回滚、摆放（纯函数）、读取时的问题检查、渲染。
+ * 转场只做硬切（词表保留在类型里），配乐一条。
  *
  * 成片渲染、浏览器预览、剪映草稿共用这一份数据。内部时间一律是整数微秒（`*Us`），
  * 对外才换算成秒。修订追加式、不可变；回滚 = 以旧内容追加新修订。
@@ -76,6 +77,7 @@ export interface TimelineDocument {
   schemaVersion: number
   /** 形如 "tl-xxxxxxxx"，随机、不复用；产物身份挂在它上面。 */
   id: string
+  projectId: string
   episodeId: EpisodeId
   name: string
   nextClipNumber: number

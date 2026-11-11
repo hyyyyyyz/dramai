@@ -1,0 +1,9 @@
+---
+id: assets.variant.edit
+locale: zh
+schemaVersion: 1
+description: 衍生形态：对本体设定图做一次图片编辑
+---
+以参考图里的角色为准，只做下面这处修改，其余一律保持不变（脸型、五官、发型、体态、画风、构图、背景）：
+{{instruction}}
+{{#if hasCostumeRef}}第二张参考图是这件服装本身，请让角色穿上它。{{/if}}

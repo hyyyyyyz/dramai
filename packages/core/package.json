@@ -32,6 +32,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "jszip": "catalog:",
     "mammoth": "catalog:",
     "zod": "catalog:"
   },

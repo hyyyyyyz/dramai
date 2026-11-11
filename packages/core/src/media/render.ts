@@ -33,6 +33,13 @@ export interface NormalizeOptions {
   /** 画布短边，默认 1080。 */
   shortSide?: number
   fps?: number
+  /** 只取源片段的这一段（秒）。 */
+  trimInSec?: number
+  trimOutSec?: number
+  /** 出点帧静帧延长这么多秒（画面定格，声音补静音）。 */
+  holdSec?: number
+  /** 该片段原声音量（0..1），默认 1。 */
+  volume?: number
 }
 
 /**
@@ -49,20 +56,33 @@ export async function normalizeClip(env: RenderEnv, opts: NormalizeOptions): Pro
   const info = await probeMedia(env.bins, opts.input)
   if (!info.hasVideo) throw new Error(`没有视频流：${opts.input}`)
   const fps = opts.fps ?? 24
+  const hold = Math.max(0, opts.holdSec ?? 0)
   const vf = [
     `scale=${width}:${height}:force_original_aspect_ratio=decrease`,
     `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black`,
     'setsar=1',
     `fps=${fps}`,
+    ...(hold > 0 ? [`tpad=stop_mode=clone:stop_duration=${hold}`] : []),
     'format=yuv420p',
   ].join(',')
+  const trimmed = opts.trimInSec !== undefined || opts.trimOutSec !== undefined
+  const inArgs: string[] = []
+  if (opts.trimInSec !== undefined) inArgs.push('-ss', String(opts.trimInSec))
+  if (opts.trimOutSec !== undefined) {
+    inArgs.push('-t', String(Math.max(0.04, opts.trimOutSec - (opts.trimInSec ?? 0))))
+  }
+  const af = [
+    ...(opts.volume !== undefined && opts.volume !== 1 ? [`volume=${opts.volume}`] : []),
+    ...(hold > 0 ? [`apad=pad_dur=${hold}`] : []),
+  ].join(',')
 
-  const args: string[] = ['-i', opts.input]
+  const args: string[] = [...inArgs, '-i', opts.input]
   if (!info.hasAudio)
     args.push('-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000')
   args.push('-map', '0:v:0', '-map', info.hasAudio ? '0:a:0' : '1:a:0', '-vf', vf)
+  if (af) args.push('-af', af)
   args.push(...videoEncoderArgs(env.caps), '-pix_fmt', 'yuv420p', ...AUDIO_ARGS)
-  if (!info.hasAudio) args.push('-shortest')
+  if (!info.hasAudio || trimmed || hold > 0) args.push('-shortest')
   args.push('-movflags', '+faststart', opts.output)
   await runFfmpeg(env.bins, args, { signal: env.signal })
   return probeMedia(env.bins, opts.output)
@@ -111,6 +131,66 @@ export async function mixNarration(
   opts.tracks.forEach((t, i) => {
     const ms = Math.max(0, Math.round(t.startSec * 1000))
     parts.push(`[${i + 1}:a]aresample=48000,adelay=${ms}|${ms},volume=${t.volume ?? 1}[n${i}]`)
+    labels.push(`[n${i}]`)
+  })
+  parts.push(
+    `${labels.join('')}amix=inputs=${labels.length}:duration=first:normalize=0:dropout_transition=0[aout]`,
+  )
+  args.push(
+    '-filter_complex',
+    parts.join(';'),
+    '-map',
+    '0:v:0',
+    '-map',
+    '[aout]',
+    '-c:v',
+    'copy',
+    ...AUDIO_ARGS,
+    '-movflags',
+    '+faststart',
+    opts.output,
+  )
+  await runFfmpeg(env.bins, args, { signal: env.signal })
+}
+
+export interface MixTrack {
+  path: string
+  /** 在成片上的起点（秒）。 */
+  startSec: number
+  volume?: number
+  fadeInSec?: number
+  /** 淡出时长（秒），淡出结束在这条轨播放结束处。 */
+  fadeOutSec?: number
+  /** 这条轨在成片上最长播放多久（秒）；超出的截断。 */
+  maxSec?: number
+}
+
+/**
+ * 通用混音：原声按 `sourceVolume` 保留，叠加任意条轨（旁白、配乐），各自起点 / 音量 / 淡入淡出 / 截断。
+ * 输出长度以成片画面为准；视频流直接复制。
+ */
+export async function mixTracks(
+  env: RenderEnv,
+  opts: { input: string; tracks: MixTrack[]; output: string; sourceVolume?: number },
+): Promise<void> {
+  requireFeature(env.caps, 'aac')
+  if (opts.tracks.length === 0) throw new Error('没有要混入的轨')
+  const args: string[] = ['-i', opts.input]
+  for (const t of opts.tracks) args.push('-i', t.path)
+  const parts: string[] = [`[0:a]volume=${opts.sourceVolume ?? 1}[src]`]
+  const labels: string[] = ['[src]']
+  opts.tracks.forEach((t, i) => {
+    const ms = Math.max(0, Math.round(t.startSec * 1000))
+    const chain = ['aresample=48000']
+    if (t.maxSec !== undefined)
+      chain.push(`atrim=0:${Math.max(0.01, t.maxSec)}`, 'asetpts=PTS-STARTPTS')
+    if (t.fadeInSec) chain.push(`afade=t=in:st=0:d=${t.fadeInSec}`)
+    if (t.fadeOutSec) {
+      const len = t.maxSec ?? t.fadeOutSec
+      chain.push(`afade=t=out:st=${Math.max(0, len - t.fadeOutSec)}:d=${t.fadeOutSec}`)
+    }
+    chain.push(`volume=${t.volume ?? 1}`, `adelay=${ms}|${ms}`)
+    parts.push(`[${i + 1}:a]${chain.join(',')}[n${i}]`)
     labels.push(`[n${i}]`)
   })
   parts.push(

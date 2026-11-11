@@ -1,0 +1,7 @@
+---
+id: entities.variants.user
+locale: zh
+schemaVersion: 1
+description: 变体分析的用户消息
+---
+{{charactersBlock}}

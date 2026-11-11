@@ -30,6 +30,9 @@ catalogs:
     globals:
       specifier: ^17.5.0
       version: 17.6.0
+    jszip:
+      specifier: ^3.10.1
+      version: 3.10.1
     lucide-react:
       specifier: ^1.14.0
       version: 1.14.0
@@ -68,6 +71,9 @@ importers:
 
   packages/core:
     dependencies:
+      jszip:
+        specifier: 'catalog:'
+        version: 3.10.1
       mammoth:
         specifier: 'catalog:'
         version: 1.12.0

@@ -159,7 +159,7 @@ export async function makeWorld(options: { sheets?: boolean } = {}): Promise<Wor
   project = {
     ...project,
     episodeOrder: [ep.id],
-    counters: { episode: 1, scene: 1, shot: 2, asset: 3 },
+    counters: { episode: 1, scene: 1, shot: 2, asset: 3, material: 0 },
   }
   await store.projects.put(project)
 

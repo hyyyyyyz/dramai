@@ -7,6 +7,7 @@ import { InFlightConflictError } from '../jobs/queue.ts'
 import type { JobQueue, NewJob } from '../jobs/queue.ts'
 import { checkCapability, estimateCost, maxRefImagesOf } from '../providers/catalog.ts'
 import type { CostEstimate, ModelRegistry } from '../providers/catalog.ts'
+import { deriveVoiceOwner } from '../domain/voice.ts'
 import { isDurationAllowed, snapDuration } from '../providers/duration.ts'
 import type { GenerationMode, ProviderConfig, ProviderKind } from '../providers/types.ts'
 import { digestOf } from '../util/canonical.ts'
@@ -49,6 +50,10 @@ export type ReasonCode =
   | 'DURATION_UNSUPPORTED'
   | 'DURATION_SNAPPED'
   | 'CAPABILITY_UNVERIFIED'
+  | 'VOICE_CONFLICT'
+  | 'NARRATION_NOT_TTS'
+  | 'DIALOGUE_NOT_VOICED'
+  | 'NARRATION_VOICE_DEFAULTED'
   | 'UNVERIFIED_NEEDS_CONFIRMATION'
   | 'IN_FLIGHT_CONFLICT'
   | 'RECOVER_ORIGINAL_FIRST'
@@ -72,6 +77,8 @@ export interface AdmissionTarget {
   confirmResubmit?: boolean
   /** 用户本次确认“能力未验证也照常生成”。 */
   confirmUnverified?: boolean
+  /** 角色设定图的版式（见 `chooseSheetLayout`）；逐角度版式要出 3 张图，预估费用按 3 张算。 */
+  sheetLayout?: 'multi_view' | 'per_angle' | 'single'
 }
 
 export interface AdmissionContext {
@@ -207,6 +214,44 @@ export async function evaluateTarget(
     }
   }
 
+  // 发声归属（A9）：对白 + 旁白混在同一镜头会出现两层人声，规划阶段拦截；旁白只在项目选择 TTS 时才生成配音。
+  if (item.target.kind === 'shot_video' || item.target.kind === 'shot_audio') {
+    const shot = ctx.projection.shots.get(item.target.shotId)
+    if (shot) {
+      const project = ctx.projection.project
+      const owner = deriveVoiceOwner(shot, project.narrationDelivery)
+      if (owner === 'conflict') {
+        reasons.push({
+          code: 'VOICE_CONFLICT',
+          message:
+            '这个镜头同时有对白和旁白，会出现两层人声：请先拆成两个镜头（编辑不受限，生成才拦）',
+        })
+      } else if (item.target.kind === 'shot_audio' && owner !== 'tts') {
+        reasons.push({
+          code: 'NARRATION_NOT_TTS',
+          message:
+            owner === 'native'
+              ? '这个镜头的声音由视频模型的原生人声承载（有对白），不需要旁白配音'
+              : `旁白的交付方式是“${project.narrationDelivery}”，不生成 TTS 配音`,
+        })
+      } else if (
+        item.target.kind === 'shot_video' &&
+        owner === 'native' &&
+        lookup.capability.nativeAudio === 'unsupported'
+      ) {
+        warnings.push({
+          code: 'DIALOGUE_NOT_VOICED',
+          message: `${provider.model} 不自带人声，这个镜头的对白在视频里不会有声音`,
+        })
+      } else if (item.target.kind === 'shot_audio' && !project.narrationVoice) {
+        warnings.push({
+          code: 'NARRATION_VOICE_DEFAULTED',
+          message: '项目还没有设置旁白音色，将使用服务商默认音色',
+        })
+      }
+    }
+  }
+
   // 同一镜头同一时刻只能有一个在途视频任务；失败且带上游任务号的要先“恢复原任务”。
   if (item.target.kind === 'shot_video') {
     const shotId = item.target.shotId
@@ -230,8 +275,14 @@ export async function evaluateTarget(
   }
 
   const resolution = item.resolution
+  const sheetCount =
+    item.target.kind === 'asset_sheet' &&
+    !item.target.variantName &&
+    item.sheetLayout === 'per_angle'
+      ? 3
+      : 1
   const estimate = estimateCost(lookup.profile, {
-    count: 1,
+    count: sheetCount,
     seconds: inputs.durationSec,
     resolution,
   })
@@ -369,7 +420,7 @@ export function buildJobForTarget(
       baseUrl: provider.baseUrl,
       model: provider.model,
     },
-    params: { target, resolution: item.resolution },
+    params: { target, resolution: item.resolution, layout: item.sheetLayout },
     paid: true,
   }
 }

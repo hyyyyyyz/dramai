@@ -1,0 +1,11 @@
+---
+id: assets.sheet.costume
+locale: zh
+schemaVersion: 1
+description: 服装设定图（衣物本身，可被不同角色复用）
+---
+{{#if styleKeywords}}画风：{{styleKeywords}}。{{/if}}
+服装设定图，服装名：{{name}}。
+{{#if appearance}}款式、颜色、材质与细节：{{appearance}}。{{/if}}
+版式：这件衣物穿在中性的人台（无面孔）上，正面与背面两个视角并排，纯白背景，均匀柔光，褶皱与做工细节清晰。
+画面中没有真人面孔，不要文字和水印。

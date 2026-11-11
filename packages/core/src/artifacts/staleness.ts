@@ -157,6 +157,38 @@ export function buildExpectations(
       })
     }
   }
+  // 成片与字幕：依据是时间线最新修订的内容（A8：渲染开始时取快照；之后时间线又变了，产物如实判为过期）。
+  for (const [episodeId, doc] of projection.timelines) {
+    const head = doc.revisions[doc.revisions.length - 1]
+    if (!head) continue
+    const content = digestOf(head.content)
+    const videoKeys = head.content.clips.map((c) => `shot_video:${c.shotId}`)
+    const audioKeys = head.content.clips
+      .filter((c) => c.carriesNarration && projection.shots.get(c.shotId)?.narration?.trim())
+      .map((c) => `shot_audio:${c.shotId}`)
+    const cutKey = `cut:${episodeId}`
+    out.set(cutKey, {
+      key: cutKey,
+      kind: 'cut',
+      basis: { content, aspect: projection.project.aspectRatio },
+      upstream: [...videoKeys, ...audioKeys],
+      requiredUpstream: videoKeys,
+    })
+    const subKey = `subtitles:${episodeId}`
+    out.set(subKey, {
+      key: subKey,
+      kind: 'subtitles',
+      basis: {
+        content,
+        texts: head.content.clips.map((c) => {
+          const s = projection.shots.get(c.shotId)
+          return { narration: s?.narration?.trim(), dialogue: s?.dialogue.map((d) => d.text) }
+        }),
+      },
+      upstream: audioKeys,
+      requiredUpstream: [],
+    })
+  }
   return out
 }
 
@@ -201,6 +233,11 @@ export function buildRecord(input: {
   facts?: MediaFacts
   now: number
 }): ArtifactRecord {
+  if (input.expectation.blockedBy && input.expectation.blockedBy.length > 0) {
+    throw new Error(
+      `cannot register ${input.expectation.key}: inputs are blocked (${input.expectation.blockedBy.join(', ')})`,
+    )
+  }
   const digest = computeDigest(input.expectation, input.upstreamRecords)
   if (!digest) {
     throw new Error(`cannot register ${input.expectation.key}: required upstream is missing`)
@@ -353,6 +390,10 @@ export function artifactLabel(projection: ProjectProjection, key: ArtifactKey): 
     const [assetId, variant] = owner.split('/')
     const asset = projection.assets.get(assetId)
     return asset ? `${asset.name}/${variant}` : undefined
+  }
+  if (kind === 'cut' || kind === 'subtitles') {
+    const ep = projection.episodes.get(owner)
+    return ep ? `第 ${ep.number} 集 ${ep.title}` : undefined
   }
   const shot = projection.shots.get(owner)
   if (shot) return shot.title || `镜头 ${shot.number}`

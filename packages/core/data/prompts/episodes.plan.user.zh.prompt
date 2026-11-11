@@ -1,0 +1,16 @@
+---
+id: episodes.plan.user
+locale: zh
+schemaVersion: 1
+description: 分集规划的用户消息
+---
+作品：{{projectName}}
+本批章节序号范围：{{firstChapter}} 到 {{lastChapter}}
+后面还有内容：{{hasMore}}
+{{#if previousBlock}}
+# 已经规划好的最近几集（供你衔接，不要重复）
+{{previousBlock}}
+{{/if}}
+
+# 章节目录
+{{tocBlock}}

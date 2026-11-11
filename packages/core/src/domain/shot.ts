@@ -11,6 +11,8 @@ export interface Scene {
   number: number
   title?: string
   locationAssetId?: AssetId
+  /** 拆分时 LLM 写的地点名（未解析的原始提示；地点候选确认后会解析成 `locationAssetId`）。 */
+  locationHint?: string
   timeOfDay?: string
   /** 场景站位记录（A4）：固定锚点、轴线、屏幕方向。 */
   blocking?: string
@@ -50,7 +52,10 @@ export const CAMERA_MOVEMENTS = [
 export type CameraMovement = (typeof CAMERA_MOVEMENTS)[number]
 
 export interface DialogueLine {
+  /** 说话人资产（实体确认后解析出来）。 */
   speakerAssetId?: AssetId
+  /** 拆分时 LLM 给出的说话人名字（尚未解析成资产的原始提示；解析后保留供核对）。 */
+  speakerName?: string
   text: string
   emotion?: string
 }
@@ -64,6 +69,17 @@ export interface ShotPrompts {
   keyFrame?: string
   lastFrame?: string
   video?: string
+}
+
+/**
+ * 提示词的“创作语义槽”（A17）：LLM 只填语义，画风前缀 / 参考图绑定 / 负面处理 / 防字地板
+ * 由编译器按目标模型的写法（PromptDialect）在生成时注入。槽里的资产用 `@{assetId}` 占位符。
+ */
+export interface ShotPromptSpec {
+  image?: import('../prompts/compile.ts').ImagePromptSpec
+  video?: import('../prompts/compile.ts').VideoPromptSpec
+  /** 镜内变化幅度（ViMax 的三分法）：决定是否需要尾帧。 */
+  changeMagnitude?: 'small' | 'medium' | 'large'
 }
 
 export interface Shot {
@@ -88,6 +104,13 @@ export interface Shot {
   narration?: string
   actionBeats: string[]
   prompts: ShotPrompts
+  /** 语义槽（可选）。有它时生成会按目标模型的写法重新编译；`prompts` 是它的中性文本形式，供预览和编辑。 */
+  promptSpec?: ShotPromptSpec
+  /**
+   * 拆分时 LLM 写出的出场实体名字——**未解析的原始提示**，供实体抽取使用；
+   * 候选确认后，真正的引用在引用表里，这里不再参与任何生成。
+   */
+  entityHints?: { characters: string[]; location?: string; props: string[]; costumes: string[] }
   /** 实体候选已确认、可进入生成。独立于 stages。 */
   ready: boolean
   stages: Record<ShotStage, StageStatus>

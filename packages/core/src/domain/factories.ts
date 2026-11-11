@@ -37,7 +37,7 @@ export function createProject(input: {
     style: input.style ?? NO_STYLE(input.now),
     narrationDelivery: input.narrationDelivery ?? 'tts',
     episodeOrder: [],
-    counters: { episode: 0, scene: 0, shot: 0, asset: 0 },
+    counters: { episode: 0, scene: 0, shot: 0, asset: 0, material: 0 },
     createdAt: input.now,
     updatedAt: input.now,
   }
