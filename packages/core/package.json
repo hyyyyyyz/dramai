@@ -1,0 +1,46 @@
+{
+  "name": "@dramai/core",
+  "private": true,
+  "version": "0.4.1",
+  "type": "module",
+  "description": "dramai business kernel: domain model, providers, jobs, admission, media. No HTTP framework, no React, no DOM.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "files": [
+    "dist",
+    "data",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./src/testing/index.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "mammoth": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@dramai/eslint-config": "workspace:*",
+    "@dramai/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

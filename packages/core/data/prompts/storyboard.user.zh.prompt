@@ -1,0 +1,23 @@
+---
+id: storyboard.user
+locale: zh
+schemaVersion: 1
+description: 分镜师用户消息（项目信息、角色、素材、本次指令）
+---
+# 项目
+- 标题：{{projectName}}
+- 风格基调：{{styleLine}}
+- 画幅：{{aspectRatio}}
+- 一句话简介：{{summary}}
+- 期望分镜数：{{shotCount}}
+
+# 已登记的角色
+{{charactersBlock}}
+
+# 文字素材
+{{materialsBlock}}{{imageHint}}
+
+# 用户本次指令
+{{userPrompt}}
+
+请按系统提示输出 `{"shots": [...]}` JSON。

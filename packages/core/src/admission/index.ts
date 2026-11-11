@@ -1,0 +1,437 @@
+import type { FileRef } from '../domain/common.ts'
+import { resolveInputs, targetId } from '../generation/inputs.ts'
+import type { Gap, GenerationTarget, ResolvedInputs } from '../generation/inputs.ts'
+import type { ProjectProjection } from '../generation/projection.ts'
+import type { Job } from '../jobs/types.ts'
+import { InFlightConflictError } from '../jobs/queue.ts'
+import type { JobQueue, NewJob } from '../jobs/queue.ts'
+import { checkCapability, estimateCost, maxRefImagesOf } from '../providers/catalog.ts'
+import type { CostEstimate, ModelRegistry } from '../providers/catalog.ts'
+import { isDurationAllowed, snapDuration } from '../providers/duration.ts'
+import type { GenerationMode, ProviderConfig, ProviderKind } from '../providers/types.ts'
+import { digestOf } from '../util/canonical.ts'
+
+/**
+ * 生成入口准入（A2）：花钱前的闸。
+ *
+ * 能力的三态（支持 / 不支持 / 未验证）这样处理：
+ * - **不支持** → 阻断，带原因码。不会换模型，不会降级成别的做法。
+ * - **未验证** → 不阻断也不放行，而是 `needs_confirmation`：本次需要用户明确确认
+ *   （`confirmUnverified`），或该服务商配置已记下“这一项我接受未验证”（`acceptedUnverified`）。
+ *   确认后照常生成，结果里保留 `CAPABILITY_UNVERIFIED` 警告。
+ *   理由：未验证 ≠ 不能用。Nano Banana 的多参考图就是“官方说行、我们没验过”，一刀切阻断会让默认链路瘫痪；
+ *   但静默放行会让用户为“参考图被忽略、角色对不上”的结果付费。要花钱的入口必须让人知道自己在赌什么。
+ *   只检查这一次生成**实际需要**的能力项（没有参考图就不管参考图是否验证过）。
+ * - 只读预检（`preflight`）同样返回 `needs_confirmation`，但绝不创建任务、绝不写入任何东西。
+ *
+ * 规则：
+ * 1. 只有**花钱入口**（单条生成、批量生成）做强校验；编辑和保存不拦。
+ * 2. 引用了未登记的资产 → 阻断。
+ * 3. 角色/场景/道具没有资产图 → 阻断；用户原图不能顶替资产图。
+ * 4. 作者声明的输入读不到 → 拒绝；系统推导的可选输入读不到 → 略去。
+ * 5. 批量准入是整批的：任一目标不合格则整批零任务。
+ * 6. 结果逐目标返回，带原因码；被整批拦下的目标指名拦它的是谁。
+ * 7. 同一镜头同一时刻只能有一个在途视频任务；上次失败且带上游任务号时必须先“恢复原任务”。
+ *
+ * 输入统一来自 `resolveInputs`——和执行器、提示词预览、时效判定是同一份计算。
+ */
+
+export type ReasonCode =
+  | Gap['code']
+  | 'PROVIDER_DISABLED'
+  | 'PROVIDER_KIND_MISMATCH'
+  | 'MODE_UNSUPPORTED'
+  | 'REFERENCE_NOT_SUPPORTED'
+  | 'ASPECT_UNSUPPORTED'
+  | 'RESOLUTION_UNSUPPORTED'
+  | 'LAST_FRAME_UNSUPPORTED'
+  | 'FIRST_FRAME_UNSUPPORTED'
+  | 'DURATION_UNSUPPORTED'
+  | 'DURATION_SNAPPED'
+  | 'CAPABILITY_UNVERIFIED'
+  | 'UNVERIFIED_NEEDS_CONFIRMATION'
+  | 'IN_FLIGHT_CONFLICT'
+  | 'RECOVER_ORIGINAL_FIRST'
+  | 'DUPLICATE_TARGET'
+  | 'BLOCKED_BY_BATCH'
+  | 'ENQUEUE_FAILED'
+  | 'ENQUEUE_ABORTED'
+
+export interface Reason {
+  code: ReasonCode
+  message: string
+  assetId?: string
+}
+
+export interface AdmissionTarget {
+  target: GenerationTarget
+  provider: ProviderConfig
+  /** 请求的分辨率档位（如 "720P"）。 */
+  resolution?: string
+  /** 用户确认过“可能再次计费”，允许绕过 RECOVER_ORIGINAL_FIRST。 */
+  confirmResubmit?: boolean
+  /** 用户本次确认“能力未验证也照常生成”。 */
+  confirmUnverified?: boolean
+}
+
+export interface AdmissionContext {
+  projection: ProjectProjection
+  models: ModelRegistry
+  /** 项目内全部任务（至少包含在途和最近失败的）。 */
+  jobs: readonly Job[]
+  /** 文件是否可读。 */
+  fileExists: (projectId: string, path: string) => Promise<boolean>
+}
+
+export type VerdictStatus = 'accepted' | 'blocked' | 'needs_confirmation' | 'blocked_by_batch'
+
+export interface TargetVerdict {
+  targetId: string
+  status: VerdictStatus
+  reasons: Reason[]
+  warnings: Reason[]
+  /** 这次生成需要、但没验证过的能力项（无论是否已确认）。 */
+  unverified: Array<{ key: string; code: string; message: string; confirmed: boolean }>
+  /** 被整批拦下时，是谁拦的（目标 id）。 */
+  blockedBy?: string[]
+  inputs?: ResolvedInputs
+  estimate?: CostEstimate
+}
+
+const KIND_FOR_TARGET: Record<GenerationTarget['kind'], ProviderKind> = {
+  asset_sheet: 'image',
+  shot_image: 'image',
+  shot_video: 'video',
+  shot_audio: 'tts',
+}
+
+function modeFor(target: GenerationTarget, inputs: ResolvedInputs): GenerationMode {
+  switch (target.kind) {
+    case 'asset_sheet':
+    case 'shot_image':
+      return inputs.references.length > 0 ? 'i2i' : 't2i'
+    case 'shot_video':
+      return 'i2v'
+    case 'shot_audio':
+      return 'tts'
+  }
+}
+
+/** 评估单个目标（不考虑批次）。 */
+export async function evaluateTarget(
+  ctx: AdmissionContext,
+  item: AdmissionTarget,
+): Promise<TargetVerdict> {
+  const id = targetId(item.target)
+  const reasons: Reason[] = []
+  const warnings: Reason[] = []
+  const { provider } = item
+
+  if (!provider.enabled) {
+    reasons.push({ code: 'PROVIDER_DISABLED', message: `服务商 ${provider.label} 已停用` })
+  }
+  if (provider.kind !== KIND_FOR_TARGET[item.target.kind]) {
+    reasons.push({
+      code: 'PROVIDER_KIND_MISMATCH',
+      message: `${provider.label} 是 ${provider.kind} 服务商，不能用于 ${item.target.kind}`,
+    })
+  }
+
+  const lookup = ctx.models.lookup(provider)
+  const inputs = resolveInputs(ctx.projection, item.target, {
+    maxRefImages: maxRefImagesOf(lookup.capability) || undefined,
+  })
+
+  for (const gap of inputs.gaps) {
+    if (gap.severity === 'block') {
+      reasons.push({ code: gap.code, message: gap.message, assetId: gap.assetId })
+    } else if (gap.severity === 'warn') {
+      warnings.push({ code: gap.code, message: gap.message, assetId: gap.assetId })
+    }
+  }
+
+  // 声明过的输入读不到 → 拒绝（原图声明了但读不到、资产图文件丢了、起始帧丢了）。
+  const files: Array<{ file: FileRef; what: string; assetId?: string }> = []
+  for (const r of inputs.references) {
+    files.push({
+      file: r.file,
+      what: r.assetName
+        ? `“${r.assetName}${r.variantName ? `/${r.variantName}` : ''}”的参考图`
+        : '风格参考图',
+      assetId: r.assetId,
+    })
+  }
+  if (inputs.startFrame) files.push({ file: inputs.startFrame.file, what: '起始帧' })
+  for (const f of files) {
+    if (!(await ctx.fileExists(ctx.projection.project.id, f.file.path))) {
+      reasons.push({
+        code: 'FILE_UNREADABLE',
+        message: `${f.what}的文件读不到：${f.file.path}`,
+        assetId: f.assetId,
+      })
+    }
+  }
+
+  // 能力检查：缺失 = 带原因的失败，不静默回退成别的做法。
+  const needsRefs = inputs.references.filter((r) => r.role !== 'style').length
+  const capIssues = checkCapability(lookup, provider.model, {
+    mode: modeFor(item.target, inputs),
+    referenceImages: item.target.kind === 'shot_video' ? 0 : needsRefs,
+    firstFrame: item.target.kind === 'shot_video',
+    aspectRatio: item.target.kind === 'shot_audio' ? undefined : inputs.aspectRatio,
+    resolution: item.resolution,
+    durationSec: item.target.kind === 'shot_video' ? inputs.durationSec : undefined,
+  })
+  const unverified: TargetVerdict['unverified'] = []
+  for (const issue of capIssues) {
+    if (issue.level === 'unsupported') {
+      reasons.push({ code: issue.code, message: issue.message })
+      continue
+    }
+    const confirmed =
+      Boolean(item.confirmUnverified) || (provider.acceptedUnverified ?? []).includes(issue.key)
+    unverified.push({ key: issue.key, code: issue.code, message: issue.message, confirmed })
+    if (confirmed) warnings.push({ code: 'CAPABILITY_UNVERIFIED', message: issue.message })
+  }
+
+  // 视频时长：不在档位上不是错，会被归一到最近的档位，但要告知。
+  if (item.target.kind === 'shot_video' && inputs.durationSec !== undefined) {
+    const claimed = lookup.capability.durations
+    const rule = claimed.support === 'unsupported' ? undefined : claimed.value
+    if (rule && !isDurationAllowed(inputs.durationSec, rule)) {
+      const snapped = snapDuration(inputs.durationSec, rule)
+      warnings.push({
+        code: 'DURATION_SNAPPED',
+        message: `镜头时长 ${inputs.durationSec}s 不在 ${provider.model} 支持的档位上，将按 ${snapped}s 生成`,
+      })
+    }
+  }
+
+  // 同一镜头同一时刻只能有一个在途视频任务；失败且带上游任务号的要先“恢复原任务”。
+  if (item.target.kind === 'shot_video') {
+    const shotId = item.target.shotId
+    const mine = ctx.jobs.filter((j) => j.shotId === shotId && j.operation === 'shot_video')
+    if (mine.some((j) => j.status === 'queued' || j.status === 'running')) {
+      reasons.push({ code: 'IN_FLIGHT_CONFLICT', message: '该镜头已有一个在途的视频任务' })
+    } else if (!item.confirmResubmit) {
+      const last = [...mine].sort((a, b) => b.createdAt - a.createdAt)[0]
+      if (
+        last &&
+        last.status === 'failed' &&
+        (last.providerJobId || last.resultUrl) &&
+        last.error?.category !== 'generation_failed'
+      ) {
+        reasons.push({
+          code: 'RECOVER_ORIGINAL_FIRST',
+          message: '上一次任务已有上游任务号：请先“恢复原任务”；坚持重新生成可能再次计费，需要确认',
+        })
+      }
+    }
+  }
+
+  const resolution = item.resolution
+  const estimate = estimateCost(lookup.profile, {
+    count: 1,
+    seconds: inputs.durationSec,
+    resolution,
+  })
+
+  const pending = unverified.filter((u) => !u.confirmed)
+  let status: VerdictStatus = 'accepted'
+  if (reasons.length > 0) {
+    status = 'blocked'
+  } else if (pending.length > 0) {
+    status = 'needs_confirmation'
+    reasons.push({
+      code: 'UNVERIFIED_NEEDS_CONFIRMATION',
+      message: `这次生成依赖没验证过的能力，需要确认后才会开始：${pending.map((u) => u.message).join('；')}`,
+    })
+  }
+  return { targetId: id, status, reasons, warnings, unverified, inputs, estimate }
+}
+
+export interface BatchAdmission {
+  /** 全部通过才为 true。 */
+  ok: boolean
+  results: TargetVerdict[]
+}
+
+/**
+ * 批量准入：先对整个目标集合评估一次，任一目标不合格则整批零任务。
+ * 本身没问题但被整批拦住的目标标 `blocked_by_batch`，并指名拦它的是谁。
+ */
+export async function admitBatch(
+  ctx: AdmissionContext,
+  items: readonly AdmissionTarget[],
+  options: { confirmUnverified?: boolean } = {},
+): Promise<BatchAdmission> {
+  const seen = new Set<string>()
+  const results: TargetVerdict[] = []
+  for (const item of items) {
+    const id = targetId(item.target)
+    if (seen.has(id)) {
+      results.push({
+        targetId: id,
+        status: 'blocked',
+        reasons: [{ code: 'DUPLICATE_TARGET', message: '同一批里重复了同一个目标' }],
+        warnings: [],
+        unverified: [],
+      })
+      continue
+    }
+    seen.add(id)
+    results.push(
+      await evaluateTarget(
+        ctx,
+        options.confirmUnverified ? { ...item, confirmUnverified: true } : item,
+      ),
+    )
+  }
+  const blockers = results
+    .filter((r) => r.status === 'blocked' || r.status === 'needs_confirmation')
+    .map((r) => r.targetId)
+  if (blockers.length > 0) {
+    for (const r of results) {
+      if (r.status === 'accepted') {
+        r.status = 'blocked_by_batch'
+        r.blockedBy = blockers
+        r.reasons = [
+          { code: 'BLOCKED_BY_BATCH', message: `被整批拦下：${blockers.join('、')} 不合格` },
+        ]
+      }
+    }
+  }
+  return { ok: blockers.length === 0, results }
+}
+
+/**
+ * 只读预检：对一组目标返回逐项的“能否生成、原因码、预估费用”。
+ * **没有任何副作用**——不创建任务、不写存储、不发事件、不改传入的投影；可以随时反复调用
+ * （镜头卡显示“不能生成”的原因、批量确认弹窗）。与 `submitBatch` 用的是同一份计算。
+ */
+export function preflight(
+  ctx: AdmissionContext,
+  items: readonly AdmissionTarget[],
+  options: { confirmUnverified?: boolean } = {},
+): Promise<BatchAdmission> {
+  return admitBatch(ctx, items, options)
+}
+
+// === 入队 ===
+
+export interface BatchSubmitResult {
+  /** 请求的目标 id（保序）。 */
+  requested: string[]
+  succeeded: Array<{ targetId: string; jobId: string; deduped: boolean }>
+  failed: Array<{ targetId: string; reason: Reason }>
+  blocked: Array<{ targetId: string; reasons: Reason[]; blockedBy?: string[] }>
+  admission: BatchAdmission
+}
+
+const OPERATION: Record<GenerationTarget['kind'], { operation: string; type: NewJob['type'] }> = {
+  asset_sheet: { operation: 'asset_sheet', type: 'image' },
+  shot_image: { operation: 'shot_image', type: 'image' },
+  shot_video: { operation: 'shot_video', type: 'video' },
+  shot_audio: { operation: 'shot_audio', type: 'audio' },
+}
+
+export function buildJobForTarget(
+  ctx: AdmissionContext,
+  item: AdmissionTarget,
+  verdict: TargetVerdict,
+  batchId?: string,
+): NewJob {
+  const { target, provider } = item
+  const spec = OPERATION[target.kind]
+  const inputs = verdict.inputs!
+  return {
+    type: spec.type,
+    operation: spec.operation,
+    projectId: ctx.projection.project.id,
+    shotId: 'shotId' in target ? target.shotId : undefined,
+    assetId: target.kind === 'asset_sheet' ? target.assetId : undefined,
+    batchId,
+    // 目标 + 输入指纹：同一输入的在途任务去重。
+    dedupeKey: `${verdict.targetId}#${digestOf({
+      prompt: inputs.prompt,
+      refs: inputs.references.map((r) => r.file.sha256),
+      start: inputs.startFrame?.file.sha256,
+      provider: provider.id,
+      model: provider.model,
+      resolution: item.resolution,
+    }).slice(0, 16)}`,
+    // 同一镜头同一时刻只能有一个在途视频任务：在原子入队路径上成立，而不只是靠投影里的检查。
+    exclusiveKey: target.kind === 'shot_video' ? `shot_video:${target.shotId}` : undefined,
+    providerLabel: provider.label,
+    providerSnapshot: {
+      providerConfigId: provider.id,
+      protocol: provider.protocol,
+      baseUrl: provider.baseUrl,
+      model: provider.model,
+    },
+    params: { target, resolution: item.resolution },
+    paid: true,
+  }
+}
+
+/**
+ * 准入 + 入队。整批通过才创建任务；入队中途失败不回滚已创建的任务（它们已经是完整的单元），
+ * 没轮到的目标逐个报 `ENQUEUE_ABORTED`。
+ */
+export async function submitBatch(
+  ctx: AdmissionContext,
+  queue: Pick<JobQueue, 'enqueue'>,
+  items: readonly AdmissionTarget[],
+  options: { batchId?: string; confirmUnverified?: boolean } = {},
+): Promise<BatchSubmitResult> {
+  const admission = await admitBatch(ctx, items, options)
+  const requested = items.map((i) => targetId(i.target))
+  const out: BatchSubmitResult = {
+    requested,
+    succeeded: [],
+    failed: [],
+    blocked: [],
+    admission,
+  }
+  if (!admission.ok) {
+    out.blocked = admission.results
+      .filter((r) => r.status !== 'accepted')
+      .map((r) => ({ targetId: r.targetId, reasons: r.reasons, blockedBy: r.blockedBy }))
+    return out
+  }
+  let aborted = false
+  for (let i = 0; i < items.length; i++) {
+    const verdict = admission.results[i]
+    if (aborted) {
+      out.failed.push({
+        targetId: verdict.targetId,
+        reason: { code: 'ENQUEUE_ABORTED', message: '前面的目标入队失败，这个目标没有轮到' },
+      })
+      continue
+    }
+    try {
+      const { job, deduped } = await queue.enqueue(
+        buildJobForTarget(ctx, items[i], verdict, options.batchId),
+      )
+      out.succeeded.push({ targetId: verdict.targetId, jobId: job.id, deduped })
+    } catch (err) {
+      if (err instanceof InFlightConflictError) {
+        // 竞争输了：别的请求刚刚占了这个镜头。这一项落空，其余各项是独立完整的单元，继续。
+        out.failed.push({
+          targetId: verdict.targetId,
+          reason: { code: 'IN_FLIGHT_CONFLICT', message: '该镜头已有一个在途的视频任务' },
+        })
+        continue
+      }
+      aborted = true
+      out.failed.push({
+        targetId: verdict.targetId,
+        reason: {
+          code: 'ENQUEUE_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        },
+      })
+    }
+  }
+  return out
+}
