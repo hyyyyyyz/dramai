@@ -1,0 +1,7 @@
+/* v2 一体入口：Tailwind + 字体 + token + 元素默认值。消费方：
+ *   @import '@dramai/ui/v2/styles.css';
+ */
+@import 'tailwindcss';
+@import './styles/fonts.css';
+@import './styles/theme.css';
+@import './styles/base.css';

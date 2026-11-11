@@ -11,13 +11,22 @@
   "exports": {
     ".": "./src/index.ts",
     "./styles/globals.css": "./src/styles/globals.css",
-    "./brand/*": "./src/brand/*"
+    "./brand/*": "./src/brand/*",
+    "./v2": "./src/v2/index.ts",
+    "./v2/styles.css": "./src/v2/styles.css",
+    "./v2/theme.css": "./src/v2/styles/theme.css",
+    "./v2/fonts.css": "./src/v2/styles/fonts.css",
+    "./v2/base.css": "./src/v2/styles/base.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build:fonts": "node scripts/build-fonts.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource/noto-sans-sc": "^5.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "catalog:",
@@ -32,11 +41,19 @@
   "devDependencies": {
     "@dramai/eslint-config": "workspace:*",
     "@dramai/tsconfig": "workspace:*",
+    "@tailwindcss/vite": "^4.2.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.9",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "catalog:",
+    "jsdom": "^31.0.0",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "^8.0.10",
+    "vitest": "catalog:"
   }
 }
