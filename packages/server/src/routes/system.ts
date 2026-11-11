@@ -32,6 +32,7 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
           }
         : { found: false, missing: [], ok: false, error },
       auth: { tokenRequired: ctx.config.tokenRequired },
+      demo: { active: ctx.config.demo !== undefined, notice: ctx.config.demo?.notice },
     }
   })
 

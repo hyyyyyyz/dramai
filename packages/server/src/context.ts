@@ -26,6 +26,8 @@ export interface ServerConfig {
   desktop: boolean
   startedAt: number
   tokenRequired: boolean
+  /** 演示模式（由演示入口传入）；正式启动路径不设。 */
+  demo?: { notice: string }
 }
 
 export interface FfmpegState {

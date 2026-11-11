@@ -769,6 +769,11 @@ export const systemInfo = z.object({
   epoch: z.string(),
   ffmpeg: ffmpegInfo,
   auth: z.object({ tokenRequired: z.boolean() }),
+  /**
+   * 演示模式：服务商指向本地模拟服务，不产生任何费用、生成的是占位内容。
+   * 前端据此显示持续可见的提示（notice 是服务端给出的说明文字）。
+   */
+  demo: z.object({ active: z.boolean(), notice: z.string().optional() }),
 })
 export type SystemInfo = z.infer<typeof systemInfo>
 

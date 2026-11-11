@@ -17,6 +17,7 @@ await server.close()
 ```
 
 开发：`pnpm --filter @dramai/server dev`（环境变量见 `src/dev.ts`）。
+演示 / 前端联调（不花钱）：仓库根 `pnpm demo`，见 `packages/mock-providers`。`createServer({ demo: { notice } })` 只影响 `/api/system` 的 `demo` 字段（让界面显示提示），服务端行为不变。
 
 ## 启动顺序
 

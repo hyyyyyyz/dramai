@@ -131,6 +131,46 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@24.12.2)(vite@8.0.10(@types/node@24.12.2)(jiti@2.6.1))
 
+  packages/mock-providers:
+    dependencies:
+      '@dramai/api':
+        specifier: workspace:*
+        version: link:../api
+      '@dramai/core':
+        specifier: workspace:*
+        version: link:../core
+      '@dramai/server':
+        specifier: workspace:*
+        version: link:../server
+      '@hono/node-server':
+        specifier: 'catalog:'
+        version: 2.1.7(hono@4.13.18)
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.18
+    devDependencies:
+      '@dramai/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@dramai/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.12.2
+      eslint:
+        specifier: 'catalog:'
+        version: 10.3.0(jiti@2.6.1)
+      jszip:
+        specifier: 'catalog:'
+        version: 3.10.1
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.12(@types/node@24.12.2)(vite@8.0.10(@types/node@24.12.2)(jiti@2.6.1))
+
   packages/server:
     dependencies:
       '@dramai/api':

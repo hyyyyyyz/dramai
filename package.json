@@ -33,6 +33,7 @@
     "lint": "pnpm -r --if-present lint",
     "lint:fix": "pnpm -r --if-present lint:fix",
     "preview": "pnpm --filter @dramai/workspace preview",
+    "demo": "pnpm --filter @dramai/mock-providers demo",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "format": "prettier --write .",

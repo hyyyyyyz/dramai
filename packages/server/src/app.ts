@@ -66,6 +66,8 @@ export interface CreateServerOptions {
   allowedHosts?: string[]
   version?: string
   desktop?: boolean
+  /** 演示模式标记：只用于让界面显示提示，服务端行为不因它改变。 */
+  demo?: { notice: string }
 
   // —— 可替换的实现 / 测试注入 ——
   /** 密钥存储（桌面版换成系统加密 / 钥匙串）。 */
@@ -180,6 +182,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       desktop: options.desktop ?? false,
       startedAt: clock.now(),
       tokenRequired: security.tokenRequired,
+      demo: options.demo,
     }
 
     const jobTag = new AsyncLocalStorage<JobTag>()
