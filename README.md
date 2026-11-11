@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/hyyyyyyz/dramai/main/public/logo.svg" alt="dramai · AI short-drama studio in your browser" width="720" />
+<img src="https://raw.githubusercontent.com/hyyyyyyz/dramai/main/packages/ui/src/brand/logo.svg" alt="dramai · AI short-drama studio in your browser" width="720" />
 
 文本 / 文档 / 参考图 → 分镜脚本 → 角色一致的图 → 视频片段 → 一键导出剪映草稿
 全程纯前端、零后端、可直接 fork 部署到 GitHub Pages。
@@ -168,25 +168,25 @@ LLM        ¥0.x         （写分镜，便宜到忽略）
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git
 cd dramai
-npm install
-npm run dev
+pnpm install
+pnpm dev
 # 浏览器访问 http://localhost:5173/dramai/
 ```
 
 > 注：因为 `vite.config.ts` 默认 `base = "/dramai/"`（适配 GitHub Pages），
 > 本地开发的访问路径也是 `/dramai/`。
-> 想用根路径，请设置环境变量：`VITE_BASE=/ npm run dev`。
+> 想用根路径，请设置环境变量：`VITE_BASE=/ pnpm dev`。
 
 可用脚本：
 
-| 命令                              | 说明                          |
-| --------------------------------- | ----------------------------- |
-| `npm run dev`                     | 开发模式（HMR）               |
-| `npm run build`                   | 类型检查 + 生产构建到 `dist/` |
-| `npm run preview`                 | 预览构建产物                  |
-| `npm run typecheck`               | 仅类型检查                    |
-| `npm run lint` / `lint:fix`       | ESLint                        |
-| `npm run format` / `format:check` | Prettier                      |
+| 命令                           | 说明                          |
+| ------------------------------ | ----------------------------- |
+| `pnpm dev`                     | 开发模式（HMR）               |
+| `pnpm build`                   | 类型检查 + 生产构建到 `dist/` |
+| `pnpm preview`                 | 预览构建产物                  |
+| `pnpm typecheck`               | 仅类型检查                    |
+| `pnpm lint` / `lint:fix`       | ESLint                        |
+| `pnpm format` / `format:check` | Prettier                      |
 
 ## 🧠 核心概念
 

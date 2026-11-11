@@ -1,0 +1,23 @@
+{
+  "name": "@dramai/eslint-config",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared ESLint flat configs for the dramai monorepo",
+  "exports": {
+    ".": "./index.js"
+  },
+  "dependencies": {
+    "@eslint/js": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-react-refresh": "catalog:",
+    "globals": "catalog:",
+    "typescript-eslint": "catalog:"
+  },
+  "peerDependencies": {
+    "eslint": "catalog:"
+  },
+  "devDependencies": {
+    "eslint": "catalog:"
+  }
+}

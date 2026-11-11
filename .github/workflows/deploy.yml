@@ -22,28 +22,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # pnpm 版本取自根 package.json 的 "packageManager" 字段。
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      # See ci.yml for the rationale on `npm install` vs `npm ci`.
       - name: Install dependencies
-        run: npm install --prefer-offline --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm --filter @dramai/workspace build
         env:
           VITE_BASE: /dramai/
 
       # SPA 路由兜底：把 index.html 复制成 404.html，
       # 这样 GitHub Pages 在子路径刷新时会回到 SPA。
       - name: Add SPA 404 fallback
-        run: cp dist/index.html dist/404.html
+        run: cp packages/workspace/dist/index.html packages/workspace/dist/404.html
 
       - name: Disable Jekyll (avoid `_files` munging)
-        run: touch dist/.nojekyll
+        run: touch packages/workspace/dist/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -51,7 +54,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: packages/workspace/dist
 
   deploy:
     name: Deploy to GitHub Pages

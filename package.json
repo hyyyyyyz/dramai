@@ -1,9 +1,9 @@
 {
-  "name": "dramai",
-  "private": false,
+  "name": "dramai-monorepo",
+  "private": true,
   "version": "0.4.1",
   "type": "module",
-  "description": "Open-source, no-backend AI short-drama studio in your browser. Turn docs / images / a sentence into a structured storyboard, images, and video clips — all powered by OpenAI-compatible APIs.",
+  "description": "Open-source AI short-drama studio. Turn docs / images / a sentence into a structured storyboard, images, and video clips — all powered by OpenAI-compatible APIs.",
   "keywords": [
     "ai",
     "short-drama",
@@ -11,9 +11,7 @@
     "video",
     "react",
     "vite",
-    "openai",
-    "indexeddb",
-    "github-pages"
+    "openai"
   ],
   "author": "hyyyyyyz",
   "license": "Apache-2.0",
@@ -25,55 +23,21 @@
   "bugs": {
     "url": "https://github.com/hyyyyyyz/dramai/issues"
   },
+  "packageManager": "pnpm@9.15.0",
   "engines": {
-    "node": ">=20.0.0 <25.0.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,json,md}\" \"docs/**/*.md\" \"*.md\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json,md}\" \"docs/**/*.md\" \"*.md\""
-  },
-  "dependencies": {
-    "@ffmpeg/ffmpeg": "^0.12.15",
-    "@ffmpeg/util": "^0.12.2",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "dexie": "^4.4.2",
-    "dexie-react-hooks": "^4.4.0",
-    "i18next": "^26.0.8",
-    "i18next-browser-languagedetector": "^8.2.1",
-    "jszip": "^3.10.1",
-    "lucide-react": "^1.14.0",
-    "mammoth": "^1.12.0",
-    "nanoid": "^5.1.11",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
-    "react-i18next": "^17.0.6",
-    "react-router-dom": "^7.14.2",
-    "tailwind-merge": "^3.5.0",
-    "zustand": "^5.0.12"
+    "dev": "pnpm --filter @dramai/workspace dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "lint:fix": "pnpm -r --if-present lint:fix",
+    "preview": "pnpm --filter @dramai/workspace preview",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@tailwindcss/vite": "^4.2.4",
-    "@types/node": "^24.12.2",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.2.1",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.5.0",
-    "prettier": "^3.3.3",
-    "tailwindcss": "^4.2.4",
-    "tailwindcss-animate": "^1.0.7",
-    "typescript": "~6.0.2",
-    "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.10"
+    "prettier": "^3.3.3"
   }
 }

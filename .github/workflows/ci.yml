@@ -21,36 +21,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # pnpm 版本取自根 package.json 的 "packageManager" 字段。
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      # We use `npm install` rather than `npm ci` because npm 11 occasionally
-      # produces lockfiles with missing platform-optional packages
-      # (notably @emnapi/* under @napi-rs/wasm-runtime). `npm install`
-      # tolerates this; `npm ci` does not. .npmrc pins include=optional
-      # to keep drift minimal.
       - name: Install dependencies
-        run: npm install --prefer-offline --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
 
       - name: Typecheck
-        run: npm run typecheck
+        run: pnpm typecheck
 
       - name: Format check
-        run: npm run format:check
+        run: pnpm format:check
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Upload build artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: dist
-          path: dist
+          path: packages/workspace/dist
           retention-days: 7

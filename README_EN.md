@@ -60,8 +60,8 @@ Your data and API keys never leave your browser.
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git
 cd dramai
-npm install
-npm run dev
+pnpm install
+pnpm dev
 # Open http://localhost:5173/dramai/
 ```
 

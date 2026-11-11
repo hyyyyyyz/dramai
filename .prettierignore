@@ -2,5 +2,7 @@ dist
 node_modules
 coverage
 *.lock
-package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
 public
+.github

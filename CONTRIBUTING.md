@@ -17,17 +17,17 @@ For contributors who prefer English, scroll to the bottom.
 git clone https://github.com/hyyyyyyz/dramai.git
 cd dramai
 nvm use      # 或确保 Node ≥ 20
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 提交前请保证：
 
 ```bash
-npm run typecheck      # 类型检查
-npm run lint           # ESLint
-npm run format:check   # Prettier
-npm run build          # 生产构建无错
+pnpm typecheck      # 类型检查
+pnpm lint           # ESLint
+pnpm format:check   # Prettier
+pnpm build          # 生产构建无错
 ```
 
 ## 🌳 分支与 PR 规范
@@ -65,7 +65,7 @@ Thanks for considering a contribution!
 - Report bugs / request features through the issue templates.
 - Branch from `main`, name like `feat/<topic>` or `fix/<topic>`.
 - Use Conventional Commits in PR titles.
-- Run `npm run typecheck && npm run lint && npm run build` before pushing.
+- Run `pnpm typecheck && pnpm lint && pnpm build` before pushing.
 - Keep PRs small and focused.
 - Add yourself to `package.json` `contributors` if you wish.
 - Don't open public issues for security problems — see [SECURITY.md](./SECURITY.md).
