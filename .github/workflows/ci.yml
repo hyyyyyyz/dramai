@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Lint, typecheck, build
+    name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,6 +42,20 @@ jobs:
 
       - name: Format check
         run: pnpm format:check
+
+      # ubuntu-latest 镜像不带 ffmpeg / ffprobe（见 actions/runner-images 的
+      # Ubuntu 24.04 / 26.04 软件清单），而 packages/core 的 media 测试在找不到
+      # ffmpeg 时会整组跳过。这里安装它，让这组测试在 CI 上真正运行。
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+
+      # 放在构建之前：测试比完整构建快，失败时更早给出反馈。
+      - name: Test
+        run: pnpm test
 
       - name: Build
         run: pnpm build
