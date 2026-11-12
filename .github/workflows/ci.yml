@@ -141,6 +141,52 @@ jobs:
       - name: actionlint
         run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
 
+  # 桌面端在三个系统上的编译检查（pnpm desktop:build：只编译出本机可运行的应用，不安装），
+  # 以及无人值守的“安装 → 校验 → 卸载”自检（pnpm desktop:check-install，由 desktop 会话提供）。
+  # 根 package.json 里还没有对应脚本时，对应步骤空过。
+  desktop:
+    name: Desktop (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: Linux, os: ubuntu-latest }
+          - { label: macOS (arm64), os: macos-latest }
+          - { label: Windows, os: windows-latest }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Look for desktop scripts
+        id: detect
+        run: |
+          has() { node -p "Boolean(require('./package.json').scripts?.['$1'])"; }
+          echo "build=$(has desktop:build)" >> "$GITHUB_OUTPUT"
+          echo "check=$(has desktop:check-install)" >> "$GITHUB_OUTPUT"
+          if [ "$(has desktop:build)" != "true" ]; then
+            echo "::notice::No root 'desktop:build' script yet; skipping the desktop steps."
+          fi
+
+      - name: Setup workspace
+        if: steps.detect.outputs.build == 'true'
+        uses: ./.github/actions/setup
+
+      # desktop:build 假定依赖的包已经构建好，所以先做一次全仓构建。
+      - name: Build workspace
+        if: steps.detect.outputs.build == 'true'
+        run: pnpm build
+
+      - name: Build desktop app
+        if: steps.detect.outputs.build == 'true'
+        run: pnpm desktop:build
+
+      # 在运行器上真的安装一次、确认能启动，再卸载。Windows 和 Linux 的本地安装只能靠这一步在 CI 里验证。
+      - name: Install and uninstall self-check
+        if: steps.detect.outputs.check == 'true'
+        run: pnpm desktop:check-install
+
   # 浏览器端到端测试的位置。约定见 docs/RELEASING.md 的 “E2E 接入约定”：
   # 根 package.json 里有 `test:e2e` 脚本就会运行，没有就整个 job 空过。
   e2e:
@@ -189,7 +235,7 @@ jobs:
   ci-ok:
     name: CI passed
     if: always()
-    needs: [checks, test, build, workflows, e2e]
+    needs: [checks, test, build, workflows, desktop, e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
