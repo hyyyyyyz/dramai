@@ -157,3 +157,46 @@ export async function readAppLogs(userDataDir, lines = 60) {
   }
   return out.join('\n') || '(no app log file found)'
 }
+
+/** Which start-up stages the app log shows, in order; the first missing one is where the start stalled. */
+export function stageReport(logText) {
+  const stages = [
+    ['app started', /dramai desktop \S+ \(/],
+    ['server process ready', /server ready at /],
+    ['window created', /window created, loading/],
+    ['window ready to show', /window ready to show/],
+    ['page loaded', /page loaded:/],
+    ['secret storage ready (a macOS Keychain prompt may be waiting)', /secret storage ready:/],
+  ]
+  const lines = []
+  let stalled = false
+  for (const [name, pattern] of stages) {
+    const ok = pattern.test(logText)
+    lines.push(`  ${ok ? '✓' : stalled ? '·' : '✗'} ${name}`)
+    if (!ok) stalled = true
+  }
+  const failures = logText
+    .split('\n')
+    .filter((l) => /ERROR/.test(l))
+    .slice(-5)
+  if (failures.length) lines.push('  errors in the log:', ...failures.map((l) => `    ${l}`))
+  return lines.join('\n')
+}
+
+/** Everything useful when the app page never shows up or a check fails. */
+export async function diagnose(app, userDataDir) {
+  const parts = []
+  parts.push('--- app stdout/stderr (tail) ---\n' + app.output().split('\n').slice(-30).join('\n'))
+  const logs = await readAppLogs(userDataDir)
+  parts.push(logs)
+  parts.push('--- start-up stages (from the app log) ---\n' + stageReport(logs))
+  try {
+    const targets = await (await fetch(`http://127.0.0.1:${app.port}/json/list`)).json()
+    parts.push(
+      '--- debugging targets ---\n' + targets.map((t) => `  ${t.type}  ${t.url}`).join('\n'),
+    )
+  } catch (err) {
+    parts.push(`--- debugging targets ---\n  (cannot reach the debugging port: ${err.message})`)
+  }
+  return parts.join('\n')
+}

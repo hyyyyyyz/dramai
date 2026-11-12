@@ -207,3 +207,21 @@ describe('failed-check diagnostics', () => {
     expect(await readAppLogs(tmp(), 5)).toBeTypeOf('string')
   })
 })
+
+describe('start-up stage report', () => {
+  it('shows which stage a stalled start never reached', async () => {
+    const { stageReport } = await import('../scripts/lib/cdp.mjs')
+    const log = [
+      '2026-11-12T00:00:00Z INFO dramai desktop 0.5.0-beta.1 (darwin/arm64), data: /d (env)',
+      '2026-11-12T00:00:01Z INFO server ready at http://127.0.0.1:1',
+    ].join('\n')
+    const report = stageReport(log)
+    expect(report).toContain('✓ app started')
+    expect(report).toContain('✓ server process ready')
+    expect(report).toContain('✗ window created')
+    expect(report).toContain('· page loaded') // later stages are shown as not reached, not as failures
+    expect(stageReport(log + '\n2026 ERROR server failed to start: DATA_DIR_LOCKED')).toContain(
+      'DATA_DIR_LOCKED',
+    )
+  })
+})

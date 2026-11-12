@@ -31,6 +31,7 @@ import { chooseListenPort } from './ports.ts'
 import { SecretVault } from './secret-vault.ts'
 import type { SecretCrypto } from './secret-vault.ts'
 import { ServerHost, ServerStartError } from './server-host.ts'
+import type { SecretBackend } from './server-host.ts'
 import { acquireSingleInstance } from './single-instance.ts'
 import { isLangPreference, resolveLang, strings } from './strings.ts'
 import type { Lang, LangPreference } from './strings.ts'
@@ -88,6 +89,7 @@ const state = {
 
 let config!: ConfigStore
 let vault!: SecretVault
+let vaultReady: Promise<void> = Promise.resolve()
 let host!: ServerHost
 
 // —— 系统加密（safeStorage 的异步接口；同步接口在 Electron 45 起已弃用，46 移除）——
@@ -199,6 +201,11 @@ function createWindow(target: string): BrowserWindow {
   win.webContents.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
     if (isMainFrame) log('error', `load failed: ${description} (${code}) ${originOf(url) ?? ''}`)
   })
+  win.webContents.on('did-finish-load', () =>
+    log('info', `page loaded: ${originOf(win.webContents.getURL()) ?? '(unknown)'}`),
+  )
+  win.once('ready-to-show', () => log('info', 'window ready to show'))
+  log('info', `window created, loading ${originOf(target) ?? target}`)
   void win.loadURL(target)
   if (process.env.DRAMAI_DESKTOP_DEVTOOLS === '1') win.webContents.openDevTools({ mode: 'detach' })
   state.win = win
@@ -454,15 +461,18 @@ function registerIpc(): void {
 
   handle(
     BRIDGE_CHANNELS.getInfo,
-    (): DramaiDesktopInfo => ({
-      version: app.getVersion(),
-      platform: process.platform as DramaiDesktopInfo['platform'],
-      arch: process.arch,
-      dataDir: state.dataDir,
-      secretStorage: state.secretMode,
-      language: lang,
-      languagePreference: config.get().language ?? 'auto',
-    }),
+    async (): Promise<DramaiDesktopInfo> => (
+      await vaultReady,
+      {
+        version: app.getVersion(),
+        platform: process.platform as DramaiDesktopInfo['platform'],
+        arch: process.arch,
+        dataDir: state.dataDir,
+        secretStorage: state.secretMode,
+        language: lang,
+        languagePreference: config.get().language ?? 'auto',
+      }
+    ),
   )
 
   handle(BRIDGE_CHANNELS.setLanguage, (arg) => {
@@ -592,10 +602,31 @@ async function main(): Promise<void> {
   )
 
   vault = new SecretVault(join(state.dataDir, 'secrets.json'), osCrypto, log)
-  try {
-    state.secretMode = await vault.init()
-  } catch (err) {
-    log('error', `secret vault init failed: ${String(err)}`)
+  // Not awaited: on macOS the first safeStorage call can wait on a Keychain access prompt (an app rebuilt locally
+  // has a new ad-hoc signature, so the system asks again). The app must open and stay responsive meanwhile; only
+  // reads and writes of API keys wait for the answer.
+  vaultReady = vault
+    .init()
+    .then((mode) => {
+      state.secretMode = mode
+      log('info', `secret storage ready: ${mode}`)
+      if (mode === 'plain' && !config.get().plainSecretsNoticeShown && !quiet) {
+        config.update({ plainSecretsNoticeShown: true })
+        void dialog.showMessageBox({
+          type: 'info',
+          title: s().plainSecretsTitle,
+          message: s().plainSecretsTitle,
+          detail: s().plainSecrets,
+          buttons: [s().ok],
+        })
+      }
+    })
+    .catch((err) => log('error', `secret vault init failed: ${String(err)}`))
+  const secrets: SecretBackend = {
+    get: async (ref) => (await vaultReady, vault.get(ref)),
+    set: async (ref, value) => (await vaultReady, vault.set(ref, value)),
+    delete: async (ref) => (await vaultReady, vault.delete(ref)),
+    has: async (ref) => (await vaultReady, vault.has(ref)),
   }
 
   const env = withToolDirs(process.env as Record<string, string | undefined>)
@@ -606,7 +637,7 @@ async function main(): Promise<void> {
         stdio: 'pipe',
         env: env as Record<string, string>,
       }) as unknown as ReturnType<ConstructorParameters<typeof ServerHost>[0]['fork']>,
-    secrets: vault,
+    secrets,
     log,
   })
   host.on('crashed', () => void onServerCrashed())
@@ -628,17 +659,6 @@ async function main(): Promise<void> {
       app.quit()
       return
     }
-  }
-
-  if (state.secretMode === 'plain' && !config.get().plainSecretsNoticeShown && !quiet) {
-    config.update({ plainSecretsNoticeShown: true })
-    void dialog.showMessageBox({
-      type: 'info',
-      title: s().plainSecretsTitle,
-      message: s().plainSecretsTitle,
-      detail: s().plainSecrets,
-      buttons: [s().ok],
-    })
   }
 
   await seedDemoIfRequested()

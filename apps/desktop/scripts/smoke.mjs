@@ -245,14 +245,13 @@ try {
 } catch (err) {
   failed = true
   console.error('✗ smoke failed:', err.message)
-  console.error('--- app output (tail) ---\n' + app.output().split('\n').slice(-40).join('\n'))
+  console.error(await diagnose(app, userData))
   app.child.kill('SIGKILL')
   mock?.kill('SIGKILL')
 }
 if (!failed && checks.some((c) => !c.ok)) {
   failed = true
-  console.error('--- app output (tail) ---\n' + app.output().split('\n').slice(-40).join('\n'))
-  console.error(await readAppLogs(userData))
+  console.error(await diagnose(app, userData))
 }
 console.log(failed ? '\nSMOKE FAILED' : '\nSMOKE OK')
 if (keep) console.log(`kept: ${work} (screenshot: ${join(work, 'smoke.png')})`)
