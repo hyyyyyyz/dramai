@@ -1,0 +1,322 @@
+name: Release desktop
+
+# 推送形如 v0.5.0 / v0.5.0-beta.1 的 tag 时：核对版本 → 跑一遍 CI → 在各平台构建桌面安装包
+# → 生成校验和 → 创建 GitHub Release 并上传。带后缀的 tag 发为预发布。
+# 手动触发（workflow_dispatch）只构建，产物留在运行页面的 Artifacts 里，不创建 Release，
+# 用来在打 tag 之前演练整条流水线。流程说明见 docs/RELEASING.md。
+on:
+  push:
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同一个 tag 不并行发布，也不取消已经在跑的发布。
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # 打 tag 前的完整检查（格式、lint、类型、三系统测试、构建、工作流静态检查）。
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  # 核对 tag 与版本号、决定发布类型、准备发布说明和构建矩阵。
+  verify:
+    name: Verify tag and plan release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      tag: ${{ steps.check.outputs.tag }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+      notes: ${{ steps.notes.outputs.mode }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # 下面要判断 tag 的提交是否在 main 上
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      # tag 必须与仓库版本一致，且所有包版本一致；不一致就失败并说明怎么修。
+      - name: Check tag against package versions
+        id: check
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then
+            pnpm version:check --tag "$REF_NAME"
+          else
+            echo "Not a tag run (manual dry run): checking package versions only."
+            pnpm version:check
+          fi
+
+      # 正式版必须来自 main；预发布可以来自任何分支（用于在重构分支上试发）。
+      - name: Require stable releases to come from main
+        if: github.ref_type == 'tag' && steps.check.outputs.prerelease == 'false'
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Stable tag ${GITHUB_REF_NAME} points at a commit that is not on main. Merge to main first, or publish a prerelease tag (e.g. ${GITHUB_REF_NAME}-rc.1)."
+            exit 1
+          fi
+
+      # 发布说明：取 CHANGELOG.md 里对应版本的小节。
+      #   正式版：没有这一节就失败（发布说明是发布的一部分）。
+      #   预发布：没有就回退到 GitHub 自动生成的说明。
+      - name: Prepare release notes
+        id: notes
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
+          PRERELEASE: ${{ steps.check.outputs.prerelease }}
+        run: |
+          mkdir -p release-notes
+          set +e
+          node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            tooling/release/src/cli.ts notes "$VERSION" --out release-notes/changelog.md
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "mode=changelog" >> "$GITHUB_OUTPUT"
+          elif [ "$status" -eq 3 ] && [ "$PRERELEASE" = "true" ]; then
+            echo "::notice::No CHANGELOG section for $VERSION; the prerelease will use GitHub's generated notes."
+            echo "mode=generated" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Add a '## [$VERSION]' section to CHANGELOG.md before releasing."
+            exit 1
+          fi
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-notes
+          path: release-notes
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # 构建矩阵。macOS 的 arm64 与 x64 各用自己的运行器（原生构建，不交叉编译）。
+      # Linux 是可选项：在仓库变量里设 DRAMAI_RELEASE_LINUX=true 才会加入。
+      - name: Plan build matrix
+        id: plan
+        env:
+          WITH_LINUX: ${{ vars.DRAMAI_RELEASE_LINUX }}
+        run: |
+          matrix="$(node -p '
+            const include = [
+              { name: "mac-arm64", os: "macos-latest", family: "mac", arch: "arm64" },
+              { name: "mac-x64", os: "macos-15-intel", family: "mac", arch: "x64" },
+              { name: "win-x64", os: "windows-latest", family: "win", arch: "x64" },
+            ]
+            if (process.env.WITH_LINUX === "true") {
+              include.push({ name: "linux-x64", os: "ubuntu-latest", family: "linux", arch: "x64" })
+            }
+            JSON.stringify({ include })
+          ')"
+          echo "Build matrix: $matrix"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Desktop (${{ matrix.name }})
+    needs: [verify, ci]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.verify.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+
+      # 签名与公证由密钥驱动：配置了就签，没配置就跳过并在日志里说明这是未签名构建。
+      # 环境变量名是 electron-builder 的约定（CSC_* / WIN_CSC_* / APPLE_*）。
+      - name: Configure code signing
+        id: signing
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          FAMILY: ${{ matrix.family }}
+        run: |
+          status="unsigned"
+          case "$FAMILY" in
+            mac)
+              if [ -n "$MACOS_CERTIFICATE" ] && [ -n "$MACOS_CERTIFICATE_PASSWORD" ]; then
+                {
+                  echo "CSC_LINK=$MACOS_CERTIFICATE"
+                  echo "CSC_KEY_PASSWORD=$MACOS_CERTIFICATE_PASSWORD"
+                } >> "$GITHUB_ENV"
+                status="signed"
+                if [ -n "$APPLE_ID" ] && [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+                  {
+                    echo "APPLE_ID=$APPLE_ID"
+                    echo "APPLE_APP_SPECIFIC_PASSWORD=$APPLE_APP_SPECIFIC_PASSWORD"
+                    echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+                  } >> "$GITHUB_ENV"
+                  status="signed and notarized"
+                else
+                  echo "::warning::macOS build is signed but NOT notarized (APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID not all set); Gatekeeper will still warn."
+                fi
+              else
+                echo "CSC_IDENTITY_AUTO_DISCOVERY=false" >> "$GITHUB_ENV"
+                echo "::warning::macOS build is UNSIGNED (secrets MACOS_CERTIFICATE / MACOS_CERTIFICATE_PASSWORD are not configured)."
+              fi
+              ;;
+            win)
+              if [ -n "$WINDOWS_CERTIFICATE" ] && [ -n "$WINDOWS_CERTIFICATE_PASSWORD" ]; then
+                {
+                  echo "WIN_CSC_LINK=$WINDOWS_CERTIFICATE"
+                  echo "WIN_CSC_KEY_PASSWORD=$WINDOWS_CERTIFICATE_PASSWORD"
+                } >> "$GITHUB_ENV"
+                status="signed"
+              else
+                echo "::warning::Windows build is UNSIGNED (secrets WINDOWS_CERTIFICATE / WINDOWS_CERTIFICATE_PASSWORD are not configured); SmartScreen will warn."
+              fi
+              ;;
+            *)
+              echo "::notice::No code signing for $FAMILY builds."
+              ;;
+          esac
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "Signing status for ${{ matrix.name }}: $status"
+
+      # `pnpm desktop:dist` 打包当前平台，产物在 apps/desktop/release/（与 desktop 会话的约定）。
+      # 先做一次全仓构建，让它依赖的包都已就绪；这里不设置 GH_TOKEN，
+      # electron-builder 因此不会自己去发布。
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Package desktop app
+        run: pnpm desktop:dist
+
+      # 只挑符合 dramai-<版本>-<系统>-<架构>.<扩展名> 的文件；一个都没有就失败。
+      - name: Collect installers
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+          FAMILY: ${{ matrix.family }}
+          ARCH: ${{ matrix.arch }}
+          NAME: ${{ matrix.name }}
+          SIGNING: ${{ steps.signing.outputs.status }}
+        run: |
+          node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            tooling/release/src/cli.ts collect \
+            --dir apps/desktop/release --out staging \
+            --version "$VERSION" --family "$FAMILY" --arch "$ARCH"
+          echo "$NAME: $SIGNING" > "staging/signing-$NAME.txt"
+          ls -l staging
+
+      - name: Upload installers
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-${{ matrix.name }}
+          path: staging
+          retention-days: 7
+          if-no-files-found: error
+
+  # 只在 tag 推送时运行；手动触发（演练）到上一步为止。
+  release:
+    name: Publish GitHub Release
+    if: github.event_name == 'push'
+    needs: [verify, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # 创建 Release 并上传文件；只有这个 job 有写权限
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.verify.outputs.tag }}
+      VERSION: ${{ needs.verify.outputs.version }}
+      PRERELEASE: ${{ needs.verify.outputs.prerelease }}
+      NOTES_MODE: ${{ needs.verify.outputs.notes }}
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: desktop-*
+          merge-multiple: true
+          path: assets
+
+      - name: Download release notes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-notes
+          path: release-notes
+
+      - name: Generate checksums
+        working-directory: assets
+        run: |
+          ls -l
+          # 校验和只覆盖安装包本身，不含 signing-*.txt 这类内部标记文件
+          sha256sum dramai-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Compose release notes
+        run: |
+          {
+            if [ "$NOTES_MODE" = "changelog" ]; then
+              cat release-notes/changelog.md
+              printf '\n\n---\n\n'
+            fi
+            echo "### Downloads"
+            echo
+            echo "Pick the installer for your system: \`mac-arm64\` is Apple Silicon, \`mac-x64\` is Intel Macs, \`win-x64\` is 64-bit Windows."
+            echo
+            echo "### Verify your download"
+            echo
+            echo "Compare the SHA-256 of the file you downloaded with its line in \`SHA256SUMS.txt\`: \`shasum -a 256 <file>\` on macOS and Linux, \`Get-FileHash <file>\` in Windows PowerShell."
+            echo
+            echo "### Code signing"
+            echo
+            cat assets/signing-*.txt | sed 's/^/- /'
+            if grep -q ': unsigned' assets/signing-*.txt; then
+              echo
+              echo "Unsigned builds work, but the operating system will show a security warning on first launch."
+            fi
+          } > release-body.md
+          cat release-body.md
+
+      # 先建草稿、传完所有文件、再发布，用户不会看到只传了一半的 Release。
+      # 重跑时：草稿会被刷新；已经发布的同名 Release 不会被覆盖。
+      - name: Create or refresh draft release
+        run: |
+          shopt -s nullglob
+          files=(assets/dramai-* assets/SHA256SUMS.txt)
+          flags=(--title "dramai $TAG" --notes-file release-body.md)
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); else flags+=(--latest); fi
+          if [ "$NOTES_MODE" = "generated" ]; then flags+=(--generate-notes); fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            if [ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" != "true" ]; then
+              echo "::error::Release $TAG is already published. Delete it (and its tag) or bump the version; published assets are never overwritten."
+              exit 1
+            fi
+            echo "Draft release $TAG exists; refreshing its assets."
+            gh release upload "$TAG" "${files[@]}" --clobber
+            gh release edit "$TAG" "${flags[@]}"
+          else
+            gh release create "$TAG" "${files[@]}" --draft --verify-tag "${flags[@]}"
+          fi
+
+      - name: Publish release
+        run: |
+          gh release edit "$TAG" --draft=false
+          gh release view "$TAG" --json url,isPrerelease,assets --jq '"\(.url) prerelease=\(.isPrerelease) assets=\([.assets[].name]|join(", "))"'
