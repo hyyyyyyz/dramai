@@ -371,3 +371,39 @@ describe('installer names', () => {
     ).toHaveLength(2)
   })
 })
+
+describe('debugging-protocol calls cannot hang a check', () => {
+  it('a page call that never answers fails after its deadline with a hint about the Keychain prompt', async () => {
+    class SilentSocket {
+      onopen: (() => void) | undefined
+      onerror: (() => void) | undefined
+      onmessage: ((e: { data: string }) => void) | undefined
+      constructor() {
+        queueMicrotask(() => this.onopen?.())
+      }
+      send() {} // never answers, like a page whose call waits on the Keychain prompt
+      close() {}
+    }
+    const original = globalThis.WebSocket
+    ;(globalThis as { WebSocket: unknown }).WebSocket = SilentSocket
+    process.env.DRAMAI_CALL_TIMEOUT_MS = '50'
+    try {
+      const { connect } = await import('../scripts/lib/cdp.mjs')
+      const page = await connect({ webSocketDebuggerUrl: 'ws://x' })
+      const started = Date.now()
+      await expect(page.evaluate('window.dramaiDesktop.getInfo()')).rejects.toThrow(
+        /Keychain.*Always Allow/s,
+      )
+      expect(Date.now() - started).toBeLessThan(2000)
+    } finally {
+      delete process.env.DRAMAI_CALL_TIMEOUT_MS
+      globalThis.WebSocket = original
+    }
+  })
+
+  it('the default deadline is generous but finite', async () => {
+    const { CALL_TIMEOUT_MS } = await import('../scripts/lib/cdp.mjs')
+    expect(CALL_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000)
+    expect(CALL_TIMEOUT_MS).toBeLessThanOrEqual(60_000)
+  })
+})
