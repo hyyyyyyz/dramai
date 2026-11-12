@@ -212,6 +212,23 @@ jobs:
 
       # 没有脚本时这个 job 仍然显示为成功，因为什么都没执行。为了不让人误读，
       # 这里把“未运行”和原因写进任务摘要，并打一条警告注释（运行页面上是黄色的）。
+      # Electron 和 electron-builder 的下载（每个系统和架构各约 100 MB）按锁文件缓存。
+      # 两个缓存目录用环境变量固定到同一个临时位置，三个系统共用同一套写法；
+      # 必须在安装依赖之前设置，因为 electron 的 postinstall 就会下载二进制。
+      - name: Point Electron downloads at a cached folder
+        run: |
+          echo "ELECTRON_CACHE=$RUNNER_TEMP/electron-cache" >> "$GITHUB_ENV"
+          echo "ELECTRON_BUILDER_CACHE=$RUNNER_TEMP/electron-builder-cache" >> "$GITHUB_ENV"
+
+      - name: Cache Electron downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ runner.temp }}/electron-cache
+            ${{ runner.temp }}/electron-builder-cache
+          key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: electron-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Look for desktop scripts
         id: detect
         run: |
