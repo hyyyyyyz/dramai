@@ -839,12 +839,11 @@ async function doAudioJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
       recoverable: false,
     })
   }
-  // 旁白音频的依据里有音色 / 语速 / 服务商：以项目的旁白设置为准（和时效判定用的是同一份）；
-  // 项目还没设置时，退而用这次任务的服务商和默认音色。
-  const expectation = buildExpectations(
-    projection,
-    project.narrationVoice ? {} : { audio: { provider: config.id, voice: 'alloy' } },
-  ).get(inputs.key)
+  // 旁白音频的依据里有音色 / 语速 / 服务商：以项目的旁白设置为准，和时效判定用的是同一份（buildExpectations）。
+  // 项目没有设置旁白音色时，依据里就没有音频设置——生成时用的默认音色（'alloy'）和服务商不进依据。
+  // （曾经在这里额外塞进"这次任务的服务商 + 默认音色"，而之后的判定不知道这两样，于是刚生成完就显示 basis_changed。）
+  // 用户之后设置了音色，依据才出现音频设置，旁白如实判为过期。
+  const expectation = buildExpectations(projection).get(inputs.key)
   const voice = project.narrationVoice?.voice ?? 'alloy'
   const input: SpeechInput = {
     text: inputs.narration ?? '',

@@ -647,6 +647,50 @@ describe('narration (TTS as a queue job)', () => {
     },
   )
 
+  real(
+    'narration made while the project has no narration voice is current, and becomes stale only once a voice is set',
+    async () => {
+      const env = await makePipelineEnv(media!)
+      const ep = await prepareEpisode(env)
+      // a project without a narration voice (the test env sets one by default)
+      const project = (await env.deps.store.projects.get(env.projectId))!
+      const withoutVoice = { ...project }
+      delete withoutVoice.narrationVoice
+      await env.deps.store.projects.put(withoutVoice)
+      const withNarr = (await episodeShots(env.deps.store, ep.id)).filter((s) => s.narration)
+      await requestGeneration(
+        env.deps,
+        env.projectId,
+        withNarr.map(
+          (s): AdmissionTarget => ({
+            target: { kind: 'shot_audio', shotId: s.id },
+            provider: env.provider('tts'),
+          }),
+        ),
+      )
+      await runAll(env)
+      // generated with the default voice...
+      expect(env.providers.posts('/audio/speech')[0]!.body).toMatchObject({ voice: 'alloy' })
+      // ...and not "changed basis" the moment it exists
+      let reports = evaluateArtifacts(await loadProjection(env.deps.store, env.projectId))
+      for (const s of withNarr) {
+        const r = reports.get(`shot_audio:${s.id}`)!
+        expect(r.status, JSON.stringify(r.changes)).toBe('current')
+      }
+      // choosing a voice afterwards changes what the user would hear, so the narration is honestly outdated
+      await env.deps.store.projects.put({
+        ...withoutVoice,
+        narrationVoice: { providerConfigId: 'tts', voice: 'nova', speed: 1 },
+      })
+      reports = evaluateArtifacts(await loadProjection(env.deps.store, env.projectId))
+      for (const s of withNarr) {
+        const r = reports.get(`shot_audio:${s.id}`)!
+        expect(r.status).toBe('stale')
+        expect(r.changes).toMatchObject([{ kind: 'input', field: 'audio' }])
+      }
+    },
+  )
+
   real('post-production projects do not synthesise narration', async () => {
     const env = await makePipelineEnv(media!, { delivery: 'post' })
     const ep = await prepareEpisode(env)

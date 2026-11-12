@@ -5,6 +5,8 @@
 
 ## 一条命令跑起来
 
+Open `http://127.0.0.1:8787` after `pnpm demo`: when the repository's frontend has been built (`pnpm --filter @dramai/workspace build`), the demo serves it by itself; without a build it prints that command instead of leaving you with a 404 (`--static-dir <path>` hosts another build).
+
 ```bash
 pnpm demo            # 本地服务 http://127.0.0.1:8787 + 模拟服务商 http://127.0.0.1:8788
 pnpm demo --fresh    # 先清空演示数据目录（~/.dramai-demo，与正式数据完全分开）
@@ -29,12 +31,22 @@ pnpm demo --help
 | 服务     | 协议（对应现有预设）                                  | 返回                                                                                                                                                                                                                                                      |
 | -------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 大模型   | OpenAI chat completions，**流式**                     | 对流水线的 6 个文本步骤（分集规划 / 分镜拆解 / 实体抽取 / 合并 / 变体分析 / 镜头提示词）返回结构合法、**和输入对得上**的 JSON：本地规则识别人名、地点、道具、服装、对白和说话人；换一篇中文短篇也能跑出像样的分集和分镜。把握度有高有低，界面上能看到三档 |
-| 图片     | Gemini `generateContent`、OpenAI `images/generations` | 占位 PNG：按请求的画幅 / 尺寸；按提示词取色，印着 SHEET / SHOT、提示词编号、请求序号、尺寸（同一个提示词再生成一次，序号和颜色会变，看得出换了一张）                                                                                                      |
-| 图生视频 | 阿里万相、火山 Seedance（异步任务 + 轮询）            | 以起始帧做缓慢推近的 mp4，时长按请求，画幅跟着起始帧；`generate_audio` 时带一条音轨。**需要 ffmpeg**                                                                                                                                                      |
+| 图片     | Gemini `generateContent`、OpenAI `images/generations` | 占位 PNG：按请求的画幅 / 尺寸；分镜稿纸风格（墨色、纸色、朱砂，无渐变）：镜头是取景框里的人台构图，设定图是三视图，印着 DEMO 章、编号、尺寸；同一个提示词再生成一次，序号会变（见下面的 Placeholder pictures）                                            |
+| 图生视频 | 阿里万相、火山 Seedance（异步任务 + 轮询）            | 以起始帧做缓慢推近的 mp4，画面下方有墨色控制条（朱砂录制点和进度），时长按请求，画幅跟着起始帧；`generate_audio` 时带一条音轨。**需要 ffmpeg**                                                                                                            |
 | 配音     | OpenAI `audio/speech`                                 | 占位 WAV：时长和文字长度成正比（标点停顿、语速生效）                                                                                                                                                                                                      |
 | 模型列表 | `GET /models`、`/v1/models`、`/v1beta/models`         | 让“测试连接”走通                                                                                                                                                                                                                                          |
 
 大模型的规则不是语言理解：它认的是常见的中文人名（姓氏 + 动作 / 对白）、地点后缀（茶馆、码头……）、量词 + 物件。认不出的就是认不出。
+
+## Placeholder pictures (English)
+
+Generated images and videos are placeholders in the product's own look, so the first screen of the demo does not look like an error: a storyboard-paper draft in ink, paper, cinnabar `#DF500C` and quiet warm neutrals. No gradients, no purple or magenta (the tests check the palette pixel by pixel).
+
+- **Shot** (storyboard frame): a framed composition with a set (gate, windows or pillars), a mannequin whose scale follows the shot size (`WIDE` / `FULL` / `MEDIUM` / `CLOSE`, printed in the footer), thirds guides, a centre cross and viewfinder corner marks.
+- **Sheet** (design sheet for a character, location, prop or costume): three turnaround views (`FRONT` / `SIDE` / `BACK`) on a baseline with a height ruler.
+- **Video**: the start frame with a slow push-in, and under it an ink control bar with a blinking cinnabar record square and a timeline that fills with the playhead. Without a start frame it is a blank sheet of paper with the same bar.
+- **Never mistaken for a result**: every picture carries a cinnabar `DEMO` stamp, the caption `PLACEHOLDER - NOT A REAL RESULT`, its running number (`SHOT 0007`), a short prompt code and its size.
+- **Different shots and assets look different**: the composition (set, figure position and scale, paper tone) comes from the prompt and the running number. The same input always gives the same picture; generating the same prompt again gives a new number and a new picture.
 
 ## 演示价格
 

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join, posix, resolve, win32 } from 'node:path'
 import { createClient } from '@dramai/api'
 import { afterEach, describe, expect, it } from 'vitest'
-import { resolveUserPath } from '../src/demo-lib.ts'
+import { findBuiltFrontend, resolveUserPath } from '../src/demo-lib.ts'
 
 const root = join(import.meta.dirname, '..')
 
@@ -114,6 +114,42 @@ async function startDemo(userDir: string, args: string[]): Promise<Running> {
   running.push(r)
   return r
 }
+
+describe('pnpm demo without --static-dir', () => {
+  it('findBuiltFrontend: the folder when it has an index.html, otherwise nothing', async () => {
+    const d = await mkdtemp(join(tmpdir(), 'dramai-fe-'))
+    try {
+      expect(findBuiltFrontend(d)).toBeUndefined()
+      expect(findBuiltFrontend(join(d, 'missing'))).toBeUndefined()
+      await writeFile(join(d, 'index.html'), '<!doctype html>')
+      expect(findBuiltFrontend(d)).toBe(d)
+    } finally {
+      await rm(d, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
+    }
+  })
+
+  it("serves the repository's built frontend if there is one, else says what to run instead of leaving a 404", async () => {
+    const userDir = await realpath(await mkdtemp(join(tmpdir(), 'dramai-demo-user-')))
+    try {
+      const demo = await startDemo(userDir, ['--data-dir', 'd', '--lang', 'en'])
+      const built = findBuiltFrontend()
+      const home = await fetch(`${demo.appUrl}/`)
+      if (built) {
+        expect(home.status).toBe(200)
+        expect(await home.text()).toContain('<html')
+        expect(demo.out()).toContain(built)
+      } else {
+        expect(home.status).toBe(404)
+        expect(demo.out()).toContain('pnpm --filter @dramai/workspace build')
+      }
+      // the API is there either way
+      expect((await fetch(`${demo.appUrl}/api/health`)).status).toBe(200)
+    } finally {
+      await stopAll()
+      await rm(userDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
+    }
+  }, 90_000)
+})
 
 describe('pnpm demo with relative paths', () => {
   it('--data-dir and --static-dir are resolved against the directory the user ran it in', async () => {

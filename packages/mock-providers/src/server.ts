@@ -309,12 +309,9 @@ export async function startMockProviders(options: StartOptions = {}): Promise<Mo
     const png = placeholderPng({
       ...size,
       seed: `${prompt}#${n}`,
-      title: SHEET_HINT.test(prompt) ? 'SHEET' : 'SHOT',
-      lines: [
-        `MOCK IMAGE`,
-        `#${hash32(prompt).toString(16).slice(0, 4).toUpperCase()}  N${String(n).padStart(4, '0')}`,
-        `${size.width}X${size.height}`,
-      ],
+      kind: SHEET_HINT.test(prompt) ? 'sheet' : 'shot',
+      serial: n,
+      code: hash32(prompt).toString(16).slice(0, 4).toUpperCase(),
     })
     record(c, { kind: 'image', fault, status: 200 })
     return png

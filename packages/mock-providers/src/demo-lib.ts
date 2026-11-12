@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { isAbsolute, join, resolve } from 'node:path'
 import type { PlatformPath } from 'node:path'
@@ -21,6 +22,14 @@ export function resolveUserPath(
   pathApi: Pick<PlatformPath, 'isAbsolute' | 'resolve'> = { isAbsolute, resolve },
 ): string {
   return pathApi.isAbsolute(path) ? path : pathApi.resolve(env.INIT_CWD || cwd, path)
+}
+
+/** Where the repository's built frontend lives (`pnpm --filter @dramai/workspace build`). */
+export const REPO_FRONTEND_DIST = join(import.meta.dirname, '..', '..', 'workspace', 'dist')
+
+/** The built frontend of this repository, or undefined when it has not been built (or this is not a checkout). */
+export function findBuiltFrontend(dir: string = REPO_FRONTEND_DIST): string | undefined {
+  return existsSync(join(dir, 'index.html')) ? dir : undefined
 }
 
 export type DemoLang = 'zh' | 'zh-Hant' | 'en'

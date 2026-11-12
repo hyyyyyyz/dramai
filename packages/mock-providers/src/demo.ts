@@ -7,7 +7,13 @@ import { defaultSleep } from '@dramai/core'
 import { createServer } from '@dramai/server'
 import { FAULT_KINDS } from './config.ts'
 import type { FaultKind, MockConfig, MockKind } from './config.ts'
-import { DEMO_NOTICE, demoProviders, resolveUserPath, writeDemoCatalog } from './demo-lib.ts'
+import {
+  DEMO_NOTICE,
+  demoProviders,
+  findBuiltFrontend,
+  resolveUserPath,
+  writeDemoCatalog,
+} from './demo-lib.ts'
 import type { DemoLang } from './demo-lib.ts'
 import { startMockProviders } from './server.ts'
 
@@ -24,7 +30,7 @@ const HELP = `用法：pnpm demo [选项]
   --port <n>          界面 / 接口端口（默认 8787）
   --mock-port <n>     模拟服务商端口（默认 8788）
   --data-dir <path>   演示数据目录（默认 ~/.dramai-demo，与正式数据完全分开）
-  --static-dir <p>    同时托管前端构建产物
+  --static-dir <p>    同时托管前端构建产物（默认用仓库里已构建的 packages/workspace/dist；没构建会提示怎么构建）
                       相对路径按你执行命令时所在的目录解析，不是按包目录
   --fresh             启动前清空演示数据目录
   --lang <zh|zh-Hant|en>  演示服务商的名称和终端提示用哪种语言（默认 zh；界面里的提示三种语言都带）
@@ -101,7 +107,9 @@ if (lang !== 'zh' && lang !== 'zh-Hant' && lang !== 'en') {
 const dataDir = resolveUserPath(
   values['data-dir'] ?? process.env.DRAMAI_DEMO_DIR ?? join(homedir(), '.dramai-demo'),
 )
-const staticDir = values['static-dir'] ? resolveUserPath(values['static-dir']) : undefined
+// Without --static-dir, host the frontend this checkout has already built, so `pnpm demo` alone shows the app.
+const explicitStaticDir = values['static-dir'] ? resolveUserPath(values['static-dir']) : undefined
+const staticDir = explicitStaticDir ?? findBuiltFrontend()
 
 const config: Partial<MockConfig> = {
   latencyMs: num(values.latency, 'latency'),
@@ -189,20 +197,24 @@ console.log(t('  DRAMAI · 演示模式', '  DRAMAI · 演示模式', '  DRAMAI 
 console.log(bar)
 if (lang === 'zh') {
   console.log('  这是演示：所有“AI 服务商”都是本机的模拟服务，不会产生任何费用。')
-  console.log('  生成的图片、视频、配音都是占位内容（带编号的色块、测试画面、简单音调），')
+  console.log(
+    '  生成的图片、视频、配音都是占位内容（分镜稿纸风格的占位图、带进度条的占位视频、简单音调），',
+  )
   console.log('  大模型的分集 / 分镜是本地规则算出来的——只用来走通整条流程，不是真实作品。')
   console.log('  费用预估里的金额是虚构的演示价格，币种 DMO（不是任何真实货币）。')
 } else if (lang === 'zh-Hant') {
   console.log('  這是演示：所有「AI 服務商」都是本機的模擬服務，不會產生任何費用。')
-  console.log('  生成的圖片、影片、配音都是佔位內容（帶編號的色塊、測試畫面、簡單音調），')
+  console.log(
+    '  生成的圖片、影片、配音都是佔位內容（分鏡稿紙風格的佔位圖、帶進度條的佔位影片、簡單音調），',
+  )
   console.log('  大型語言模型的分集 / 分鏡是本機規則算出來的——只用來走通整條流程，不是真實作品。')
   console.log('  費用預估裡的金額是虛構的演示價格，幣別 DMO（不是任何真實貨幣）。')
 } else {
   console.log('  This is a demo: every "AI provider" is a local simulation. Nothing is charged.')
-  console.log('  Images, videos and voice-overs are placeholders (numbered colour blocks, test')
   console.log(
-    '  patterns, simple tones); episodes and shots come from local rules — not real work.',
+    '  Images, videos and voice-overs are placeholders (storyboard-paper drafts, videos with a progress bar,',
   )
+  console.log('  simple tones); episodes and shots come from local rules — not real work.')
   console.log('  Cost estimates use fictional demo prices in the made-up currency DMO.')
 }
 console.log(bar)
@@ -214,6 +226,16 @@ console.log(
   `  ${t('演示数据目录', '演示資料目錄', 'Demo data dir')} ${dataDir}   (${t('与正式数据分开；--fresh 清空', '與正式資料分開；--fresh 清空', 'separate from real data; --fresh wipes it')})`,
 )
 if (staticDir) console.log(`  ${t('前端文件    ', '前端檔案    ', 'Static files ')} ${staticDir}`)
+else {
+  // No built frontend: say so, instead of letting the user open the address and see a 404.
+  console.log(
+    t(
+      '  ⚠ 还没有构建前端，打开上面的地址会是空白（404）。先运行：pnpm --filter @dramai/workspace build，再重新运行 pnpm demo。',
+      '  ⚠ 尚未建置前端，開啟上面的網址會是空白（404）。請先執行：pnpm --filter @dramai/workspace build，再重新執行 pnpm demo。',
+      '  ⚠ The frontend has not been built, so the address above would show a 404. Run: pnpm --filter @dramai/workspace build, then run pnpm demo again.',
+    ),
+  )
+}
 console.log(
   `  ${t('延迟', '延遲', 'latency')} ${c.latencyMs}ms${c.jitterMs ? `+0..${c.jitterMs}ms` : ''} · ${t('视频', '影片', 'video')} ${c.videoMs}ms · ${t('随机失败', '隨機失敗', 'random failures')} ${Math.round(c.failureRate * 100)}%${c.failureRate ? ` (${c.failureKinds.join('/')} → ${c.failureOn.join('/')}, seed ${c.seed})` : ''}`,
 )
