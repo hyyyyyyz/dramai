@@ -1,5 +1,12 @@
 export default {
   projects: {
+    trashLink: 'Trash',
+    delete: {
+      title: 'Delete “{{name}}”?',
+      body: 'The project moves to the trash first and can be restored in Settings · Data and backup. Files are only deleted when you delete it from the trash for good.',
+      confirm: 'Move to trash',
+      done: 'Moved “{{name}}” to the trash',
+    },
     title: 'Projects',
     sub: 'Each project is a folder in the data directory; the images and videos open in any other app',
     search: 'Search projects',
@@ -10,6 +17,8 @@ export default {
       body: 'Create a project, add a novel or script, and dramai will break it into episodes, scenes and shots',
     },
     card: {
+      menu: 'More actions for project {{name}}',
+      delete: 'Delete project…',
       episodesShots: '{{episodes}} ep. · {{shots}} shots',
       noEpisodes: 'No episodes yet',
       draft: 'Draft · not planned',

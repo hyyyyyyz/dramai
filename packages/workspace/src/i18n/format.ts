@@ -70,7 +70,7 @@ export function formatChars(locale: string, t: TFunction, count: number): string
   if (locale.startsWith('zh')) {
     if (count >= 10_000)
       return t('format.charsApprox', {
-        value: `${(count / 10_000).toFixed(1).replace(/\.0$/, '')} 万`,
+        value: `${(count / 10_000).toFixed(1).replace(/\.0$/, '')} ${locale === 'zh-TW' ? '萬' : '万'}`,
       })
     if (count >= 1000) return t('format.charsApprox', { value: `${Math.round(count / 1000)} 千` })
     return t('format.chars', { value: formatNumber(locale, count) })

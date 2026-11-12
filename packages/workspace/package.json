@@ -20,7 +20,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "vite build && playwright test -c e2e/playwright.config.ts"
   },
   "dependencies": {
     "@dramai/api": "workspace:*",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@dramai/eslint-config": "workspace:*",
     "@dramai/tsconfig": "workspace:*",
+    "@playwright/test": "catalog:",
     "@tailwindcss/vite": "^4.2.4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

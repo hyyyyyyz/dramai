@@ -218,3 +218,33 @@ export function preflightItems(shotIds: readonly string[]) {
   ])
 }
 export const PREFLIGHT_MAX = 500
+
+export type MovePlan =
+  | { kind: 'reorder'; sceneId: string; order: string[] }
+  | { kind: 'move'; toSceneId: string; index?: number }
+
+/**
+ * 镜头上移 / 下移一格：场内就是调序；已经在场的头（尾）再往前（后）移，就跨场——
+ * 到上一场的末尾，或下一场的开头。整集的第一个镜头不能再上移，最后一个不能再下移（跨集不在这里做）。
+ */
+export function planMove(
+  groups: readonly SceneGroup[],
+  shotId: string,
+  dir: -1 | 1,
+): MovePlan | undefined {
+  const gi = groups.findIndex((g) => g.shots.some((s) => s.shot.id === shotId))
+  if (gi < 0) return undefined
+  const g = groups[gi]!
+  const i = g.shots.findIndex((s) => s.shot.id === shotId)
+  const j = i + dir
+  if (j >= 0 && j < g.shots.length) {
+    const order = g.shots.map((s) => s.shot.id)
+    ;[order[i], order[j]] = [order[j]!, order[i]!]
+    return { kind: 'reorder', sceneId: g.scene.id, order }
+  }
+  const next = groups[gi + dir]
+  if (!next) return undefined
+  return dir === -1
+    ? { kind: 'move', toSceneId: next.scene.id }
+    : { kind: 'move', toSceneId: next.scene.id, index: 0 }
+}

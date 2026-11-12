@@ -3,7 +3,7 @@ import { Check, Languages } from 'lucide-react'
 import { IconButton, Menu, iconProps } from '@dramai/ui/v2'
 import { LOCALES, setLocale, type Locale } from '@/i18n'
 
-const NAMES: Record<Locale, string> = { 'zh-CN': '简体中文', en: 'English' }
+const NAMES: Record<Locale, string> = { 'zh-CN': '简体中文', 'zh-TW': '繁體中文', en: 'English' }
 
 export function LocaleToggle() {
   const { t, i18n } = useTranslation()

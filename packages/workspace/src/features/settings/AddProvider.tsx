@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import type { ProviderConfigDto } from '@dramai/api'
-import { Button, Field, Input, Menu, Modal, Select, iconProps } from '@dramai/ui/v2'
+import { Button, Field, Input, Menu, Select, iconProps } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall, usePresets } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
@@ -108,7 +109,7 @@ function CustomProviderDialog({
     >
       <div className="flex flex-col gap-4">
         <Field label={t('providers.form.name')} required>
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} autoFocus />
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} data-autofocus />
         </Field>
         <Field label={t('providers.form.protocol')}>
           <Select

@@ -45,6 +45,8 @@ export default {
       '“{{name}}” has no sheet yet. An uploaded original can’t stand in for a sheet; generate or register one first',
     ASSET_NOT_REGISTERED:
       'A referenced asset isn’t registered: it is waiting among the candidates, or it was deleted',
+    SHEET_TO_EDIT_MISSING: '“{{name}}” has no current sheet to edit. Generate or upload one first',
+    EDIT_INSTRUCTION_EMPTY: 'Editing a sheet needs an instruction saying what to change',
     BASE_SHEET_MISSING:
       'A variant of “{{name}}” is edited from the base sheet, and the base has no sheet yet',
     VARIANT_NOT_FOUND: 'The referenced variant of “{{name}}” doesn’t exist',
@@ -127,6 +129,13 @@ export default {
       go: 'Review',
     },
     tools: {
+      instructions: {
+        label: 'Storyboard instructions',
+        hint: 'Optional. Extra requirements for the model, remembered on this episode and reused when re-splitting; leave empty for none. Re-splitting only replaces the shot list, generated images and videos stay in the project folder',
+        placeholder:
+          'For example: no shot longer than 8 seconds, focus on the lead’s inner changes',
+        save: 'Save instructions only',
+      },
       title: 'Breakdown and prompts',
       sum: 'Redo the breakdown, fill in shot prompts, extract candidates',
       prompts: 'Shot prompts',
@@ -209,6 +218,7 @@ export default {
       note: 'Regenerating never overwrites an older version; they are all kept',
     },
     stale: {
+      kept: 'Kept as is. If its basis or upstream changes again, you will be asked again',
       title: 'This version is stale',
       upstream:
         'Upstream changed: the sheet of “{{name}}” went from v{{from}} to v{{to}}, and this shot was generated with v{{from}}',
@@ -283,6 +293,8 @@ export default {
     batch: {
       titleImage: 'Generate shot images in batch · Episode {{n}}',
       titleVideo: 'Generate videos in batch · Episode {{n}}',
+      titleAudio: 'Generate narration voice-over · Episode {{n}}',
+      titleSheetEdit: 'Edit the sheet with an instruction',
       titleSheet: 'Generate sheet',
       list: 'Targets in this batch',
       select: 'Select {{name}}',
@@ -434,6 +446,13 @@ export default {
       nameRequired: 'Please enter a name',
       submit: 'Create',
     },
+    edit: {
+      title: 'Edit the sheet of “{{name}}” with an instruction',
+      label: 'Instruction',
+      hint: 'Only write what to change, for example “turn the bun into twin buns”. The current image is the only reference; the new image becomes the current version, the old one stays in the history, and if it fails nothing changes',
+      placeholder: 'For example: turn the bun into twin buns',
+      next: 'Next',
+    },
     detail: {
       rename: 'Rename',
       renameNote:
@@ -448,6 +467,7 @@ export default {
       sub: 'Everything generated afterwards is conditioned on it',
       currentBadge: 'v{{n}} · current',
       saveText: 'Save description',
+      edit: 'Edit with an instruction',
       generate: 'Generate sheet',
       regenerate: 'Regenerate',
       upload: 'Upload a sheet',
@@ -471,6 +491,7 @@ export default {
     },
     variants: {
       title: 'Variants',
+      editWith: 'Edit with an instruction',
       new: 'New variant',
       newTitle: 'New variant',
       empty:
@@ -517,6 +538,11 @@ export default {
       create: 'Create',
     },
     voice: {
+      description: 'Voice description',
+      descriptionHint:
+        'Describe this character’s voice in words, for example “bright young voice, a little fast”. A creative note: it takes no part in generation and changing it makes nothing stale',
+      descriptionPlaceholder: 'For example: bright young voice, a little fast',
+      descriptionSave: 'Save voice description',
       title: 'Voice reference',
       none: 'No voice reference yet. When a character speaks in several shots, the voice may change between them',
       play: 'Listen to the voice reference of {{name}}',

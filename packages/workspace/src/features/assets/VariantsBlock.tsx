@@ -2,23 +2,15 @@ import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Trash2 } from 'lucide-react'
 import type { Asset, ArtifactReport } from '@dramai/api'
-import {
-  Button,
-  Field,
-  IconButton,
-  Input,
-  Modal,
-  Pill,
-  Select,
-  Textarea,
-  iconProps,
-} from '@dramai/ui/v2'
+import { Button, Field, IconButton, Input, Pill, Select, Textarea, iconProps } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall, useProjectArtifacts } from '@/data/queries'
 import { useApi } from '@/data/use-api'
 import { Block } from '@/features/common/PageHead'
 import { RadioCards } from '@/features/projects/pickers'
 import { ErrorNotice } from '@/features/common/error-text'
+import { EditSheetFlow } from './EditSheetFlow'
 import { BatchConfirmDialog } from '@/features/storyboard/BatchConfirmDialog'
 import { versionNumber } from '@/features/storyboard/version-model'
 import { sheetPath } from './asset-model'
@@ -52,6 +44,7 @@ export function VariantsBlock({
   const remove = useCall('variants.delete', { invalidate })
   const [creating, setCreating] = useState(false)
   const [generating, setGenerating] = useState<string>()
+  const [editingVariant, setEditingVariant] = useState<string>()
   const [deleting, setDeleting] = useState<string>()
   const reports = useMemo(
     () => new Map<string, ArtifactReport>((artifacts.data?.items ?? []).map((r) => [r.key, r])),
@@ -62,6 +55,7 @@ export function VariantsBlock({
   const baseNo = versionNumber(asset.sheet, asset.sheet.currentVersionId)
 
   const gen = asset.variants.find((v) => v.name === generating)
+  const editingSheet = asset.variants.find((v) => v.name === editingVariant)?.sheet
   return (
     <Block
       title={t('assets.variants.title')}
@@ -124,6 +118,11 @@ export function VariantsBlock({
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 max-[640px]:col-span-2">
+                {path && (
+                  <Button size="sm" variant="ghost" onClick={() => setEditingVariant(v.name)}>
+                    {t('assets.variants.editWith')}
+                  </Button>
+                )}
                 {v.origin === 'edit' ? (
                   <Button
                     size="sm"
@@ -186,6 +185,16 @@ export function VariantsBlock({
           asset={asset}
           costumes={costumes}
           onClose={() => setCreating(false)}
+        />
+      )}
+      {editingVariant && (
+        <EditSheetFlow
+          projectId={projectId}
+          aspect={aspect}
+          asset={asset}
+          variantName={editingVariant}
+          thumb={editingSheet ? sheetPath(editingSheet) : undefined}
+          onClose={() => setEditingVariant(undefined)}
         />
       )}
       {gen && (
@@ -340,7 +349,12 @@ function NewVariantDialog({
           error={nameBad ? t('assets.new.nameRequired') : undefined}
           required
         >
-          <Input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} autoFocus />
+          <Input
+            value={name}
+            maxLength={40}
+            onChange={(e) => setName(e.target.value)}
+            data-autofocus
+          />
         </Field>
         <Field label={t('assets.variants.description')}>
           <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />

@@ -1,5 +1,12 @@
 export default {
   projects: {
+    trashLink: '回收站',
+    delete: {
+      title: '删除「{{name}}」？',
+      body: '项目会先移到回收站，可以在设置 · 数据与备份里恢复。从回收站彻底清除才会删除文件。',
+      confirm: '移到回收站',
+      done: '已把「{{name}}」移到回收站',
+    },
     title: '项目',
     sub: '每个项目是数据目录里的一个文件夹，图片和视频可以直接用其他软件打开',
     search: '搜索项目',
@@ -10,6 +17,8 @@ export default {
       body: '新建一个项目，放进小说或剧本，dramai 会把它拆成集、场和镜头',
     },
     card: {
+      menu: '项目 {{name}} 的更多操作',
+      delete: '删除项目…',
       episodesShots: '{{episodes}} 集 · {{shots}} 个镜头',
       noEpisodes: '还没分集',
       draft: '草稿 · 还没分集',

@@ -1,8 +1,8 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Upload } from 'lucide-react'
 import type { Asset } from '@dramai/api'
-import { Button, Hint, iconProps } from '@dramai/ui/v2'
+import { Button, Field, Hint, Textarea, iconProps } from '@dramai/ui/v2'
 import { qk } from '@/data/keys'
 import { useCall } from '@/data/queries'
 import { useApi } from '@/data/use-api'
@@ -61,7 +61,49 @@ export function VoiceBlock({ projectId, asset }: { projectId: string; asset: Ass
           />
         </div>
         {upload.isError && <ErrorNotice error={upload.error} />}
+        <VoiceDescription key={asset.voiceDescription ?? ''} projectId={projectId} asset={asset} />
       </div>
     </Block>
+  )
+}
+
+/** 声线的文字描述：创作备注，写给自己和协作的人看，不参与生成，改它不会让任何产物过期。 */
+function VoiceDescription({ projectId, asset }: { projectId: string; asset: Asset }) {
+  const { t } = useTranslation()
+  const saved = asset.voiceDescription ?? ''
+  const [text, setText] = useState(saved)
+  const update = useCall('assets.update', {
+    invalidate: [qk.asset(asset.id), qk.assets(projectId)],
+  })
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-3">
+      <Field label={t('assets.voice.description')} hint={t('assets.voice.descriptionHint')}>
+        <Textarea
+          rows={2}
+          maxLength={500}
+          value={text}
+          placeholder={t('assets.voice.descriptionPlaceholder')}
+          onChange={(e) => setText(e.target.value)}
+        />
+      </Field>
+      {text.trim() !== saved.trim() && (
+        <div>
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={update.isPending}
+            onClick={() =>
+              update.mutate({
+                params: { assetId: asset.id },
+                body: { voiceDescription: text.trim() || null },
+              })
+            }
+          >
+            {t('assets.voice.descriptionSave')}
+          </Button>
+        </div>
+      )}
+      {update.isError && <ErrorNotice error={update.error} />}
+    </div>
   )
 }

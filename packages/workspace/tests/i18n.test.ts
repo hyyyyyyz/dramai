@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import zh from '@/i18n/locales/zh-CN'
+import zhTW from '@/i18n/locales/zh-TW'
 import en from '@/i18n/locales/en'
 import { formatChars, formatDuration, formatMoney, formatUpdated } from '@/i18n/format'
 import { createInstance } from 'i18next'
+import { detectLocale } from '@/i18n'
 
 type Dict = { [k: string]: string | Dict }
 function flatten(d: Dict, prefix = ''): Record<string, string> {
@@ -20,6 +22,7 @@ const params = (s: string) => [...s.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]!
 
 const zhFlat = flatten(zh as Dict)
 const enFlat = flatten(en as Dict)
+const twFlat = flatten(zhTW as Dict)
 
 describe('both languages are complete', () => {
   it('en has every zh-CN key and nothing extra (plural suffixes aside)', () => {
@@ -57,12 +60,33 @@ describe('both languages are complete', () => {
   })
 })
 
+describe('Traditional Chinese follows the Simplified source exactly', () => {
+  it('has the same keys and the same interpolation parameters', () => {
+    expect(Object.keys(twFlat).sort()).toEqual(Object.keys(zhFlat).sort())
+    for (const [k, v] of Object.entries(twFlat)) expect(params(v), k).toEqual(params(zhFlat[k]!))
+  })
+
+  it('is actually Traditional: the common Simplified-only forms are gone', () => {
+    // 这些字在繁体里有不同的写法；出现就说明漏转了
+    const simplifiedOnly = /[项视频务库传设图镜时这个们]/
+    for (const [k, v] of Object.entries(twFlat)) {
+      // 允许保留“简体中文”这类写着简体的文字
+      const text = v.replace(/简体中文/g, '')
+      expect(simplifiedOnly.test(text), `Simplified characters in zh-TW: ${k} = ${v}`).toBe(false)
+    }
+  })
+})
+
 describe('locale-aware formatting', () => {
-  const t = async (lng: 'zh-CN' | 'en') => {
+  const t = async (lng: 'zh-CN' | 'zh-TW' | 'en') => {
     const i = createInstance()
     await i.init({
       lng,
-      resources: { 'zh-CN': { translation: zh }, en: { translation: en } },
+      resources: {
+        'zh-CN': { translation: zh },
+        'zh-TW': { translation: zhTW },
+        en: { translation: en },
+      },
       nsSeparator: false,
       interpolation: { escapeValue: false },
     })
@@ -84,6 +108,9 @@ describe('locale-aware formatting', () => {
     expect(formatChars('zh-CN', zhT, 36_000)).toBe('约 3.6 万字')
     expect(formatChars('zh-CN', zhT, 2_100)).toBe('约 2 千字')
     expect(formatChars('zh-CN', zhT, 580)).toBe('580 字')
+    const twT = await t('zh-TW')
+    expect(formatChars('zh-TW', twT, 36_000)).toBe('約 3.6 萬字')
+    expect(formatChars('zh-TW', twT, 2_100)).toBe('約 2 千字')
     expect(formatChars('en', enT, 36_000)).toBe('~36K chars')
     expect(formatChars('en', enT, 580)).toBe('580 chars')
   })
@@ -105,5 +132,31 @@ describe('locale-aware formatting', () => {
     expect(formatUpdated('en', new Date(2026, 10, 11, 14, 32).getTime(), now)).toMatch(/^today /)
     expect(formatUpdated('en', new Date(2026, 10, 10, 21, 7).getTime(), now)).toMatch(/^yesterday /)
     expect(formatUpdated('en', new Date(2026, 10, 3, 12, 0).getTime(), now)).toBe('November 3')
+  })
+})
+
+describe('picking the starting language', () => {
+  afterEach(() => vi.restoreAllMocks())
+  const withBrowser = (langs: string[]) => {
+    try {
+      localStorage.removeItem('dramai.locale')
+    } catch {
+      /* 存储不可用 */
+    }
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(langs)
+  }
+  it('Traditional Chinese browsers start in Traditional Chinese, other Chinese in Simplified, English in English', () => {
+    withBrowser(['zh-TW', 'en'])
+    expect(detectLocale()).toBe('zh-TW')
+    withBrowser(['zh-HK'])
+    expect(detectLocale()).toBe('zh-TW')
+    withBrowser(['zh-Hant-TW'])
+    expect(detectLocale()).toBe('zh-TW')
+    withBrowser(['zh-CN'])
+    expect(detectLocale()).toBe('zh-CN')
+    withBrowser(['zh'])
+    expect(detectLocale()).toBe('zh-CN')
+    withBrowser(['en-US'])
+    expect(detectLocale()).toBe('en')
   })
 })

@@ -1,6 +1,6 @@
 import type { GenerateItem } from '@dramai/api'
 
-export type BatchKind = 'shot_image' | 'shot_video' | 'asset_sheet'
+export type BatchKind = 'shot_image' | 'shot_video' | 'shot_audio' | 'asset_sheet'
 
 export interface BatchCandidate {
   /** 目标 id：镜头 id，或资产 id（变体设定图是 `资产id/形态名`）。 */
@@ -10,6 +10,8 @@ export interface BatchCandidate {
   /** 一行的名字：镜头是“镜头 03 · 回廊”，资产是资产名。 */
   label: string
   thumb?: string
+  /** 补充说明（比如“用指令修改”的那句指令），写在名字下面。 */
+  note?: string
   /** 请求里的目标。 */
   target: GenerateItem['target']
 }

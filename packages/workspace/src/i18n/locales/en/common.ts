@@ -2,6 +2,8 @@ export default {
   common: {
     close: 'Close',
     notifications: 'Notifications',
+    copy: 'Copy',
+    copied: 'Copied',
     cancel: 'Cancel',
     save: 'Save',
     delete: 'Delete',
@@ -30,6 +32,14 @@ export default {
     timeline_revision: 'timeline revision',
     timeline_clip: 'timeline clip',
     media_version: 'media version',
+    variant: 'variant',
+    material: 'material',
+    job: 'task',
+    provider: 'provider',
+    provider_preset: 'provider preset',
+    file: 'file',
+    route: 'endpoint',
+    artifact: 'product',
     unknown: 'item',
   },
   nav: {
@@ -62,8 +72,13 @@ export default {
     current: 'Current:',
     none: 'Not specified',
     referenceImage: 'Style reference image',
-    referenceImageNote:
-      'This project’s style comes from a reference image. For now it can only be switched to a template or a text description here',
+    reference: {
+      title: 'Or set the style with a reference image',
+      alt: 'Style reference image',
+      upload: 'Upload a reference image',
+      replace: 'Replace',
+      hint: 'A reference image replaces the template or description above; picking a template or writing a description clears the image',
+    },
     customLabel: 'Custom style description',
     customPlaceholder:
       'Or describe the style yourself; leave empty to let the model infer it from the text',

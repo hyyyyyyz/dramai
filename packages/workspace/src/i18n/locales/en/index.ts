@@ -7,6 +7,8 @@ import materials from './materials'
 import settings from './settings'
 import jobs from './jobs'
 import production from './production'
+import compose from './compose'
+import exportPage from './export'
 
 export default {
   ...common,
@@ -18,4 +20,6 @@ export default {
   ...settings,
   ...jobs,
   ...production,
+  ...compose,
+  ...exportPage,
 }

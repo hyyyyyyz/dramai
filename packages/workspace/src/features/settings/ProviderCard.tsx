@@ -9,7 +9,6 @@ import {
   IconButton,
   Input,
   Label,
-  Modal,
   Notice,
   Pill,
   SecretField,
@@ -19,6 +18,7 @@ import {
   iconProps,
   cn,
 } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall, useProviderCapability } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'

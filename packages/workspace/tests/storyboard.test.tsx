@@ -20,11 +20,6 @@ import { renderApp, useLocale } from './render'
 
 beforeEach(async () => {
   await useLocale('zh-CN')
-  try {
-    localStorage.removeItem('dramai.stale.kept')
-  } catch {
-    /* 测试环境的存储可能不可用 */
-  }
 })
 
 const project = {
@@ -93,6 +88,99 @@ function setup(opts: {
 }
 
 const card = (n: number) => screen.findByTestId(`shot-${n}`)
+
+describe('storyboard instructions and cross-scene moves', () => {
+  const twoScenes = () => {
+    const shots = [makeShot({ id: 'a' }), makeShot({ id: 'b' }), makeShot({ id: 'c' })]
+    const d = makeEpisodeDetail(shots)
+    d.scenes = [
+      { ...d.scenes[0]!, id: 'scene_1', shotOrder: ['a', 'b'] },
+      { ...d.scenes[0]!, id: 'scene_2', number: 2, shotOrder: ['c'] },
+    ]
+    d.episode.sceneOrder = ['scene_1', 'scene_2']
+    d.shots = d.shots.map((x) => ({ ...x, sceneId: x.id === 'c' ? 'scene_2' : 'scene_1' }))
+    return d
+  }
+
+  it('the first breakdown can carry an instruction, which is sent as written', async () => {
+    const { server } = setup({
+      shots: [],
+      routes: {
+        'POST /api/episodes/ep_1/breakdown': () => ({
+          job: makeJob({ type: 'text', operation: 'episode_breakdown', paid: false }),
+          deduped: false,
+        }),
+      },
+    })
+    await userEvent.type(await screen.findByLabelText('分镜指令'), '每镜不超过 8 秒')
+    await userEvent.click(screen.getByRole('button', { name: '拆分镜头' }))
+    await waitFor(() =>
+      expect(server.calls.find((c) => c.path.endsWith('/breakdown'))?.body).toEqual({
+        instructions: '每镜不超过 8 秒',
+      }),
+    )
+  })
+
+  it('a remembered instruction is shown, can be saved alone, and re-splitting sends it again', async () => {
+    const detail = makeEpisodeDetail([makeShot({ id: 'a' })])
+    detail.episode.breakdownInstructions = '重点表现心理变化'
+    const { server } = setup({
+      shots: [makeShot({ id: 'a' })],
+      routes: {
+        'GET /api/episodes/ep_1': () => detail,
+        'PATCH /api/episodes/ep_1': () => detail.episode,
+        'POST /api/episodes/ep_1/breakdown': () => ({
+          job: makeJob({ type: 'text', operation: 'episode_breakdown', paid: false }),
+          deduped: false,
+        }),
+      },
+    })
+    await userEvent.click(await screen.findByText('拆分与提示词'))
+    const box = screen.getByLabelText('分镜指令')
+    expect(box).toHaveValue('重点表现心理变化')
+    await userEvent.clear(box)
+    await userEvent.type(box, '每镜 5 秒')
+    await userEvent.click(screen.getByRole('button', { name: '只保存指令' }))
+    await waitFor(() =>
+      expect(server.calls.find((c) => c.method === 'PATCH')?.body).toEqual({
+        breakdownInstructions: '每镜 5 秒',
+      }),
+    )
+    await userEvent.click(screen.getByRole('button', { name: '重新拆分镜头' }))
+    await waitFor(() =>
+      expect(server.calls.find((c) => c.path.endsWith('/breakdown'))?.body).toEqual({
+        mode: 'append',
+        instructions: '每镜 5 秒',
+      }),
+    )
+  })
+
+  it('moving the first shot of a scene up goes to the end of the previous scene, and the first shot of the episode cannot move up', async () => {
+    const d = twoScenes()
+    const { server } = setup({
+      shots: [],
+      routes: {
+        'GET /api/episodes/ep_1': () => d,
+        'POST /api/shots/c/move': () => d.shots[2],
+        'PUT /api/scenes/scene_1/shot-order': () => d.scenes[0],
+      },
+    })
+    expect(await within(await card(1)).findByRole('button', { name: '镜头 1 上移' })).toBeDisabled()
+    await userEvent.click(within(await card(3)).getByRole('button', { name: '镜头 3 上移' }))
+    await waitFor(() =>
+      expect(server.calls.find((c) => c.path === '/api/shots/c/move')?.body).toEqual({
+        toSceneId: 'scene_1',
+      }),
+    )
+    // 场内仍然是调序
+    await userEvent.click(within(await card(2)).getByRole('button', { name: '镜头 2 上移' }))
+    await waitFor(() =>
+      expect(server.calls.find((c) => c.path === '/api/scenes/scene_1/shot-order')?.body).toEqual({
+        order: ['b', 'a'],
+      }),
+    )
+  })
+})
 
 describe('storyboard page', () => {
   it('an empty episode offers to break it into shots, and does so through the breakdown endpoint', async () => {
@@ -210,11 +298,19 @@ describe('storyboard page', () => {
         to: { versionId: hero.sheet.versions[1]!.id, contentHash: 'h2' },
       },
     ])
-    setup({
+    // 服务端记状态：保持现状之后，这件产物是 current，并带 keptAt
+    let current = report
+    const { server } = setup({
       shots: [shot],
       assets: [hero],
       refs: [{ shotId: 'a', assetId: 'asset_1' }],
-      artifacts: [report],
+      routes: {
+        'GET /api/episodes/ep_1/artifacts': () => ({ items: [current] }),
+        'POST /api/projects/proj_1/artifacts/keep': () => {
+          current = { ...report, status: 'current', reason: undefined, keptAt: 5 }
+          return current
+        },
+      },
     })
     const c = await card(1)
     expect(await within(c).findByText('这一版已过期')).toBeInTheDocument()
@@ -225,8 +321,13 @@ describe('storyboard page', () => {
     expect(within(c).getAllByText('已过期').length).toBeGreaterThan(0) // 状态胶囊
     expect(within(c).getByRole('button', { name: '用新依据重新生成' })).toBeInTheDocument()
     await userEvent.click(within(c).getByRole('button', { name: '保持现状' }))
+    await waitFor(() =>
+      expect(server.calls.find((x) => x.path.endsWith('/artifacts/keep'))?.body).toEqual({
+        key: 'shot_video:a',
+      }),
+    )
+    expect(await within(c).findByTestId('kept-note')).toHaveTextContent('已按现状保留')
     expect(within(c).queryByText('这一版已过期')).toBeNull()
-    expect(within(c).getAllByText('已过期').length).toBeGreaterThan(0) // 胶囊还在：它确实是旧的
   })
 
   it('a failed video shows the failure with the same actions as the task panel: resume first, regenerate flagged as chargeable', async () => {

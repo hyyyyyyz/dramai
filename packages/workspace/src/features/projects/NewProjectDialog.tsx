@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { AspectRatio } from '@dramai/api'
-import { Button, Field, Input, Label, Modal, Hint } from '@dramai/ui/v2'
+import { Button, Field, Input, Label, Hint } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { useCall } from '@/data/queries'
 import { qk } from '@/data/keys'
 import { ErrorNotice } from '@/features/common/error-text'
@@ -70,7 +71,7 @@ export function NewProjectDialog({ open, onClose }: { open: boolean; onClose: ()
         <Field label={t('projects.new.name')} error={nameError} required>
           <Input
             value={name}
-            autoFocus
+            data-autofocus
             placeholder={t('projects.new.namePlaceholder')}
             maxLength={120}
             onChange={(e) => setName(e.target.value)}

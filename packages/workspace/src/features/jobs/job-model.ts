@@ -65,6 +65,11 @@ export interface JobActions {
   regenerate: false | 'plain' | 'recharge'
   /** 我已核对，关闭。 */
   acknowledge: boolean
+  /**
+   * 忽略结果（只对运行中的付费任务）：调用照常跑完、照常计费，产物进版本历史，但不自动成为当前版本。
+   * `undo` 表示已经标记过，可以取消。
+   */
+  ignoreResult: false | 'ignore' | 'undo'
 }
 
 /** 与 core 的 JobQueue.retry 的判断保持一致：服务端仍会再校验一次（CONFIRM_RECHARGE_REQUIRED）。 */
@@ -78,16 +83,37 @@ export function mayRecharge(job: JobListItem): boolean {
 export function jobActions(job: JobListItem): JobActions {
   switch (job.status) {
     case 'queued':
-      return { cancel: true, resume: false, regenerate: false, acknowledge: false }
+      return {
+        cancel: true,
+        resume: false,
+        regenerate: false,
+        acknowledge: false,
+        ignoreResult: false,
+      }
     case 'failed':
       return {
         cancel: false,
         resume: Boolean(job.error?.recoverable) && job.error?.category !== 'generation_failed',
         regenerate: mayRecharge(job) ? 'recharge' : 'plain',
         acknowledge: job.needsAttention,
+        ignoreResult: false,
+      }
+    case 'running':
+      return {
+        cancel: false,
+        resume: false,
+        regenerate: false,
+        acknowledge: false,
+        ignoreResult: job.paid ? (job.resultIgnored ? 'undo' : 'ignore') : false,
       }
     default:
-      return { cancel: false, resume: false, regenerate: false, acknowledge: false }
+      return {
+        cancel: false,
+        resume: false,
+        regenerate: false,
+        acknowledge: false,
+        ignoreResult: false,
+      }
   }
 }
 

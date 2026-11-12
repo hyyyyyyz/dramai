@@ -15,16 +15,22 @@ describe('job actions follow the job semantics', () => {
       resume: false,
       regenerate: false,
       acknowledge: false,
+      ignoreResult: false,
     })
   })
 
-  it('running: nothing — a submitted call cannot be recalled', () => {
+  it('running: not cancellable; a paid call can only be marked "ignore result", and that can be undone', () => {
     expect(jobActions(makeJob({ status: 'running' }))).toEqual({
       cancel: false,
       resume: false,
       regenerate: false,
       acknowledge: false,
+      ignoreResult: 'ignore',
     })
+    expect(jobActions(makeJob({ status: 'running', resultIgnored: true })).ignoreResult).toBe(
+      'undo',
+    )
+    expect(jobActions(makeJob({ status: 'running', paid: false })).ignoreResult).toBe(false)
   })
 
   it('delivery_failed with an upstream id: resume is offered, regenerate is separate and may recharge', () => {
@@ -65,6 +71,7 @@ describe('job actions follow the job semantics', () => {
         resume: false,
         regenerate: false,
         acknowledge: false,
+        ignoreResult: false,
       })
   })
 })

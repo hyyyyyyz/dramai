@@ -21,5 +21,6 @@ export default defineConfig({
     strictPort: false,
     proxy: { '/api': { target: api, changeOrigin: false } },
   },
-  build: { target: 'es2022', sourcemap: true },
+  // assetsInlineLimit: 0 —— 字体不要内联成 data: 地址：服务端页面的 CSP 只允许同源资源（default-src 'self'）。
+  build: { target: 'es2022', sourcemap: true, assetsInlineLimit: 0 },
 })

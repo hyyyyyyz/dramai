@@ -39,7 +39,8 @@
     "test": "pnpm -r --if-present test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "webui": "pnpm --filter @dramai/webui start"
+    "webui": "pnpm --filter @dramai/webui start",
+    "e2e": "pnpm --filter @dramai/workspace e2e"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

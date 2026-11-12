@@ -9,5 +9,6 @@ export function useJobActions() {
     resume: useCall('jobs.resume', opts),
     retry: useCall('jobs.retry', opts),
     acknowledge: useCall('jobs.acknowledge', opts),
+    ignoreResult: useCall('jobs.ignoreResult', opts),
   }
 }

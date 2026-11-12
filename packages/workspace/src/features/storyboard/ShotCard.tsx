@@ -19,12 +19,12 @@ import {
   CropMarks,
   Frame,
   IconButton,
-  Modal,
   Pill,
   iconProps,
   iconPropsSm,
   cn,
 } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { useApi } from '@/data/use-api'
 import { useFormat } from '@/i18n/format'
 import { AssetRefs } from './AssetRefs'
@@ -68,7 +68,8 @@ export interface ShotCardProps {
   onSetVersion: (slot: 'image' | 'video', versionId: string) => void
   onRegenerateStale: (report: ArtifactReport) => void
   onKeepStale: (report: ArtifactReport) => void
-  staleKept?: boolean
+  /** 服务端记的“保持现状”时间（产物当前是 current，但是用户选了按现状保留）。 */
+  keptAt?: number
   assetsLoading?: boolean
   onBlockedAction: (a: ReasonAction) => void
   onOpenTasks: () => void
@@ -262,7 +263,12 @@ export function ShotCard(p: ShotCardProps) {
           busy={p.busy}
         />
 
-        {stale && !failed && !p.staleKept && (
+        {!stale && p.keptAt !== undefined && (
+          <p className="text-xs text-muted-foreground" data-testid="kept-note">
+            {t('storyboard.stale.kept')}
+          </p>
+        )}
+        {stale && !failed && (
           <StaleNotice
             report={stale}
             assets={p.assets}

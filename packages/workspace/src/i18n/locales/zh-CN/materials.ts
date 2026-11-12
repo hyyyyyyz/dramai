@@ -15,6 +15,9 @@ export default {
         '「{{name}}」会从项目里移除。已经规划出来的分集不受影响，但如果有分集是由它规划的，会被拒绝删除',
     },
     plan: {
+      requirement: '这一次的分集要求',
+      requirementHint: '可选，只对这一次规划有效，不会记在项目上',
+      requirementPlaceholder: '例如：每集结尾留悬念',
       title: '分集规划',
       ledger: '分集账本',
       run: '规划分集',
@@ -34,6 +37,10 @@ export default {
       moveUp: '第 {{n}} 集上移',
       moveDown: '第 {{n}} 集下移',
       rowMenu: '第 {{n}} 集的更多操作',
+      addEpisode: '加一集',
+      addEpisodeSubmit: '添加',
+      addEpisodeHint:
+        '加在最后。标题可以留空，之后再改；它只有标题，没有对应的原文范围，也不会改动其他集',
       rename: '重命名',
       episodeTitle: '集标题',
       deleteTitle: '删除这一集？',

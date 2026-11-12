@@ -31,6 +31,10 @@ export default {
       compose: 'Render cut',
       unknown: 'Job · {{operation}}',
     },
+    target: { shot: 'shot {{n}}', removed: 'a deleted item', edit: 'edit by instruction' },
+    ignoredNote:
+      'Result marked as ignored: it runs to completion and is billed as usual, and lands in the version history without becoming current',
+    ignoredLabel: 'result ignored',
     queuePosition: 'Position {{n}} in line',
     elapsed: '{{duration}} so far',
     tookTime: 'Took {{duration}}',
@@ -56,6 +60,8 @@ export default {
     },
     failureUnknownNote: 'Check the provider’s dashboard first. dramai never resubmits on its own',
     actions: {
+      ignoreResult: 'Ignore result',
+      undoIgnore: 'Don’t ignore',
       cancelQueued: 'Cancel (queued)',
       resume: 'Resume original task',
       regenerate: 'Regenerate',

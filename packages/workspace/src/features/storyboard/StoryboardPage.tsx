@@ -6,13 +6,15 @@ import type { ArtifactReport, Asset, Shot } from '@dramai/api'
 import {
   Button,
   EmptyState,
-  Modal,
+  Field,
   Notice,
   Skeleton,
+  Textarea,
   iconProps,
   iconPropsLg,
   cn,
 } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { useCurrentEpisodeSync } from '@/data/current-episode'
 import { qk } from '@/data/keys'
 import {
@@ -35,8 +37,14 @@ import type { BatchCandidate, BatchKind } from './batch-model'
 import { ShotCard } from './ShotCard'
 import { ShotEditDialog } from './ShotEditDialog'
 import type { ReasonAction } from './reasons'
-import { countViews, currentImage, deriveShotView, groupScenes, refsByShot } from './shot-model'
-import { useKeptStale } from './use-kept-stale'
+import {
+  countViews,
+  currentImage,
+  deriveShotView,
+  groupScenes,
+  planMove,
+  refsByShot,
+} from './shot-model'
 import { useEpisodeVerdicts } from './use-verdicts'
 
 type Batch = { kind: Exclude<BatchKind, 'asset_sheet'>; shotIds: string[] }
@@ -55,7 +63,9 @@ export function StoryboardPage() {
   const assetsQ = useAssets(projectId)
   const candidates = useCandidates(projectId)
   const jobs = useJobs()
-  const kept = useKeptStale()
+  const keep = useCall('artifacts.keep', {
+    invalidate: [qk.artifacts, qk.preflight, ['episode']],
+  })
 
   const [batch, setBatch] = useState<Batch>()
   const [editing, setEditing] = useState<{ shot: Shot; index: number }>()
@@ -64,9 +74,11 @@ export function StoryboardPage() {
   const invalidate = [['episode'], qk.episodes(projectId), qk.preflight, qk.artifacts, qk.projects]
   const setVersion = useCall('shots.setCurrentVersion', { invalidate })
   const reorder = useCall('shots.reorder', { invalidate })
+  const moveShot = useCall('shots.move', { invalidate })
   const remove = useCall('shots.delete', { invalidate })
   const breakdown = useCall('episodes.breakdown', { invalidate: [...invalidate, qk.jobs] })
   const prompts = useCall('episodes.generatePrompts', { invalidate: [...invalidate, qk.jobs] })
+  const saveInstructions = useCall('episodes.update', { invalidate: [['episode']] })
   const extract = useCall('episodes.extractEntities', { invalidate: [...invalidate, qk.jobs] })
 
   const detail = episode.data
@@ -171,10 +183,13 @@ export function StoryboardPage() {
   const firstError =
     setVersion.error ??
     reorder.error ??
+    moveShot.error ??
     remove.error ??
     breakdown.error ??
     prompts.error ??
     extract.error ??
+    saveInstructions.error ??
+    keep.error ??
     ops.error ??
     null
   const pendingCandidates = candidates.data?.progress.pending ?? 0
@@ -239,13 +254,14 @@ export function StoryboardPage() {
               title={t('storyboard.empty.title')}
               description={t('storyboard.empty.body')}
               action={
-                <Button
-                  variant="primary"
+                <FirstBreakdown
+                  key={ep.breakdownInstructions ?? ''}
+                  initial={ep.breakdownInstructions ?? ''}
                   loading={breakdown.isPending}
-                  onClick={() => breakdown.mutate({ params: { episodeId }, body: {} })}
-                >
-                  {t('storyboard.empty.action')}
-                </Button>
+                  onRun={(instructions) =>
+                    breakdown.mutate({ params: { episodeId }, body: { instructions } })
+                  }
+                />
               }
             />
           )}
@@ -283,7 +299,17 @@ export function StoryboardPage() {
             breakdownBusy={breakdown.isPending || Boolean(breakdownJob)}
             promptsBusy={prompts.isPending || Boolean(promptsJob)}
             extractBusy={extract.isPending || Boolean(extractJob)}
-            onBreakdown={(mode) => breakdown.mutate({ params: { episodeId }, body: { mode } })}
+            instructions={ep.breakdownInstructions ?? ''}
+            savingInstructions={saveInstructions.isPending}
+            onSaveInstructions={(text) =>
+              saveInstructions.mutate({
+                params: { episodeId },
+                body: { breakdownInstructions: text },
+              })
+            }
+            onBreakdown={(mode, instructions) =>
+              breakdown.mutate({ params: { episodeId }, body: { mode, instructions } })
+            }
             onPrompts={() => prompts.mutate({ params: { episodeId }, body: { onlyMissing: true } })}
             onExtract={() => extract.mutate({ params: { episodeId }, body: {} })}
           />
@@ -301,7 +327,7 @@ export function StoryboardPage() {
             />
           )}
 
-          {groups.map((g) => (
+          {groups.map((g, gi) => (
             <section
               key={g.scene.id}
               aria-label={t('storyboard.scene.label', { n: g.index, name: sceneName(g.scene) })}
@@ -343,13 +369,13 @@ export function StoryboardPage() {
                       refs={refs.get(shot.id) ?? []}
                       assets={assets}
                       assetsLoading={assetsQ.isPending}
-                      isFirst={i === 0}
-                      isLast={i === g.shots.length - 1}
-                      busy={setVersion.isPending || reorder.isPending}
-                      staleKept={Boolean(
-                        (view.videoStale ?? view.imageStale) &&
-                        kept.isKept((view.videoStale ?? view.imageStale)!),
-                      )}
+                      isFirst={gi === 0 && i === 0}
+                      isLast={gi === groups.length - 1 && i === g.shots.length - 1}
+                      busy={setVersion.isPending || reorder.isPending || moveShot.isPending}
+                      keptAt={
+                        reports.get(`shot_video:${shot.id}`)?.keptAt ??
+                        reports.get(`shot_image:${shot.id}`)?.keptAt
+                      }
                       onGenerate={(kind) =>
                         openBatch(kind === 'image' ? 'shot_image' : 'shot_video', [shot.id])
                       }
@@ -360,10 +386,17 @@ export function StoryboardPage() {
                       onEdit={() => setEditing({ shot, index })}
                       onDelete={() => setDeleting({ shot, index })}
                       onMove={(dir) => {
-                        const order = g.shots.map((x) => x.shot.id)
-                        const j = i + dir
-                        ;[order[i], order[j]] = [order[j]!, order[i]!]
-                        reorder.mutate({ params: { sceneId: g.scene.id }, body: { order } })
+                        const plan = planMove(groups, shot.id, dir)
+                        if (plan?.kind === 'reorder')
+                          reorder.mutate({
+                            params: { sceneId: plan.sceneId },
+                            body: { order: plan.order },
+                          })
+                        else if (plan)
+                          moveShot.mutate({
+                            params: { shotId: shot.id },
+                            body: { toSceneId: plan.toSceneId, index: plan.index },
+                          })
                       }}
                       onSetVersion={(slot, versionId) =>
                         setVersion.mutate({
@@ -374,7 +407,9 @@ export function StoryboardPage() {
                       onRegenerateStale={(r) =>
                         openBatch(r.kind === 'shot_image' ? 'shot_image' : 'shot_video', [shot.id])
                       }
-                      onKeepStale={kept.keep}
+                      onKeepStale={(r) =>
+                        keep.mutate({ params: { projectId }, body: { key: r.key } })
+                      }
                       onBlockedAction={(a) => onBlockedAction(shot, index, a)}
                       onOpenTasks={shell.openTasks}
                     />
@@ -473,26 +508,39 @@ function EpisodeTools({
   breakdownBusy,
   promptsBusy,
   extractBusy,
+  instructions,
+  savingInstructions,
+  onSaveInstructions,
   onBreakdown,
   onPrompts,
   onExtract,
 }: {
+  instructions: string
+  savingInstructions: boolean
+  onSaveInstructions: (text: string) => void
   breakdownBusy: boolean
   promptsBusy: boolean
   extractBusy: boolean
-  onBreakdown: (mode: 'replace' | 'append') => void
+  onBreakdown: (mode: 'replace' | 'append', instructions: string) => void
   onPrompts: () => void
   onExtract: () => void
 }) {
   const { t } = useTranslation()
   const [mode, setMode] = useState<'append' | 'replace'>('append')
+  const [text, setText] = useState(instructions)
+  const [seen, setSeen] = useState(instructions)
+  // 服务端记的指令变了（别处改的、保存后回来的），输入框跟着变
+  if (seen !== instructions) {
+    setSeen(instructions)
+    setText(instructions)
+  }
   return (
     <details className="group rounded-lg border border-border bg-surface">
       <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg px-4 py-3 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring">
         <Sparkles {...iconProps} aria-hidden className="text-muted-foreground" />
         <strong className="font-medium">{t('storyboard.tools.title')}</strong>
         <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-          {t('storyboard.tools.sum')}
+          {instructions || t('storyboard.tools.sum')}
         </span>
         <ChevronDown
           {...iconProps}
@@ -516,6 +564,31 @@ function EpisodeTools({
           <div>
             <Button size="sm" variant="secondary" loading={extractBusy} onClick={onExtract}>
               {t('storyboard.tools.extractAction')}
+            </Button>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Field
+            label={t('storyboard.tools.instructions.label')}
+            hint={t('storyboard.tools.instructions.hint')}
+          >
+            <Textarea
+              rows={3}
+              maxLength={1000}
+              value={text}
+              placeholder={t('storyboard.tools.instructions.placeholder')}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </Field>
+          <div>
+            <Button
+              size="sm"
+              variant="ghost"
+              loading={savingInstructions}
+              disabled={text.trim() === instructions.trim()}
+              onClick={() => onSaveInstructions(text.trim())}
+            >
+              {t('storyboard.tools.instructions.save')}
             </Button>
           </div>
         </div>
@@ -550,7 +623,7 @@ function EpisodeTools({
               size="sm"
               variant="secondary"
               loading={breakdownBusy}
-              onClick={() => onBreakdown(mode)}
+              onClick={() => onBreakdown(mode, text.trim())}
             >
               {t('storyboard.tools.redoAction')}
             </Button>
@@ -558,5 +631,40 @@ function EpisodeTools({
         </div>
       </div>
     </details>
+  )
+}
+
+/** 还没有分镜时：拆分前可以先写一句要求（可选），记在这一集上，重新拆分时默认沿用。 */
+function FirstBreakdown({
+  initial,
+  loading,
+  onRun,
+}: {
+  initial: string
+  loading: boolean
+  onRun: (instructions: string) => void
+}) {
+  const { t } = useTranslation()
+  const [text, setText] = useState(initial)
+  return (
+    <div className="flex w-full max-w-md flex-col gap-3 text-left">
+      <Field
+        label={t('storyboard.tools.instructions.label')}
+        hint={t('storyboard.tools.instructions.hint')}
+      >
+        <Textarea
+          rows={3}
+          maxLength={1000}
+          value={text}
+          placeholder={t('storyboard.tools.instructions.placeholder')}
+          onChange={(e) => setText(e.target.value)}
+        />
+      </Field>
+      <div>
+        <Button variant="primary" loading={loading} onClick={() => onRun(text.trim())}>
+          {t('storyboard.empty.action')}
+        </Button>
+      </div>
+    </div>
   )
 }

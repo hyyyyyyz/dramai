@@ -6,6 +6,7 @@ packages:
 # 多个包共用的依赖版本统一在这里声明，包内用 "catalog:" 引用。
 catalog:
   '@eslint/js': ^10.0.1
+  '@playwright/test': ^1.65.0
   '@types/node': ^24.12.2
   '@tanstack/react-query': ^5.107.1
   '@types/react': ^19.2.14

@@ -31,6 +31,9 @@ export default {
 
   STYLE_REFERENCE_MISSING:
     'A reference-image style needs an image uploaded first; it can’t be picked while creating a project, so create it and then upload',
+  EDIT_INSTRUCTION_EMPTY: 'Editing a sheet needs an instruction saying what to change',
+  ARTIFACT_NOT_STALE: '“Keep as is” only applies to products that are out of date',
+  SHEET_TO_EDIT_MISSING: 'The sheet to edit has no current image yet. Generate one first',
   NOT_IN_TRASH: 'Only projects that are already in the trash can be purged',
   BUSY: 'A job is running. Wait for it to finish',
   MATERIAL_TOO_LARGE: 'The file is larger than 20 MB',

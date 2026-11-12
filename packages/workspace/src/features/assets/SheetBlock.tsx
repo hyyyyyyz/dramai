@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ImageIcon, RefreshCw, Upload } from 'lucide-react'
+import { ImageIcon, Pencil, RefreshCw, Upload } from 'lucide-react'
 import type { Asset } from '@dramai/api'
 import { Button, Field, Hint, Notice, Textarea, cn, iconProps } from '@dramai/ui/v2'
 import { qk } from '@/data/keys'
@@ -8,6 +8,7 @@ import { useCall, useJobs } from '@/data/queries'
 import { useApi } from '@/data/use-api'
 import { Block } from '@/features/common/PageHead'
 import { ErrorNotice } from '@/features/common/error-text'
+import { EditSheetFlow } from './EditSheetFlow'
 import { BatchConfirmDialog } from '@/features/storyboard/BatchConfirmDialog'
 import { versionNumber } from '@/features/storyboard/version-model'
 import { sheetPath } from './asset-model'
@@ -42,6 +43,7 @@ export function SheetBlock({
   const saved = (asset[field] as string | undefined) ?? ''
   const [text, setText] = useState(saved)
   const [generating, setGenerating] = useState(false)
+  const [editing, setEditing] = useState(false)
   const current = sheetPath(asset.sheet)
   const no = versionNumber(asset.sheet, asset.sheet.currentVersionId)
   const inFlight = (jobs.data?.items ?? []).find(
@@ -118,6 +120,14 @@ export function SheetBlock({
             >
               <RefreshCw {...iconProps} aria-hidden />
               {current ? t('assets.sheet.regenerate') : t('assets.sheet.generate')}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={Boolean(inFlight) || !current}
+              onClick={() => setEditing(true)}
+            >
+              <Pencil {...iconProps} aria-hidden />
+              {t('assets.sheet.edit')}
             </Button>
             <Button
               variant="secondary"
@@ -202,6 +212,15 @@ export function SheetBlock({
         </div>
       )}
 
+      {editing && (
+        <EditSheetFlow
+          projectId={projectId}
+          aspect={aspect}
+          asset={asset}
+          thumb={current}
+          onClose={() => setEditing(false)}
+        />
+      )}
       {generating && (
         <BatchConfirmDialog
           projectId={projectId}

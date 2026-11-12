@@ -8,6 +8,131 @@ export default {
       data: 'Data & backup',
       about: 'About',
     },
+    general: {
+      language: {
+        title: 'Language',
+        hint: 'Takes effect at once and is remembered on this computer. Built-in names (style presets, provider notes) switch too; what you typed yourself doesn’t change. Traditional Chinese translates the interface only; built-in names stay in Simplified Chinese',
+      },
+      theme: {
+        title: 'Theme',
+        dark: 'Dark',
+        light: 'Light',
+        hint: 'Dark is like an editing suite, light suits daytime. It only affects this browser',
+      },
+      subtitles: {
+        title: 'Default subtitles for the cut',
+        hint: 'The default when rendering the cut; you can still change it before each render. Burning in needs an ffmpeg with the subtitles filter',
+      },
+      cost: {
+        title: 'Cost conversion',
+        enable: 'Combine estimates in different currencies into one number',
+        hint: 'Off by default, so each currency is written separately. Converted figures are estimates, not a bill; currencies without a rate stay as they are',
+        target: 'Convert to',
+        targetBad: 'Use a currency code, such as CNY or USD',
+        rates: 'Rates',
+        currency: 'Currency',
+        currencyBad: 'That isn’t a valid currency code',
+        currencyDup: 'Duplicate, or the same as the target currency',
+        rate: 'How many {{target}} for 1 unit',
+        rateBad: 'The rate must be above 0',
+        addRow: 'Add a currency',
+        removeRow: 'Remove the rate for {{currency}}',
+        unset: 'Currencies without a rate stay as they are; nothing is guessed.',
+      },
+    },
+    access: {
+      token: {
+        title: 'Access token',
+        on: 'An access token is on',
+        off: 'No access token',
+        onBody:
+          'Browsers that open this service need to carry the token. It is only set at startup, so it isn’t shown or changed here.',
+        offBody:
+          'Only this computer can reach the service (it listens on this machine only by default), so no token is needed.',
+        how: 'Set it at startup with --token <at least 16 characters>, or the DRAMAI_TOKEN environment variable. Open the full address printed in the terminal at startup (with ?token=…) once and the browser remembers it.',
+      },
+      host: {
+        title: 'Address',
+        current: 'Current address',
+        local:
+          'You opened this from a local address, so only programs on this computer can reach it.',
+        remote:
+          'You opened this from {{host}}, so other devices on the same network may be able to reach this service.',
+        remoteNoToken:
+          'This service is reachable from other devices but has no access token: anyone on the network can read and write your projects. Restart it with --token.',
+        how: 'Set the listening address with --host; a non-local address must come with a token. The service only accepts local addresses or the ones you set with --host, and rejects any other Host.',
+      },
+    },
+    data: {
+      dir: {
+        title: 'Data folder',
+        body: 'All projects, materials, images, videos, cuts and settings live in this folder. Back it up and you have backed up everything.',
+      },
+      import: {
+        title: 'Import an old backup',
+        sub: 'A v0.4 JSON backup',
+        body: 'Imports a backup file exported by v0.4 as new projects. The old projects are not touched.',
+        choose: 'Choose a backup file',
+        duplicate: 'Import projects that were imported before again',
+        hint: 'Old generation records and unfinished video tasks don’t come across; images and videos are registered as products against the current basis.',
+        done_one: 'Imported {{count}} project',
+        done_other: 'Imported {{count}} projects',
+        counts:
+          '{{episodes}} episodes · {{shots}} shots · {{assets}} assets · {{materials}} materials · {{images}} images · {{videos}} videos',
+        skippedArtifacts: '{{count}} products were not registered',
+        skipped: 'Skipped {{id}}: {{reason}}',
+        dropped:
+          'Not brought across: {{generations}} generation records and {{tasks}} unfinished video tasks.',
+      },
+      trash: {
+        title: 'Trash',
+        sub: 'Deleted projects wait here first',
+        empty: 'The trash is empty.',
+        meta: 'Deleted {{deleted}} · {{episodes}} episodes · {{shots}} shots',
+        restore: 'Restore',
+        restoreLabel: 'Restore project {{name}}',
+        restored: 'Restored “{{name}}”',
+        purge: 'Delete for good',
+        purgeLabel: 'Delete project {{name}} for good',
+        purgeTitle: 'Delete “{{name}}” for good?',
+        purgeBody:
+          'The project folder will be removed, including materials, images, videos and cuts. This can’t be undone.',
+        purgeConfirm: 'Delete for good',
+      },
+    },
+    about: {
+      app: {
+        title: 'Runtime',
+        version: 'Version',
+        node: 'Node.js',
+        platform: 'System',
+        started: 'Service started',
+      },
+      ffmpeg: {
+        ok: 'Ready',
+        bad: 'Unavailable',
+        notFound: 'ffmpeg was not found',
+        path: 'Path',
+        source: 'Found via',
+        sources: { option: 'Startup option', env: 'Environment variable', path: 'PATH' },
+        version: 'Version',
+        encoder: 'Video encoder',
+        features: 'ffmpeg capabilities',
+        available: 'available',
+        unavailable: 'unavailable',
+        required: 'required',
+        optional: 'optional',
+        feature: {
+          h264: 'H.264 encoding',
+          aac: 'AAC encoding',
+          baseFilters: 'Basic filters (join, mix)',
+          subtitleBurnIn: 'Burning subtitles into the picture',
+          transitions: 'Transition filter (xfade)',
+          loudness: 'Loudness measurement',
+          probe: 'ffprobe',
+        },
+      },
+    },
   },
   protocol: {
     'openai-chat': 'OpenAI-compatible',

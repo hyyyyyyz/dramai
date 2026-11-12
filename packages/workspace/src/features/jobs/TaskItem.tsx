@@ -39,6 +39,7 @@ export interface TaskItemProps {
   onResume: (job: JobListItem) => void
   onRegenerate: (job: JobListItem) => void
   onAcknowledge: (job: JobListItem) => void
+  onIgnoreResult: (job: JobListItem, ignore: boolean) => void
 }
 
 /** 任务面板里的一个条目：状态、说明，以及这个状态下允许的操作（见 job-model.ts）。 */
@@ -52,6 +53,7 @@ export function TaskItem({
   onResume,
   onRegenerate,
   onAcknowledge,
+  onIgnoreResult,
 }: TaskItemProps) {
   const { t } = useTranslation()
   const fmt = useFormat()
@@ -59,9 +61,26 @@ export function TaskItem({
   const failed = job.status === 'failed'
   const unacknowledgedFail = failed && job.needsAttention
   const kind = failed ? failureKind(job) : undefined
-  const title = isKnownOperation(job.operation)
+  const opTitle = isKnownOperation(job.operation)
     ? t(`jobs.op.${job.operation}`)
     : t('jobs.op.unknown', { operation: job.operation })
+  // 任务作用在什么上（服务端给的结构化目标）：镜头写序号，资产写名字；目标已被删除就写明
+  const targetLabel = (() => {
+    const g = job.target
+    switch (g.kind) {
+      case 'shot':
+        return t('jobs.target.shot', { n: String(g.shotIndex).padStart(2, '0') })
+      case 'asset': {
+        const base = g.variantName ? `${g.name} / ${g.variantName}` : g.name
+        return g.edit ? `${base} · ${t('jobs.target.edit')}` : base
+      }
+      case 'removed':
+        return t('jobs.target.removed')
+      default:
+        return undefined
+    }
+  })()
+  const title = targetLabel ? `${opTitle} · ${targetLabel}` : opTitle
 
   const Icon =
     job.status === 'succeeded'
@@ -85,6 +104,7 @@ export function TaskItem({
   if (job.status === 'succeeded' && job.startedAt && job.finishedAt)
     sub.push(t('jobs.tookTime', { duration: fmt.duration(job.finishedAt - job.startedAt) }))
   if (job.status === 'cancelled') sub.push(t('jobs.cancelledLabel'))
+  if (job.status === 'succeeded' && job.resultIgnored) sub.push(t('jobs.ignoredLabel'))
   if (job.attempt > 1) sub.push(t('jobs.attempt', { n: job.attempt }))
 
   const LaneIcon = LANE_ICON[job.type]
@@ -135,8 +155,26 @@ export function TaskItem({
               </div>
             ) : null}
             <div className="mt-1 text-xs text-subtle">
-              {job.paid ? t('jobs.runningNotCancellable') : t('jobs.runningLocal')}
+              {job.resultIgnored
+                ? t('jobs.ignoredNote')
+                : job.paid
+                  ? t('jobs.runningNotCancellable')
+                  : t('jobs.runningLocal')}
             </div>
+            {actions.ignoreResult && (
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => onIgnoreResult(job, actions.ignoreResult === 'ignore')}
+                >
+                  {actions.ignoreResult === 'ignore'
+                    ? t('jobs.actions.ignoreResult')
+                    : t('jobs.actions.undoIgnore')}
+                </Button>
+              </div>
+            )}
           </>
         )}
 

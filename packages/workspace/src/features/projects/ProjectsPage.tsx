@@ -9,8 +9,13 @@ import {
   Skeleton,
   iconProps,
   iconPropsLg,
+  useToast,
 } from '@dramai/ui/v2'
-import { useProjects } from '@/data/queries'
+import { Modal } from '@/components/overlay'
+import { Link } from 'react-router'
+import type { ProjectListItem } from '@dramai/api'
+import { qk } from '@/data/keys'
+import { useCall, useProjects } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { PageHead } from '@/features/common/PageHead'
 import { NewProjectDialog } from './NewProjectDialog'
@@ -23,6 +28,9 @@ export function ProjectsPage() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<ProjectFilter>('all')
   const [creating, setCreating] = useState(false)
+  const [deleting, setDeleting] = useState<ProjectListItem>()
+  const { toast } = useToast()
+  const remove = useCall('projects.delete', { invalidate: [qk.projects] })
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -38,10 +46,17 @@ export function ProjectsPage() {
         title={t('projects.title')}
         sub={t('projects.sub')}
         actions={
-          <Button variant="primary" onClick={() => setCreating(true)}>
-            <Plus {...iconProps} aria-hidden />
-            {t('projects.new.open')}
-          </Button>
+          <>
+            <Link to="/settings/data">
+              <Button variant="ghost" tabIndex={-1}>
+                {t('projects.trashLink')}
+              </Button>
+            </Link>
+            <Button variant="primary" onClick={() => setCreating(true)}>
+              <Plus {...iconProps} aria-hidden />
+              {t('projects.new.open')}
+            </Button>
+          </>
         }
       />
 
@@ -106,7 +121,7 @@ export function ProjectsPage() {
       {shown.length > 0 && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
           {shown.map((p) => (
-            <ProjectCard key={p.id} project={p} />
+            <ProjectCard key={p.id} project={p} onDelete={setDeleting} />
           ))}
           <button
             type="button"
@@ -120,6 +135,45 @@ export function ProjectsPage() {
       )}
 
       {creating && <NewProjectDialog open onClose={() => setCreating(false)} />}
+      <Modal
+        open={deleting !== undefined}
+        onClose={() => setDeleting(undefined)}
+        size="sm"
+        title={t('projects.delete.title', { name: deleting?.name ?? '' })}
+        closeLabel={t('common.close')}
+        dismissOnBackdrop={false}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDeleting(undefined)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="danger-solid"
+              loading={remove.isPending}
+              onClick={() =>
+                deleting &&
+                remove.mutate(
+                  { params: { projectId: deleting.id } },
+                  {
+                    onSuccess: () => {
+                      toast({
+                        tone: 'success',
+                        title: t('projects.delete.done', { name: deleting.name }),
+                      })
+                      setDeleting(undefined)
+                    },
+                  },
+                )
+              }
+            >
+              {t('projects.delete.confirm')}
+            </Button>
+          </>
+        }
+      >
+        <p>{t('projects.delete.body')}</p>
+        {remove.isError && <ErrorNotice error={remove.error} className="mt-3" />}
+      </Modal>
     </>
   )
 }

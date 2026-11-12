@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Drawer } from '@dramai/ui/v2'
+import { Drawer } from '@/components/overlay'
 import { JobOpsProvider } from '@/features/jobs/JobOpsProvider'
 import { TaskPanel } from '@/features/jobs/TaskPanel'
 import { useMedia } from '@/lib/use-media'
@@ -57,6 +57,7 @@ export function AppShell() {
           <MobileTabBar />
           {drawerMode && (
             <Drawer
+              padding="none"
               open={drawerOpen}
               onClose={() => setDrawerOpen(false)}
               side={phone ? 'bottom' : 'right'}

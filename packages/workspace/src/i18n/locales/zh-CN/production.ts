@@ -38,6 +38,8 @@ export default {
     PROMPT_EMPTY: '这个镜头还没有提示词，生成需要它',
     ASSET_SHEET_MISSING: '「{{name}}」还没有设定图。上传的原图不能顶替设定图，需要先生成或登记一张',
     ASSET_NOT_REGISTERED: '引用的资产还没有登记：它在候选里等你确认，或者已被删除',
+    SHEET_TO_EDIT_MISSING: '「{{name}}」还没有当前设定图，没有可以修改的图。先生成或上传一张',
+    EDIT_INSTRUCTION_EMPTY: '修改设定图需要写一句指令，说明想改什么',
     BASE_SHEET_MISSING: '「{{name}}」的衍生形态要基于本体设定图编辑，而本体还没有设定图',
     VARIANT_NOT_FOUND: '引用的「{{name}}」形态不存在',
     VARIANT_COSTUME_INVALID: '「{{name}}」的衍生形态关联的服装资产不可用',
@@ -106,6 +108,12 @@ export default {
       go: '去确认',
     },
     tools: {
+      instructions: {
+        label: '分镜指令',
+        hint: '可选。写给大模型的额外要求，记在这一集上，重新拆分时默认沿用；留空就是不加要求。重新拆分只会替换分镜表，已生成的图和视频保留在项目文件夹里',
+        placeholder: '例如：每镜不超过 8 秒，重点表现主角的心理变化',
+        save: '只保存指令',
+      },
       title: '拆分与提示词',
       sum: '重新拆分、补镜头提示词、抽取候选',
       prompts: '镜头提示词',
@@ -183,6 +191,7 @@ export default {
       note: '重新生成不会覆盖旧版本，旧版本一直保留',
     },
     stale: {
+      kept: '已按现状保留。它的依据或上游再变一次，这里会重新提示',
       title: '这一版已过期',
       upstream:
         '上游已改：「{{name}}」的设定图从 v{{from}} 更新到了 v{{to}}，这个镜头是用 v{{from}} 生成的',
@@ -248,6 +257,8 @@ export default {
     batch: {
       titleImage: '批量生成分镜图 · 第 {{n}} 集',
       titleVideo: '批量生成视频 · 第 {{n}} 集',
+      titleAudio: '生成旁白配音 · 第 {{n}} 集',
+      titleSheetEdit: '用指令修改设定图',
       titleSheet: '生成设定图',
       list: '本批的目标',
       select: '选择 {{name}}',
@@ -380,6 +391,13 @@ export default {
       nameRequired: '请填写名字',
       submit: '创建',
     },
+    edit: {
+      title: '用指令修改「{{name}}」的设定图',
+      label: '指令',
+      hint: '只写要改的部分，例如“把发髻换成双丫髻”。当前这张图是唯一的参考；新图会成为当前版本，旧图留在版本历史里；失败时什么都不会改',
+      placeholder: '例如：把发髻换成双丫髻',
+      next: '下一步',
+    },
     detail: {
       rename: '重命名',
       renameNote: '镜头提示词里按名字引用资产；改名后，旧名字不会自动变成别名',
@@ -393,6 +411,7 @@ export default {
       sub: '所有后续生成都以它为条件',
       currentBadge: 'v{{n}} · 当前',
       saveText: '保存描述',
+      edit: '用指令修改',
       generate: '生成设定图',
       regenerate: '重新生成',
       upload: '上传设定图',
@@ -413,6 +432,7 @@ export default {
     },
     variants: {
       title: '衍生形态',
+      editWith: '用指令修改',
       new: '新建衍生',
       newTitle: '新建衍生形态',
       empty: '还没有衍生形态。换装、变身可以作为角色的衍生形态，共用名字和声音',
@@ -448,6 +468,11 @@ export default {
       create: '创建',
     },
     voice: {
+      description: '声线描述',
+      descriptionHint:
+        '用文字写下这个角色的声音，例如“清亮的少女声，语速偏快”。这是创作备注，不参与生成，改它不会让任何东西过期',
+      descriptionPlaceholder: '例如：清亮的少女声，语速偏快',
+      descriptionSave: '保存声线描述',
       title: '音色参考',
       none: '还没有音色参考。角色在多个镜头开口时，跨镜头可能换嗓子',
       play: '试听{{name}}的音色参考',

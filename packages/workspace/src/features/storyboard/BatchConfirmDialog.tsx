@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Asset, GenerateItem } from '@dramai/api'
-import { Button, Checkbox, Frame, Modal, Notice, Pill, Skeleton, useToast } from '@dramai/ui/v2'
+import { Button, Checkbox, Frame, Notice, Pill, Skeleton, useToast } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { useApi } from '@/data/use-api'
 import { qk } from '@/data/keys'
 import {
@@ -65,7 +66,7 @@ export function BatchConfirmDialog({
 
   const settings = useSettings()
   const providers = useProviders()
-  const providerKind = kind === 'shot_video' ? 'video' : 'image'
+  const providerKind = kind === 'shot_video' ? 'video' : kind === 'shot_audio' ? 'tts' : 'image'
   const provider = providers.data?.items.find(
     (p) => p.id === settings.data?.activeProviders[providerKind],
   )
@@ -140,7 +141,11 @@ export function BatchConfirmDialog({
           ? 'storyboard.batch.titleImage'
           : kind === 'shot_video'
             ? 'storyboard.batch.titleVideo'
-            : 'storyboard.batch.titleSheet',
+            : kind === 'shot_audio'
+              ? 'storyboard.batch.titleAudio'
+              : candidates[0]?.target.kind === 'asset_sheet' && candidates[0].target.editInstruction
+                ? 'storyboard.batch.titleSheetEdit'
+                : 'storyboard.batch.titleSheet',
         { n: episodeNumber ?? 0 },
       )}
       closeLabel={t('common.close')}
@@ -209,6 +214,7 @@ export function BatchConfirmDialog({
                   />
                   <div className="min-w-0 text-sm">
                     <h3 className="font-sans text-base font-medium">{c.label}</h3>
+                    {c.note && <p className="text-sm text-muted-foreground">{c.note}</p>}
                     {checked && v?.status === 'blocked' && (
                       <ul className="mt-1 flex flex-col gap-1 text-muted-foreground">
                         {v.reasons.map((r, i) => (

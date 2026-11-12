@@ -28,6 +28,9 @@ export default {
   ARTIFACT_UPSTREAM_MISSING: '缺少必需的上游产物，请先完成上一步',
 
   STYLE_REFERENCE_MISSING: '参考图风格需要先上传一张图片；创建项目时不能直接选，先创建再上传',
+  EDIT_INSTRUCTION_EMPTY: '修改设定图需要写一句指令，说明想改什么',
+  ARTIFACT_NOT_STALE: '只有已经过期的产物才能选“保持现状”',
+  SHEET_TO_EDIT_MISSING: '要修改的设定图还没有当前图，先生成一张再改',
   NOT_IN_TRASH: '只能彻底删除已经在回收站里的项目',
   BUSY: '有任务正在运行，请等它结束',
   MATERIAL_TOO_LARGE: '素材文件超过 20 MB',

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { AssetKind } from '@dramai/api'
-import { Button, Field, Input, Modal, Select, Textarea } from '@dramai/ui/v2'
+import { Button, Field, Input, Select, Textarea } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
@@ -83,7 +84,12 @@ export function NewAssetDialog({
           </Select>
         </Field>
         <Field label={t('assets.new.name')} error={nameError} required>
-          <Input value={name} autoFocus maxLength={60} onChange={(e) => setName(e.target.value)} />
+          <Input
+            value={name}
+            data-autofocus
+            maxLength={60}
+            onChange={(e) => setName(e.target.value)}
+          />
         </Field>
         <Field
           label={kind === 'character' ? t('assets.appearance') : t('assets.description')}

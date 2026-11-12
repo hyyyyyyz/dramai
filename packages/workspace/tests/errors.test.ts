@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ApiError, ERROR_CODES } from '@dramai/api'
+import { ApiError, ERROR_CODES, NOT_FOUND_ENTITIES } from '@dramai/api'
 import {
   blockingKind,
   errorInfo,
@@ -38,6 +38,13 @@ describe('error codes drive the UI, never the message', () => {
     for (const code of codes) {
       expect(zh.errors, `zh-CN missing ${code}`).toHaveProperty(code)
       expect(en.errors, `en missing ${code}`).toHaveProperty(code)
+    }
+  })
+
+  it('every kind of thing a NOT_FOUND can name has a word in both languages', () => {
+    for (const entity of NOT_FOUND_ENTITIES) {
+      expect(zh.entities, `zh-CN missing ${entity}`).toHaveProperty(entity)
+      expect(en.entities, `en missing ${entity}`).toHaveProperty(entity)
     }
   })
 

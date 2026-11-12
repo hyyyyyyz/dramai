@@ -16,6 +16,9 @@ export default {
         '“{{name}}” will be removed from the project. Episodes already planned are unaffected, but deletion is refused if any episode was planned from it',
     },
     plan: {
+      requirement: 'Requirement for this run',
+      requirementHint: 'Optional, applies to this run only and is not saved on the project',
+      requirementPlaceholder: 'For example: end every episode on a cliffhanger',
       title: 'Episode plan',
       ledger: 'Episode ledger',
       run: 'Plan episodes',
@@ -37,6 +40,10 @@ export default {
       moveUp: 'Move episode {{n}} up',
       moveDown: 'Move episode {{n}} down',
       rowMenu: 'More actions for episode {{n}}',
+      addEpisode: 'Add an episode',
+      addEpisodeSubmit: 'Add',
+      addEpisodeHint:
+        'It goes at the end. The title can stay empty and be changed later; it has no source range, and no other episode is touched',
       rename: 'Rename',
       episodeTitle: 'Episode title',
       deleteTitle: 'Delete this episode?',

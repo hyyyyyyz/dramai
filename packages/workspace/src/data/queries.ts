@@ -59,6 +59,18 @@ export function useProjects() {
   return useQuery({ queryKey: qk.projects, queryFn: () => api.call('projects.list') })
 }
 
+/** 回收站里的项目（已删除、还没清除）。key 在 projects 之下，项目有变化时一起失效。 */
+export function useTrashedProjects() {
+  const api = useApi()
+  return useQuery({
+    queryKey: [...qk.projects, 'trash'],
+    queryFn: async () => {
+      const r = await api.call('projects.list', { query: { includeDeleted: true } })
+      return r.items.filter((p) => p.deletedAt !== undefined)
+    },
+  })
+}
+
 export function useProject(projectId: string) {
   const api = useApi()
   return useQuery({
@@ -124,6 +136,15 @@ export function useEpisodeArtifacts(episodeId: string) {
   return useQuery({
     queryKey: qk.episodeArtifacts(episodeId),
     queryFn: () => api.call('episodes.artifacts', { params: { episodeId } }),
+  })
+}
+
+/** 一集的时间线：当前（或指定）修订的内容、摆放结果、读取时发现的问题、修订历史。 */
+export function useTimeline(episodeId: string) {
+  const api = useApi()
+  return useQuery({
+    queryKey: [...qk.timeline, episodeId],
+    queryFn: () => api.call('timeline.get', { params: { episodeId } }),
   })
 }
 

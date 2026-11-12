@@ -1,7 +1,8 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { JobListItem } from '@dramai/api'
-import { Button, Modal } from '@dramai/ui/v2'
+import { Button } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { isApiCode } from '@/data/errors'
 import { JobOpsContext, type JobOps } from './job-ops-context'
 import { jobActions } from './job-model'
@@ -27,7 +28,9 @@ export function JobOpsProvider({ children }: { children: ReactNode }) {
         ? actions.retry.variables?.params.jobId
         : actions.acknowledge.isPending
           ? actions.acknowledge.variables?.params.jobId
-          : undefined
+          : actions.ignoreResult.isPending
+            ? actions.ignoreResult.variables?.params.jobId
+            : undefined
 
   const run = async (p: Promise<unknown>) => {
     setError(undefined)
@@ -60,6 +63,8 @@ export function JobOpsProvider({ children }: { children: ReactNode }) {
       cancel: (j) => void run(actions.cancel.mutateAsync({ params: { jobId: j.id } })),
       resume: (j) => void run(actions.resume.mutateAsync({ params: { jobId: j.id } })),
       acknowledge: (j) => void run(actions.acknowledge.mutateAsync({ params: { jobId: j.id } })),
+      ignoreResult: (j, ignore) =>
+        void run(actions.ignoreResult.mutateAsync({ params: { jobId: j.id }, body: { ignore } })),
       regenerate: (j) => {
         if (jobActions(j).regenerate === 'recharge') setConfirm(j)
         else void retry(j, false)
@@ -69,7 +74,15 @@ export function JobOpsProvider({ children }: { children: ReactNode }) {
       clearError: () => setError(undefined),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [busyId, error, actions.cancel, actions.resume, actions.acknowledge, actions.retry],
+    [
+      busyId,
+      error,
+      actions.cancel,
+      actions.resume,
+      actions.acknowledge,
+      actions.retry,
+      actions.ignoreResult,
+    ],
   )
 
   return (

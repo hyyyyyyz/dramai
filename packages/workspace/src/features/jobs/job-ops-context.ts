@@ -9,6 +9,8 @@ export interface JobOps {
   /** 重新生成；可能再次计费时先弹出明确的确认。 */
   regenerate: (job: JobListItem) => void
   acknowledge: (job: JobListItem) => void
+  /** 忽略（或取消忽略）运行中付费任务的结果：照常跑完、照常计费，但不自动成为当前版本。 */
+  ignoreResult: (job: JobListItem, ignore: boolean) => void
   /** 正在提交操作的任务（防重复点击）。 */
   busyId: string | undefined
   /** 最近一次操作被服务端拒绝的错误（按错误码显示）。 */

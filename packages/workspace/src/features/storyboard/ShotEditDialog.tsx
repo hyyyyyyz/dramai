@@ -8,12 +8,12 @@ import {
   Hint,
   IconButton,
   Input,
-  Modal,
   Notice,
   Select,
   Textarea,
   iconProps,
 } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'

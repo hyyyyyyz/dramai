@@ -25,6 +25,9 @@ export default {
       compose: '渲染成片',
       unknown: '任务 · {{operation}}',
     },
+    target: { shot: '镜头 {{n}}', removed: '已删除的对象', edit: '指令修改' },
+    ignoredNote: '结果已标记为忽略：照常跑完、照常计费，产物进版本历史，但不会自动成为当前版本',
+    ignoredLabel: '结果被忽略',
     queuePosition: '排在第 {{n}} 位',
     elapsed: '已进行 {{duration}}',
     tookTime: '用时 {{duration}}',
@@ -44,6 +47,8 @@ export default {
     },
     failureUnknownNote: '请先到服务商后台核对。dramai 不会自动重新提交',
     actions: {
+      ignoreResult: '忽略结果',
+      undoIgnore: '取消忽略',
       cancelQueued: '取消排队',
       resume: '恢复原任务',
       regenerate: '重新生成',

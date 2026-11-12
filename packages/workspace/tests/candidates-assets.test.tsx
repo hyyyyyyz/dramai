@@ -415,6 +415,57 @@ describe('assets pages', () => {
     expect(server.calls.some((c) => c.path.endsWith('/generate'))).toBe(false)
   })
 
+  it('detail: editing a sheet with an instruction asks for the instruction first, then goes through the same confirmation with the edit in the target', async () => {
+    const asset = makeAsset({ id: 'asset_hero', name: '小宫女', sheet: slotWith('image') })
+    const server = detail(asset, {
+      'POST /api/projects/proj_1/generate': () => ({
+        requested: ['asset_sheet:asset_hero'],
+        succeeded: [{ targetId: 'asset_sheet:asset_hero', jobId: 'j1', deduped: false }],
+        blocked: [],
+        failed: [],
+      }),
+    })
+    await userEvent.click(await screen.findByRole('button', { name: '用指令修改' }))
+    const write = await screen.findByRole('dialog', { name: /用指令修改「小宫女」的设定图/ })
+    const next = within(write).getByRole('button', { name: '下一步' })
+    expect(next).toBeDisabled() // 没有指令不能继续
+    await userEvent.type(within(write).getByLabelText('指令'), '把发髻换成双丫髻')
+    await userEvent.click(next)
+    const confirm = await screen.findByRole('dialog', { name: '用指令修改设定图' })
+    expect(within(confirm).getByText('把发髻换成双丫髻')).toBeInTheDocument()
+    const pre = server.calls.find((c) => c.path.endsWith('/preflight'))!
+    expect((pre.body as { items: { target: unknown }[] }).items[0]!.target).toEqual({
+      kind: 'asset_sheet',
+      assetId: 'asset_hero',
+      editInstruction: '把发髻换成双丫髻',
+    })
+    expect(server.calls.some((c) => c.path.endsWith('/generate'))).toBe(false)
+  })
+
+  it('detail: without a current sheet there is nothing to edit, so the button is off', async () => {
+    detail(makeAsset({ id: 'asset_hero', name: '小宫女' }))
+    expect(await screen.findByRole('button', { name: '用指令修改' })).toBeDisabled()
+  })
+
+  it('detail: a character’s voice description is saved as a plain note', async () => {
+    const asset = makeAsset({
+      id: 'asset_hero',
+      name: '小宫女',
+      kind: 'character',
+      sheet: slotWith('image'),
+    })
+    const server = detail(asset, {
+      'PATCH /api/assets/asset_hero': ({ body }) => ({ ...asset, ...(body as object) }),
+    })
+    await userEvent.type(await screen.findByLabelText('声线描述'), '清亮的少女声')
+    await userEvent.click(screen.getByRole('button', { name: '保存声线描述' }))
+    await waitFor(() =>
+      expect(server.calls.find((c) => c.method === 'PATCH')?.body).toEqual({
+        voiceDescription: '清亮的少女声',
+      }),
+    )
+  })
+
   it('detail: a variant edited from the base goes stale with it, an uploaded one never does', async () => {
     const base0 = slotWith('image', 2)
     const asset = makeAsset({

@@ -24,6 +24,7 @@ const item = (
         onResume={noop}
         onRegenerate={noop}
         onAcknowledge={noop}
+        onIgnoreResult={noop}
         {...over}
       />
     </ul>,
@@ -72,6 +73,25 @@ describe('TaskItem states', () => {
   it('an acknowledged failure no longer offers to dismiss', () => {
     item(failedJob('generation_failed', { acknowledgedAt: 5 }))
     expect(screen.queryByRole('button', { name: '关闭' })).toBeNull()
+  })
+
+  it('titles name the target the server reports: shot number, asset name, variant', () => {
+    item(
+      makeJob({
+        operation: 'shot_video',
+        target: {
+          kind: 'shot',
+          shotId: 's',
+          shotIndex: 3,
+          shotNumber: 9,
+          sceneId: 'sc',
+          episodeId: 'e',
+          episodeNumber: 2,
+          episodeTitle: 't',
+        },
+      }),
+    )
+    expect(screen.getByText('生成视频 · 镜头 03')).toBeInTheDocument()
   })
 
   it('English copy', async () => {
@@ -145,6 +165,21 @@ describe('TaskPanel', () => {
         server.calls.some((c) => c.path === '/api/jobs/q1/cancel' && c.method === 'POST'),
       ).toBe(true),
     )
+  })
+
+  it('a running paid job can be marked "ignore result" and unmarked; the call is not cancelled', async () => {
+    const { server } = panel([makeJob({ id: 'r1', status: 'running', startedAt: 1 })], {
+      'POST /api/jobs/r1/ignore-result': () =>
+        makeJob({ id: 'r1', status: 'running', resultIgnored: true }),
+    })
+    expect(screen.queryByRole('button', { name: '取消排队' })).toBeNull()
+    await userEvent.click(await screen.findByRole('button', { name: '忽略结果' }))
+    await waitFor(() =>
+      expect(server.calls.some((c) => c.path === '/api/jobs/r1/ignore-result')).toBe(true),
+    )
+    expect(server.calls.find((c) => c.path.endsWith('/ignore-result'))!.body).toEqual({
+      ignore: true,
+    })
   })
 
   it('resume the original task calls resume, never retry', async () => {

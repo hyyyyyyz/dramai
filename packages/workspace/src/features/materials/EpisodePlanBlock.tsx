@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowDown, ArrowUp, MoreHorizontal, Pencil, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react'
 import type { CallOutput, JobListItem } from '@dramai/api'
 import {
   Button,
@@ -9,12 +9,12 @@ import {
   IconButton,
   Input,
   Menu,
-  Modal,
   Notice,
   Pill,
   useToast,
   iconProps,
 } from '@dramai/ui/v2'
+import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall } from '@/data/queries'
 import { Block } from '@/features/common/PageHead'
@@ -47,7 +47,11 @@ export function EpisodePlanBlock({
   const reorder = useCall('episodes.reorder', { invalidate })
   const rename = useCall('episodes.update', { invalidate })
   const remove = useCall('episodes.delete', { invalidate })
+  const create = useCall('episodes.create', { invalidate })
+  const [adding, setAdding] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
   const [target, setTarget] = useState(String(DEFAULT_TARGET))
+  const [requirement, setRequirement] = useState('')
   const [renaming, setRenaming] = useState<EpisodeItem>()
   const [renameValue, setRenameValue] = useState('')
   const [deleting, setDeleting] = useState<EpisodeItem>()
@@ -78,7 +82,10 @@ export function EpisodePlanBlock({
   const runPlan = () =>
     plan.mutate({
       params: { projectId },
-      body: targetValid && targetNum !== DEFAULT_TARGET ? { targetChars: targetNum } : {},
+      body: {
+        ...(targetValid && targetNum !== DEFAULT_TARGET ? { targetChars: targetNum } : {}),
+        ...(requirement.trim() ? { instructions: requirement.trim() } : {}),
+      },
     })
   const move = (i: number, dir: -1 | 1) => {
     const ids = order.map((e) => e.id)
@@ -104,6 +111,18 @@ export function EpisodePlanBlock({
             onChange={(e) => setTarget(e.target.value)}
           />
         </Field>
+        <Field
+          className="min-w-60 flex-1"
+          label={t('materials.plan.requirement')}
+          hint={t('materials.plan.requirementHint')}
+        >
+          <Input
+            maxLength={1000}
+            value={requirement}
+            placeholder={t('materials.plan.requirementPlaceholder')}
+            onChange={(e) => setRequirement(e.target.value)}
+          />
+        </Field>
         <Button
           variant={order.length === 0 ? 'primary' : 'secondary'}
           disabled={textMaterials.length === 0 || active || !targetValid}
@@ -112,6 +131,10 @@ export function EpisodePlanBlock({
         >
           <Sparkles {...iconProps} aria-hidden />
           {order.length === 0 ? t('materials.plan.run') : t('materials.plan.runMore')}
+        </Button>
+        <Button variant="ghost" onClick={() => setAdding(true)}>
+          <Plus {...iconProps} aria-hidden />
+          {t('materials.plan.addEpisode')}
         </Button>
       </div>
       <div className="flex flex-col gap-3 p-4 empty:hidden">
@@ -228,6 +251,47 @@ export function EpisodePlanBlock({
       <div className="border-t border-border p-4">
         <Hint>{t('materials.plan.hint')}</Hint>
       </div>
+
+      <Modal
+        open={adding}
+        onClose={() => setAdding(false)}
+        size="sm"
+        title={t('materials.plan.addEpisode')}
+        closeLabel={t('common.close')}
+        dismissOnBackdrop={false}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setAdding(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="primary"
+              loading={create.isPending}
+              onClick={async () => {
+                try {
+                  await create.mutateAsync({
+                    params: { projectId },
+                    body: newTitle.trim() ? { title: newTitle.trim() } : {},
+                  })
+                  setNewTitle('')
+                  setAdding(false)
+                } catch {
+                  /* 显示在对话框里 */
+                }
+              }}
+            >
+              {t('materials.plan.addEpisodeSubmit')}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <Field label={t('materials.plan.episodeTitle')} hint={t('materials.plan.addEpisodeHint')}>
+            <Input value={newTitle} maxLength={60} onChange={(e) => setNewTitle(e.target.value)} />
+          </Field>
+          {create.isError && <ErrorNotice error={create.error} />}
+        </div>
+      </Modal>
 
       <Modal
         open={renaming !== undefined}

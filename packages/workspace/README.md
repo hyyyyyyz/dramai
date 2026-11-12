@@ -58,4 +58,21 @@ tests/          vitest + Testing Library（数据层、事件重连与 resync、
 
 ## 脚本
 
-`pnpm --filter @dramai/workspace` 下：`dev` / `dev:web` / `build` / `typecheck` / `lint` / `test`。
+`pnpm --filter @dramai/workspace` 下：`dev` / `dev:web` / `build` / `typecheck` / `lint` / `test` / `e2e`（`e2e` 见下一节）。
+
+## Pages, code splitting and end-to-end tests (3C)
+
+- Pages added in 3C: compose (`features/compose`: four-track timeline, clip inspector, issues with an action each,
+  revisions with rollback, narration voice generation, render options, in-browser preview), export
+  (`features/export`), settings general / access / data / about (`features/settings`), project delete with trash and
+  restore, and legacy backup import.
+- Every page is a route-level lazy chunk (`src/app/router.tsx`); only the shell and the 404 page ship in the main
+  chunk. Fonts are emitted as files (`assetsInlineLimit: 0`) because the server's CSP only allows same-origin
+  resources.
+- `src/components/overlay.tsx` wraps the design system's `Modal` / `Drawer` so that `onClose` has a stable identity;
+  otherwise focus is not returned to the trigger after the dialog closes. Dialogs must mark their first field with
+  `data-autofocus`, never React's `autoFocus`.
+- End-to-end tests live in `e2e/` and run against demo mode: `pnpm e2e` from the repo root (see `e2e/README.md` for
+  coverage, the browser install step and what CI needs). Run `pnpm exec playwright install chromium` the first time and
+  again after any Playwright version change in the lockfile, otherwise the browser is missing; `pnpm e2e` checks for
+  this and stops with a clear message.

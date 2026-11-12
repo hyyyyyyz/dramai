@@ -50,6 +50,7 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
       onResume={ops.resume}
       onAcknowledge={ops.acknowledge}
       onRegenerate={ops.regenerate}
+      onIgnoreResult={ops.ignoreResult}
     />
   )
 
@@ -63,9 +64,7 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
 
   return (
     <div
-      className={
-        embedded ? '-m-6 flex min-h-[calc(100%+3rem)] flex-col' : 'flex min-h-0 flex-1 flex-col'
-      }
+      className={embedded ? 'flex min-h-full flex-col' : 'flex min-h-0 flex-1 flex-col'}
       aria-label={t('jobs.title')}
     >
       <div

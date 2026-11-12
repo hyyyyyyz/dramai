@@ -234,6 +234,7 @@ export function routeEvent(event: ServerEvent, deps: EventDeps): void {
         invalidator.add(['episode'])
         invalidator.add(qk.artifacts)
         invalidator.add(qk.preflight)
+        invalidator.add(qk.timeline)
         // 设定图 / 候选也可能是这个任务产出的（服务端不一定另发 data.changed）
         invalidator.add(['asset'])
         invalidator.add(job.projectId ? qk.assets(job.projectId) : ['assets'])
