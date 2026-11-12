@@ -59,14 +59,14 @@ Nothing is signed. The configuration does not block adding signing later: set `m
 
 _English_
 
-- **macOS**: a downloaded `.dmg` / `.zip` is quarantined, so the first launch is blocked with "Dramai cannot be opened because Apple cannot check it for malicious software". Open **System Settings > Privacy & Security**, scroll to **Security**, click **Open Anyway** next to Dramai and confirm with your password. (On macOS 15 and later, right-click > Open no longer bypasses this.) Or remove the flag in Terminal: `xattr -dr com.apple.quarantine /Applications/Dramai.app`. If macOS says the app is "damaged", that command fixes it too.
+- **macOS**: a downloaded `.dmg` / `.zip` is quarantined, so the first launch is blocked with "Dramai cannot be opened because Apple cannot check it for malicious software". Open **System Settings > Privacy & Security**, scroll to **Security**, click **Open Anyway** next to Dramai and confirm with your password. (On macOS 15 and later, right-click > Open no longer bypasses this.) Or remove the flag in Terminal: `xattr -dr com.apple.quarantine /Applications/Dramai.app`. If macOS says the app is "damaged", that command fixes it too. After each upgrade macOS asks once more whether Dramai may use its Keychain entry (it protects your API keys, and a new unsigned build looks like a new app to the system): choose **Always Allow**. Dramai stays usable while the prompt is open.
 - **Windows**: SmartScreen shows "Windows protected your PC" with publisher "Unknown". Click **More info**, then **Run anyway**. The same applies to the portable `.zip` after you extract it.
 - **Linux**: `chmod +x dramai-*.AppImage`, then run it (AppImages need FUSE 2; on Ubuntu 22.04+ install `libfuse2`, or use the `.tar.gz`). See the sandbox note above for Ubuntu 24.04+.
 - You can avoid all of this by building locally (`pnpm desktop:install`).
 
 _中文_
 
-- **macOS**：下载的 `.dmg` / `.zip` 带隔离标记，首次打开会提示"无法打开 Dramai，因为 Apple 无法检查其是否包含恶意软件"。打开 **系统设置 > 隐私与安全性**，滚动到 **安全性**，点 Dramai 旁边的 **仍要打开** 并输入密码。（macOS 15 起右键 > 打开 不再能绕过。）或在终端运行：`xattr -dr com.apple.quarantine /Applications/Dramai.app`。提示"已损坏"时同样用这条命令。
+- **macOS**：下载的 `.dmg` / `.zip` 带隔离标记，首次打开会提示"无法打开 Dramai，因为 Apple 无法检查其是否包含恶意软件"。打开 **系统设置 > 隐私与安全性**，滚动到 **安全性**，点 Dramai 旁边的 **仍要打开** 并输入密码。（macOS 15 起右键 > 打开 不再能绕过。）或在终端运行：`xattr -dr com.apple.quarantine /Applications/Dramai.app`。提示"已损坏"时同样用这条命令。每次升级后 macOS 会再问一次是否允许 Dramai 使用它的钥匙串条目（它保护你的 API Key，未签名的新版本在系统眼里是一个新应用），选 **始终允许** 即可；提示窗口打开期间 Dramai 仍可使用。
 - **Windows**：SmartScreen 会显示"Windows 已保护你的电脑"，发布者为"未知"。点 **更多信息**，再点 **仍要运行**。免安装的 `.zip` 解压后同理。
 - **Linux**：`chmod +x dramai-*.AppImage` 后运行（AppImage 需要 FUSE 2，Ubuntu 22.04+ 请安装 `libfuse2`，或改用 `.tar.gz`）。
 - 想避开这些提示：用本地编译安装（`pnpm desktop:install`）。

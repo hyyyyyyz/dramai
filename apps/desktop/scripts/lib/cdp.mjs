@@ -7,6 +7,20 @@ import { join } from 'node:path'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+export const CALL_TIMEOUT_MS = 30_000
+
+/** 30 s unless DRAMAI_CALL_TIMEOUT_MS says otherwise (tests). */
+export const callTimeout = () => Number(process.env.DRAMAI_CALL_TIMEOUT_MS) || CALL_TIMEOUT_MS
+
+export function timeoutMessage(method, timeoutMs) {
+  return (
+    `the page did not answer ${method} within ${timeoutMs / 1000} s. ` +
+    'On macOS this is often the system Keychain access prompt waiting for a reply (look for a dialog from ' +
+    'SecurityAgent: choose "Always Allow", or run `security delete-generic-password -s "Dramai Safe Storage"`); ' +
+    'otherwise the app or its server is stuck, see the start-up stages below.'
+  )
+}
+
 export async function waitFor(
   fn,
   { timeoutMs = 30_000, intervalMs = 200, what = 'condition' } = {},
@@ -79,10 +93,20 @@ export async function connect(target) {
       else resolve(msg.result)
     }
   }
-  const send = (method, params = {}) =>
+  // Every call has a deadline: a page call that never returns must fail the check, not hang it. The usual cause on
+  // macOS is the system's Keychain access prompt (an app signed differently from the one that created the entry),
+  // which keeps reading and saving API keys, and the page calls that wait for them, from answering.
+  const send = (method, params = {}, timeoutMs = callTimeout()) =>
     new Promise((resolve, reject) => {
       const id = nextId++
-      pending.set(id, { resolve, reject })
+      const timer = setTimeout(() => {
+        pending.delete(id)
+        reject(new Error(timeoutMessage(method, timeoutMs)))
+      }, timeoutMs)
+      pending.set(id, {
+        resolve: (v) => (clearTimeout(timer), resolve(v)),
+        reject: (e) => (clearTimeout(timer), reject(e)),
+      })
       ws.send(JSON.stringify({ id, method, params }))
     })
   /** 在页面里执行表达式（支持 await），返回 JSON 值。 */
@@ -176,7 +200,10 @@ export async function readAppLogs(userDataDir, lines = 60) {
 }
 
 /** Which start-up stages the app log shows, in order; the first missing one is where the start stalled. */
-export function stageReport(logText) {
+export function stageReport(fullLog) {
+  // Only the newest run: on macOS every run of the app appends to the same log file.
+  const start = fullLog.search(/^.*dramai desktop \S+ \(.*$(?![\s\S]*dramai desktop \S+ \()/m)
+  const logText = start >= 0 ? fullLog.slice(start) : fullLog
   const stages = [
     ['app started', /dramai desktop \S+ \(/],
     ['server process ready', /server ready at /],

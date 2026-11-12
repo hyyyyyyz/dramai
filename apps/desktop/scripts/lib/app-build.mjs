@@ -38,14 +38,10 @@ export function parseArch(value) {
 }
 
 /**
- * @param {{ distribution: 'local' | 'package', arch: string, unpackedOnly: boolean, skipBuild?: boolean }} options
+ * The electron-builder command line and the environment it is given. Pure, so the architecture handed to
+ * electron-builder.config.mjs (it names the AppImage after it) is tested: DRAMAI_ARCH must equal `--arch`.
  */
-export async function buildApp({ distribution, arch, unpackedOnly, skipBuild }) {
-  if (!platformFlag) throw new Error(`unsupported platform: ${process.platform}`)
-  if (!skipBuild) {
-    await run('pnpm', ['--filter', '@dramai/workspace', 'build'], repo)
-    await run('node', ['scripts/build.mjs'], root)
-  }
+export function builderInvocation({ platformFlag, arch, distribution, unpackedOnly }) {
   const args = [
     platformFlag,
     `--${arch}`,
@@ -55,9 +51,20 @@ export async function buildApp({ distribution, arch, unpackedOnly, skipBuild }) 
     'electron-builder.config.mjs',
   ]
   if (unpackedOnly) args.push('--dir')
-  await run('pnpm', ['exec', 'electron-builder', ...args], root, {
-    DRAMAI_DISTRIBUTION: distribution,
-  })
+  return { args, env: { DRAMAI_DISTRIBUTION: distribution, DRAMAI_ARCH: arch } }
+}
+
+/**
+ * @param {{ distribution: 'local' | 'package', arch: string, unpackedOnly: boolean, skipBuild?: boolean }} options
+ */
+export async function buildApp({ distribution, arch, unpackedOnly, skipBuild }) {
+  if (!platformFlag) throw new Error(`unsupported platform: ${process.platform}`)
+  if (!skipBuild) {
+    await run('pnpm', ['--filter', '@dramai/workspace', 'build'], repo)
+    await run('node', ['scripts/build.mjs'], root)
+  }
+  const { args, env } = builderInvocation({ platformFlag, arch, distribution, unpackedOnly })
+  await run('pnpm', ['exec', 'electron-builder', ...args], root, env)
 }
 
 /** Where `electron-builder --dir` put the app: Dramai.app / win-unpacked / linux-unpacked. */

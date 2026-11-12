@@ -17,69 +17,76 @@ const brand = resolve(root, '../../packages/ui/src/brand')
 const generated = join(root, 'build', 'generated')
 const icon = (file, fallback) =>
   existsSync(join(generated, file)) ? join(generated, file) : join(brand, fallback)
+// The architecture being packaged (set by scripts/lib/app-build.mjs). electron-builder's ${arch} expands to
+// `x86_64` for AppImage, which would break the dramai-<version>-<os>-<arch> naming, so that target spells it out.
 const distribution = process.env.DRAMAI_DISTRIBUTION === 'package' ? 'package' : 'local'
 
-/** @type {import('electron-builder').Configuration} */
-export default {
-  appId: 'io.github.hyyyyyyz.dramai',
-  productName: 'Dramai',
-  copyright: 'Copyright © dramai contributors. Apache-2.0',
-  directories: { output: 'release', buildResources: 'build' },
-  // Main process, preload and server process are each bundled into one file: no node_modules in the app.
-  files: ['dist/**/*', '!dist/**/*.map', '!dist/demo.mjs', 'package.json'],
-  extraMetadata: { dramai: { distribution } },
-  afterSign: join(root, 'scripts/ad-hoc-sign.mjs'),
-  asar: true,
-  // The server script and the data folder (prompts, models, the subtitle font) live outside app.asar: ffmpeg reads the
-  // font as a plain file and cannot open anything inside the archive. The server is started from the unpacked copy
-  // (src/main/entry-path.ts), so its `../data/` is a real folder.
-  asarUnpack: ['dist/server/**', 'dist/data/**'],
-  npmRebuild: false,
-  publish: null,
-  compression: 'normal',
-  artifactName: 'dramai-${version}-${os}-${arch}.${ext}',
+/** @returns {import('electron-builder').Configuration} */
+export function createConfig(arch = process.env.DRAMAI_ARCH ?? process.arch) {
+  return {
+    appId: 'io.github.hyyyyyyz.dramai',
+    productName: 'Dramai',
+    copyright: 'Copyright © dramai contributors. Apache-2.0',
+    directories: { output: 'release', buildResources: 'build' },
+    // Main process, preload and server process are each bundled into one file: no node_modules in the app.
+    files: ['dist/**/*', '!dist/**/*.map', '!dist/demo.mjs', 'package.json'],
+    extraMetadata: { dramai: { distribution } },
+    afterSign: join(root, 'scripts/ad-hoc-sign.mjs'),
+    asar: true,
+    // The server script and the data folder (prompts, models, the subtitle font) live outside app.asar: ffmpeg reads the
+    // font as a plain file and cannot open anything inside the archive. The server is started from the unpacked copy
+    // (src/main/entry-path.ts), so its `../data/` is a real folder.
+    asarUnpack: ['dist/server/**', 'dist/data/**'],
+    npmRebuild: false,
+    publish: null,
+    compression: 'normal',
+    artifactName: 'dramai-${version}-${os}-${arch}.${ext}',
+    appImage: { artifactName: `dramai-\${version}-linux-${arch}.\${ext}` },
 
-  // Keep only the capabilities the app needs. With runAsNode off other programs cannot use the app as a Node
-  // interpreter; the server runs in a utilityProcess, which does not need it.
-  electronFuses: {
-    runAsNode: false,
-    enableNodeOptionsEnvironmentVariable: false,
-    enableNodeCliInspectArguments: false,
-    enableEmbeddedAsarIntegrityValidation: true,
-    onlyLoadAppFromAsar: true,
-    grantFileProtocolExtraPrivileges: false,
-  },
+    // Keep only the capabilities the app needs. With runAsNode off other programs cannot use the app as a Node
+    // interpreter; the server runs in a utilityProcess, which does not need it.
+    electronFuses: {
+      runAsNode: false,
+      enableNodeOptionsEnvironmentVariable: false,
+      enableNodeCliInspectArguments: false,
+      enableEmbeddedAsarIntegrityValidation: true,
+      onlyLoadAppFromAsar: true,
+      grantFileProtocolExtraPrivileges: false,
+    },
 
-  mac: {
-    category: 'public.app-category.video',
-    icon: icon('icon.icns', 'app-icon-1024.png'),
-    // Only the system languages the UI uses (Chromium ships 100+).
-    electronLanguages: ['en', 'en_US', 'zh_CN', 'zh_TW'],
-    target: [{ target: 'dmg' }, { target: 'zip' }],
-    identity: null,
-    hardenedRuntime: false,
-    notarize: false,
-  },
+    mac: {
+      category: 'public.app-category.video',
+      icon: icon('icon.icns', 'app-icon-1024.png'),
+      // Only the system languages the UI uses (Chromium ships 100+).
+      electronLanguages: ['en', 'en_US', 'zh_CN', 'zh_TW'],
+      target: [{ target: 'dmg' }, { target: 'zip' }],
+      identity: null,
+      hardenedRuntime: false,
+      notarize: false,
+    },
 
-  win: {
-    icon: icon('icon.ico', 'app-icon-windows-1024.png'),
-    target: [{ target: 'nsis' }, { target: 'zip' }],
-    signAndEditExecutable: true,
-  },
-  nsis: {
-    oneClick: false,
-    perMachine: false,
-    allowToChangeInstallationDirectory: true,
-    // Uninstalling must not delete the user's projects and keys (they live under %APPDATA%\Dramai).
-    deleteAppDataOnUninstall: false,
-  },
+    win: {
+      icon: icon('icon.ico', 'app-icon-windows-1024.png'),
+      target: [{ target: 'nsis' }, { target: 'zip' }],
+      signAndEditExecutable: true,
+    },
+    nsis: {
+      oneClick: false,
+      perMachine: false,
+      allowToChangeInstallationDirectory: true,
+      // Uninstalling must not delete the user's projects and keys (they live under %APPDATA%\Dramai).
+      deleteAppDataOnUninstall: false,
+    },
 
-  linux: {
-    icon: icon('linux-icons', 'app-icon-linux-1024.png'),
-    target: [{ target: 'AppImage' }, { target: 'tar.gz' }],
-    executableName: 'dramai',
-    category: 'AudioVideo',
-    maintainer: 'dramai contributors',
-    synopsis: 'AI short-drama studio',
-  },
+    linux: {
+      icon: icon('linux-icons', 'app-icon-linux-1024.png'),
+      target: [{ target: 'AppImage' }, { target: 'tar.gz' }],
+      executableName: 'dramai',
+      category: 'AudioVideo',
+      maintainer: 'dramai contributors',
+      synopsis: 'AI short-drama studio',
+    },
+  }
 }
+
+export default createConfig()

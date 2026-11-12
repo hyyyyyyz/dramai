@@ -306,3 +306,171 @@ describe('check scripts import what they use', () => {
     }
   })
 })
+
+describe('installer names', () => {
+  it('every system and architecture produces dramai-<version>-<os>-<arch>.<ext>', async () => {
+    const { expectedArtifacts } = await import('../scripts/lib/artifacts.mjs')
+    const v = '0.5.0-beta.1'
+    expect(expectedArtifacts({ version: v, platform: 'darwin', arch: 'arm64' })).toEqual([
+      `dramai-${v}-mac-arm64.dmg`,
+      `dramai-${v}-mac-arm64.zip`,
+    ])
+    expect(expectedArtifacts({ version: v, platform: 'darwin', arch: 'x64' })).toEqual([
+      `dramai-${v}-mac-x64.dmg`,
+      `dramai-${v}-mac-x64.zip`,
+    ])
+    expect(expectedArtifacts({ version: v, platform: 'win32', arch: 'x64' })).toEqual([
+      `dramai-${v}-win-x64.exe`,
+      `dramai-${v}-win-x64.zip`,
+    ])
+    expect(expectedArtifacts({ version: v, platform: 'linux', arch: 'x64' })).toEqual([
+      `dramai-${v}-linux-x64.AppImage`,
+      `dramai-${v}-linux-x64.tar.gz`,
+    ])
+    expect(expectedArtifacts({ version: v, platform: 'linux', arch: 'arm64' })).toEqual([
+      `dramai-${v}-linux-arm64.AppImage`,
+      `dramai-${v}-linux-arm64.tar.gz`,
+    ])
+  })
+
+  it('the packaging config spells the architecture out for AppImage (electron-builder would say x86_64)', async () => {
+    const { createConfig } = await import('../electron-builder.config.mjs')
+    for (const arch of ['x64', 'arm64']) {
+      const config = createConfig(arch) as {
+        artifactName: string
+        appImage: { artifactName: string }
+      }
+      expect(config.artifactName).toBe('dramai-${version}-${os}-${arch}.${ext}')
+      expect(config.appImage.artifactName).toBe(`dramai-\${version}-linux-${arch}.\${ext}`)
+    }
+  })
+
+  it('verifyArtifacts passes a complete set and names what is missing or misnamed', async () => {
+    const { verifyArtifacts, expectedArtifacts } = await import('../scripts/lib/artifacts.mjs')
+    const v = '0.5.0-beta.1'
+    const linux = { version: v, platform: 'linux' as const, arch: 'x64' }
+    expect(
+      verifyArtifacts({ ...linux, files: [...expectedArtifacts(linux), 'builder-debug.yml'] }).ok,
+    ).toBe(true)
+    const bad = verifyArtifacts({
+      ...linux,
+      files: [`dramai-${v}-linux-x86_64.AppImage`, `dramai-${v}-linux-x64.tar.gz`],
+    })
+    expect(bad.ok).toBe(false)
+    expect(bad.problems[0]).toContain(`dramai-${v}-linux-x64.AppImage is missing`)
+    expect(bad.problems[0]).toContain('x86_64')
+    const missing = verifyArtifacts({
+      version: v,
+      platform: 'win32',
+      arch: 'x64',
+      files: [`dramai-${v}-win-x64.zip`],
+    })
+    expect(missing.problems).toEqual([`dramai-${v}-win-x64.exe is missing`])
+    expect(
+      verifyArtifacts({ version: v, platform: 'darwin', arch: 'arm64', files: [] }).problems,
+    ).toHaveLength(2)
+  })
+})
+
+describe('debugging-protocol calls cannot hang a check', () => {
+  it('a page call that never answers fails after its deadline with a hint about the Keychain prompt', async () => {
+    class SilentSocket {
+      onopen: (() => void) | undefined
+      onerror: (() => void) | undefined
+      onmessage: ((e: { data: string }) => void) | undefined
+      constructor() {
+        queueMicrotask(() => this.onopen?.())
+      }
+      send() {} // never answers, like a page whose call waits on the Keychain prompt
+      close() {}
+    }
+    const original = globalThis.WebSocket
+    ;(globalThis as { WebSocket: unknown }).WebSocket = SilentSocket
+    process.env.DRAMAI_CALL_TIMEOUT_MS = '50'
+    try {
+      const { connect } = await import('../scripts/lib/cdp.mjs')
+      const page = await connect({ webSocketDebuggerUrl: 'ws://x' })
+      const started = Date.now()
+      await expect(page.evaluate('window.dramaiDesktop.getInfo()')).rejects.toThrow(
+        /Keychain.*Always Allow/s,
+      )
+      expect(Date.now() - started).toBeLessThan(2000)
+    } finally {
+      delete process.env.DRAMAI_CALL_TIMEOUT_MS
+      globalThis.WebSocket = original
+    }
+  })
+
+  it('the default deadline is generous but finite', async () => {
+    const { CALL_TIMEOUT_MS } = await import('../scripts/lib/cdp.mjs')
+    expect(CALL_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000)
+    expect(CALL_TIMEOUT_MS).toBeLessThanOrEqual(60_000)
+  })
+})
+
+describe('stage report uses only the newest run', () => {
+  it('ignores earlier runs that share the same log file', async () => {
+    const { stageReport } = await import('../scripts/lib/cdp.mjs')
+    const old = [
+      'T INFO dramai desktop 1 (darwin/arm64), data: /a',
+      'T INFO server ready at http://127.0.0.1:1',
+      'T INFO page loaded: x',
+      'T INFO secret storage ready: os',
+    ].join('\n')
+    const now = 'T INFO dramai desktop 1 (darwin/arm64), data: /b'
+    const report = stageReport(old + '\n' + now)
+    expect(report).toContain('✓ app started')
+    expect(report).toContain('✗ server process ready')
+    expect(report).not.toContain('✓ page loaded')
+  })
+})
+
+describe('what is handed to electron-builder', () => {
+  it('passes the architecture being packaged (DRAMAI_ARCH equals --arch) and the distribution kind', async () => {
+    const { builderInvocation } = await import('../scripts/lib/app-build.mjs')
+    for (const arch of ['x64', 'arm64']) {
+      const { args, env } = builderInvocation({
+        platformFlag: '--linux',
+        arch,
+        distribution: 'package',
+        unpackedOnly: false,
+      })
+      expect(args).toContain(`--${arch}`)
+      expect(env.DRAMAI_ARCH).toBe(arch)
+      expect(env.DRAMAI_DISTRIBUTION).toBe('package')
+      expect(args).not.toContain('--dir')
+    }
+    const local = builderInvocation({
+      platformFlag: '--mac',
+      arch: 'arm64',
+      distribution: 'local',
+      unpackedOnly: true,
+    })
+    expect(local.args).toEqual(
+      expect.arrayContaining(['--mac', '--arm64', '--dir', '--publish', 'never']),
+    )
+  })
+
+  it('the arch given to electron-builder is the arch the AppImage is named after', async () => {
+    const { builderInvocation } = await import('../scripts/lib/app-build.mjs')
+    const { createConfig } = await import('../electron-builder.config.mjs')
+    const { env } = builderInvocation({
+      platformFlag: '--linux',
+      arch: 'x64',
+      distribution: 'package',
+      unpackedOnly: false,
+    })
+    const config = createConfig(env.DRAMAI_ARCH) as { appImage: { artifactName: string } }
+    expect(config.appImage.artifactName).toContain('-linux-x64.')
+  })
+
+  it('the build and check scripts reference nothing that nobody sets', async () => {
+    const { readFileSync } = await import('node:fs')
+    const builder = readFileSync(new URL('../scripts/lib/app-build.mjs', import.meta.url), 'utf8')
+    const config = readFileSync(new URL('../electron-builder.config.mjs', import.meta.url), 'utf8')
+    for (const name of ['DRAMAI_ARCH', 'DRAMAI_DISTRIBUTION']) {
+      expect(config).toContain(`process.env.${name}`)
+      expect(builder).toContain(name)
+    }
+  })
+})
