@@ -16,6 +16,9 @@ async function stop() {
 }
 process.on('SIGINT', () => void stop())
 process.on('SIGTERM', () => void stop())
+// Windows: closing the console window and Ctrl+Break arrive as SIGBREAK, not SIGTERM; stop cleanly so the data
+// directory lock is released.
+if (process.platform === 'win32') process.on('SIGBREAK', () => void stop())
 
 const code = await run(
   process.argv.slice(2),

@@ -39,3 +39,17 @@ dramai --host 0.0.0.0 --token "$(openssl rand -base64 24)"
 ## 还没做
 
 npm 包发布和 Docker 镜像（后面的阶段）。
+
+## Windows notes
+
+- Paths follow the platform: a relative `--data-dir` (or `DRAMAI_DATA_DIR`, `--static-dir`) is resolved against the
+  current directory with the platform's rules (drive letters, backslashes, UNC paths); the default data directory is
+  `.dramai` under the user profile (`%USERPROFILE%`).
+- A leading `~` is expanded by the launcher itself (`~\dramai` or `~/dramai`), because cmd.exe and PowerShell do not
+  expand it the way POSIX shells do.
+- The browser is opened with `rundll32 url.dll,FileProtocolHandler <url>` rather than `cmd /c start`, so a URL with
+  `%`, `&` or `^` (for example a percent-encoded token) is passed through untouched.
+- Closing the console window or pressing Ctrl+Break stops the server cleanly (`SIGBREAK`), releasing the data
+  directory lock.
+- The path rules are covered by tests that run on every system by injecting Windows path operations
+  (`test/args.test.ts`).
