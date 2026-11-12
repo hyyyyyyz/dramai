@@ -23,8 +23,8 @@ providers only. It has not been run against any real AI provider.** See "Known l
   instead of npm.
 - **Data from v0.4 does not appear automatically.** v0.4 kept projects in your browser's IndexedDB and
   provider settings in localStorage; the new version cannot read either. Before the old app goes away,
-  open it and use Settings → export all as JSON. This beta can import that file through the API
-  (`POST /api/import/legacy`), but **there is no screen for it yet**.
+  open it and use Settings → export all as JSON. The new version imports that file in
+  Settings → Data & backup.
 - **GitHub Pages no longer serves a usable workspace.** The workspace cannot work without the local
   server, so the automatic Pages deployment has been turned off (it can only be run by hand), and a
   landing page will replace the app there in a later release. The last browser-only version is
@@ -45,8 +45,8 @@ providers only. It has not been run against any real AI provider.** See "Known l
 2. Install Node.js 22.13+, pnpm and ffmpeg, then run the steps above to start the server. Data lives
    in `~/.dramai` by default (`--data-dir` changes it).
 3. Add your providers again in Settings → Providers and use "test connection".
-4. To bring old projects over, send the backup file to `POST /api/import/legacy` (multipart field
-   `file`). Each old project becomes a new project with a single episode "第一集" and scene
+4. To bring old projects over, open Settings → Data & backup → Import an old backup and choose the file
+   (the API route is `POST /api/import/legacy`). Each old project becomes a new project with a single episode "第一集" and scene
    "导入的镜头"; the aspect ratio is set to 16:9 and narration to "added in post", because v0.4 had
    neither. Importing never changes existing projects, and importing the same old project twice is
    skipped unless you ask for it.
@@ -61,11 +61,24 @@ providers only. It has not been run against any real AI provider.** See "Known l
   address without an access token.
 - **`dramai` launcher** (`pnpm webui`): starts the server, serves the workspace and opens the
   browser. Options for port, host, data directory and token; `--version`; one-line startup errors.
-- **A rewritten workspace** on top of the API, with Chinese and English interfaces and light and dark
-  themes: project list and creation, project overview, materials and episode planning with streamed
-  output, a storyboard page grouped by scene, the asset library and asset detail pages, a
-  confirmation page for candidates found in the text, a confirmation step before batch generation,
-  provider settings with connection tests, and a task panel for queued, running and failed tasks.
+- **A rewritten workspace** on top of the API, with Simplified Chinese, Traditional Chinese and English
+  interfaces and light and dark themes: project list and creation, project overview, materials and
+  episode planning with streamed output, a storyboard page grouped by scene, the asset library and
+  asset detail pages, a confirmation page for candidates found in the text, a confirmation step before
+  batch generation, and a task panel for queued, running and failed tasks. Pages load on demand, and
+  non-default languages load only when chosen.
+- **Compose and export pages**: a four-track timeline with a clip inspector, a list of issues that
+  block rendering (each with an action that fixes it), a revision history you can roll back, narration
+  voice generation, render options (subtitles soft, burned in or none), an in-browser preview, and an
+  export page that shows whether each product is latest, out of date, missing or blocked and lets you
+  download it. Transitions are hard cuts only, there is a single music track, and the preview leaves
+  out subtitles, music, freeze frames and transitions.
+- **Settings pages**: providers with connection tests, general (language, theme, default subtitles,
+  optional currency conversion for cost estimates), access and security (shows whether a token is on
+  and how to set it), data and backup (the data folder, importing v0.4 backups, and the trash), and
+  about (version, runtime and what your ffmpeg can do).
+- **Trash**: deleting a project moves it to the trash; it can be restored, or deleted for good, which
+  removes its folder.
 - **A story model that scales past one clip chain**: episodes, scenes and shots; characters,
   locations, props and costumes as reusable assets that shots reference; a style chosen at project
   creation (20 built-in style presets) and kept as a snapshot.
@@ -85,14 +98,17 @@ providers only. It has not been run against any real AI provider.** See "Known l
   protocol, and OpenAI-compatible text-to-speech. Adapters are pure functions that never touch the
   network, model capabilities and prices live in a data file, and a missing capability fails with
   an explanation instead of silently switching models. Prompts are data files too.
-- **Composition and export on the server** (no screens for them yet): native ffmpeg rendering with
+- **Composition and export on the server**: native ffmpeg rendering with
   the project's aspect ratio (9:16, 16:9 or 1:1), soft or burned-in subtitles, SRT and VTT, and an
   asset package (videos, images, subtitles and a manifest in a zip) for editing elsewhere. ffmpeg
   capabilities such as subtitle burn-in are detected rather than assumed.
-- **Import of v0.4 backups** (see Upgrade notes).
+- **Import of v0.4 backups**, from Settings → Data & backup or the API (see Upgrade notes).
 - **Demo mode** (`pnpm demo`): a local mock of every provider type plus the server, with its own data
   directory (`~/.dramai-demo`). No account, no key and no cost; the generated content is
   placeholder content. Options simulate latency and failures.
+- **Browser end-to-end tests** (`pnpm e2e`, Playwright): they run in demo mode, so they cost nothing and
+  need no key, and walk from creating a project to downloading the cut, resuming a failed upstream
+  task, the English interface and keyboard-only use.
 - **For contributors**: a pnpm monorepo (`apps/`, `packages/`, `tooling/`), shared TypeScript and ESLint
   configs, CI on Linux, macOS and Windows, one version number for every package with a tool to
   change it (`pnpm version:bump`), and the versioning rules in `docs/VERSIONING.md`.
@@ -114,13 +130,8 @@ Listed so nothing here is mistaken for finished work:
 
 - The **desktop app** (Electron): run from source, build-and-install on your machine, and downloadable
   installers.
-- The workspace screens for **composition (timeline), export**, and the remaining settings pages
-  (general, access, data, about). Their routes exist and show an "under development" page; the server
-  side already works.
-- A screen for **importing v0.4 backups**, narration/voice-over controls in the interface, and
-  writing a real JianYing draft (today the export is an asset package).
-- An npm package and a Docker image for the WebUI, the landing page, and automated browser-based
-  end-to-end tests.
+- Writing a real JianYing draft (today the export is an asset package).
+- An npm package and a Docker image for the WebUI, and the landing page.
 
 ### Known limitations
 
@@ -136,8 +147,10 @@ Listed so nothing here is mistaken for finished work:
   versus ¥40–50) has still not been checked against a real run.
 - **Character consistency is not proven.** The multi-reference approach is implemented but has not been
   compared with the old "locked reference image" on a real image service.
-- Only run on macOS during development. The automated tests are set up to run on Linux, macOS and
-  Windows, but that has not been exercised yet.
+- Only run on macOS during development. The automated tests and the browser end-to-end tests are set up
+  to run on Linux, macOS and Windows (end-to-end on Linux), but that has not been exercised yet.
+- The end-to-end tests run against the mock providers only, so they prove the application flow, not
+  that any real provider accepts the requests.
 - Unsigned, unpackaged: there are no installers in this version.
 
 ## [0.4.1] - 2026-05-04
