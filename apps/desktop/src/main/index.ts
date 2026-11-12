@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
@@ -24,13 +24,14 @@ import { withToolDirs } from './ffmpeg.ts'
 import { createFileLogger } from './logger.ts'
 import { buildMenuTemplate } from './menu.ts'
 import { canOpenExternally, isAppUrl, isTrustedSender } from './navigation.ts'
-import { cleanText, parseFolderRequest, resolveProjectPath } from './native.ts'
+import { cleanText, isInside, parseFolderRequest, resolveProjectPath } from './native.ts'
 import { resolveDataDir } from './paths.ts'
 import { isPermissionAllowed } from './permissions.ts'
 import { chooseListenPort } from './ports.ts'
 import { SecretVault } from './secret-vault.ts'
 import type { SecretCrypto } from './secret-vault.ts'
 import { ServerHost, ServerStartError } from './server-host.ts'
+import type { SecretBackend } from './server-host.ts'
 import { acquireSingleInstance } from './single-instance.ts'
 import { isLangPreference, resolveLang, strings } from './strings.ts'
 import type { Lang, LangPreference } from './strings.ts'
@@ -44,6 +45,8 @@ const devUrl = process.env.DRAMAI_DESKTOP_DEV_URL // 开发形态：窗口加载
 const isDev = Boolean(devUrl)
 const repo = repoSlug(pkg.repository.url) ?? 'hyyyyyyz/dramai'
 const PARTITION = 'persist:dramai'
+/** Set by the smoke / install self-test: no informational dialogs (they would wait for a click on a headless runner). */
+const quiet = process.env.DRAMAI_DESKTOP_QUIET === '1'
 const WINDOW_ICON = join(distDir, 'icons', 'window.png')
 const APP_ID = 'io.github.hyyyyyyz.dramai'
 /** source = run from the repo; local = built and installed on this machine; package = a downloaded installer. */
@@ -86,6 +89,7 @@ const state = {
 
 let config!: ConfigStore
 let vault!: SecretVault
+let vaultReady: Promise<void> = Promise.resolve()
 let host!: ServerHost
 
 // —— 系统加密（safeStorage 的异步接口；同步接口在 Electron 45 起已弃用，46 移除）——
@@ -197,6 +201,11 @@ function createWindow(target: string): BrowserWindow {
   win.webContents.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
     if (isMainFrame) log('error', `load failed: ${description} (${code}) ${originOf(url) ?? ''}`)
   })
+  win.webContents.on('did-finish-load', () =>
+    log('info', `page loaded: ${originOf(win.webContents.getURL()) ?? '(unknown)'}`),
+  )
+  win.once('ready-to-show', () => log('info', 'window ready to show'))
+  log('info', `window created, loading ${originOf(target) ?? target}`)
   void win.loadURL(target)
   if (process.env.DRAMAI_DESKTOP_DEVTOOLS === '1') win.webContents.openDevTools({ mode: 'detach' })
   state.win = win
@@ -338,7 +347,7 @@ async function runUpdateCheck(manual: boolean): Promise<void> {
 }
 
 function scheduleUpdateCheck(): void {
-  if (isDev || !config.get().checkForUpdates) return
+  if (isDev || quiet || !config.get().checkForUpdates) return
   const last = config.get().lastUpdateCheck ?? 0
   if (Date.now() - last < 6 * 60 * 60 * 1000) return // 对 GitHub 的匿名接口客气一点
   setTimeout(() => void runUpdateCheck(false), 8_000).unref()
@@ -376,7 +385,7 @@ async function showFfmpegHelp(automatic: boolean): Promise<void> {
 }
 
 async function maybeWarnAboutFfmpeg(): Promise<void> {
-  if (config.get().ffmpegNoticeDismissed) return
+  if (quiet || config.get().ffmpegNoticeDismissed) return
   if ((await ffmpegFound()) === false) await showFfmpegHelp(true)
 }
 
@@ -452,15 +461,18 @@ function registerIpc(): void {
 
   handle(
     BRIDGE_CHANNELS.getInfo,
-    (): DramaiDesktopInfo => ({
-      version: app.getVersion(),
-      platform: process.platform as DramaiDesktopInfo['platform'],
-      arch: process.arch,
-      dataDir: state.dataDir,
-      secretStorage: state.secretMode,
-      language: lang,
-      languagePreference: config.get().language ?? 'auto',
-    }),
+    async (): Promise<DramaiDesktopInfo> => (
+      await vaultReady,
+      {
+        version: app.getVersion(),
+        platform: process.platform as DramaiDesktopInfo['platform'],
+        arch: process.arch,
+        dataDir: state.dataDir,
+        secretStorage: state.secretMode,
+        language: lang,
+        languagePreference: config.get().language ?? 'auto',
+      }
+    ),
   )
 
   handle(BRIDGE_CHANNELS.setLanguage, (arg) => {
@@ -486,6 +498,13 @@ function registerIpc(): void {
     const v = (typeof arg === 'object' && arg !== null ? arg : {}) as Record<string, unknown>
     const full = resolveProjectPath(state.dataDir, v.projectId, v.path)
     if (!full || !existsSync(full)) return false
+    // A symlink / junction inside the project folder must not lead outside it.
+    try {
+      const realBase = realpathSync(resolveProjectPath(state.dataDir, v.projectId, undefined) ?? '')
+      if (!isInside(realBase, realpathSync(full)) && realpathSync(full) !== realBase) return false
+    } catch {
+      return false
+    }
     if (v.path === undefined || v.path === '') void shell.openPath(full)
     else shell.showItemInFolder(full)
     return true
@@ -583,10 +602,31 @@ async function main(): Promise<void> {
   )
 
   vault = new SecretVault(join(state.dataDir, 'secrets.json'), osCrypto, log)
-  try {
-    state.secretMode = await vault.init()
-  } catch (err) {
-    log('error', `secret vault init failed: ${String(err)}`)
+  // Not awaited: on macOS the first safeStorage call can wait on a Keychain access prompt (an app rebuilt locally
+  // has a new ad-hoc signature, so the system asks again). The app must open and stay responsive meanwhile; only
+  // reads and writes of API keys wait for the answer.
+  vaultReady = vault
+    .init()
+    .then((mode) => {
+      state.secretMode = mode
+      log('info', `secret storage ready: ${mode}`)
+      if (mode === 'plain' && !config.get().plainSecretsNoticeShown && !quiet) {
+        config.update({ plainSecretsNoticeShown: true })
+        void dialog.showMessageBox({
+          type: 'info',
+          title: s().plainSecretsTitle,
+          message: s().plainSecretsTitle,
+          detail: s().plainSecrets,
+          buttons: [s().ok],
+        })
+      }
+    })
+    .catch((err) => log('error', `secret vault init failed: ${String(err)}`))
+  const secrets: SecretBackend = {
+    get: async (ref) => (await vaultReady, vault.get(ref)),
+    set: async (ref, value) => (await vaultReady, vault.set(ref, value)),
+    delete: async (ref) => (await vaultReady, vault.delete(ref)),
+    has: async (ref) => (await vaultReady, vault.has(ref)),
   }
 
   const env = withToolDirs(process.env as Record<string, string | undefined>)
@@ -597,7 +637,7 @@ async function main(): Promise<void> {
         stdio: 'pipe',
         env: env as Record<string, string>,
       }) as unknown as ReturnType<ConstructorParameters<typeof ServerHost>[0]['fork']>,
-    secrets: vault,
+    secrets,
     log,
   })
   host.on('crashed', () => void onServerCrashed())
@@ -619,17 +659,6 @@ async function main(): Promise<void> {
       app.quit()
       return
     }
-  }
-
-  if (state.secretMode === 'plain' && !config.get().plainSecretsNoticeShown) {
-    config.update({ plainSecretsNoticeShown: true })
-    void dialog.showMessageBox({
-      type: 'info',
-      title: s().plainSecretsTitle,
-      message: s().plainSecretsTitle,
-      detail: s().plainSecrets,
-      buttons: [s().ok],
-    })
   }
 
   await seedDemoIfRequested()

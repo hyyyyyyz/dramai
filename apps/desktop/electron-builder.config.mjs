@@ -6,11 +6,17 @@
 // Nothing is signed. macOS gets an ad-hoc signature from scripts/ad-hoc-sign.mjs (Apple silicon refuses to run
 // an executable without at least that); to add real signing later, set `mac.identity` / `win.signtoolOptions`
 // here and drop that hook — nothing else needs to change.
+import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 const brand = resolve(root, '../../packages/ui/src/brand')
+// Icons generated from the brand artwork by scripts/build.mjs (per-platform artwork + the small-size variant).
+// Fall back to the brand PNG when building without that step (electron-builder then scales it itself).
+const generated = join(root, 'build', 'generated')
+const icon = (file, fallback) =>
+  existsSync(join(generated, file)) ? join(generated, file) : join(brand, fallback)
 const distribution = process.env.DRAMAI_DISTRIBUTION === 'package' ? 'package' : 'local'
 
 /** @type {import('electron-builder').Configuration} */
@@ -42,7 +48,7 @@ export default {
 
   mac: {
     category: 'public.app-category.video',
-    icon: join(brand, 'app-icon-1024.png'),
+    icon: icon('icon.icns', 'app-icon-1024.png'),
     // Only the system languages the UI uses (Chromium ships 100+).
     electronLanguages: ['en', 'en_US', 'zh_CN', 'zh_TW'],
     target: [{ target: 'dmg' }, { target: 'zip' }],
@@ -52,7 +58,7 @@ export default {
   },
 
   win: {
-    icon: join(brand, 'app-icon-square-1024.png'),
+    icon: icon('icon.ico', 'app-icon-windows-1024.png'),
     target: [{ target: 'nsis' }, { target: 'zip' }],
     signAndEditExecutable: true,
   },
@@ -65,7 +71,7 @@ export default {
   },
 
   linux: {
-    icon: join(brand, 'app-icon-square-1024.png'),
+    icon: icon('linux-icons', 'app-icon-linux-1024.png'),
     target: [{ target: 'AppImage' }, { target: 'tar.gz' }],
     executableName: 'dramai',
     category: 'AudioVideo',

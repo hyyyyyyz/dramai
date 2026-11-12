@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { MAC_ART, makeIcns } from './icons.mjs'
+import { ART, makeIcns } from './icons.mjs'
 
 const root = fileURLToPath(new URL('../..', import.meta.url))
 const require = createRequire(import.meta.url)
@@ -27,8 +27,9 @@ export function ensureDevApp() {
   ).version
   const stamp = createHash('sha256')
     .update(electronVersion)
-    .update(readFileSync(MAC_ART))
-    .update('v1')
+    .update(readFileSync(ART.mac))
+    .update(readFileSync(ART.small))
+    .update('v2')
     .digest('hex')
   const stampFile = join(root, '.dev', 'stamp')
   const executable = join(target, 'Contents', 'MacOS', 'Electron')

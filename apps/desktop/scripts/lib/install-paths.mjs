@@ -1,6 +1,6 @@
 // Where a local install goes on each system, and what `uninstall --purge-data` may remove.
 // Pure functions of (platform, env, home): unit-tested on every system, no file system access.
-import { join, posix, win32 } from 'node:path'
+import { posix, win32 } from 'node:path'
 
 export const APP_NAME = 'Dramai'
 export const APP_ID = 'io.github.hyyyyyyz.dramai'
@@ -13,20 +13,22 @@ const WIN_UNINSTALL_KEY = String.raw`HKCU\Software\Microsoft\Windows\CurrentVers
  */
 export function installPaths({ platform, home, env, root, canWriteSystemApps = false }) {
   if (platform === 'darwin') {
+    // macOS paths are POSIX paths whatever system computes them (this is unit-tested on Windows too).
+    const m = posix
     const apps = root
-      ? join(root, 'Applications')
+      ? m.join(root, 'Applications')
       : canWriteSystemApps
         ? '/Applications'
-        : join(home, 'Applications')
-    const appDest = join(apps, `${APP_NAME}.app`)
+        : m.join(home, 'Applications')
+    const appDest = m.join(apps, `${APP_NAME}.app`)
     return {
       platform,
       sandboxed: Boolean(root),
       appDest,
-      executable: join(appDest, 'Contents', 'MacOS', APP_NAME),
+      executable: m.join(appDest, 'Contents', 'MacOS', APP_NAME),
       userData: [
-        join(root ?? home, 'Library', 'Application Support', APP_NAME),
-        join(root ?? home, 'Library', 'Logs', APP_NAME),
+        m.join(root ?? home, 'Library', 'Application Support', APP_NAME),
+        m.join(root ?? home, 'Library', 'Logs', APP_NAME),
       ],
       keychainService: `${APP_NAME} Safe Storage`,
     }

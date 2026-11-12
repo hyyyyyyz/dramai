@@ -22,7 +22,7 @@ import {
   windowsRegistryValues,
   windowsUninstallScript,
 } from './install-paths.mjs'
-import { SQUARE_ART, writePngSizes } from './icons.mjs'
+import { linuxIcons } from './icons.mjs'
 
 const LSREGISTER =
   '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister'
@@ -128,8 +128,8 @@ export function install({ paths, source, version, log = console.log }) {
   symlinkSync(paths.executable, paths.binLink)
   mkdirSync(dirname(paths.desktopFile), { recursive: true })
   writeFileSync(paths.desktopFile, desktopEntry(paths.executable))
-  for (const icon of writePngSizes(SQUARE_ART, paths.iconSizes, (s) => String(s))) {
-    const file = linuxIconPath(paths, Number(icon.name))
+  for (const icon of linuxIcons(paths.iconSizes)) {
+    const file = linuxIconPath(paths, icon.size)
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, icon.data)
   }

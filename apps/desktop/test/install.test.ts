@@ -11,7 +11,8 @@ import {
   windowsUninstallScript,
 } from '../scripts/lib/install-paths.mjs'
 import { dataLocations, linuxSandboxWarning } from '../scripts/lib/install-os.mjs'
-import { opaqueBounds, readPng, resizePng, MAC_ART, SQUARE_ART } from '../scripts/lib/icons.mjs'
+import { PNG } from 'pngjs'
+import { ART, icoBuffer, iconPng, opaqueBounds, readPng, resizePng } from '../scripts/lib/icons.mjs'
 
 const temp: string[] = []
 afterEach(() => {
@@ -132,18 +133,95 @@ describe('data locations for --purge-data', () => {
 })
 
 describe('icons come from the brand artwork', () => {
-  it('the macOS artwork keeps Apple-style transparent margins and the Windows/Linux one is full-bleed', () => {
-    const mac = opaqueBounds(readPng(MAC_ART))!
-    for (const side of [mac.left, mac.top, mac.right, mac.bottom])
-      expect(side).toBeGreaterThan(0.08)
-    const square = opaqueBounds(readPng(SQUARE_ART))!
-    expect(square).toEqual({ left: 0, top: 0, right: 0, bottom: 0 })
+  /** Margin (as a fraction of the canvas) between the canvas edge and the plate, ignoring the soft shadow. */
+  const plate = (file: string) => opaqueBounds(readPng(file), 128)!
+  const near = (value: number, px: number, tol = 0.004) => Math.abs(value - px / 1024) < tol
+
+  it('macOS: the plate sits on the 824 px grid (100 px margin); the shadow may extend into the margin but is not clipped', () => {
+    const p = plate(ART.mac)
+    for (const side of [p.left, p.top, p.right, p.bottom]) expect(near(side, 100)).toBe(true)
+    const all = opaqueBounds(readPng(ART.mac), 0)!
+    // the shadow (blur 28, offset 12) is drawn inside the canvas: nothing touches the edge pixels
+    for (const side of [all.left, all.top, all.right, all.bottom])
+      expect(side).toBeGreaterThan(1 / 1024)
+    // and it is a shadow, not more plate: it stays within the 28 px blur + 12 px offset around the plate
+    expect(all.bottom).toBeGreaterThan(100 / 1024 - (28 + 12 + 6) / 1024)
   })
+
+  it('Windows, Linux and the small variant have their documented plate sizes and no shadow', () => {
+    for (const [file, plateSize] of [
+      [ART.windows, 976],
+      [ART.linux, 928],
+      [ART.small, 944],
+    ] as const) {
+      const margin = (1024 - plateSize) / 2
+      const p = plate(file)
+      for (const side of [p.left, p.top, p.right, p.bottom])
+        expect(near(side, margin), file).toBe(true)
+      const all = opaqueBounds(readPng(file), 0)!
+      expect(all.left, file).toBeCloseTo(p.left, 2) // no shadow beyond the plate
+    }
+  })
+
+  it('small sizes use the small variant, larger sizes the platform artwork', () => {
+    const png = (b: Buffer) => PNG.sync.read(b)
+    expect(png(iconPng('darwin', 32)).width).toBe(32)
+    expect(png(iconPng('win32', 256)).width).toBe(256)
+    // 48 px: the small variant's plate is 944/1024 of the canvas, the macOS plate only 824/1024
+    const margin48 = (platform: NodeJS.Platform) =>
+      opaqueBounds(png(iconPng(platform, 48)), 128)!.left * 48
+    expect(margin48('darwin')).toBeLessThan(2.5)
+    // 64 px: the platform artwork again (macOS plate has the 100/1024 margin => ~6 px)
+    expect(opaqueBounds(png(iconPng('darwin', 64)), 128)!.left * 64).toBeGreaterThan(5)
+  })
+
+  it('the generated .ico is a valid multi-size icon file', () => {
+    const ico = icoBuffer([16, 32, 256])
+    expect(ico.readUInt16LE(2)).toBe(1)
+    expect(ico.readUInt16LE(4)).toBe(3)
+    expect(ico.readUInt8(6)).toBe(16)
+    expect(ico.readUInt8(6 + 2 * 16)).toBe(0) // 256 is stored as 0
+    const offset = ico.readUInt32LE(6 + 12)
+    expect(ico.subarray(offset, offset + 8).toString('hex')).toBe('89504e470d0a1a0a') // PNG-compressed entry
+  })
+
   it('downscaling keeps proportions and transparency', () => {
-    const small = resizePng(readPng(MAC_ART), 32)
-    expect(small.width).toBe(32)
+    const small = resizePng(readPng(ART.mac), 64)
+    expect(small.width).toBe(64)
     expect(small.data[3]).toBe(0) // the corner stays transparent
-    const b = opaqueBounds(small)!
-    expect(Math.abs(b.left - 0.09)).toBeLessThan(0.04)
+  })
+})
+
+describe('failed-check diagnostics', () => {
+  it('readAppLogs returns the tail of the app log so CI shows why a check failed', async () => {
+    const { readAppLogs } = await import('../scripts/lib/cdp.mjs')
+    const dir = tmp()
+    mkdirSync(join(dir, 'logs'), { recursive: true })
+    writeFileSync(
+      join(dir, 'logs', 'main.log'),
+      Array.from({ length: 100 }, (_, i) => `line ${i}`).join('\n'),
+    )
+    const text = await readAppLogs(dir, 5)
+    expect(text).toContain('line 99')
+    expect(text).not.toContain('line 10\n')
+    expect(await readAppLogs(tmp(), 5)).toBeTypeOf('string')
+  })
+})
+
+describe('start-up stage report', () => {
+  it('shows which stage a stalled start never reached', async () => {
+    const { stageReport } = await import('../scripts/lib/cdp.mjs')
+    const log = [
+      '2026-11-12T00:00:00Z INFO dramai desktop 0.5.0-beta.1 (darwin/arm64), data: /d (env)',
+      '2026-11-12T00:00:01Z INFO server ready at http://127.0.0.1:1',
+    ].join('\n')
+    const report = stageReport(log)
+    expect(report).toContain('✓ app started')
+    expect(report).toContain('✓ server process ready')
+    expect(report).toContain('✗ window created')
+    expect(report).toContain('· page loaded') // later stages are shown as not reached, not as failures
+    expect(stageReport(log + '\n2026 ERROR server failed to start: DATA_DIR_LOCKED')).toContain(
+      'DATA_DIR_LOCKED',
+    )
   })
 })

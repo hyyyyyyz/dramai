@@ -14,7 +14,15 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 import { spawn } from 'node:child_process'
-import { apiCall, connect, launch, pageTarget, terminate, waitFor } from './lib/cdp.mjs'
+import {
+  apiCall,
+  connect,
+  launch,
+  pageTarget,
+  readAppLogs,
+  terminate,
+  waitFor,
+} from './lib/cdp.mjs'
 import { walkFlow } from './lib/walk.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -63,7 +71,7 @@ const app = await launch({
   args,
   cwd,
   userDataDir: userData,
-  env: { DRAMAI_DATA_DIR: dataDir },
+  env: { DRAMAI_DATA_DIR: dataDir, DRAMAI_DESKTOP_QUIET: '1' },
 })
 let failed = false
 let mock
@@ -167,7 +175,7 @@ try {
     // 第二次启动：已有实例收到 second-instance，新进程自己退出。
     const second = spawn(command, [...args, `--user-data-dir=${userData}`], {
       cwd,
-      env: { ...process.env, DRAMAI_DATA_DIR: dataDir },
+      env: { ...process.env, DRAMAI_DATA_DIR: dataDir, DRAMAI_DESKTOP_QUIET: '1' },
       stdio: 'ignore',
     })
     const secondExit = await Promise.race([
@@ -185,8 +193,12 @@ try {
   }
 
   // —— 正常退出：服务关闭、数据库关闭、数据目录锁释放 ——
-  const exit = await terminate(app, 'SIGTERM')
-  check('app exits cleanly on SIGTERM', exit.code === 0 && !exit.timeout, JSON.stringify(exit))
+  const exit = await terminate(app)
+  check(
+    'app exits cleanly when asked to quit',
+    exit.code === 0 && !exit.timeout,
+    JSON.stringify(exit),
+  )
   check('data dir lock released', !existsSync(join(dataDir, 'dramai.lock')))
   check('database file present', existsSync(join(dataDir, 'dramai.sqlite')))
 
@@ -197,7 +209,7 @@ try {
       args,
       cwd,
       userDataDir: userData,
-      env: { DRAMAI_DATA_DIR: dataDir },
+      env: { DRAMAI_DATA_DIR: dataDir, DRAMAI_DESKTOP_QUIET: '1' },
     })
     try {
       const target2 = await pageTarget(app2.port)
@@ -225,7 +237,7 @@ try {
       )
       page3.close()
     } finally {
-      const exit2 = await terminate(app2, 'SIGTERM')
+      const exit2 = await terminate(app2)
       check('second run exits cleanly', exit2.code === 0 && !exit2.timeout, JSON.stringify(exit2))
     }
   }
@@ -233,11 +245,14 @@ try {
 } catch (err) {
   failed = true
   console.error('✗ smoke failed:', err.message)
-  console.error('--- app output (tail) ---\n' + app.output().split('\n').slice(-40).join('\n'))
+  console.error(await diagnose(app, userData))
   app.child.kill('SIGKILL')
   mock?.kill('SIGKILL')
 }
-failed ||= checks.some((c) => !c.ok)
+if (!failed && checks.some((c) => !c.ok)) {
+  failed = true
+  console.error(await diagnose(app, userData))
+}
 console.log(failed ? '\nSMOKE FAILED' : '\nSMOKE OK')
 if (keep) console.log(`kept: ${work} (screenshot: ${join(work, 'smoke.png')})`)
 else await rm(work, { recursive: true, force: true })
