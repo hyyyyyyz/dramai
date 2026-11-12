@@ -73,8 +73,8 @@ describe('semver helpers', () => {
   it('normalizes an optional leading v and explains invalid input', () => {
     expect(normalizeVersion('v0.5.0')).toBe('0.5.0')
     expect(normalizeVersion('0.5.0')).toBe('0.5.0')
-    expect(() => normalizeVersion('vv1')).toThrow(/not a valid semantic version/)
-    expect(() => normalizeVersion('')).toThrow(/not a valid semantic version/)
+    expect(() => normalizeVersion('vv1')).toThrow(/not a valid version/)
+    expect(() => normalizeVersion('')).toThrow(/not a valid version/)
   })
 
   it('reads the version out of a tag ref', () => {
@@ -82,7 +82,8 @@ describe('semver helpers', () => {
     expect(versionFromTag('refs/tags/v0.5.0-beta.1')).toBe('0.5.0-beta.1')
     expect(() => versionFromTag('0.5.0')).toThrow(/must look like v/)
     expect(() => versionFromTag('release-1')).toThrow(/must look like v/)
-    expect(() => versionFromTag('v1.x')).toThrow(/not a valid semantic version/)
+    expect(() => versionFromTag('v1.x')).toThrow(/not a valid version/)
+    expect(() => versionFromTag('v1.0.0-alpha.1')).toThrow(/not a valid version/)
   })
 })
 
@@ -194,7 +195,7 @@ describe('setVersion', () => {
   })
 
   it('refuses an invalid version without writing anything', () => {
-    expect(() => setVersion(root, '1.2')).toThrow(/not a valid semantic version/)
+    expect(() => setVersion(root, '1.2')).toThrow(/not a valid version/)
     expect(checkVersions(root).version).toBe('1.2.3')
   })
 

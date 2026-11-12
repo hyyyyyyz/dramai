@@ -3,6 +3,7 @@
 // 只依赖 Node 内置模块，CI 里在 `pnpm install` 之前就能运行。
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { parseVersion, VERSION_FORMAT_HINT } from './rules.ts'
 
 /** 官方 semver 正则（https://semver.org），不带前导 v。 */
 const SEMVER =
@@ -18,13 +19,11 @@ export function isPrerelease(version: string): boolean {
   return m !== null && m[4] !== undefined
 }
 
-/** 接受 `0.5.0` 或 `v0.5.0`，返回不带 v 的版本；不合法时抛错。 */
+/** 接受 `0.5.0` 或 `v0.5.0`，返回不带 v 的版本；不符合项目版本规则时抛错。 */
 export function normalizeVersion(input: string): string {
   const v = input.startsWith('v') ? input.slice(1) : input
-  if (!isSemver(v)) {
-    throw new Error(
-      `"${input}" is not a valid semantic version (expected e.g. 0.5.0 or 0.5.0-beta.1)`,
-    )
+  if (parseVersion(v) === null) {
+    throw new Error(`"${input}" is not a valid version: ${VERSION_FORMAT_HINT}`)
   }
   return v
 }
@@ -134,8 +133,10 @@ export function checkVersions(root: string, options: { tag?: string } = {}): Ver
   const version = rootPkg?.version ?? ''
   const problems: string[] = []
 
-  if (!isSemver(version)) {
-    problems.push(`Root package.json has no valid semantic version (found "${version}")`)
+  if (parseVersion(version) === null) {
+    problems.push(
+      `Root package.json has no valid version (found "${version}"): ${VERSION_FORMAT_HINT}`,
+    )
   }
   for (const p of packages) {
     if (p.version !== version) {
