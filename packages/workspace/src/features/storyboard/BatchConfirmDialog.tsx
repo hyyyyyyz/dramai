@@ -17,6 +17,7 @@ import { CapabilityValue } from '@/features/settings/CapabilityGrid'
 import { CostBox } from './CostBox'
 import { costHeadline } from './cost'
 import { batchTargetId, type BatchCandidate, type BatchKind } from './batch-model'
+import { visibleReasons } from './reasons'
 import { useReasonText } from './use-reason-text'
 import { useFormat } from '@/i18n/format'
 
@@ -217,7 +218,7 @@ export function BatchConfirmDialog({
                     {c.note && <p className="text-sm text-muted-foreground">{c.note}</p>}
                     {checked && v?.status === 'blocked' && (
                       <ul className="mt-1 flex flex-col gap-1 text-muted-foreground">
-                        {v.reasons.map((r, i) => (
+                        {visibleReasons(v.reasons).map((r, i) => (
                           <li key={`${r.code}-${i}`}>{reasonText(r)}</li>
                         ))}
                       </ul>

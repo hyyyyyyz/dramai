@@ -47,6 +47,14 @@ describe('parseCli', () => {
     })
   })
 
+  it('tolerates the habitual leading `--` that `pnpm webui -- …` passes along', () => {
+    const r = parse(['--', '--no-open', '--port', '9000'])
+    expect(r).toMatchObject({ kind: 'run', options: { port: 9000, open: false } })
+    // only a leading one: a later `--` still ends the options, and positionals stay refused
+    expect(parse(['--port', '9000', '--', '--no-open']).kind).toBe('error')
+    expect(parse(['--', 'stray']).kind).toBe('error')
+  })
+
   it('a non-loopback host requires a token, with a clear message', () => {
     for (const host of ['0.0.0.0', '192.168.1.5', 'myhost.lan']) {
       const r = parse(['--host', host])

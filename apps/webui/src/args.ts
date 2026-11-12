@@ -69,10 +69,13 @@ export function parseCli(
   cwd = process.cwd(),
   paths: PathOps = nativePaths(),
 ): Parsed {
+  // `pnpm webui -- --no-open` (and `npm run webui -- …`) hand the launcher a leading `--`; node's parseArgs would
+  // treat everything after it as positional and refuse it. Habitual `--` is harmless, so drop one leading `--`.
+  const args = argv[0] === '--' ? argv.slice(1) : argv
   let values: Record<string, string | boolean | undefined>
   try {
     values = parseArgs({
-      args: argv,
+      args,
       options: {
         port: { type: 'string', short: 'p' },
         host: { type: 'string' },

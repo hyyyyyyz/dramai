@@ -47,6 +47,16 @@ export type ReasonCode = (typeof REASON_CODES)[number]
 export const isReasonCode = (code: string): code is ReasonCode =>
   (REASON_CODES as readonly string[]).includes(code)
 
+/**
+ * Reasons worth showing, in order. A shot with no narration text is reported with both NARRATION_EMPTY and
+ * NARRATION_NOT_TTS, even in a project whose narration is delivered by TTS; the second one then reads as a wrong claim
+ * about the project. The empty narration is the real cause and the actionable one, so it stands alone.
+ */
+export function visibleReasons<T extends { code: string }>(reasons: readonly T[]): T[] {
+  const empty = reasons.some((r) => r.code === 'NARRATION_EMPTY')
+  return empty ? reasons.filter((r) => r.code !== 'NARRATION_NOT_TTS') : [...reasons]
+}
+
 /** 原因旁边的“直达补齐的地方”按钮。 */
 export type ReasonAction =
   | { kind: 'asset'; assetId: string }

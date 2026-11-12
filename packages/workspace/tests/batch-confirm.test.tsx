@@ -129,6 +129,30 @@ describe('BatchConfirmDialog', () => {
     expect(server.calls.some((c) => c.path.endsWith('/generate'))).toBe(false)
   })
 
+  it('a shot with no narration text is blocked with one clear reason (not also “project is not TTS”), and the way out is offered', async () => {
+    open((items) =>
+      makePreflight([
+        makeVerdict(tid(1), {
+          status: 'blocked',
+          reasons: [
+            { code: 'NARRATION_EMPTY', message: 'shot has no narration' },
+            { code: 'NARRATION_NOT_TTS', message: 'wrong for a TTS project' },
+          ],
+        }),
+        ...items.slice(1).map((it) =>
+          makeVerdict(`shot_video:${(it.target as { shotId: string }).shotId}`, {
+            status: 'blocked_by_batch',
+            blockedBy: [tid(1)],
+          }),
+        ),
+      ]),
+    )
+    expect(await screen.findByText('整批不会运行')).toBeInTheDocument()
+    expect(screen.getByText('这个镜头没有旁白文字，没有东西可配音')).toBeInTheDocument()
+    expect(screen.queryByText(/项目的旁白不是 TTS 交付/)).toBeNull()
+    expect(screen.getByRole('button', { name: '不选被拦下的' })).toBeInTheDocument()
+  })
+
   it('“deselect the blocked ones” re-runs the preflight for the rest, and then the batch can run', async () => {
     const { server } = open((items) =>
       items.some((it) => (it.target as { shotId: string }).shotId === 's1')

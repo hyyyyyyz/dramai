@@ -5,8 +5,11 @@ WebUI 形态的命令行启动器：起本地服务（`@dramai/server`），托�
 ```bash
 pnpm build           # 先构建（启动器本身、服务端、工作台）
 pnpm webui           # 在仓库里运行；等价于 node apps/webui/bin/dramai.js
-pnpm webui -- --no-open --port 9000 --data-dir /tmp/dramai
+pnpm webui --no-open --port 9000 --data-dir /tmp/dramai
 ```
+
+Pass options directly: `pnpm webui --no-open --port 9000`. pnpm 9 forwards a `--` to the launcher as it is; the
+launcher accepts one leading `--` (so `pnpm webui -- --no-open` works too) and refuses stray positional arguments.
 
 | 选项                | 说明                                                                        |
 | ------------------- | --------------------------------------------------------------------------- |

@@ -29,10 +29,13 @@ curl -X POST localhost:8788/__mock/heal                                         
 ## 构建后的应用
 
 ```bash
-pnpm build                                   # 产出 packages/workspace/dist（根路径托管，base = '/'）
-pnpm demo --static-dir "$PWD/packages/workspace/dist"   # 注意：--static-dir 相对路径是按 packages/mock-providers 解析的，给绝对路径
-pnpm webui                                   # 或用启动器（见 apps/webui）
+pnpm build                                          # 产出 packages/workspace/dist（根路径托管，base = '/'）
+pnpm demo --static-dir packages/workspace/dist      # 演示服务连同界面一起托管
+pnpm webui                                          # 或用启动器（见 apps/webui）
 ```
+
+A relative `--static-dir` (or `--data-dir`) is resolved against the directory you run the command in, so from the
+repo root `packages/workspace/dist` is correct; there is no need for an absolute path.
 
 ## 结构
 
