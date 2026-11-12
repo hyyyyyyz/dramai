@@ -152,16 +152,15 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup
 
-      # `pnpm desktop:dist` 打包当前平台，产物在 apps/desktop/release/（桌面端的约定）。
-      # 先做一次全仓构建，让它依赖的包都已就绪；这里不设置 GH_TOKEN，
-      # electron-builder 因此不会自己去发布。
+      # `pnpm desktop:dist` 打包当前系统，产物在 apps/desktop/release/，命名 dramai-<版本>-<系统>-<架构>.<扩展名>
+      # （macOS: .dmg + .zip；Windows: .exe + .zip；Linux: .AppImage + .tar.gz）。它自己会构建前端并打包应用，
+      # 所以这里不需要先做全仓构建；也不需要架构参数：macOS Intel 在 macos-15-intel 运行器上原生构建，
+      # 只有在 arm64 运行器上交叉打 Intel 包时才需要 `--arch x64`。
+      # 不设置 GH_TOKEN，electron-builder 因此不会自己去发布（脚本里也带了 --publish never）。
       #
-      # 第一版不签名。以后要加签名时，在 “Package desktop app” 步骤的 env 里加上
-      # electron-builder 的 CSC_LINK / CSC_KEY_PASSWORD（Windows 用 WIN_CSC_*，macOS 公证用 APPLE_*），
-      # 把对应的 secrets 映射进来即可，其余流程不用动。
-      - name: Build workspace
-        run: pnpm build
-
+      # 第一版不签名，也不传任何签名相关的环境变量。以后要加签名时，在这个步骤的 env 里把
+      # electron-builder 的 CSC_LINK / CSC_KEY_PASSWORD（Windows 用 WIN_CSC_*，macOS 公证用 APPLE_*）
+      # 从 secrets 映射进来，并按 apps/desktop/README.md 去掉 ad-hoc 签名脚本。
       - name: Package desktop app
         run: pnpm desktop:dist
 
