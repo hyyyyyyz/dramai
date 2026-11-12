@@ -123,8 +123,36 @@ jobs:
             echo "::warning::ffmpeg on this runner has no libass/subtitles filter; the burn-in test falls back to the capability-error check"
           fi
 
+      # `pnpm test` 跑完所有包再汇总失败（见根 package.json 的 --no-bail），
+      # 所以一次运行就能看到每个包在这个系统上的结果，而不是停在第一个失败的包。
+      # 这里把失败的包写进任务摘要，打开运行页面就能看到。
       - name: Test
-        run: pnpm test
+        run: |
+          set +e
+          pnpm test 2>&1 | tee test.log
+          status="${PIPESTATUS[0]}"
+          set -e
+          # 去掉颜色转义；用 printf 生成 ESC 字符，因为 macOS 的 BSD sed 不认 \x1b
+          esc="$(printf '\033')"
+          sed "s/${esc}\[[0-9;]*m//g" test.log > test.plain.log
+          # grep 没有匹配时返回 1；在 -e -o pipefail 下会让整个步骤失败，所以包一层 `|| true`。
+          # pnpm 在 ERROR 前后放的是 Unicode 细空格，所以不要锚定行首，也不要假设分隔符是普通空格。
+          failed="$({ grep -E 'ERROR[^@]{0,8}@' test.plain.log || true; } | sed -E 's/.*ERROR[^@]{0,8}(@[^ ]+) .*/\1/' | sort -u | tr '\n' ' ')"
+          {
+            echo "### Tests on ${{ matrix.label }}"
+            echo
+            if [ "$status" -eq 0 ]; then
+              echo "All packages passed."
+            else
+              echo "**Packages with failing tests:** ${failed:-unknown, see the log}"
+              echo
+              grep -E '^Summary: ' test.plain.log || true
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Tests failed in: ${failed:-unknown, see the log}"
+          fi
+          exit "$status"
 
   build:
     name: Build
@@ -168,6 +196,9 @@ jobs:
     name: Desktop (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    outputs:
+      build: ${{ steps.detect.outputs.build }}
+      check: ${{ steps.detect.outputs.check }}
     strategy:
       fail-fast: false
       matrix:
@@ -179,14 +210,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # 没有脚本时这个 job 仍然显示为成功，因为什么都没执行。为了不让人误读，
+      # 这里把“未运行”和原因写进任务摘要，并打一条警告注释（运行页面上是黄色的）。
       - name: Look for desktop scripts
         id: detect
         run: |
           has() { node -p "Boolean(require('./package.json').scripts?.['$1'])"; }
-          echo "build=$(has desktop:build)" >> "$GITHUB_OUTPUT"
-          echo "check=$(has desktop:check-install)" >> "$GITHUB_OUTPUT"
-          if [ "$(has desktop:build)" != "true" ]; then
-            echo "::notice::No root 'desktop:build' script yet; skipping the desktop steps."
+          build="$(has desktop:build)"
+          check="$(has desktop:check-install)"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "check=$check" >> "$GITHUB_OUTPUT"
+          if [ "$build" != "true" ]; then
+            echo "::warning::Desktop build was NOT RUN on ${{ matrix.label }}: the root package.json has no 'desktop:build' script yet."
+            {
+              echo "### ⚠️ Desktop build: NOT RUN on ${{ matrix.label }}"
+              echo
+              echo "Reason: the root \`package.json\` has no \`desktop:build\` script yet. This job is green only because nothing was executed; it says nothing about whether the desktop app builds."
+            } >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$check" != "true" ]; then
+            echo "::warning::The install/uninstall self-check was NOT RUN on ${{ matrix.label }}: the root package.json has no 'desktop:check-install' script yet."
+            {
+              echo "### ⚠️ Desktop install/uninstall self-check: NOT RUN on ${{ matrix.label }}"
+              echo
+              echo "Reason: the root \`package.json\` has no \`desktop:check-install\` script yet. The build step did run; installing and uninstalling the app was not checked."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Setup workspace
@@ -251,8 +298,9 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  # 分支保护里只需要把这一个检查设为必需：它汇总上面所有 job，
-  # 被跳过的 job（例如还没有桌面端脚本时的 Desktop）不算失败。
+  # 分支保护里只需要把这一个检查设为必需：它汇总上面所有 job。
+  # 被跳过的 job 不算失败，但摘要里会明确写出哪些检查“没有运行”以及原因，
+  # 避免把“跳过”读成“通过”。
   ci-ok:
     name: CI passed
     if: always()
@@ -263,7 +311,44 @@ jobs:
       - name: Check results
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
+          CHECKS: ${{ needs.checks.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          WORKFLOWS: ${{ needs.workflows.result }}
+          DESKTOP: ${{ needs.desktop.result }}
+          DESKTOP_BUILD: ${{ needs.desktop.outputs.build }}
+          DESKTOP_CHECK: ${{ needs.desktop.outputs.check }}
+          E2E: ${{ needs.e2e.result }}
         run: |
+          desktop_label="$DESKTOP"
+          if [ "$DESKTOP" = "success" ] && [ "$DESKTOP_BUILD" != "true" ]; then
+            desktop_label="success, but NOT RUN (no script yet)"
+          elif [ "$DESKTOP" = "success" ] && [ "$DESKTOP_CHECK" != "true" ]; then
+            desktop_label="success (install self-check NOT RUN)"
+          fi
+          {
+            echo "### CI summary"
+            echo
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+            echo "| Format, lint, typecheck | $CHECKS |"
+            echo "| Test (Linux, macOS, Windows) | $TEST |"
+            echo "| Build | $BUILD |"
+            echo "| Lint workflows | $WORKFLOWS |"
+            echo "| Desktop build | $desktop_label |"
+            echo "| E2E (browser) | $E2E |"
+            not_run=""
+            if [ "$DESKTOP" = "success" ] && [ "$DESKTOP_BUILD" != "true" ]; then
+              not_run="$not_run\n- **Desktop build did not run**: the root package.json has no \`desktop:build\` script yet, so its green result means nothing."
+            elif [ "$DESKTOP" = "success" ] && [ "$DESKTOP_CHECK" != "true" ]; then
+              not_run="$not_run\n- **Desktop install/uninstall self-check did not run**: the root package.json has no \`desktop:check-install\` script yet."
+            fi
+            if [ -n "$not_run" ]; then
+              echo
+              echo "#### ⚠️ Not run"
+              printf "%b\n" "$not_run"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "job results: $RESULTS"
           case "$RESULTS" in
             *failure*|*cancelled*) echo "::error::At least one required job did not succeed."; exit 1 ;;

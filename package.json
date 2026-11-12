@@ -36,7 +36,7 @@
     "preview": "pnpm --filter @dramai/workspace preview",
     "demo": "pnpm --filter @dramai/mock-providers demo",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
+    "test": "pnpm -r --no-bail --if-present test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "webui": "pnpm --filter @dramai/webui start",
