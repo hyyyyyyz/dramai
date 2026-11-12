@@ -93,6 +93,7 @@ export function toArtifactReports(
       changes: r.changes,
       staleUpstream: r.staleUpstream,
       file: view.projection.artifacts.get(key)?.file,
+      ...(r.keptAt === undefined ? {} : { keptAt: r.keptAt }),
     })
   }
   return out

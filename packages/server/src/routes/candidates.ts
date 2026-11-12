@@ -15,7 +15,7 @@ export function registerCandidateRoutes(r: RouteRegistry, ctx: ServerContext): v
   const view = (c: EntityCandidate) => ({ ...c, confidenceBand: confidenceBand(c.confidence) })
 
   const requireCandidate = async (id: string): Promise<EntityCandidate> => {
-    const c = must(await ctx.store.candidates.get(id), '候选', id)
+    const c = must(await ctx.store.candidates.get(id), 'candidate', id)
     await requireProject(ctx, c.projectId)
     return c
   }
@@ -47,8 +47,8 @@ export function registerCandidateRoutes(r: RouteRegistry, ctx: ServerContext): v
     await requireProject(ctx, params.projectId)
     let list = await ctx.store.candidates.listByProject(params.projectId)
     if (query.episodeId) {
-      const ep = must(await ctx.store.episodes.get(query.episodeId), '分集', query.episodeId)
-      if (ep.projectId !== params.projectId) throw notFound('分集', query.episodeId)
+      const ep = must(await ctx.store.episodes.get(query.episodeId), 'episode', query.episodeId)
+      if (ep.projectId !== params.projectId) throw notFound('episode', query.episodeId)
       const inEpisode = new Set((await episodeShots(ctx.store, ep.id)).map((s) => s.id))
       list = list.filter((c) => c.shotIds.some((id) => inEpisode.has(id)))
     }

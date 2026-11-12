@@ -119,6 +119,8 @@ export const assetCreate = z.object({
   appearance: z.string().optional(),
   styling: z.string().optional(),
   description: z.string().optional(),
+  /** 声线描述，仅角色（其他类型传了会 400 `VOICE_NOT_ALLOWED`）。 */
+  voiceDescription: z.string().max(500).optional(),
 })
 export const assetUpdate = z.object({
   name: z.string().min(1).max(60).optional(),
@@ -126,6 +128,8 @@ export const assetUpdate = z.object({
   appearance: z.string().nullable().optional(),
   styling: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  /** 声线描述，仅角色；传 null 清除。 */
+  voiceDescription: z.string().max(500).nullable().optional(),
 })
 export const variantWrite = z.object({
   name: z.string().min(1).max(40),
@@ -228,6 +232,14 @@ export const routes = {
     body: 'multipart',
     response: S.project,
   }),
+  /**
+   * 对一件**过期**的产物选“保持现状”：不重新生成，也不再提示，直到它的依据或上游再次变化。
+   * `key` 取自产物清单（如 `shot_video:<id>`）。不是过期状态 → 409 `ARTIFACT_NOT_STALE`。
+   */
+  'artifacts.keep': route('POST', '/api/projects/:projectId/artifacts/keep', {
+    body: z.object({ key: z.string().min(1) }),
+    response: S.artifactReport,
+  }),
   'projects.artifacts': route('GET', '/api/projects/:projectId/artifacts', {
     response: items(S.artifactReport),
   }),
@@ -278,6 +290,8 @@ export const routes = {
     body: z.object({
       title: z.string().min(1).max(120).optional(),
       summary: z.string().nullable().optional(),
+      /** 不用重新拆分，只改记在集上的拆分要求；null 或空字符串 = 清掉。 */
+      breakdownInstructions: z.string().max(1000).nullable().optional(),
     }),
     response: S.episode,
   }),
@@ -287,11 +301,23 @@ export const routes = {
     response: S.project,
   }),
   'episodes.plan': route('POST', '/api/projects/:projectId/episodes/plan', {
-    body: z.object({ targetChars: z.number().int().min(300).max(20000).optional() }),
+    body: z.object({
+      targetChars: z.number().int().min(300).max(20000).optional(),
+      /** 创作者对这一次分集规划的要求（如“每集结尾留悬念”）。只对这一次有效——分集规划按批次追加，不记在项目上。 */
+      instructions: z.string().max(1000).optional(),
+    }),
     response: jobOut,
   }),
   'episodes.breakdown': route('POST', '/api/episodes/:episodeId/breakdown', {
-    body: z.object({ mode: z.enum(['replace', 'append']).optional() }),
+    body: z.object({
+      mode: z.enum(['replace', 'append']).optional(),
+      /**
+       * 创作者对拆分的额外要求（如“重点表现主角的心理变化”“每镜不超过 8 秒”）。记在集上
+       * （`episode.breakdownInstructions`），不传 = 沿用集上记的（重新拆分默认沿用）；
+       * 传空字符串 = 清掉，不再带任何要求。
+       */
+      instructions: z.string().max(1000).optional(),
+    }),
     response: jobOut,
   }),
   'episodes.extractEntities': route('POST', '/api/episodes/:episodeId/entities', {

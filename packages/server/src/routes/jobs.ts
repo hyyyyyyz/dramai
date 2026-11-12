@@ -22,7 +22,7 @@ const MESSAGES: Record<string, string> = {
 
 /** 把队列的失败结果翻成 HTTP：不存在 → 404；状态不允许 → 409（稳定错误码，前端据此给出下一步）。 */
 function fail(jobId: string, result: Failure): never {
-  if (result.reason === 'NOT_FOUND') throw notFound('任务', jobId)
+  if (result.reason === 'NOT_FOUND') throw notFound('job', jobId)
   throw conflict(result.reason, result.message ?? MESSAGES[result.reason] ?? result.reason, {
     jobId,
     ...(result.reason === 'CONFIRM_RECHARGE_REQUIRED' ? { requires: 'confirmRecharge' } : {}),
@@ -58,7 +58,7 @@ export function registerJobRoutes(r: RouteRegistry, ctx: ServerContext): void {
 
   r.handle('jobs.get', async ({ params }) => {
     const job = await ctx.queue.get(params.jobId)
-    if (!job) throw notFound('任务', params.jobId)
+    if (!job) throw notFound('job', params.jobId)
     return jobView(ctx, job)
   })
 

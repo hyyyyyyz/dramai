@@ -53,13 +53,13 @@ export function registerMaterialRoutes(r: RouteRegistry, ctx: ServerContext): vo
 
   r.handle('materials.text', async ({ params }) => {
     const m = await ctx.store.materials.get(params.materialId)
-    if (!m) throw notFound('素材', params.materialId)
+    if (!m) throw notFound('material', params.materialId)
     return { text: m.text }
   })
 
   r.handle('materials.delete', async ({ params }) => {
     const m = await ctx.store.materials.get(params.materialId)
-    if (!m) throw notFound('素材', params.materialId)
+    if (!m) throw notFound('material', params.materialId)
     const episodes = await ctx.store.episodes.listByProject(m.projectId)
     const using = episodes.filter((e) => e.sourceRange?.materialId === m.id)
     if (using.length > 0) {

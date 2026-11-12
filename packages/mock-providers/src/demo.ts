@@ -7,7 +7,7 @@ import { defaultSleep } from '@dramai/core'
 import { createServer } from '@dramai/server'
 import { FAULT_KINDS } from './config.ts'
 import type { FaultKind, MockConfig, MockKind } from './config.ts'
-import { DEMO_NOTICE, demoProviders, resolveUserPath } from './demo-lib.ts'
+import { DEMO_NOTICE, demoProviders, resolveUserPath, writeDemoCatalog } from './demo-lib.ts'
 import type { DemoLang } from './demo-lib.ts'
 import { startMockProviders } from './server.ts'
 
@@ -121,6 +121,9 @@ const mock = await startMockProviders({
   log: values.verbose ? (line) => console.log(`  mock ▸ ${line}`) : undefined,
 }).catch(fail)
 
+// 演示价格：普通的数据文件，放在演示数据目录的用户覆盖目录里，服务启动时加载。
+await writeDemoCatalog(dataDir)
+
 const server = await createServer({
   dataDir,
   host: '127.0.0.1',
@@ -184,6 +187,7 @@ if (zh) {
   console.log('  这是演示：所有“AI 服务商”都是本机的模拟服务，不会产生任何费用。')
   console.log('  生成的图片、视频、配音都是占位内容（带编号的色块、测试画面、简单音调），')
   console.log('  大模型的分集 / 分镜是本地规则算出来的——只用来走通整条流程，不是真实作品。')
+  console.log('  费用预估里的金额是虚构的演示价格，币种 DMO（不是任何真实货币）。')
 } else {
   console.log('  This is a demo: every "AI provider" is a local simulation. Nothing is charged.')
   console.log('  Images, videos and voice-overs are placeholders (numbered colour blocks, test')

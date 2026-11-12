@@ -65,6 +65,10 @@ async function resolveTarget(store: ServerStore, job: Job, cache: Cache): Promis
       assetKind: asset.kind,
       name: asset.name,
       ...(typeof variantName === 'string' && variantName ? { variantName } : {}),
+      ...(typeof (job.params.target as { editInstruction?: unknown } | undefined)
+        ?.editInstruction === 'string'
+        ? { edit: true }
+        : {}),
     }
   }
   if (job.episodeId) return episodeTarget(job.episodeId)

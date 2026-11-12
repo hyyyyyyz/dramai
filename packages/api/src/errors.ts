@@ -73,6 +73,11 @@ export const ERROR_CODES = {
   UNSAFE_PATH: { status: 400, summary: '文件路径不合法' },
 
   // —— 资产 / 变体 / 时间线 ——
+  SHEET_TO_EDIT_MISSING: {
+    status: 409,
+    summary: '（预检拒绝原因，不是 HTTP 错误）要修改的设定图还没有当前图',
+  },
+  EDIT_INSTRUCTION_EMPTY: { status: 409, summary: '（预检拒绝原因）修改设定图需要一句指令' },
   ASSET_NAME_INVALID: { status: 400, summary: '资产名不合法' },
   NAME_INVALID: { status: 400, summary: '名称不合法' },
   ASSET_IN_USE: {
@@ -97,6 +102,10 @@ export const ERROR_CODES = {
   ALREADY_FINISHED: { status: 409, summary: '任务已经结束' },
   NOT_FAILED: { status: 409, summary: '只有失败的任务才能这样操作' },
   NOTHING_TO_RESUME: { status: 409, summary: '没有可续接的上游任务，请直接重新生成' },
+  ARTIFACT_NOT_STALE: {
+    status: 409,
+    summary: '“保持现状”只对过期的产物；details: { key, status }',
+  },
   NOT_RUNNING: {
     status: 409,
     summary: '“忽略结果”只对运行中的任务：排队中的任务（还没花钱）直接取消',
@@ -125,6 +134,15 @@ export const NOT_FOUND_ENTITIES = [
   'timeline_revision',
   'timeline_clip',
   'media_version',
+  'variant',
+  'material',
+  'job',
+  'provider',
+  'provider_preset',
+  'file',
+  /** 没有这个接口（`id` 是请求路径）。 */
+  'route',
+  'artifact',
 ] as const
 
 export const isErrorCode = (code: string): code is ErrorCode => code in ERROR_CODES

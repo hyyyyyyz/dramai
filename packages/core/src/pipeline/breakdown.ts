@@ -39,6 +39,8 @@ export interface BreakdownOptions {
   mode?: 'replace' | 'append'
   /** 每次 LLM 调用最多带多少字原文，默认 5000。 */
   maxCharsPerCall?: number
+  /** 创作者的额外要求；缺省沿用集上记的 `breakdownInstructions`。 */
+  instructions?: string
   signal?: AbortSignal
 }
 
@@ -201,6 +203,7 @@ export async function breakdownEpisode(
   const assets = await deps.store.assets.listByProject(project.id)
   const assetsBlock = assets.map((a) => `- ${a.name}（${kindLabel(a.kind)}）`).join('\n')
   const style = project.style
+  const userInstructions = (options.instructions ?? episode.breakdownInstructions ?? '').trim()
 
   type SceneDraft = {
     title: string
@@ -241,6 +244,7 @@ export async function breakdownEpisode(
             partLabel: `第 ${i + 1} / ${parts.length} 段`,
             assetsBlock,
             previousBlock,
+            userInstructions,
             charCount: String(chars),
             sourceText: parts[i],
           }),

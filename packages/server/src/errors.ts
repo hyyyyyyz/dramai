@@ -1,6 +1,6 @@
 import type { ApiErrorBody } from '@dramai/api'
 import { DomainError } from '@dramai/core'
-import type { DomainErrorKind } from '@dramai/core'
+import type { DomainErrorKind, NotFoundEntity } from '@dramai/core'
 
 /** 带 HTTP 状态码与稳定错误码的错误；路由处理层统一转成 `{ error: { code, message, details } }`。 */
 export class HttpError extends Error {
@@ -25,8 +25,32 @@ export class HttpError extends Error {
   }
 }
 
-export const notFound = (what: string, id?: string) =>
-  new HttpError(404, 'NOT_FOUND', id ? `${what} 不存在：${id}` : `${what} 不存在`)
+const ENTITY_LABEL: Record<NotFoundEntity, string> = {
+  project: '项目',
+  episode: '分集',
+  scene: '场',
+  shot: '镜头',
+  asset: '资产',
+  candidate: '候选',
+  timeline_revision: '时间线修订',
+  timeline_clip: '时间线片段',
+  media_version: '版本',
+  variant: '衍生形态',
+  material: '素材',
+  job: '任务',
+  provider: '服务商配置',
+  provider_preset: '服务商预设',
+  file: '文件',
+  route: '接口',
+  artifact: '产物',
+}
+
+/**
+ * 找不到。**一律带实体类型和 id**（`details: { entity, id }`），界面据此显示"找不到这个镜头"之类的具体提示；
+ * `message` 只是给人看的兜底文案。
+ */
+export const notFound = (entity: NotFoundEntity, id: string) =>
+  new HttpError(404, 'NOT_FOUND', `${ENTITY_LABEL[entity]}不存在：${id}`, { entity, id })
 export const badRequest = (message: string, details?: unknown) =>
   new HttpError(400, 'BAD_REQUEST', message, details)
 export const conflict = (code: string, message: string, details?: unknown) =>

@@ -167,6 +167,10 @@ function breakdown(messages: ChatMessage[], memory: LlmMemory) {
   const marker = user.indexOf('# 本段原文')
   const source = marker === -1 ? user : user.slice(user.indexOf('\n', marker) + 1)
   const registered = [...user.matchAll(/^- (?:@)?([^（\s\n]+)（/gm)].map((m) => m[1]!)
+  // 创作者的额外要求里最容易照办的一条：“每镜不超过 N 秒”。其余的要求这个替身只是收到、不会理解。
+  const maxShotSeconds = Number(
+    /不超过\s*(\d+)\s*秒/.exec(user.slice(0, marker === -1 ? 0 : marker))?.[1] ?? 12,
+  )
   const names = findEntities(source, [...registered, ...memory.known(project)])
   memory.remember(project, [...names.characters, ...names.locations, ...names.props])
 
@@ -242,7 +246,7 @@ function breakdown(messages: ChatMessage[], memory: LlmMemory) {
         camera_shot: first ? 'LS' : quotes.length > 0 ? (quotes.length > 1 ? 'MS' : 'CU') : 'MLS',
         angle: 'eye_level',
         movement: MOVEMENTS[current.shots.length % MOVEMENTS.length],
-        duration_sec: clamp(Math.round(2 + charCount(chunk) / 14 + spoken / 5), 4, 12),
+        duration_sec: clamp(Math.round(2 + charCount(chunk) / 14 + spoken / 5), 4, maxShotSeconds),
         mood_tags: mood(chunk),
         atmosphere: mood(chunk).join('、') + '的氛围',
         dialogue: quotes,

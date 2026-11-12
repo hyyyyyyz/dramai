@@ -242,6 +242,47 @@ describe('single-target admission (A2)', () => {
   })
 })
 
+describe('voice-over cost follows the narration length (priced per 1k characters)', () => {
+  it('counts the narration characters (whitespace excluded); a model without a price stays honestly unpriced', async () => {
+    const w = await makeWorld()
+    const tts = {
+      id: 'tts',
+      label: 'TTS',
+      kind: 'tts' as const,
+      protocol: 'openai-tts' as const,
+      baseUrl: 'https://x',
+      model: 'tts-priced',
+      enabled: true,
+    }
+    const priced = new (await import('../src/providers/catalog.ts')).ModelRegistry().add({
+      id: 'tts-priced',
+      protocol: 'openai-tts',
+      apiModel: 'tts-priced',
+      displayName: 'tts',
+      capability: (await import('../src/providers/catalog.ts')).defaultCapability('openai-tts'),
+      pricing: [{ currency: 'USD', unit: 'per_1k_chars', amount: 2 }],
+      prompt: { lang: 'zh', negative: 'none' },
+      quirks: [],
+      provenance: 'test',
+    })
+    const text = '一二三 四五 六\n七八九十'
+    await w.ports.store.shots.put({ ...w.shot, narration: text })
+    const ctx = { ...(await ctxFor(w)), models: priced }
+    const v = await evaluateTarget(ctx, {
+      target: { kind: 'shot_audio', shotId: w.shot.id },
+      provider: tts,
+      confirmUnverified: true,
+    })
+    expect(v.estimate).toMatchObject({ priced: true, currency: 'USD', amount: 0.02 }) // 10 个字 ÷ 1000 × 2
+    const unpriced = await evaluateTarget(await ctxFor(w), {
+      target: { kind: 'shot_audio', shotId: w.shot.id },
+      provider: { ...tts, model: 'tts-1' },
+      confirmUnverified: true,
+    })
+    expect(unpriced.estimate).toMatchObject({ priced: false })
+  })
+})
+
 describe('video and audio targets', () => {
   it('blocks video without a start frame, accepts with one', async () => {
     const w = await makeWorld()

@@ -1,0 +1,8 @@
+---
+id: assets.sheet.edit
+locale: zh
+schemaVersion: 1
+description: 用一句话修改现有设定图：以当前图为唯一参考的图片编辑
+---
+以参考图为准，只做下面这处修改，其余一律保持不变（主体的样子、画风、构图、背景、画幅）：
+{{instruction}}

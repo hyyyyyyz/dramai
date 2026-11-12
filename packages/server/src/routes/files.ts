@@ -83,7 +83,7 @@ export function registerFileRoutes(app: Hono, ctx: ServerContext): void {
 
 async function episodeOr404(ctx: ServerContext, id: string) {
   const ep = await ctx.store.episodes.get(id)
-  if (!ep) throw notFound('分集', id)
+  if (!ep) throw notFound('episode', id)
   return ep
 }
 
@@ -118,7 +118,7 @@ export async function serveProjectFile(
     if (err instanceof UnsafePathError) throw new HttpError(400, 'UNSAFE_PATH', '路径不合法')
     throw err
   }
-  if (!info) throw notFound('文件', path)
+  if (!info) throw notFound('file', path)
 
   const mime = mimeOf(path)
   const inline = isInlineMedia(mime) && !options.downloadName

@@ -30,7 +30,7 @@ export function registerVariantRoutes(r: RouteRegistry, ctx: ServerContext): voi
 
   const findVariant = (asset: Asset, name: string): AssetVariant => {
     const v = asset.variants.find((x) => x.name === name)
-    if (!v) throw notFound('衍生形态', name)
+    if (!v) throw notFound('variant', name)
     return v
   }
 

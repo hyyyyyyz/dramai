@@ -36,6 +36,7 @@ describe('prompt data files', () => {
         'lastChapter',
         'hasMore',
         'previousBlock',
+        'userInstructions',
         'tocBlock',
       ],
       'shots.breakdown.system': [
@@ -52,6 +53,7 @@ describe('prompt data files', () => {
         'partLabel',
         'assetsBlock',
         'previousBlock',
+        'userInstructions',
         'charCount',
         'sourceText',
       ],
@@ -64,6 +66,7 @@ describe('prompt data files', () => {
       'shots.frames.system': ['aspectRatio', 'styleLabel'],
       'shots.frames.user': ['styleKeywords', 'shotsBlock'],
       'assets.variant.edit': ['instruction', 'hasCostumeRef'],
+      'assets.sheet.edit': ['instruction'],
       'storyboard.system': ['aspectRatio', 'aspectHint', 'styleKeywords'],
       'storyboard.user': [
         'projectName',

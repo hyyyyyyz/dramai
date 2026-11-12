@@ -21,7 +21,16 @@ import type { ProjectProjection } from './projection.ts'
  */
 
 export type GenerationTarget =
-  | { kind: 'asset_sheet'; assetId: string; variantName?: string }
+  | {
+      kind: 'asset_sheet'
+      assetId: string
+      variantName?: string
+      /**
+       * 有它就是“用一句话修改现有设定图”（图片编辑），不是重新生成：以这张设定图（本体或指定形态）的
+       * 当前版本为唯一参考图、这句增量指令为唯一提示词；新图成为当前版本，旧图留在版本历史。
+       */
+      editInstruction?: string
+    }
   | { kind: 'shot_image'; shotId: string }
   | { kind: 'shot_video'; shotId: string }
   | { kind: 'shot_audio'; shotId: string }
@@ -45,6 +54,8 @@ export function artifactKeyOf(target: GenerationTarget): string {
 }
 
 export type GapCode =
+  | 'SHEET_TO_EDIT_MISSING'
+  | 'EDIT_INSTRUCTION_EMPTY'
   | 'TARGET_NOT_FOUND'
   | 'ASSET_NOT_REGISTERED'
   | 'ASSET_SHEET_MISSING'
@@ -171,6 +182,49 @@ function sheetRef(
   }
 }
 
+/** 用一句话改现有设定图：唯一参考 = 这个槽的当前图，唯一提示词 = 指令。没有图可改 / 没写指令就拦在入队前。 */
+function resolveSheetEdit(
+  asset: Asset,
+  target: Extract<GenerationTarget, { kind: 'asset_sheet' }>,
+  base: Base,
+): ResolvedInputs {
+  const instruction = (target.editInstruction ?? '').trim()
+  if (!instruction) {
+    base.gaps.push({
+      code: 'EDIT_INSTRUCTION_EMPTY',
+      severity: 'block',
+      message: 'an edit needs an instruction (what to change)',
+      assetId: asset.id,
+    })
+  }
+  const variant = target.variantName
+    ? asset.variants.find((v) => v.name === target.variantName)
+    : undefined
+  if (target.variantName && !variant) {
+    base.gaps.push({
+      code: 'VARIANT_NOT_FOUND',
+      severity: 'block',
+      message: `variant "${target.variantName}" not found on "${asset.name}"`,
+      assetId: asset.id,
+    })
+    return base
+  }
+  base.prompt = instruction
+  const role = asset.kind === 'location' ? 'location' : asset.kind === 'prop' ? 'prop' : 'character'
+  const ref = sheetRef(role, asset, variant, 1)
+  if (!ref) {
+    base.gaps.push({
+      code: 'SHEET_TO_EDIT_MISSING',
+      severity: 'block',
+      message: `"${asset.name}${variant ? `/${variant.name}` : ''}" has no sheet image to edit`,
+      assetId: asset.id,
+    })
+  } else {
+    base.references.push(ref)
+  }
+  return base
+}
+
 function resolveAssetSheet(
   p: ProjectProjection,
   target: Extract<GenerationTarget, { kind: 'asset_sheet' }>,
@@ -178,6 +232,8 @@ function resolveAssetSheet(
 ): ResolvedInputs {
   const asset = p.assets.get(target.assetId)
   if (!asset) return notFound(base, `asset ${target.assetId}`)
+
+  if (target.editInstruction !== undefined) return resolveSheetEdit(asset, target, base)
 
   const parts = [asset.appearance, asset.styling, asset.description].filter(Boolean)
   base.prompt = parts.join('\n')

@@ -47,6 +47,7 @@ import { authFor } from './deps.ts'
 import type { PipelineDeps } from './deps.ts'
 import {
   buildSheetPrompt,
+  buildSheetEditPrompt,
   buildVariantEditPrompt,
   chooseSheetLayout,
   sheetAspect,
@@ -425,7 +426,24 @@ async function doImageJob(
     negative = compiled.negative
   } else {
     asset = projection.assets.get(target.assetId)!
-    if (target.variantName) {
+    if (target.editInstruction !== undefined) {
+      // 用一句话改现有设定图：以当前图为唯一参考、增量指令为唯一提示词；画幅沿用当前图。
+      source = 'image_edit'
+      text = compileImagePrompt(
+        { subject: buildSheetEditPrompt(deps.catalog.prompts, inputs.prompt) },
+        { dialect },
+      ).text
+      const current = readImageSize(
+        await deps.files.get(project.id, inputs.references[0].file.path),
+      )
+      aspect = current
+        ? current.height > current.width
+          ? '9:16'
+          : current.width > current.height
+            ? '16:9'
+            : '1:1'
+        : '1:1'
+    } else if (target.variantName) {
       source = 'image_edit'
       aspect = '1:1'
       const hasCostume = inputs.references.some((r) => r.role === 'costume')

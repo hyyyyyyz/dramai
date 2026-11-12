@@ -14,5 +14,10 @@ description: 分场与分镜拆解的用户消息
 {{previousBlock}}
 {{/if}}
 
+{{#if userInstructions}}
+# 创作者的额外要求（优先满足；输出格式和上面的规则不变）
+{{userInstructions}}
+{{/if}}
+
 # 本段原文（约 {{charCount}} 字）
 {{sourceText}}

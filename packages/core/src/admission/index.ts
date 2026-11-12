@@ -285,6 +285,11 @@ export async function evaluateTarget(
     count: sheetCount,
     seconds: inputs.durationSec,
     resolution,
+    // 配音按字数计价：旁白的字数（不含空白），和文本步骤的估算同一口径。
+    chars:
+      item.target.kind === 'shot_audio'
+        ? [...(inputs.narration ?? '')].filter((c) => !/\s/u.test(c)).length
+        : undefined,
   })
 
   const pending = unverified.filter((u) => !u.confirmed)
@@ -412,7 +417,13 @@ export function buildJobForTarget(
       resolution: item.resolution,
     }).slice(0, 16)}`,
     // 同一镜头同一时刻只能有一个在途视频任务：在原子入队路径上成立，而不只是靠投影里的检查。
-    exclusiveKey: target.kind === 'shot_video' ? `shot_video:${target.shotId}` : undefined,
+    exclusiveKey:
+      target.kind === 'shot_video'
+        ? `shot_video:${target.shotId}`
+        : // 同一张设定图同一时刻只做一次修改：两次修改都基于同一张当前图，同时跑会互相盖掉。
+          target.kind === 'asset_sheet' && target.editInstruction !== undefined
+          ? `asset_sheet_edit:${target.assetId}${target.variantName ? `/${target.variantName}` : ''}`
+          : undefined,
     providerLabel: provider.label,
     providerSnapshot: {
       providerConfigId: provider.id,

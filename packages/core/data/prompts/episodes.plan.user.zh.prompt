@@ -12,5 +12,10 @@ description: 分集规划的用户消息
 {{previousBlock}}
 {{/if}}
 
+{{#if userInstructions}}
+# 创作者的要求（优先满足；输出格式不变）
+{{userInstructions}}
+{{/if}}
+
 # 章节目录
 {{tocBlock}}

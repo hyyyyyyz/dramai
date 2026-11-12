@@ -25,6 +25,7 @@ export const DOMAIN_ERROR_CODES = {
   EPISODE_HAS_NO_SOURCE: 'precondition',
   ARTIFACT_INPUTS_BLOCKED: 'precondition',
   ARTIFACT_UPSTREAM_MISSING: 'precondition',
+  ARTIFACT_NOT_STALE: 'precondition',
 } as const satisfies Record<string, DomainErrorKind>
 
 export type DomainErrorCode = keyof typeof DOMAIN_ERROR_CODES
@@ -40,6 +41,14 @@ export type NotFoundEntity =
   | 'timeline_revision'
   | 'timeline_clip'
   | 'media_version'
+  | 'variant'
+  | 'material'
+  | 'job'
+  | 'provider'
+  | 'provider_preset'
+  | 'file'
+  | 'route'
+  | 'artifact'
 
 export class DomainError extends Error {
   readonly code: DomainErrorCode

@@ -14,7 +14,7 @@ import type {
   StaleChange,
   StaleReason,
 } from './types.ts'
-import { DomainError } from '../errors.ts'
+import { DomainError, notFoundError } from '../errors.ts'
 
 /**
  * 产物时效（A18）。
@@ -392,9 +392,46 @@ export function evaluateArtifacts(
       reason: ev.reason,
       changes: ev.changes,
       staleUpstream,
+      ...(ev.status === 'current' && records.get(key)?.keptAt !== undefined
+        ? { keptAt: records.get(key)!.keptAt }
+        : {}),
     })
   }
   return out
+}
+
+/**
+ * “保持现状”：用户看过过期提示，决定这件产物不用重新生成。把记录按**当前**的依据与上游重新对齐
+ * （文件、版本不变），于是它显示为当前、不再提示；之后它的依据或上游再次变化，会照常重新过期。
+ * 只对过期的产物有意义；下游不受影响（产物文件没变，下游看的是文件内容的哈希）。
+ */
+export function keepAsIs(
+  projection: ProjectProjection,
+  key: ArtifactKey,
+  now: number,
+): ArtifactRecord {
+  const rec = projection.artifacts.get(key)
+  const report = evaluateArtifacts(projection).get(key)
+  const exp = buildExpectations(projection).get(key)
+  if (!exp || !report) throw notFoundError('artifact', key)
+  if (!rec || report.status !== 'stale') {
+    throw new DomainError(
+      'ARTIFACT_NOT_STALE',
+      `artifact ${key} is ${report.status}, only a stale artifact can be kept as is`,
+      { details: { key, status: report.status } },
+    )
+  }
+  const fresh = buildRecord({
+    projectId: rec.projectId,
+    expectation: exp,
+    upstreamRecords: projection.artifacts,
+    file: rec.file,
+    versionId: rec.versionId,
+    origin: rec.origin,
+    facts: rec.facts,
+    now: rec.createdAt,
+  })
+  return { ...fresh, keptAt: now, keptFromDigest: rec.basisDigest }
 }
 
 /** 产物键 → 人话名称：资产名 / 变体名 / 镜头标题（没有标题时用“镜头 N”）。 */

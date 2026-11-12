@@ -123,6 +123,8 @@ export const episode = z.object({
     })
     .optional(),
   status: episodeStatus,
+  /** 创作者给分镜拆解的额外要求；重新拆分时默认沿用。 */
+  breakdownInstructions: z.string().optional(),
   sceneOrder: z.array(z.string()),
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -289,6 +291,8 @@ export const asset = z.object({
   sheetViews: z.object({ side: mediaSlot.optional(), back: mediaSlot.optional() }).optional(),
   originals: z.array(fileRef),
   voiceRef: fileRef.optional(),
+  /** 角色的声线文字描述（只有角色有；创作备注，不参与生成依据）。 */
+  voiceDescription: z.string().optional(),
   variants: z.array(assetVariant),
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -444,6 +448,8 @@ export const jobTarget = z.discriminatedUnion('kind', [
     name: z.string(),
     /** 衍生形态的设定图 / 编辑任务：形态名。 */
     variantName: z.string().optional(),
+    /** 是“用一句话修改现有设定图”的任务（不是重新生成）。 */
+    edit: z.boolean().optional(),
   }),
   z.object({
     kind: z.literal('episode'),
@@ -521,6 +527,11 @@ export const artifactReport = z.object({
   staleUpstream: z.array(z.string()),
   /** 产物文件（有记录时），用于下载 / 显示大小。 */
   file: fileRef.optional(),
+  /**
+   * 状态是 current，但是因为用户选了“保持现状”（时间）。界面可以标出“已按现状保留”；
+   * 它的依据或上游再次变化时变回 stale，这个字段随之消失。
+   */
+  keptAt: z.number().optional(),
 })
 export type ArtifactReport = z.infer<typeof artifactReport>
 
@@ -843,6 +854,13 @@ export const targetSpec = z.discriminatedUnion('kind', [
     kind: z.literal('asset_sheet'),
     assetId: z.string(),
     variantName: z.string().optional(),
+    /**
+     * 有它 = 用一句话修改现有设定图（本体，或 `variantName` 指定的形态）：以当前图为唯一参考、
+     * 这句增量指令为唯一提示词；新图成为当前版本，旧图留在版本历史；失败时什么都不改。
+     * 和普通生成走同样的准入 / 预检：没有当前图（`SHEET_TO_EDIT_MISSING`）、没写指令（`EDIT_INSTRUCTION_EMPTY`）、
+     * 模型没有图生图能力（能力检查的拒绝原因）都在入队前就被拦下。
+     */
+    editInstruction: z.string().min(1).max(1000).optional(),
   }),
   z.object({ kind: z.literal('shot_image'), shotId: z.string() }),
   z.object({ kind: z.literal('shot_video'), shotId: z.string() }),

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  keepAsIs,
   buildExpectations,
   buildRecord,
   computeDigest,
@@ -268,6 +269,70 @@ describe('staleness propagation: an upstream change marks downstream stale, noth
     const s = await statuses(w)
     expect(s.of(img(w.shot))).toBe('stale')
     expect(s.of(vid(w.shot))).toBe('stale')
+  })
+})
+
+describe('keeping a stale artifact as it is ("保持现状")', () => {
+  const status = async (w: World, key: ArtifactKey) => evaluateArtifacts(await w.reload()).get(key)
+  const putRecord = async (w: World, rec: Awaited<ReturnType<typeof keepAsIs>>) =>
+    w.ports.store.artifacts.put(rec)
+
+  it("re-aligns the record to today's basis: it shows as current (marked kept), and goes stale again when the basis changes again", async () => {
+    const w = await makeWorld()
+    await produceEverything(w)
+    const shot = (await w.ports.store.shots.get(w.shot.id))!
+    await w.ports.store.shots.put({
+      ...shot,
+      scriptExcerpt: shot.scriptExcerpt + '（改了一句）',
+      prompts: { ...shot.prompts, video: '改过的视频提示词' },
+    })
+    expect((await status(w, vid(w.shot)))?.status).toBe('stale')
+    const before = (await w.ports.store.artifacts.get(w.project.id, vid(w.shot)))!
+
+    const kept = await keepAsIs(await w.reload(), vid(w.shot), 777)
+    expect(kept).toMatchObject({ keptAt: 777, keptFromDigest: before.basisDigest })
+    expect(kept.file).toEqual(before.file) // 文件、版本不动
+    expect(kept.versionId).toBe(before.versionId)
+    expect(kept.createdAt).toBe(before.createdAt)
+    await putRecord(w, kept)
+    expect(await status(w, vid(w.shot))).toMatchObject({ status: 'current', keptAt: 777 })
+
+    // 依据再变一次：重新过期，“保持”的标记随之消失
+    const again = (await w.ports.store.shots.get(w.shot.id))!
+    await w.ports.store.shots.put({ ...again, prompts: { ...again.prompts, video: '又改了一次' } })
+    const report = await status(w, vid(w.shot))
+    expect(report?.status).toBe('stale')
+    expect(report?.keptAt).toBeUndefined()
+  })
+
+  it('only a stale artifact can be kept; others are refused with ARTIFACT_NOT_STALE or NOT_FOUND', async () => {
+    const w = await makeWorld()
+    await produceEverything(w)
+    await expect(
+      Promise.resolve().then(async () => keepAsIs(await w.reload(), vid(w.shot), 1)),
+    ).rejects.toMatchObject({ code: 'ARTIFACT_NOT_STALE', details: { status: 'current' } })
+    await expect(
+      Promise.resolve().then(async () => keepAsIs(await w.reload(), 'shot_video:nope', 1)),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
+
+  it('keeping an upstream artifact does not disturb downstream (the file did not change)', async () => {
+    const w = await makeWorld()
+    await produceEverything(w)
+    const sheetKey = Object.keys(Object.fromEntries(evaluateArtifacts(await w.reload()))).find(
+      (k) => k.startsWith('asset_sheet:'),
+    )!
+    const asset = [...(await w.reload()).assets.values()][0]!
+    await w.ports.store.assets.put({ ...asset, appearance: '换了一种说法' })
+    const stale = evaluateArtifacts(await w.reload())
+    expect(stale.get(sheetKey)?.status).toBe('stale')
+    await putRecord(w, await keepAsIs(await w.reload(), sheetKey, 5))
+    const after = evaluateArtifacts(await w.reload())
+    expect(after.get(sheetKey)?.status).toBe('current')
+    // 下游依赖的是设定图文件的哈希，文件没变：下游不会因为“保持现状”而过期或翻转
+    for (const [k, r] of after)
+      if (k.startsWith('shot_video:') || k.startsWith('shot_audio:'))
+        expect(r.status, k).toBe(stale.get(k)?.status)
   })
 })
 

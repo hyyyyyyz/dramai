@@ -97,6 +97,11 @@ export interface Episode {
   /** 对应原文的章节/行范围，可空。 */
   sourceRange?: { materialId?: string; startLine?: number; endLine?: number }
   status: EpisodeStatus
+  /**
+   * 创作者给分镜拆解的额外要求（如“重点表现主角的心理变化”“每镜不超过 8 秒”）。
+   * 记在集上：重新拆分时默认沿用，直到被改掉或清空。
+   */
+  breakdownInstructions?: string
   sceneOrder: string[]
   createdAt: number
   updatedAt: number

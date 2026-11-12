@@ -115,6 +115,43 @@ WebUI / 容器场景没有系统加密可用，靠文件权限和数据目录隔
 受影响的接口：`styles.list`、`presets.list`、`providers.*`、`projects.*`（`style.label` / `style.description`）、`system.get`（`demo.notice`）。
 没有翻译的：错误响应里的 `message`（前端按 `code` 展示自己的文案）、ffmpeg 缺失说明（`system.get.ffmpeg.missing`）。
 
+## 找不到（`NOT_FOUND`）一律带实体
+
+所有 404 `NOT_FOUND` 的 `details` 都是 `{ entity, id }`（`entity` 取值见 `@dramai/api` 的 `NOT_FOUND_ENTITIES`：`project / episode / scene / shot / asset / candidate / material / job / provider / provider_preset / variant / media_version / timeline_revision / timeline_clip / artifact / file / route`），界面据此显示“找不到这个镜头”之类的具体提示。有一条测试把所有带路径参数的接口用假 id 扫一遍，确保没有漏的。`route` 表示请求的路径本身不存在（`id` 是 `METHOD /path`）。
+
+## 拆分镜头 / 规划分集时的创作者要求
+
+- `episodes.breakdown` 的 `instructions`（≤1000 字，如“重点表现主角的心理变化”“每镜不超过 8 秒”）：进提示词的“创作者的额外要求”一节，并**记在集上**（`episode.breakdownInstructions`）。不传 = 沿用集上记的（重新拆分默认沿用）；传空字符串 = 清掉，这一次也不带。
+- `episodes.update` 的 `breakdownInstructions` 可以只改这条要求而不重新拆分（`null` / 空 = 清掉）。
+- 入队失败（比如没有可用的大模型）整个请求回滚，不会留下一条没用上的要求。
+- `episodes.plan` 也接受 `instructions`（如“每集结尾留悬念”），**只对这一次有效、不记下来**：分集规划是按批次追加的，只处理还没规划的章节，一条持久的要求没有明确的作用对象。
+
+## 镜头提示词：按部分补缺
+
+`episodes.generatePrompts` 的 `onlyMissing` 按提示词的各部分分别判断：首帧（`prompts.keyFrame`）缺不缺、视频（`prompts.video`）缺不缺（尾帧是可选的，不算缺）。只缺视频提示词的镜头也会被补，**只写缺的那部分**，已有的（尤其是用户手改过的）原样保留。任务结果里 `shots` 是写了几个镜头、`filled: { image, video }` 是各部分补了几处。不带 `onlyMissing` 才整集重写。
+
+## 用一句话修改设定图
+
+`generate.preflight` / `generate.submit` 的目标 `asset_sheet` 带 `editInstruction`（可再加 `variantName` 改某个形态的图）= 图片编辑，不是重新生成：
+
+- **以这个槽的当前图为唯一参考图、这句增量指令为唯一提示词**（不再带资产描述、画风、版式）；画幅沿用当前图；
+- 新图成为当前版本（`source: 'image_edit'`），旧图留在版本历史；失败时什么都不改（落库在最后一步的同一个事务里）；
+- 走和普通生成一样的准入 / 预检（只读预检、费用估算、能力核对）：没有当前图 → 预检原因 `SHEET_TO_EDIT_MISSING`；指令是空白 → `EDIT_INSTRUCTION_EMPTY`；模型没有图生图（或参考图）能力 → 能力检查给出的拒绝原因——都在入队前被拦下，什么都不会入队；
+- 同一张设定图同一时刻只能有一个在途的修改（互斥键），两次修改都基于同一张当前图，同时跑会互相盖掉；
+- 任务的 `target` 是 `{ kind: 'asset', …, edit: true }`，任务面板能区分“修改”和“生成”；可以被“忽略结果”。
+
+## 过期产物“保持现状”
+
+`artifacts.keep`（`{ key }`，`key` 取自产物清单如 `shot_video:<id>`）：用户看过过期提示，决定这件产物不用重新生成。服务端把它的记录按**当前**的依据与上游重新对齐（文件、版本不变）：它显示为 current，`keptAt` 标出“已按现状保留”，不再提示；之后它的依据或上游**再次变化**，会照常重新过期（`keptAt` 随之消失）。状态存在服务端（换浏览器也在）。不是过期状态 → 409 `ARTIFACT_NOT_STALE`（`details.status` 是当前状态）；`key` 不存在 → 404 `NOT_FOUND`（`entity: 'artifact'`）。下游不受影响（产物文件没变，下游看的是文件内容的哈希）。重新生成、或手动选用某个版本，会照常换掉这条记录。
+
+## 角色的声线描述
+
+角色资产多了 `voiceDescription`（文字描述，≤500 字，如“低沉沙哑的中年男声，语速慢”），和音色参考音频（`voiceRef`）并列。`assets.create` / `assets.update` 可写（`null` / 空白 = 清掉）；非角色写它 → 400 `VOICE_NOT_ALLOWED`。它只是创作备注，**不参与任何生成依据**（改它不会让任何产物过期）。
+
+## 把镜头移到另一个场
+
+`shots.move`（`{ toSceneId, index? }`）把镜头移到另一个场——也可以是同一项目里**另一集**的场；`index` 缺省 / 超界 = 放到最后；镜头保持自己的 id、编号和全部产物；来源场和目标场的顺序、两边的集状态一并更新。`shots.reorder` 只在**同一个场内**调整顺序（`order` 必须恰好是这个场现有的全部镜头），传了别的场的镜头会 400，错误里提示用 `shots.move`（`details.hint`）。
+
 ## 错误
 
 响应统一是 `{ error: { code, message, details? } }`。**前端按 `code` 分支，不要按 `message`**。
@@ -152,6 +189,7 @@ core 的业务错误是 `DomainError`（`code` + `kind`：not_found / conflict /
 | DELETE | `/api/projects/:projectId/purge`                 | `projects.purge`                         |
 | POST   | `/api/projects/:projectId/style-reference`       | `projects.setStyleReference` (multipart) |
 | GET    | `/api/projects/:projectId/artifacts`             | `projects.artifacts`                     |
+| POST   | `/api/projects/:projectId/artifacts/keep`        | `artifacts.keep`                         |
 | GET    | `/api/projects/:projectId/materials`             | `materials.list`                         |
 | POST   | `/api/projects/:projectId/materials`             | `materials.upload` (multipart)           |
 | GET    | `/api/materials/:materialId/text`                | `materials.text`                         |

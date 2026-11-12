@@ -64,7 +64,7 @@ export class ProviderService {
 
   async require(id: string): Promise<ProviderConfig> {
     const cfg = await this.d.store.providers.get(id)
-    if (!cfg) throw notFound('服务商配置', id)
+    if (!cfg) throw notFound('provider', id)
     return cfg
   }
 
@@ -87,7 +87,7 @@ export class ProviderService {
 
   async createFromPreset(presetId: string, options: { apiKey?: string; label?: string }) {
     const preset = PROVIDER_PRESETS.find((p) => p.id === presetId)
-    if (!preset) throw notFound('预设', presetId)
+    if (!preset) throw notFound('provider_preset', presetId)
     const id = this.d.ids.next('prov')
     const cfg = configFromPreset(preset, {
       id,

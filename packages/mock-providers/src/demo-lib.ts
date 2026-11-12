@@ -1,4 +1,7 @@
-import { isAbsolute, resolve } from 'node:path'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { isAbsolute, join, resolve } from 'node:path'
+import { loadCatalog } from '@dramai/core'
+import type { ModelCapability } from '@dramai/core'
 
 /**
  * 用户在命令行里写的相对路径，按**用户执行命令时所在的目录**解析。
@@ -83,3 +86,91 @@ export const DEMO_NOTICE = {
   zh: '演示模式：服务商是本机的模拟服务，不会产生任何费用，生成的是占位内容（不是真实作品）。',
   en: 'Demo mode: the providers are local simulations. Nothing is charged, and the generated content is placeholder, not real work.',
 } as const
+
+// === 演示价格 ===
+
+/** 演示价格用的币种：`DMO` 不是任何真实货币（三个字母，Intl 格式化不会报错），一看就知道是演示。 */
+export const DEMO_CURRENCY = 'DMO'
+export const DEMO_PRICE_NOTE =
+  '演示价格（虚构，不是真实报价）· Demo price (fictional, not a real quote)'
+
+interface DemoPrice {
+  currency: string
+  unit: 'per_image' | 'per_second' | 'per_call' | 'per_1k_chars'
+  amount: number
+  dimensions?: Record<string, string>
+  range?: [number, number]
+  note: string
+}
+
+function demoPrices(def: DemoProviderDef, capability: ModelCapability): DemoPrice[] {
+  const price = (
+    amount: number,
+    extra: Partial<DemoPrice> = {},
+    unit: DemoPrice['unit'],
+  ): DemoPrice => ({
+    currency: DEMO_CURRENCY,
+    unit,
+    amount,
+    note: DEMO_PRICE_NOTE,
+    ...extra,
+  })
+  switch (def.kind) {
+    case 'llm':
+      return [price(0.02, {}, 'per_1k_chars')]
+    case 'tts':
+      return [price(0.15, {}, 'per_1k_chars')]
+    case 'image':
+      // 一个带区间的（界面要能显示“约 / 区间”），一个单价的。
+      return def.protocol === 'gemini-image'
+        ? [price(0.4, { range: [0.3, 0.5] }, 'per_image')]
+        : [price(0.1, {}, 'per_image')]
+    case 'video': {
+      // 按分辨率档位计价（档位取自模型自己声明的），再给一个不分档的兜底，任何写法的分辨率都有价。
+      const base = def.protocol === 'volcengine-video' ? 0.6 : 0.3
+      const tiers = capability.resolutions.value?.filter((r) => r !== 'none') ?? []
+      return [
+        ...tiers.map((resolution, i) =>
+          price(
+            Math.round(base * (1 + i * 0.6) * 100) / 100,
+            { dimensions: { resolution } },
+            'per_second',
+          ),
+        ),
+        price(base, {}, 'per_second'),
+      ]
+    }
+  }
+}
+
+/** 演示用的模型画像：和真实画像的能力一样，只把价目换成演示价格，并在数据里明确标出（价目的 note、provenance、名称）。 */
+export function demoModelProfiles(): unknown[] {
+  const registry = loadCatalog().models
+  return demoProviders('en').map((def) => {
+    const found = registry.lookup({ protocol: def.protocol, model: def.model })
+    const profile = found.profile
+    return {
+      id: profile?.id ?? def.model,
+      protocol: def.protocol,
+      apiModel: def.model,
+      displayName: `${profile?.displayName ?? def.model} · demo prices`,
+      capability: found.capability,
+      pricing: demoPrices(def, found.capability),
+      prompt: profile?.prompt ?? { lang: 'zh', negative: 'inline' },
+      quirks: [...(profile?.quirks ?? []), 'DEMO PRICES: fictional, in the made-up currency DMO.'],
+      provenance: `DEMO PRICES — fictional, invented for the demo (currency ${DEMO_CURRENCY}); capability data: ${profile?.provenance ?? 'conservative defaults, no model profile'}`,
+    }
+  })
+}
+
+/**
+ * 把演示价格写进数据目录的用户覆盖目录（`<dataDir>/catalog/models/`），服务启动时按"同型号后者覆盖前者"加载。
+ * 这是演示数据目录里的普通数据文件，服务端没有任何演示价格的特殊分支。
+ */
+export async function writeDemoCatalog(dataDir: string): Promise<string> {
+  const dir = join(dataDir, 'catalog', 'models')
+  await mkdir(dir, { recursive: true })
+  const file = join(dir, 'demo-prices.json')
+  await writeFile(file, JSON.stringify({ schemaVersion: 1, models: demoModelProfiles() }, null, 2))
+  return file
+}

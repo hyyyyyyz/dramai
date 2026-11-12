@@ -69,6 +69,8 @@ export interface FramesResult {
   llmCalls: number
   /** LLM 漏掉的镜头 id。 */
   missing: string[]
+  /** 实际写了几个镜头的哪部分（onlyMissing 时只补缺的那部分）。 */
+  filled: { image: number; video: number }
 }
 
 const nz = (s: string | undefined) => (s && s.trim() ? s.trim() : undefined)
@@ -112,6 +114,14 @@ function toVideoSpec(
 
 const NEUTRAL = { lang: 'zh', negative: 'none' } as const
 
+/** 一个镜头缺哪些提示词部分：首帧图（`image`）、视频（`video`）。尾帧是可选的（变化小的镜头没有），不算缺。 */
+export function missingPromptParts(shot: Pick<Shot, 'prompts'>): Array<'image' | 'video'> {
+  const out: Array<'image' | 'video'> = []
+  if (!shot.prompts.keyFrame?.trim()) out.push('image')
+  if (!shot.prompts.video?.trim()) out.push('video')
+  return out
+}
+
 export async function generateShotPrompts(
   deps: PipelineDeps,
   episodeId: string,
@@ -127,10 +137,13 @@ export async function generateShotPrompts(
     name: a.name,
     aliases: a.aliases,
   }))
-  const targets = all.filter((s) => !options.onlyMissing || !s.prompts.keyFrame)
+  // 按提示词的各个部分分别判断缺不缺：只缺视频提示词的镜头也要补；补的时候只写缺的那部分，
+  // 已有的（尤其是用户手改过的）原样保留。
+  const targets = all.filter((s) => !options.onlyMissing || missingPromptParts(s).length > 0)
   const size = options.batchSize ?? 5
   const updated: Shot[] = []
   const missing: string[] = []
+  const filled = { image: 0, video: 0 }
   let llmCalls = 0
 
   for (let start = 0; start < targets.length; start += size) {
@@ -174,20 +187,37 @@ export async function generateShotPrompts(
       const mag = (['small', 'medium', 'large'] as const).find(
         (m) => m === res.change_magnitude?.toLowerCase(),
       )
-      const spec: ShotPromptSpec = { image, video, changeMagnitude: mag }
       const first = compileImagePrompt(image, { dialect: NEUTRAL }).text
       const last = res.last_frame
         ? compileImagePrompt(toImageSpec(res.last_frame, mentionAssets), { dialect: NEUTRAL }).text
         : undefined
+      // 只补缺的部分：整集重写（没开 onlyMissing）才全部覆盖。
+      const parts = options.onlyMissing ? missingPromptParts(shot) : (['image', 'video'] as const)
+      const writeImage = parts.includes('image')
+      const writeVideo = parts.includes('video')
+      if (writeImage) filled.image++
+      if (writeVideo) filled.video++
       const next: Shot = {
         ...shot,
-        promptSpec: spec,
+        promptSpec: {
+          ...shot.promptSpec,
+          image: writeImage ? image : (shot.promptSpec?.image ?? image),
+          video: writeVideo ? video : (shot.promptSpec?.video ?? video),
+          changeMagnitude:
+            writeImage || !shot.promptSpec?.changeMagnitude ? mag : shot.promptSpec.changeMagnitude,
+        } as ShotPromptSpec,
         prompts: {
           ...shot.prompts,
-          keyFrame: first || undefined,
-          firstFrame: first || undefined,
-          lastFrame: last || undefined,
-          video: compileVideoPrompt(video, { dialect: NEUTRAL }).text || undefined,
+          ...(writeImage
+            ? {
+                keyFrame: first || undefined,
+                firstFrame: first || undefined,
+                lastFrame: last || undefined,
+              }
+            : {}),
+          ...(writeVideo
+            ? { video: compileVideoPrompt(video, { dialect: NEUTRAL }).text || undefined }
+            : {}),
         },
         updatedAt: deps.clock.now(),
       }
@@ -195,7 +225,7 @@ export async function generateShotPrompts(
       updated.push(next)
     }
   }
-  return { updated, llmCalls, missing }
+  return { updated, llmCalls, missing, filled }
 }
 
 async function shotInfo(

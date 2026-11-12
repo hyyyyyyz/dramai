@@ -21,7 +21,7 @@ import { OK, requireProject } from './common.ts'
 
 export async function requireAsset(ctx: ServerContext, id: string): Promise<Asset> {
   const asset = await ctx.store.assets.get(id)
-  if (!asset || asset.deletedAt !== undefined) throw notFound('资产', id)
+  if (!asset || asset.deletedAt !== undefined) throw notFound('asset', id)
   return asset
 }
 
@@ -67,6 +67,16 @@ export function audioKind(name: string, mime: string): { ext: string; mime: stri
  *   上传的图成为当前设定图（版本来源 uploaded），登记为 uploaded 产物，不随描述变化而过期。
  * - `POST /api/assets/:id/voice`：字段 `file`（音频）。角色音色参考。
  */
+/** 声线描述只有角色有（和音色参考音频一样）。空白按没写处理。 */
+function voiceDescriptionOf(kind: string, text: string | undefined): { voiceDescription?: string } {
+  const t = text?.trim()
+  if (!t) return {}
+  if (kind !== 'character') {
+    throw new HttpError(400, 'VOICE_NOT_ALLOWED', '只有角色可以写声线描述')
+  }
+  return { voiceDescription: t }
+}
+
 export function registerAssetCrudRoutes(r: RouteRegistry, ctx: ServerContext): void {
   const touch = (asset: Asset): Asset => ({ ...asset, updatedAt: ctx.clock.now() })
   const notify = (asset: Asset, op: 'created' | 'updated' | 'deleted') =>
@@ -116,6 +126,7 @@ export function registerAssetCrudRoutes(r: RouteRegistry, ctx: ServerContext): v
         aliases: (body.aliases ?? []).map((a) => a.trim()).filter(Boolean),
         appearance: body.appearance,
         styling: body.styling,
+        ...voiceDescriptionOf(body.kind, body.voiceDescription),
       }
       await tx.assets.put(created)
       return created
@@ -144,6 +155,12 @@ export function registerAssetCrudRoutes(r: RouteRegistry, ctx: ServerContext): v
       appearance: orUndef(body.appearance, cur.appearance),
       styling: orUndef(body.styling, cur.styling),
       description: orUndef(body.description, cur.description),
+      ...(body.voiceDescription === undefined
+        ? {}
+        : {
+            voiceDescription: voiceDescriptionOf(cur.kind, body.voiceDescription ?? undefined)
+              .voiceDescription,
+          }),
     })
     await ctx.store.assets.put(next)
     notify(next, 'updated')
@@ -196,7 +213,7 @@ export function registerAssetCrudRoutes(r: RouteRegistry, ctx: ServerContext): v
     const asset = await requireAsset(ctx, params.assetId)
     const variantName = formString(form, 'variantName') || undefined
     if (variantName && !asset.variants.some((v) => v.name === variantName)) {
-      throw notFound('衍生形态', variantName)
+      throw notFound('variant', variantName)
     }
     const file = await formFile(form, 'file')
     const ownerKey = variantName ? `${asset.id}__${variantName}` : asset.id
@@ -229,9 +246,9 @@ export function registerAssetCrudRoutes(r: RouteRegistry, ctx: ServerContext): v
   r.handle('assets.setCurrentSheet', async ({ params, body }) => {
     const asset = await requireAsset(ctx, params.assetId)
     const slot = slotOf(asset, body.variantName)
-    if (!slot) throw notFound('衍生形态', body.variantName)
+    if (!slot) throw notFound('variant', body.variantName ?? params.assetId)
     if (!slot.versions.some((v) => v.id === body.versionId)) {
-      throw notFound('设定图版本', body.versionId)
+      throw notFound('media_version', body.versionId)
     }
     const next = touch(
       body.variantName

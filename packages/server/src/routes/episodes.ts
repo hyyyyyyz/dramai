@@ -8,7 +8,7 @@ import {
 import type { EpisodePlan, Episode, PipelineStep, ProviderConfig, ProviderKind } from '@dramai/core'
 import { allocateNumber, createEpisode, currentVersion } from '@dramai/core'
 import type { ServerContext } from '../context.ts'
-import { badRequest, conflict, HttpError } from '../errors.ts'
+import { badRequest, conflict, HttpError, notFound } from '../errors.ts'
 import type { RouteRegistry } from '../handle.ts'
 import { toPreflight } from '../services/preflight-dto.ts'
 import { loadProjectView, toArtifactReports } from '../services/project-views.ts'
@@ -22,6 +22,15 @@ import {
 } from '../services/structure.ts'
 import { OK, requireProject } from './common.ts'
 
+/** 把创作者的拆分要求记到集上（空 = 清掉）。 */
+function withInstructions(episode: Episode, text: string, now: number): Episode {
+  const t = text.trim()
+  const next: Episode = { ...episode, updatedAt: now }
+  if (t) next.breakdownInstructions = t
+  else delete next.breakdownInstructions
+  return next
+}
+
 export function registerEpisodeRoutes(r: RouteRegistry, ctx: ServerContext): void {
   r.handle('episodes.list', async ({ params }) => {
     await requireProject(ctx, params.projectId)
@@ -34,10 +43,7 @@ export function registerEpisodeRoutes(r: RouteRegistry, ctx: ServerContext): voi
   r.handle('episodes.create', async ({ params, body }) => {
     const project = await requireProject(ctx, params.projectId)
     if (body.beforeEpisodeId && !project.episodeOrder.includes(body.beforeEpisodeId)) {
-      throw new HttpError(404, 'NOT_FOUND', `分集不存在：${body.beforeEpisodeId}`, {
-        entity: 'episode',
-        id: body.beforeEpisodeId,
-      })
+      throw notFound('episode', body.beforeEpisodeId)
     }
     const episode = await ctx.store.transaction(async (tx) => {
       const fresh = (await tx.projects.get(project.id))!
@@ -82,6 +88,11 @@ export function registerEpisodeRoutes(r: RouteRegistry, ctx: ServerContext): voi
     const next: Episode = { ...cur, updatedAt: ctx.clock.now() }
     if (body.title !== undefined) next.title = body.title.trim()
     if (body.summary !== undefined) next.summary = body.summary ?? undefined
+    if (body.breakdownInstructions !== undefined) {
+      const t = (body.breakdownInstructions ?? '').trim()
+      if (t) next.breakdownInstructions = t
+      else delete next.breakdownInstructions
+    }
     await ctx.store.episodes.put(next)
     ctx.bus.changed('episode', { projectId: next.projectId, ids: [next.id], op: 'updated' })
     return next
@@ -146,7 +157,10 @@ export function registerEpisodeRoutes(r: RouteRegistry, ctx: ServerContext): voi
     return step(ctx, {
       operation: 'episodes_plan',
       projectId: params.projectId,
-      params: body.targetChars ? { targetChars: body.targetChars } : {},
+      params: {
+        ...(body.targetChars ? { targetChars: body.targetChars } : {}),
+        ...(body.instructions?.trim() ? { instructions: body.instructions.trim() } : {}),
+      },
     })
   })
 
@@ -165,11 +179,18 @@ export function registerEpisodeRoutes(r: RouteRegistry, ctx: ServerContext): voi
         )
       }
     }
+    // 创作者的要求记在集上：传了就更新（空字符串 = 清掉），没传就沿用上次的。
+    let instructions = episode.breakdownInstructions ?? ''
+    if (body.instructions !== undefined) {
+      instructions = body.instructions.trim()
+      await ctx.store.episodes.put(withInstructions(episode, instructions, ctx.clock.now()))
+      ctx.bus.changed('episode', { projectId: episode.projectId, ids: [episode.id], op: 'updated' })
+    }
     return step(ctx, {
       operation: 'episode_breakdown',
       projectId: episode.projectId,
       episodeId: episode.id,
-      params: { mode },
+      params: { mode, ...(instructions ? { instructions } : {}) },
     })
   })
 

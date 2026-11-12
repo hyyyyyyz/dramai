@@ -90,21 +90,21 @@ export async function episodeStructure(
 
 export async function requireEpisode(ctx: ServerContext, id: string): Promise<Episode> {
   const ep = await ctx.store.episodes.get(id)
-  if (!ep) throw notFound('分集', id)
+  if (!ep) throw notFound('episode', id)
   const project = await ctx.store.projects.get(ep.projectId)
-  if (!project || project.deletedAt !== undefined) throw notFound('分集', id)
+  if (!project || project.deletedAt !== undefined) throw notFound('episode', id)
   return ep
 }
 
 export async function requireScene(ctx: ServerContext, id: string): Promise<Scene> {
   const scene = await ctx.store.scenes.get(id)
-  if (!scene) throw notFound('场', id)
+  if (!scene) throw notFound('scene', id)
   return scene
 }
 
 export async function requireShot(ctx: ServerContext, id: string): Promise<Shot> {
   const shot = await ctx.store.shots.get(id)
-  if (!shot) throw notFound('镜头', id)
+  if (!shot) throw notFound('shot', id)
   return shot
 }
 

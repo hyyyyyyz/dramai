@@ -171,7 +171,10 @@ export function registerShotRoutes(r: RouteRegistry, ctx: ServerContext): void {
   r.handle('shots.reorder', async ({ params, body }) => {
     const scene = await requireScene(ctx, params.sceneId)
     if (!permutationOf(body.order, scene.shotOrder)) {
-      throw badRequest('order 必须恰好包含这一场现有的全部镜头（不多不少、不重复）')
+      throw badRequest(
+        'order 必须恰好包含这一场现有的全部镜头（不多不少、不重复）。要把镜头移到另一个场（或另一集），用 shots.move。',
+        { expected: scene.shotOrder.length, hint: 'shots.move' },
+      )
     }
     const next = { ...scene, shotOrder: body.order, updatedAt: ctx.clock.now() }
     await ctx.store.scenes.put(next)
@@ -217,7 +220,15 @@ export function registerShotRoutes(r: RouteRegistry, ctx: ServerContext): void {
     try {
       switched = setCurrentVersion(slot, body.versionId)
     } catch {
-      throw new HttpError(404, 'UNKNOWN_VERSION', `这个镜头的${slotName}没有版本 ${body.versionId}`)
+      throw new HttpError(
+        404,
+        'UNKNOWN_VERSION',
+        `这个镜头的${slotName}没有版本 ${body.versionId}`,
+        {
+          slot: slotName,
+          versionId: body.versionId,
+        },
+      )
     }
     const version = switched.versions.find((v) => v.id === body.versionId)!
     const next: Shot = { ...shot, [field]: switched, updatedAt: ctx.clock.now() }

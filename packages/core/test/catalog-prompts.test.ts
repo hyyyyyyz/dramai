@@ -93,6 +93,7 @@ describe('prompt library: data files loaded at runtime', () => {
     expect(catalog.prompts.ids()).toEqual([
       'assets.sheet.character',
       'assets.sheet.costume',
+      'assets.sheet.edit',
       'assets.sheet.location',
       'assets.sheet.prop',
       'assets.variant.edit',

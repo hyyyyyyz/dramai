@@ -84,7 +84,12 @@ export function createPipelineHandlers(deps: PipelineDeps): Record<string, JobHa
         ...(job.params as object),
         signal,
       })
-      return { shots: r.updated.length, missing: r.missing.length, llmCalls: r.llmCalls }
+      return {
+        shots: r.updated.length,
+        missing: r.missing.length,
+        llmCalls: r.llmCalls,
+        filled: r.filled,
+      }
     }),
   }
 }

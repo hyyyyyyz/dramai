@@ -76,6 +76,11 @@ export function buildVariantEditPrompt(
   return prompts.render('assets.variant.edit', { instruction, hasCostumeRef })
 }
 
+/** 用一句话改现有设定图（任何类型的资产）：以参考图为准，只做这一处修改。 */
+export function buildSheetEditPrompt(prompts: PromptLibrary, instruction: string): string {
+  return prompts.render('assets.sheet.edit', { instruction })
+}
+
 /** 设定图上限张数的便捷读取：下游模型的参考图上限。 */
 export function consumerRefLimit(cap: ModelCapability): number | undefined {
   return maxRefImagesOf(cap)

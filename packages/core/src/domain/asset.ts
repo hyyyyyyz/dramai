@@ -51,6 +51,11 @@ export interface Asset {
   originals: FileRef[]
   /** 角色音色参考音频（A9 预留，可空）。 */
   voiceRef?: FileRef
+  /**
+   * 角色的声线文字描述（如“低沉沙哑的中年男声，语速慢”）。只是给人看的创作备注，和音色参考音频并列；
+   * 不参与任何生成依据（改它不会让已有产物过期）。只有角色有。
+   */
+  voiceDescription?: string
   variants: AssetVariant[]
   createdAt: number
   updatedAt: number

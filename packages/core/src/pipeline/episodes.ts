@@ -23,6 +23,8 @@ export interface PlanEpisodesOptions {
   maxCharsPerBatch?: number
   /** 一批目录最多带多少章，默认 60。 */
   maxChaptersPerBatch?: number
+  /** 创作者对这一次分集规划的要求（如“每集结尾留悬念”）；只对这一次有效。 */
+  instructions?: string
   signal?: AbortSignal
 }
 
@@ -138,6 +140,7 @@ export async function planEpisodes(
                 lastChapter: String(window[window.length - 1].global),
                 hasMore: hasMore ? '是' : '否',
                 previousBlock: previous.join('\n'),
+                userInstructions: (options.instructions ?? '').trim(),
                 tocBlock: window.map(tocLine).join('\n'),
               }),
             },

@@ -38,6 +38,12 @@ export interface ArtifactRecord {
   origin: 'generated' | 'uploaded'
   facts?: MediaFacts
   createdAt: number
+  /**
+   * 用户对一件过期的产物选了“保持现状”的时间：记录已经按当时的依据重新对齐（所以现在显示为当前），
+   * 直到它的依据或上游再次变化时重新判为过期。`keptFromDigest` 是对齐之前的依据摘要，留作追溯。
+   */
+  keptAt?: number
+  keptFromDigest?: string
 }
 
 /** current：依据一致；stale：依据变了；missing：期望存在但没有记录；blocked：缺必需的上游，无法评估。 */
@@ -78,6 +84,8 @@ export interface ArtifactReport {
   changes: StaleChange[]
   /** 直接上游产物里自身不是 current 的那些——"将受影响"的提示，不改变本产物的状态。 */
   staleUpstream: ArtifactKey[]
+  /** 当前状态是 current，但那是因为用户选了“保持现状”（时间）。上游再变化就不再有这个标记。 */
+  keptAt?: number
 }
 
 export interface ArtifactExpectation {

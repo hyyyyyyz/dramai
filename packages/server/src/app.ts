@@ -33,7 +33,7 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import type { ServerContext, FfmpegState } from './context.ts'
 import { DomainError } from '@dramai/core'
-import { fromDomainError, HttpError } from './errors.ts'
+import { fromDomainError, HttpError, notFound } from './errors.ts'
 import { EnrichingEventSink } from './events/enriching-sink.ts'
 import { EventBus } from './events/event-bus.ts'
 import { RouteRegistry, stubMissing } from './handle.ts'
@@ -334,12 +334,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       logger.error('[http]', c.req.method, c.req.path, err)
       return c.json({ error: { code: 'INTERNAL', message: '服务内部错误' } }, 500)
     })
-    app.notFound((c) =>
-      c.json(
-        { error: { code: 'NOT_FOUND', message: `没有这个接口：${c.req.method} ${c.req.path}` } },
-        404,
-      ),
-    )
+    app.notFound((c) => c.json(notFound('route', `${c.req.method} ${c.req.path}`).toBody(), 404))
 
     // 安全边界：Host → Origin → token。不注册任何 CORS。
     app.use('*', security.hostGuard)

@@ -13,7 +13,7 @@ import {
   undoCandidateLink,
 } from '../src/pipeline/entities.ts'
 import { episodeSourceText, planEpisodes } from '../src/pipeline/episodes.ts'
-import { generateShotPrompts } from '../src/pipeline/frames.ts'
+import { generateShotPrompts, missingPromptParts } from '../src/pipeline/frames.ts'
 import { ingestMaterial } from '../src/pipeline/materials.ts'
 import { renderMentionsPlain } from '../src/prompts/mentions.ts'
 import { HERO, LEAD, PLACE, PROP, locateMedia, makeNovel, makePipelineEnv } from './fakes.ts'
@@ -96,6 +96,23 @@ describe('ingestMaterial', () => {
 })
 
 describe('planEpisodes: source → episode plan (long text, batched)', () => {
+  it("accepts the creator's requirement for this run (and only this run)", async () => {
+    const env = await makePipelineEnv(media!)
+    await ingestMaterial(env.deps, env.projectId, { name: '长篇.txt', bytes: novel(6) })
+    await planEpisodes(env.deps, env.projectId, { instructions: '每集结尾留悬念' })
+    const user = String(
+      env.llm.log.filter((l) => l.task === 'episodes.plan')[0].messages[1].content,
+    )
+    expect(user).toContain('# 创作者的要求')
+    expect(user).toContain('每集结尾留悬念')
+    const env2 = await makePipelineEnv(media!)
+    await ingestMaterial(env2.deps, env2.projectId, { name: '长篇.txt', bytes: novel(6) })
+    await planEpisodes(env2.deps, env2.projectId)
+    expect(
+      String(env2.llm.log.filter((l) => l.task === 'episodes.plan')[0].messages[1].content),
+    ).not.toContain('创作者的要求')
+  })
+
   it('plans a 30-chapter novel in batches without truncating anything', async () => {
     const env = await makePipelineEnv(media!)
     const { material } = await ingestMaterial(env.deps, env.projectId, {
@@ -214,6 +231,33 @@ async function prepared(opts: { chapters?: number } = {}) {
 }
 
 describe('breakdownEpisode: episode → scenes → shots', () => {
+  it("the creator's instructions reach the prompt, are remembered on the episode, and are reused when re-splitting", async () => {
+    const { env, episodes } = await prepared({ chapters: 2 })
+    const ep = episodes[0]
+    const userOf = (n: number) =>
+      String(env.llm.log.filter((l) => l.task === 'shots.breakdown')[n].messages[1].content)
+
+    await breakdownEpisode(env.deps, ep.id) // 没有要求：提示词里没有这一段
+    expect(userOf(0)).not.toContain('创作者的额外要求')
+
+    await breakdownEpisode(env.deps, ep.id, {
+      instructions: '  重点表现主角的心理变化；每镜不超过 8 秒  ',
+    })
+    expect(userOf(1)).toContain('# 创作者的额外要求')
+    expect(userOf(1)).toContain('重点表现主角的心理变化；每镜不超过 8 秒')
+
+    // 记在集上之后，重新拆分默认沿用
+    await env.ports.store.episodes.put({
+      ...(await env.ports.store.episodes.get(ep.id))!,
+      breakdownInstructions: '重点表现主角的心理变化',
+    })
+    await breakdownEpisode(env.deps, ep.id)
+    expect(userOf(2)).toContain('重点表现主角的心理变化')
+    // 显式给空字符串 = 这一次不要任何要求
+    await breakdownEpisode(env.deps, ep.id, { instructions: '' })
+    expect(userOf(3)).not.toContain('创作者的额外要求')
+  })
+
   it('breaks a long episode into more than 12 shots (v0.4 capped at 12), across several LLM calls', async () => {
     const { env, episodes } = await prepared({ chapters: 4 })
     const ep = episodes[0]
@@ -698,6 +742,64 @@ describe('shot prompts (semantic slots, names resolved to ids)', () => {
     const again = await generateShotPrompts(env.deps, ep.id, { onlyMissing: true })
     expect(again.updated).toEqual([])
     expect(env.llm.calls('shots.frames')).toBe(before)
+  })
+
+  it('onlyMissing judges each part separately: a shot missing only its video prompt is filled, and what exists is left exactly as it is', async () => {
+    const { env, ep } = await ready()
+    await generateShotPrompts(env.deps, ep.id)
+    const shots = await episodeShots(env.ports.store, ep.id)
+    const [onlyVideoMissing, onlyImageMissing, complete] = shots
+    // 用户手改过的首帧提示词 —— 补视频提示词时不能被覆盖
+    await env.ports.store.shots.put({
+      ...onlyVideoMissing,
+      prompts: {
+        ...onlyVideoMissing.prompts,
+        keyFrame: '用户手写的首帧',
+        firstFrame: '用户手写的首帧',
+        video: undefined,
+      },
+    })
+    await env.ports.store.shots.put({
+      ...onlyImageMissing,
+      prompts: {
+        ...onlyImageMissing.prompts,
+        keyFrame: undefined,
+        firstFrame: undefined,
+        video: '用户手写的视频',
+      },
+    })
+    const before = env.llm.calls('shots.frames')
+    const res = await generateShotPrompts(env.deps, ep.id, { onlyMissing: true })
+    expect(res.updated.map((s) => s.id).sort()).toEqual(
+      [onlyVideoMissing.id, onlyImageMissing.id].sort(),
+    )
+    expect(env.llm.calls('shots.frames')).toBe(before + 1)
+    expect(res.filled).toEqual({ image: 1, video: 1 })
+
+    const a = (await env.ports.store.shots.get(onlyVideoMissing.id))!
+    expect(a.prompts.keyFrame).toBe('用户手写的首帧') // 没动
+    expect(a.prompts.video).toBeTruthy() // 补上了
+    const b = (await env.ports.store.shots.get(onlyImageMissing.id))!
+    expect(b.prompts.video).toBe('用户手写的视频') // 没动
+    expect(b.prompts.keyFrame).toBeTruthy() // 补上了
+    const c = (await env.ports.store.shots.get(complete.id))!
+    expect(c.prompts).toEqual(complete.prompts) // 完整的镜头原样
+    expect(missingPromptParts(a)).toEqual([])
+    expect(missingPromptParts({ prompts: {} })).toEqual(['image', 'video'])
+    expect(missingPromptParts({ prompts: { keyFrame: '  ', video: 'v' } })).toEqual(['image'])
+  })
+
+  it('without onlyMissing everything is rewritten (the whole episode)', async () => {
+    const { env, ep } = await ready()
+    await generateShotPrompts(env.deps, ep.id)
+    const shots = await episodeShots(env.ports.store, ep.id)
+    await env.ports.store.shots.put({
+      ...shots[0],
+      prompts: { ...shots[0].prompts, keyFrame: '手写' },
+    })
+    const res = await generateShotPrompts(env.deps, ep.id)
+    expect(res.updated).toHaveLength(shots.length)
+    expect((await env.ports.store.shots.get(shots[0].id))!.prompts.keyFrame).not.toBe('手写')
   })
 
   it('reports shots the LLM skipped', async () => {

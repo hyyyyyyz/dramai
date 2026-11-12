@@ -23,9 +23,9 @@ const MAX_BGM_BYTES = 60 * 1024 * 1024
 
 export function registerTimelineRoutes(r: RouteRegistry, ctx: ServerContext): void {
   const requireEpisode = async (id: string): Promise<Episode> => {
-    const ep = must(await ctx.store.episodes.get(id), '分集', id)
+    const ep = must(await ctx.store.episodes.get(id), 'episode', id)
     const project = await ctx.store.projects.get(ep.projectId)
-    if (!project || project.deletedAt !== undefined) throw notFound('分集', id)
+    if (!project || project.deletedAt !== undefined) throw notFound('episode', id)
     return ep
   }
 
@@ -150,7 +150,7 @@ export function registerTimelineRoutes(r: RouteRegistry, ctx: ServerContext): vo
     const ep = await requireEpisode(params.episodeId)
     const doc = await ensureTimeline(ctx.deps, ep.id)
     if (!doc.revisions.some((x) => x.number === body.revision)) {
-      throw notFound('修订', String(body.revision))
+      throw notFound('timeline_revision', String(body.revision))
     }
     const rolled = rollbackTo(doc, body.revision, {
       author: { kind: 'creator' },

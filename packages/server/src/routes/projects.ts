@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import {
   createProject,
   expandStyle,
+  keepAsIs,
+  loadProjection,
   localizeStyleSnapshot,
   NO_STYLE,
   isInFlight,
@@ -211,7 +213,7 @@ function registerProjectCrud(r: RouteRegistry, ctx: ServerContext): void {
 
   r.handle('projects.restore', async ({ params, c }) => {
     const cur = await ctx.store.projects.get(params.projectId)
-    if (!cur) throw notFound('项目', params.projectId)
+    if (!cur) throw notFound('project', params.projectId)
     if (cur.deletedAt === undefined) return localizeProject(ctx, cur, await localeOf(ctx, c))
     const next: Project = { ...cur, updatedAt: ctx.clock.now() }
     delete next.deletedAt
@@ -222,7 +224,7 @@ function registerProjectCrud(r: RouteRegistry, ctx: ServerContext): void {
 
   r.handle('projects.purge', async ({ params }) => {
     const cur = await ctx.store.projects.get(params.projectId)
-    if (!cur) throw notFound('项目', params.projectId)
+    if (!cur) throw notFound('project', params.projectId)
     // 彻底删除不可恢复：必须先进回收站（两步确认的服务端兜底）。
     if (cur.deletedAt === undefined) {
       throw conflict('NOT_IN_TRASH', '项目还没有删除：请先删除（进入回收站），再彻底删除')
@@ -232,6 +234,16 @@ function registerProjectCrud(r: RouteRegistry, ctx: ServerContext): void {
     await ctx.files.removeProject(cur.id)
     ctx.bus.changed('project', { projectId: cur.id, ids: [cur.id], op: 'deleted' })
     return OK
+  })
+
+  r.handle('artifacts.keep', async ({ params, body }) => {
+    const project = await requireProject(ctx, params.projectId)
+    const kept = keepAsIs(await loadProjection(ctx.store, project.id), body.key, ctx.clock.now())
+    await ctx.store.artifacts.put(kept)
+    ctx.bus.emit({ type: 'artifact.changed', projectId: project.id, key: body.key })
+    const view = await loadProjectView(ctx, project.id)
+    const report = toArtifactReports(view, (k) => k === body.key)[0]
+    return report!
   })
 
   r.handle('projects.artifacts', async ({ params }) => {
