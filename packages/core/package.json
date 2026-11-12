@@ -6,7 +6,7 @@
   "description": "dramai business kernel: domain model, providers, jobs, admission, media. No HTTP framework, no React, no DOM.",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.2"
   },
   "files": [
     "dist",

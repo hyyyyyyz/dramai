@@ -39,7 +39,7 @@ every run.
 
 ## What CI needs
 
-- Node >= 22.13 and pnpm 9 (same as the repo); `pnpm install --frozen-lockfile`.
+- Node >= 22.22.2 and pnpm 9 (same as the repo); `pnpm install --frozen-lockfile`.
 - `pnpm exec playwright install --with-deps chromium` (about 150 MB; cache `~/.cache/ms-playwright` keyed on the
   Playwright version).
 - ffmpeg on the machine: the render step uses it (without it the compose page says what is missing and the specs fail).

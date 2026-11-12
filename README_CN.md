@@ -31,7 +31,7 @@ dramai 是一个开源的 AI 短剧工作室，在你自己的电脑上运行。
 
 演示模式会在你的电脑上用模拟的服务商跑完整个工作室：不用注册账号，不用 Key，不产生费用。它生成的是占位内容（带编号的色块和测试画面），用来展示工作流怎么运转，而不是真实模型的效果。
 
-你需要 [Node.js](https://nodejs.org) 22.13 或更新版本、[pnpm](https://pnpm.io) 9，以及在 `PATH` 里能找到的 [ffmpeg](https://ffmpeg.org)。
+你需要 [Node.js](https://nodejs.org) 22.22.2 或更新版本、[pnpm](https://pnpm.io) 9，以及在 `PATH` 里能找到的 [ffmpeg](https://ffmpeg.org)。
 
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git
@@ -115,7 +115,7 @@ pnpm demo --static-dir packages/workspace/dist
 - **桌面端：本机编译安装**：`pnpm desktop:install`。在你的机器上编译并安装给当前用户。不需要证书，也没有下载警告，因为应用是在你自己的电脑上生成的。`pnpm desktop:uninstall` 卸载应用，保留你的数据。
 - **桌面端：安装包**：暂无安装包。 macOS、Windows、Linux 的安装包由发布工作流构建，首个测试版发布后会附在 GitHub Release 上。安装包不签名。
 
-所有形式都从一份检出的代码开始，需要 Node.js 22.13+、pnpm 9 和 ffmpeg：
+所有形式都从一份检出的代码开始，需要 Node.js 22.22.2+、pnpm 9 和 ffmpeg：
 
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git

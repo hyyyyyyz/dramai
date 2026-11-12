@@ -6,7 +6,7 @@
   "description": "dramai local server: SQLite store, files, secrets, HTTP routes (Hono), SSE.",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.2"
   },
   "files": [
     "dist",

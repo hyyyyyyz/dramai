@@ -77,9 +77,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Node 版本与 .nvmrc（24）保持一致；22.13.0 是 engines 下限。
+          # Node 版本与 .nvmrc（24）保持一致；22.22.2 是 engines 下限（jsdom 31 要求 ^22.22.2 || ^24.15.0 || >=26）。
           - { label: 'Linux, Node 24', os: ubuntu-latest, node: '24', libass: required }
-          - { label: 'Linux, Node 22.13', os: ubuntu-latest, node: '22.13.0', libass: required }
+          - { label: 'Linux, Node 22.22', os: ubuntu-latest, node: '22.22.2', libass: required }
           - { label: 'macOS (arm64)', os: macos-latest, node: '24', libass: log }
           - { label: 'Windows', os: windows-latest, node: '24', libass: log }
     steps:
