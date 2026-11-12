@@ -7,7 +7,7 @@ import { resolveBundledFfmpeg, withToolDirs } from '../src/main/ffmpeg.ts'
 import { buildMenuTemplate } from '../src/main/menu.ts'
 import { cleanText, parseFolderRequest, resolveProjectPath } from '../src/main/native.ts'
 import { resolveDataDir } from '../src/main/paths.ts'
-import { strings } from '../src/main/strings.ts'
+import { detectLang, isLangPreference, resolveLang, strings } from '../src/main/strings.ts'
 import { classifyStartError } from '../src/shared/protocol.ts'
 
 let dir: string
@@ -147,11 +147,13 @@ describe('application menu', () => {
     showDataDir: noop,
     openLogs: noop,
     openExternal: noop,
+    setLanguage: noop,
   }
   const input = {
     strings: strings.en,
     devTools: false,
     autoCheck: true,
+    language: 'auto' as const,
     homepage: 'https://h',
     issuesUrl: 'https://i',
     actions,
@@ -185,5 +187,71 @@ describe('application menu', () => {
       'Open Log Folder',
     ])
       expect(all).toContain(label)
+  })
+})
+
+describe('interface language', () => {
+  it('maps system locales onto English / Simplified / Traditional Chinese', () => {
+    expect(detectLang('en-US')).toBe('en')
+    expect(detectLang('fr')).toBe('en')
+    expect(detectLang('zh-CN')).toBe('zh-CN')
+    expect(detectLang('zh')).toBe('zh-CN')
+    expect(detectLang('zh-Hans-CN')).toBe('zh-CN')
+    for (const l of ['zh-TW', 'zh-HK', 'zh-MO', 'zh-Hant', 'zh-Hant-TW'])
+      expect(detectLang(l)).toBe('zh-TW')
+  })
+  it('a saved choice beats the system locale; auto follows it', () => {
+    expect(resolveLang('zh-TW', 'en-US')).toBe('zh-TW')
+    expect(resolveLang('auto', 'zh-CN')).toBe('zh-CN')
+    expect(resolveLang(undefined, 'ja')).toBe('en')
+  })
+  it('validates the preference coming from the page', () => {
+    for (const ok of ['auto', 'en', 'zh-CN', 'zh-TW']) expect(isLangPreference(ok)).toBe(true)
+    for (const bad of ['zh', 'fr', '', 5, undefined, null, {}])
+      expect(isLangPreference(bad)).toBe(false)
+  })
+  it('every language has the same set of strings', () => {
+    const shape = (v: unknown): unknown =>
+      typeof v === 'object' && v !== null
+        ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, shape(x)]))
+        : typeof v
+    expect(shape(strings['zh-TW'])).toEqual(shape(strings.en))
+    expect(shape(strings['zh-CN'])).toEqual(shape(strings.en))
+  })
+  it('the config keeps a valid language and drops an invalid one', async () => {
+    const file = join(dir, 'lang.json')
+    await writeFile(file, JSON.stringify({ language: 'zh-TW' }))
+    expect(new ConfigStore(file).get().language).toBe('zh-TW')
+    await writeFile(file, JSON.stringify({ language: 'klingon' }))
+    expect(new ConfigStore(file).get().language).toBeUndefined()
+  })
+  it('the View menu offers a language radio group with the current choice checked', () => {
+    const noop2 = () => {}
+    const template = buildMenuTemplate({
+      platform: 'linux',
+      strings: strings['zh-TW'],
+      devTools: false,
+      autoCheck: true,
+      language: 'zh-TW',
+      homepage: 'h',
+      issuesUrl: 'i',
+      actions: {
+        setLanguage: noop2,
+        about: noop2,
+        checkForUpdates: noop2,
+        toggleAutoCheck: noop2,
+        changeDataDir: noop2,
+        showDataDir: noop2,
+        openLogs: noop2,
+        openExternal: noop2,
+      },
+    })
+    const view = template.find((m) => m.label === '檢視')!.submenu as Array<{
+      label?: string
+      submenu?: Array<{ label: string; checked: boolean }>
+    }>
+    const group = view.find((i) => i.label === '語言')!.submenu!
+    expect(group.map((i) => i.label)).toEqual(['跟隨系統', 'English', '简体中文', '繁體中文'])
+    expect(group.filter((i) => i.checked).map((i) => i.label)).toEqual(['繁體中文'])
   })
 })

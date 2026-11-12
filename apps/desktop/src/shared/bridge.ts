@@ -11,6 +11,9 @@ export interface DramaiDesktopInfo {
   dataDir: string
   /** API Key 的保存方式：`os` = 操作系统加密；`plain` = 没有系统加密可用，文件权限保护。 */
   secretStorage: 'os' | 'plain'
+  /** 原生菜单和对话框当前用的语言（已解析）和用户的选择（`auto` = 跟随系统）。 */
+  language: 'en' | 'zh-CN' | 'zh-TW'
+  languagePreference: 'auto' | 'en' | 'zh-CN' | 'zh-TW'
 }
 
 export interface DramaiDesktopBridge {
@@ -25,6 +28,11 @@ export interface DramaiDesktopBridge {
   revealProjectFile(target: { projectId: string; path?: string }): Promise<boolean>
   /** 系统通知（比如长任务完成）。窗口在前台时不弹，返回 false。点击通知会把窗口提到前面。 */
   notify(notification: { title: string; body?: string }): Promise<boolean>
+  /**
+   * 设置页切换界面语言时调用，让原生菜单和对话框跟着变（桌面端自己的菜单“视图 → 语言”也会改同一个值）。
+   * 网页界面本身的语言仍由前端决定；`auto` = 跟随系统。参数不合法返回 false。
+   */
+  setLanguage(language: 'auto' | 'en' | 'zh-CN' | 'zh-TW'): Promise<boolean>
 }
 
 export const BRIDGE_CHANNELS = {
@@ -32,4 +40,5 @@ export const BRIDGE_CHANNELS = {
   selectFolder: 'dramai:select-folder',
   revealProjectFile: 'dramai:reveal-project-file',
   notify: 'dramai:notify',
+  setLanguage: 'dramai:set-language',
 } as const

@@ -1,5 +1,5 @@
 import type { MenuItemConstructorOptions } from 'electron'
-import type { Strings } from './strings.ts'
+import type { LangPreference, Strings } from './strings.ts'
 
 export interface MenuActions {
   about(): void
@@ -9,6 +9,7 @@ export interface MenuActions {
   showDataDir(): void
   openLogs(): void
   openExternal(url: string): void
+  setLanguage(language: LangPreference): void
 }
 
 export interface MenuInput {
@@ -17,6 +18,7 @@ export interface MenuInput {
   /** 开发形态才有开发者工具。 */
   devTools: boolean
   autoCheck: boolean
+  language: LangPreference
   homepage: string
   issuesUrl: string
   actions: MenuActions
@@ -83,6 +85,23 @@ export function buildMenuTemplate(input: MenuInput): MenuItemConstructorOptions[
       { role: 'zoomOut' },
       { type: 'separator' },
       { role: 'togglefullscreen' },
+      { type: 'separator' },
+      {
+        label: s.menu.language,
+        submenu: (
+          [
+            ['auto', s.menu.languageAuto],
+            ['en', 'English'],
+            ['zh-CN', '简体中文'],
+            ['zh-TW', '繁體中文'],
+          ] as const
+        ).map(([value, label]) => ({
+          label,
+          type: 'radio' as const,
+          checked: input.language === value,
+          click: () => actions.setLanguage(value),
+        })),
+      },
       ...(input.devTools
         ? ([{ type: 'separator' }, { role: 'toggleDevTools' }] as MenuItemConstructorOptions[])
         : []),

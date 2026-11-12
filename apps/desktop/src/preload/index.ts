@@ -10,6 +10,7 @@ const bridge: DramaiDesktopBridge = {
   selectFolder: (options) => ipcRenderer.invoke(BRIDGE_CHANNELS.selectFolder, options),
   revealProjectFile: (target) => ipcRenderer.invoke(BRIDGE_CHANNELS.revealProjectFile, target),
   notify: (notification) => ipcRenderer.invoke(BRIDGE_CHANNELS.notify, notification),
+  setLanguage: (language) => ipcRenderer.invoke(BRIDGE_CHANNELS.setLanguage, language),
 }
 
 contextBridge.exposeInMainWorld('dramaiDesktop', Object.freeze(bridge))

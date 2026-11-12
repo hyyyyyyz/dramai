@@ -100,7 +100,7 @@ try {
   )
   check(
     'preload bridge exposes only the small API',
-    bridge.keys.sort().join() === 'getInfo,notify,revealProjectFile,selectFolder',
+    bridge.keys.sort().join() === 'getInfo,notify,revealProjectFile,selectFolder,setLanguage',
     bridge.keys.join(),
   )
   check(

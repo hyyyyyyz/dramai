@@ -33,8 +33,8 @@ import { SecretVault } from './secret-vault.ts'
 import type { SecretCrypto } from './secret-vault.ts'
 import { ServerHost, ServerStartError } from './server-host.ts'
 import { acquireSingleInstance } from './single-instance.ts'
-import { detectLang, strings } from './strings.ts'
-import type { Lang } from './strings.ts'
+import { isLangPreference, resolveLang, strings } from './strings.ts'
+import type { Lang, LangPreference } from './strings.ts'
 import { generateToken } from './token.ts'
 import { checkForUpdate, repoSlug } from './updates.ts'
 
@@ -54,6 +54,13 @@ if (!app.commandLine.hasSwitch('user-data-dir')) {
 const log = createFileLogger(app.getPath('logs'))
 let lang: Lang = 'en'
 const s = () => strings[lang]
+
+/** 切换界面语言：保存选择，重建菜单；对话框每次弹出时取当前语言，所以下一次就是新语言。 */
+function setLanguagePreference(preference: LangPreference): void {
+  config.update({ language: preference })
+  lang = resolveLang(preference, app.getLocale())
+  installMenu()
+}
 
 // —— 状态 ——
 const state = {
@@ -235,10 +242,15 @@ async function seedDemoIfRequested(): Promise<void> {
         serverUrl: string
         token: string
         mockUrl: string
-        lang: Lang
+        lang: 'zh' | 'en'
       }): Promise<void>
     }
-    await mod.seedDemo({ serverUrl: state.serverUrl, token: state.token, mockUrl, lang })
+    await mod.seedDemo({
+      serverUrl: state.serverUrl,
+      token: state.token,
+      mockUrl,
+      lang: lang === 'en' ? 'en' : 'zh',
+    })
     log('info', `demo providers ready (mock at ${mockUrl})`)
   } catch (err) {
     log('error', `demo seeding failed: ${String(err)}`)
@@ -357,6 +369,7 @@ function installMenu(): void {
         strings: s(),
         devTools: !app.isPackaged,
         autoCheck: config.get().checkForUpdates,
+        language: config.get().language ?? 'auto',
         homepage: pkg.homepage,
         issuesUrl: pkg.bugs.url,
         actions: {
@@ -367,6 +380,7 @@ function installMenu(): void {
           showDataDir: () => void shell.openPath(state.dataDir),
           openLogs: () => void shell.openPath(app.getPath('logs')),
           openExternal: (url) => void shell.openExternal(url),
+          setLanguage: setLanguagePreference,
         },
       }),
     ),
@@ -402,8 +416,16 @@ function registerIpc(): void {
       arch: process.arch,
       dataDir: state.dataDir,
       secretStorage: state.secretMode,
+      language: lang,
+      languagePreference: config.get().language ?? 'auto',
     }),
   )
+
+  handle(BRIDGE_CHANNELS.setLanguage, (arg) => {
+    if (!isLangPreference(arg)) return false
+    setLanguagePreference(arg)
+    return true
+  })
 
   handle(BRIDGE_CHANNELS.selectFolder, async (arg) => {
     const request = parseFolderRequest(arg)
@@ -504,8 +526,8 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => ap
 async function main(): Promise<void> {
   if (!acquireSingleInstance(app, focusWindow)) return
   await app.whenReady()
-  lang = detectLang(app.getLocale())
   config = new ConfigStore(join(app.getPath('userData'), 'desktop.json'))
+  lang = resolveLang(config.get().language, app.getLocale())
 
   const resolved = resolveDataDir({
     env: process.env,

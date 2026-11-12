@@ -1,10 +1,28 @@
-export type Lang = 'zh' | 'en'
+/** 界面语言：English、简体中文、繁體中文。 */
+export type Lang = 'en' | 'zh-CN' | 'zh-TW'
+/** 用户的选择：跟随系统，或固定一种。 */
+export type LangPreference = 'auto' | Lang
 
-export function detectLang(locale: string): Lang {
-  return locale.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+export const LANGS: readonly Lang[] = ['en', 'zh-CN', 'zh-TW']
+
+export function isLangPreference(value: unknown): value is LangPreference {
+  return (
+    value === 'auto' || (typeof value === 'string' && (LANGS as readonly string[]).includes(value))
+  )
 }
 
-const zh = {
+/** 系统语言（如 `zh-TW`、`zh-Hant-HK`、`zh-CN`、`en-US`）对应到三种界面语言；其他语言用 English。 */
+export function detectLang(locale: string): Lang {
+  const l = locale.toLowerCase()
+  if (!l.startsWith('zh')) return 'en'
+  return /hant|-tw|-hk|-mo/.test(l) ? 'zh-TW' : 'zh-CN'
+}
+
+export function resolveLang(preference: LangPreference | undefined, systemLocale: string): Lang {
+  return preference && preference !== 'auto' ? preference : detectLang(systemLocale)
+}
+
+const zhCN = {
   appName: 'Dramai',
   startFailedTitle: '无法启动 Dramai',
   startFailed: {
@@ -65,10 +83,12 @@ const zh = {
     about: '关于 Dramai',
     homepage: '项目主页',
     reportIssue: '反馈问题',
+    language: '语言',
+    languageAuto: '跟随系统',
   },
 }
 
-type Strings = typeof zh
+type Strings = typeof zhCN
 
 const en: Strings = {
   appName: 'Dramai',
@@ -131,8 +151,75 @@ const en: Strings = {
     about: 'About Dramai',
     homepage: 'Project Page',
     reportIssue: 'Report an Issue',
+    language: 'Language',
+    languageAuto: 'Match System',
   },
 }
 
-export const strings: Record<Lang, Strings> = { zh, en }
+const zhTW: Strings = {
+  appName: 'Dramai',
+  startFailedTitle: '無法啟動 Dramai',
+  startFailed: {
+    DATA_DIR_LOCKED: (dir) =>
+      `資料目錄已被另一個 Dramai（或 WebUI）佔用：\n${dir}\n\n請先關閉它，或者換一個資料目錄。`,
+    SCHEMA_TOO_NEW: (dir) =>
+      `這個資料目錄是更新版本的 Dramai 建立的，目前版本無法開啟：\n${dir}\n\n請升級 Dramai，或者換一個資料目錄。`,
+    PORT_IN_USE: () => '本機連接埠被佔用，服務沒能啟動。請重試。',
+    TOKEN_REQUIRED: () => '內部錯誤：服務要求存取權杖但沒有提供。請重試，仍然失敗請回報。',
+    UNKNOWN: () => '本機服務啟動失敗。',
+  },
+  details: '詳細資訊',
+  retry: '重試',
+  chooseDataDir: '選擇其他資料目錄…',
+  quit: '結束',
+  openLogs: '開啟日誌資料夾',
+  crashedTitle: '本機服務意外結束',
+  crashed: '進行中的任務不會遺失，重新啟動服務後會接著處理。',
+  restartServer: '重新啟動服務',
+  quitConfirmTitle: '還有任務在執行',
+  quitConfirm: (n) =>
+    `有 ${n} 個任務正在執行。現在結束會中斷它們；下次啟動時會自動恢復（已提交給服務商的任務會繼續查詢結果）。`,
+  quitAnyway: '仍然結束',
+  cancel: '取消',
+  rendererGoneTitle: '介面程序當機了',
+  reload: '重新載入',
+  updateAvailableTitle: '有新版本可用',
+  updateAvailable: (current, latest) => `Dramai ${latest} 已發布（目前 ${current}）。`,
+  openReleasePage: '開啟發布頁',
+  later: '稍後',
+  skipVersion: '略過此版本',
+  upToDate: (v) => `已是最新版本（${v}）。`,
+  updateCheckFailed: '檢查更新失敗，請稍後再試。',
+  changeDataDirTitle: '選擇資料目錄',
+  changeDataDirConfirm: (dir) =>
+    `將使用這個目錄儲存資料：\n${dir}\n\n既有的資料不會被移動或複製；選一個空資料夾會從頭開始，選一個原有的 Dramai 資料目錄會繼續使用其中的內容。應用程式將重新啟動。`,
+  restartNow: '重新啟動應用程式',
+  plainSecretsTitle: '沒有可用的系統加密',
+  plainSecrets:
+    '這台電腦上沒有可用的系統金鑰庫，API Key 會以僅目前使用者可讀的檔案儲存（沒有加密）。在 Linux 上安裝並解鎖 GNOME Keyring 或 KWallet 後，重新啟動應用程式會自動改為加密儲存。',
+  ok: '好',
+  aboutTitle: '關於 Dramai',
+  aboutDetail: (v) =>
+    `版本 ${v.app}\nElectron ${v.electron} · Chromium ${v.chrome} · Node ${v.node}\n資料目錄：${v.data}\n\nApache-2.0 授權`,
+  openProject: '專案首頁',
+  menu: {
+    file: '檔案',
+    edit: '編輯',
+    view: '檢視',
+    window: '視窗',
+    help: '說明',
+    changeDataDir: '變更資料目錄…',
+    openDataDir: '在資料夾中顯示資料目錄',
+    openLogs: '開啟日誌資料夾',
+    checkUpdates: '檢查更新…',
+    autoCheck: '啟動時檢查更新',
+    about: '關於 Dramai',
+    homepage: '專案首頁',
+    reportIssue: '回報問題',
+    language: '語言',
+    languageAuto: '跟隨系統',
+  },
+}
+
+export const strings: Record<Lang, Strings> = { 'zh-CN': zhCN, 'zh-TW': zhTW, en }
 export type { Strings }

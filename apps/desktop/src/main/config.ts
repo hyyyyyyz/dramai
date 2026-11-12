@@ -1,6 +1,9 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 
+import { isLangPreference } from './strings.ts'
+import type { LangPreference } from './strings.ts'
+
 /** 桌面端自己的偏好（不是业务数据）。存在 userData 下的一个小 JSON 文件里。 */
 export interface DesktopConfig {
   /** 用户选的数据目录；没有就用默认位置。 */
@@ -15,6 +18,8 @@ export interface DesktopConfig {
   lastUpdateCheck?: number
   /** 已经提示过“没有系统加密，密钥以文件权限保护”。 */
   plainSecretsNoticeShown?: boolean
+  /** 界面语言（原生菜单和对话框）；`auto` 跟随系统。网页界面的语言由前端设置页决定，两边通过桥接保持一致。 */
+  language?: LangPreference
   window?: { width: number; height: number; maximized: boolean }
 }
 
@@ -65,6 +70,7 @@ function sanitize(raw: Partial<DesktopConfig>): Partial<DesktopConfig> {
   if (Number.isFinite(raw.lastUpdateCheck)) out.lastUpdateCheck = raw.lastUpdateCheck
   if (typeof raw.plainSecretsNoticeShown === 'boolean')
     out.plainSecretsNoticeShown = raw.plainSecretsNoticeShown
+  if (isLangPreference(raw.language)) out.language = raw.language
   const w = raw.window
   if (
     w &&
