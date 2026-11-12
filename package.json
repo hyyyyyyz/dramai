@@ -40,7 +40,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "webui": "pnpm --filter @dramai/webui start",
-    "e2e": "pnpm --filter @dramai/workspace e2e"
+    "e2e": "pnpm --filter @dramai/workspace e2e",
+    "version:set": "node --experimental-strip-types --disable-warning=ExperimentalWarning tooling/release/src/cli.ts set",
+    "version:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning tooling/release/src/cli.ts check"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

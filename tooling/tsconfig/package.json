@@ -1,7 +1,7 @@
 {
   "name": "@dramai/tsconfig",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.4.1",
   "description": "Shared TypeScript configs for the dramai monorepo",
   "files": [
     "base.json",
