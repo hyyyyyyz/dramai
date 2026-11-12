@@ -1,0 +1,50 @@
+{
+  "name": "@dramai/desktop",
+  "private": true,
+  "version": "0.4.1",
+  "type": "module",
+  "description": "dramai desktop app: an Electron shell around the local server and the workspace",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "hyyyyyyz",
+    "email": "noreply@users.noreply.github.com"
+  },
+  "homepage": "https://hyyyyyyz.github.io/dramai/",
+  "main": "dist/main.js",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "dist": "node scripts/dist.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@dramai/api": "workspace:*",
+    "@dramai/core": "workspace:*",
+    "@dramai/eslint-config": "workspace:*",
+    "@dramai/mock-providers": "workspace:*",
+    "@dramai/server": "workspace:*",
+    "@dramai/tsconfig": "workspace:*",
+    "@dramai/workspace": "workspace:*",
+    "@electron/fuses": "^2.1.3",
+    "@types/node": "catalog:",
+    "electron": "45.3.0",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyyyyyyz/dramai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hyyyyyyz/dramai/issues"
+  }
+}

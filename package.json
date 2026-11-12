@@ -30,6 +30,8 @@
   "scripts": {
     "dev": "pnpm --filter @dramai/workspace dev",
     "dev:demo": "pnpm --filter @dramai/workspace dev --demo",
+    "desktop:dev": "pnpm --filter @dramai/desktop dev",
+    "desktop:dist": "pnpm --filter @dramai/desktop dist",
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "lint:fix": "pnpm -r --if-present lint:fix",
