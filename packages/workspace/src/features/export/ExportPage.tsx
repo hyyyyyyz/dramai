@@ -8,6 +8,7 @@ import { useApi } from '@/data/use-api'
 import { useEpisode, useEpisodeArtifacts, useSystem, useTimeline } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { Block, PageHead } from '@/features/common/PageHead'
+import { RevealButton } from '@/features/common/RevealButton'
 import { useFormat } from '@/i18n/format'
 import {
   findReport,
@@ -164,6 +165,9 @@ export function ExportPage() {
                 >
                   {cut?.status === 'stale' ? t('export.downloadAnyway') : t('export.download')}
                 </DownloadLink>
+              )}
+              {cut?.file && hasFile(cut) && (
+                <RevealButton projectId={projectId} path={cut.file.path} />
               )}
             </Row>
 

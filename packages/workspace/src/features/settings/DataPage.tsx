@@ -3,6 +3,7 @@ import { CopyField, Skeleton, useToast } from '@dramai/ui/v2'
 import { useSystem } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { Block } from '@/features/common/PageHead'
+import { isDesktop } from '@/desktop/bridge'
 import { ImportBlock } from './ImportBlock'
 import { TrashBlock } from './TrashBlock'
 
@@ -26,6 +27,9 @@ export function DataPage() {
             onCopied={() => toast({ title: t('common.copied') })}
           />
           <p className="text-sm text-muted-foreground">{t('settings.data.dir.body')}</p>
+          {isDesktop() && (
+            <p className="text-sm text-muted-foreground">{t('desktop.dataDirHint')}</p>
+          )}
         </div>
       </Block>
       <ImportBlock />

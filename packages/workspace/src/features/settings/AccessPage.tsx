@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Lock, Unlock } from 'lucide-react'
 import { CopyField, Notice, Skeleton, iconProps, useToast } from '@dramai/ui/v2'
+import { useDesktopInfo } from '@/desktop/bridge'
 import { useSystem } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { Block } from '@/features/common/PageHead'
@@ -13,6 +14,7 @@ export function AccessPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
   const system = useSystem()
+  const desktop = useDesktopInfo()
   if (system.isError) return <ErrorNotice error={system.error} />
   if (!system.data) return <Skeleton className="h-40" aria-busy />
   const required = system.data.auth.tokenRequired
@@ -21,6 +23,9 @@ export function AccessPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {desktop?.secretStorage === 'plain' && (
+        <Notice tone="warn">{t('desktop.plainSecrets')}</Notice>
+      )}
       <Block title={t('settings.access.token.title')} aria-label={t('settings.access.token.title')}>
         <div className="flex flex-col gap-3 p-4">
           <div className="flex items-center gap-2 font-medium">

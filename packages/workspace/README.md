@@ -76,3 +76,21 @@ tests/          vitest + Testing Library（数据层、事件重连与 resync、
   coverage, the browser install step and what CI needs). Run `pnpm exec playwright install chromium` the first time and
   again after any Playwright version change in the lockfile, otherwise the browser is missing; `pnpm e2e` checks for
   this and stops with a clear message.
+
+## Desktop bridge
+
+Inside the desktop app the page gets `window.dramaiDesktop` (see `apps/desktop/README.md`). The frontend declares the
+types itself in `src/desktop/bridge.ts` and never imports from `apps/desktop`.
+
+- **Detection**: the bridge object is the capability. A native feature is offered exactly when `window.dramaiDesktop`
+  exists; `GET /api/system`'s `desktop` flag describes the server and is not used. Bridge without the flag: the bridge is
+  used. Flag without the bridge (the desktop server opened in a browser): nothing native is shown and everything falls
+  back to the browser behaviour. Bridge calls never throw into the UI (`callBridge`).
+- **Language**: `setLocale` tells the shell (`setLanguage`) so native menus and dialogs follow the page.
+- **Show in folder**: on the export page for the rendered cut and in the project card menu for the project folder.
+- **Notifications**: `useDesktopNotifications` (mounted in the app shell) sends one system notification per burst of
+  finished or attention-needing tasks; the shell itself stays quiet while its window is focused. Settings > General has
+  a switch (`dramai.desktop.notify`, default on).
+- **Settings hints**: the data page points to the app menu for changing the data folder (the bridge has no setter, and
+  `selectFolder` is not used because no screen has a directory input); the access page warns when API keys are not
+  encrypted by the system (`secretStorage === 'plain'`).

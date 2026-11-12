@@ -1,4 +1,5 @@
 import i18n from 'i18next'
+import { notifyDesktopLanguage } from '@/desktop/bridge'
 import { initReactI18next } from 'react-i18next'
 import zhCN from './locales/zh-CN'
 
@@ -72,6 +73,8 @@ export async function setLocale(locale: Locale) {
   await ensureLoaded(locale)
   await i18n.changeLanguage(locale)
   document.documentElement.lang = locale
+  // 桌面应用里，原生菜单和对话框跟着换（浏览器里什么都不做）
+  void notifyDesktopLanguage(locale)
   try {
     localStorage.setItem(KEY, locale)
   } catch {

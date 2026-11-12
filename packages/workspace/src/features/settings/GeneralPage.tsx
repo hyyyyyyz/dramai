@@ -1,10 +1,13 @@
 import { useTranslation } from 'react-i18next'
-import { SegmentedControl, Skeleton, Hint } from '@dramai/ui/v2'
+import { SegmentedControl, Skeleton, Hint, Switch } from '@dramai/ui/v2'
 import { qk } from '@/data/keys'
 import { useCall, useSettings } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { Block } from '@/features/common/PageHead'
 import { LOCALES, setLocale, type Locale } from '@/i18n'
+import { isDesktop } from '@/desktop/bridge'
+import { NOTIFY_KEY } from '@/desktop/notifications'
+import { usePersistentFlag } from '@/lib/use-persistent-flag'
 import { useTheme } from '@/lib/theme'
 import { ConversionBlock } from './ConversionBlock'
 
@@ -15,6 +18,7 @@ export function GeneralPage() {
   const { t, i18n } = useTranslation()
   const [theme, setTheme] = useTheme()
   const settings = useSettings()
+  const [notify, setNotify] = usePersistentFlag(NOTIFY_KEY, true)
   const update = useCall('settings.update', { invalidate: [qk.settings] })
 
   if (settings.isError) return <ErrorNotice error={settings.error} />
@@ -81,6 +85,25 @@ export function GeneralPage() {
           <Hint>{t('settings.general.subtitles.hint')}</Hint>
         </div>
       </Block>
+
+      {isDesktop() && (
+        <Block
+          title={t('desktop.notifications.title')}
+          aria-label={t('desktop.notifications.title')}
+        >
+          <div className="flex items-center justify-between gap-4 p-4">
+            <div>
+              <div className="font-medium">{t('desktop.notifications.label')}</div>
+              <Hint>{t('desktop.notifications.hint')}</Hint>
+            </div>
+            <Switch
+              aria-label={t('desktop.notifications.label')}
+              checked={notify}
+              onCheckedChange={setNotify}
+            />
+          </div>
+        </Block>
+      )}
 
       <ConversionBlock
         key={JSON.stringify(s.cost.conversion ?? null)}

@@ -6,6 +6,7 @@ import { TaskPanel } from '@/features/jobs/TaskPanel'
 import { useMedia } from '@/lib/use-media'
 import { usePersistentFlag } from '@/lib/use-persistent-flag'
 import { useState } from 'react'
+import { useDesktopNotifications } from '@/desktop/use-desktop-notifications'
 import { DemoBanner } from './DemoBanner'
 import { MobileTabBar } from './MobileTabBar'
 import { ShellContext } from './shell-context'
@@ -19,6 +20,7 @@ import { Topbar } from './Topbar'
  */
 export function AppShell() {
   const { t } = useTranslation()
+  useDesktopNotifications()
   const drawerMode = useMedia('(max-width: 1180px)')
   const phone = useMedia('(max-width: 800px)')
   const [docked, setDocked] = usePersistentFlag('dramai.tasks.open', true)

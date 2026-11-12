@@ -1,4 +1,18 @@
 export default {
+  desktop: {
+    reveal: '在資料夾中顯示',
+    revealProject: '在資料夾中顯示專案',
+    revealMissing: '找不到這個檔案，它可能已被移走',
+    dataDirHint: '想換資料目錄：用應用程式選單裡的「變更資料目錄…」。既有的資料不會被移動',
+    plainSecrets:
+      '這台電腦沒有可用的系統金鑰庫，API Key 只靠檔案權限保護，沒有被系統加密。安裝並啟用系統金鑰庫後，會自動改為加密儲存',
+    notifications: {
+      title: '桌面通知',
+      label: '任務完成或需要處理時通知我',
+      hint: '只在視窗不在前景時彈出，同時結束的任務合併成一則',
+    },
+    notify: { done: '{{count}} 個任務已完成', attention: '{{count}} 個任務需要處理' },
+  },
   shell: {
     themeToLight: '切換到淺色',
     themeToDark: '切換到深色',

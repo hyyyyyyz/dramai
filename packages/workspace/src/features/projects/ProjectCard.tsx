@@ -1,8 +1,9 @@
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { ProjectListItem } from '@dramai/api'
-import { MoreHorizontal, Trash2 } from 'lucide-react'
+import { FolderOpen, MoreHorizontal, Trash2 } from 'lucide-react'
 import { Frame, IconButton, Menu, Pill, SegmentedProgress, iconProps } from '@dramai/ui/v2'
+import { callBridge, isDesktop } from '@/desktop/bridge'
 import { useApi } from '@/data/use-api'
 import { useFormat } from '@/i18n/format'
 import { episodeTone, projectStatus } from './project-status'
@@ -109,6 +110,20 @@ export function ProjectCard({
               </IconButton>
             }
             items={[
+              ...(isDesktop()
+                ? [
+                    {
+                      key: 'reveal',
+                      label: t('desktop.revealProject'),
+                      icon: <FolderOpen {...iconProps} aria-hidden />,
+                      onSelect: () =>
+                        void callBridge(
+                          (b) => b.revealProjectFile({ projectId: project.id }),
+                          false,
+                        ),
+                    },
+                  ]
+                : []),
               {
                 key: 'delete',
                 label: t('projects.card.delete'),
