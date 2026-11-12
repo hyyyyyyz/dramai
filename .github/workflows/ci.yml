@@ -1,56 +1,319 @@
 name: CI
 
+# 拉取请求、推送（main 和重构分支 refactor/**）、手动触发都会运行；
+# 也可以被发布工作流作为可复用工作流调用（打 tag 前再确认一遍）。
 on:
   push:
-    branches: [main]
+    branches: [main, 'refactor/**']
   pull_request:
-    branches: [main]
+  workflow_dispatch:
+  workflow_call:
 
+# 默认只读；个别 job 需要更多权限时在 job 内单独声明。
 permissions:
   contents: read
 
+# 同一分支 / PR 上新的运行会取消旧的；main 上不取消，保证每个提交都有完整结果。
+# PR 和它的源分支的推送共用一个组，所以只会留下最新的一次。
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.head_ref && format('refs/heads/{0}', github.head_ref) || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  build:
-    name: Lint, typecheck, build
+  checks:
+    name: Format, lint, typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
+          fetch-depth: 0 # 拉取请求上要和目标分支比较版本和提交标题
 
-      # We use `npm install` rather than `npm ci` because npm 11 occasionally
-      # produces lockfiles with missing platform-optional packages
-      # (notably @emnapi/* under @napi-rs/wasm-runtime). `npm install`
-      # tolerates this; `npm ci` does not. .npmrc pins include=optional
-      # to keep drift minimal.
-      - name: Install dependencies
-        run: npm install --prefer-offline --no-audit --no-fund
+      - name: Setup workspace
+        uses: ./.github/actions/setup
 
-      - name: Lint
-        run: npm run lint
+      # 所有包版本必须一致（tooling/release）。不依赖安装好的依赖，放前面快速失败。
+      - name: Check package versions
+        run: pnpm version:check
 
-      - name: Typecheck
-        run: npm run typecheck
+      # 拉取请求：版本号不能比目标分支上的低（规则见 docs/VERSIONING.md）。
+      - name: Check the version does not go down
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: pnpm version:check --since "origin/$BASE_REF"
+
+      # 拉取请求：标题必须是约定式提交（合并后它就是提交标题，发版时据此判断该升哪一位）；
+      # 分支里的各个提交只给警告，不阻塞。标题通过环境变量传入，避免被当成脚本注入。
+      - name: Check Conventional Commits
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            tooling/release/src/cli.ts commits --base "origin/$BASE_REF" --title "$PR_TITLE"
 
       - name: Format check
-        run: npm run format:check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  test:
+    name: Test (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      # 一个系统失败不要中断其它系统，方便一次看全三个系统的结果。
+      fail-fast: false
+      matrix:
+        include:
+          # Node 版本与 .nvmrc（24）保持一致；22.22.2 是 engines 下限（jsdom 31 要求 ^22.22.2 || ^24.15.0 || >=26）。
+          - { label: 'Linux, Node 24', os: ubuntu-latest, node: '24', libass: required }
+          - { label: 'Linux, Node 22.22', os: ubuntu-latest, node: '22.22.2', libass: required }
+          - { label: 'macOS (arm64)', os: macos-latest, node: '24', libass: log }
+          - { label: 'Windows', os: windows-latest, node: '24', libass: log }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 三个系统的运行器镜像都不带 ffmpeg / ffprobe（见 actions/runner-images 的软件清单），
+      # 而 packages/core 的 media 测试在找不到 ffmpeg 时会整组跳过，所以在这里安装。
+      - name: Install ffmpeg (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg
+
+      - name: Install ffmpeg (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg --no-progress -y
+
+      # 字幕烧录测试需要带 libass 的 ffmpeg（subtitles 滤镜）。Linux 上必须有，
+      # 缺了就让这一步失败，而不是让那条测试悄悄退化成“报错检查”；
+      # 其它系统只记录，方便在日志里看到实际情况。
+      - name: Show ffmpeg capabilities
+        run: |
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+          if ffmpeg -hide_banner -filters | grep -qE '^ .{2} subtitles '; then
+            echo "libass: available (subtitle burn-in test will run for real)"
+          elif [ "${{ matrix.libass }}" = "required" ]; then
+            echo "::error::ffmpeg on this runner has no libass/subtitles filter; the burn-in test would be skipped"
+            exit 1
+          else
+            echo "::warning::ffmpeg on this runner has no libass/subtitles filter; the burn-in test falls back to the capability-error check"
+          fi
+
+      # `pnpm test` 跑完所有包再汇总失败（见根 package.json 的 --no-bail），
+      # 所以一次运行就能看到每个包在这个系统上的结果，而不是停在第一个失败的包。
+      # 这里把失败的包写进任务摘要，打开运行页面就能看到。
+      - name: Test
+        run: |
+          set +e
+          pnpm test 2>&1 | tee test.log
+          status="${PIPESTATUS[0]}"
+          set -e
+          # 去掉颜色转义；用 printf 生成 ESC 字符，因为 macOS 的 BSD sed 不认 \x1b
+          esc="$(printf '\033')"
+          sed "s/${esc}\[[0-9;]*m//g" test.log > test.plain.log
+          # grep 没有匹配时返回 1；在 -e -o pipefail 下会让整个步骤失败，所以包一层 `|| true`。
+          # pnpm 在 ERROR 前后放的是 Unicode 细空格，所以不要锚定行首，也不要假设分隔符是普通空格。
+          failed="$({ grep -E 'ERROR[^@]{0,8}@' test.plain.log || true; } | sed -E 's/.*ERROR[^@]{0,8}(@[^ ]+) .*/\1/' | sort -u | tr '\n' ' ')"
+          {
+            echo "### Tests on ${{ matrix.label }}"
+            echo
+            if [ "$status" -eq 0 ]; then
+              echo "All packages passed."
+            else
+              echo "**Packages with failing tests:** ${failed:-unknown, see the log}"
+              echo
+              grep -E '^Summary: ' test.plain.log || true
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Tests failed in: ${failed:-unknown, see the log}"
+          fi
+          exit "$status"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
-      - name: Upload build artifact
+      - name: Upload workspace build
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: dist
-          path: dist
+          name: workspace-dist
+          path: packages/workspace/dist
           retention-days: 7
+          if-no-files-found: error
+
+  # 工作流文件自身的静态检查（语法、表达式、内嵌 shell 脚本）。
+  workflows:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+
+  # 桌面端在三个系统上的编译检查和安装自检（命令见 apps/desktop/README.md）：
+  #   desktop:build          编译出本机可运行的应用（构建前端、打包、electron-builder，不安装）
+  #   desktop:check-install  无人值守的“沙箱安装 → 冒烟检查 → 卸载 → 清除数据”，在每个系统上真的装一次
+  # 这两个脚本在根 package.json 里；以后如果被删掉，这个 job 应该失败，而不是悄悄跳过。
+  desktop:
+    name: Desktop (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: Linux, os: ubuntu-latest }
+          - { label: macOS (arm64), os: macos-latest }
+          - { label: Windows, os: windows-latest }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Electron 和 electron-builder 的下载（每个系统和架构各约 100 MB）按锁文件缓存。
+      # 两个缓存目录用环境变量固定到同一个临时位置，三个系统共用同一套写法；
+      # 必须在安装依赖之前设置，因为 electron 的 postinstall 就会下载二进制。
+      - name: Point Electron downloads at a cached folder
+        run: |
+          echo "ELECTRON_CACHE=$RUNNER_TEMP/electron-cache" >> "$GITHUB_ENV"
+          echo "ELECTRON_BUILDER_CACHE=$RUNNER_TEMP/electron-builder-cache" >> "$GITHUB_ENV"
+
+      - name: Cache Electron downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ runner.temp }}/electron-cache
+            ${{ runner.temp }}/electron-builder-cache
+          key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: electron-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+
+      # desktop:build 自己会构建前端并打包，不需要先做全仓构建。
+      - name: Build desktop app
+        run: pnpm desktop:build
+
+      # 复用上一步的构建（--skip-build），在运行器上沙箱安装、冒烟检查、卸载。
+      # Linux 上脚本自己处理无显示（xvfb-run）和被限制的用户命名空间（--no-sandbox）。
+      # Windows 和 Linux 的本地安装只能靠这一步在 CI 里验证。
+      - name: Install and uninstall self-check
+        run: pnpm desktop:check-install --skip-build
+
+  # 浏览器端到端测试（packages/workspace/e2e，Playwright）：在演示模式下走完整条路径，
+  # 不花钱、不需要密钥。`pnpm e2e` 会先构建前端，再由 Playwright 自己起演示服务。
+  e2e:
+    name: E2E (browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+
+      # 主流程用例会一路跑到合成并下载成片，合成步骤需要 ffmpeg（运行器镜像不带）。
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -version | head -n 1
+
+      # 浏览器二进制约 150 MB，按锁文件缓存；系统依赖（--with-deps）每次都要装，但很快。
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browser
+        run: pnpm --filter @dramai/workspace exec playwright install --with-deps chromium
+
+      - name: Run E2E
+        run: pnpm e2e
+
+      - name: Upload E2E report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-report
+          path: |
+            **/playwright-report/
+            **/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # 分支保护里只需要把这一个检查设为必需：它汇总上面所有 job。
+  # 被跳过的 job 不算失败；现在所有 job 都会真的运行，摘要里列出每个 job 的结果。
+  ci-ok:
+    name: CI passed
+    if: always()
+    needs: [checks, test, build, workflows, desktop, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+          CHECKS: ${{ needs.checks.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          WORKFLOWS: ${{ needs.workflows.result }}
+          DESKTOP: ${{ needs.desktop.result }}
+          E2E: ${{ needs.e2e.result }}
+        run: |
+          {
+            echo "### CI summary"
+            echo
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+            echo "| Format, lint, typecheck | $CHECKS |"
+            echo "| Test (Linux, macOS, Windows) | $TEST |"
+            echo "| Build | $BUILD |"
+            echo "| Lint workflows | $WORKFLOWS |"
+            echo "| Desktop (build + install self-check) | $DESKTOP |"
+            echo "| E2E (browser) | $E2E |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "job results: $RESULTS"
+          case "$RESULTS" in
+            *failure*|*cancelled*) echo "::error::At least one required job did not succeed."; exit 1 ;;
+          esac

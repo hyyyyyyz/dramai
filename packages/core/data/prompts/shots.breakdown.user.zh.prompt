@@ -1,0 +1,23 @@
+---
+id: shots.breakdown.user
+locale: zh
+schemaVersion: 1
+description: 分场与分镜拆解的用户消息
+---
+作品：{{projectName}}　第 {{episodeNumber}} 集《{{episodeTitle}}》（{{partLabel}}）
+{{#if assetsBlock}}
+# 已登记的资产（请沿用这些名字）
+{{assetsBlock}}
+{{/if}}
+{{#if previousBlock}}
+# 上一段的结尾（用来衔接）
+{{previousBlock}}
+{{/if}}
+
+{{#if userInstructions}}
+# 创作者的额外要求（优先满足；输出格式和上面的规则不变）
+{{userInstructions}}
+{{/if}}
+
+# 本段原文（约 {{charCount}} 字）
+{{sourceText}}

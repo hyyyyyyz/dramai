@@ -1,0 +1,5 @@
+# Bundled data is read as-is by the app: keep LF line endings even on a Windows checkout (git autocrlf),
+# and never touch the binary font.
+* text eol=lf
+*.otf binary
+*.ttf binary

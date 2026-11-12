@@ -1,0 +1,9 @@
+{
+  "extends": "@dramai/tsconfig/react.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+    "types": ["vite/client", "node"],
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src", "tests", "e2e", "vite.config.ts", "vitest.config.ts"]
+}

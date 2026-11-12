@@ -1,0 +1,11 @@
+---
+id: assets.sheet.location
+locale: zh
+schemaVersion: 1
+description: 地点设定图（无人空镜）
+---
+{{#if styleKeywords}}画风：{{styleKeywords}}。{{/if}}
+地点设定图，地点名：{{name}}。
+{{#if appearance}}环境与陈设：{{appearance}}。{{/if}}
+版式：单张图，固定视角，画面分出前景、中景、后景三层，空间关系清楚、陈设位置固定。
+**画面中没有任何人物**，也没有背影、剪影、倒影。光线统一自然，不要文字和水印。

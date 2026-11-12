@@ -1,0 +1,37 @@
+{
+  "name": "@dramai/webui",
+  "private": true,
+  "version": "0.5.0-beta.1",
+  "type": "module",
+  "description": "dramai WebUI launcher: starts the local server, serves the built workspace and opens the browser",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "bin": {
+    "dramai": "./bin/dramai.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node bin/dramai.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dramai/server": "workspace:*",
+    "@dramai/workspace": "workspace:*"
+  },
+  "devDependencies": {
+    "@dramai/eslint-config": "workspace:*",
+    "@dramai/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

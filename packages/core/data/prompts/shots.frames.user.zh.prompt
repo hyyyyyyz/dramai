@@ -1,0 +1,9 @@
+---
+id: shots.frames.user
+locale: zh
+schemaVersion: 1
+description: 镜头提示词的用户消息
+---
+风格关键词（系统会自动注入，仅供你判断画风）：{{styleKeywords}}
+
+{{shotsBlock}}

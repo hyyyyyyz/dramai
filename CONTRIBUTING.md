@@ -8,7 +8,7 @@ For contributors who prefer English, scroll to the bottom.
 - 报告 bug：[Bug Issue 模板](https://github.com/hyyyyyyz/dramai/issues/new?template=bug_report.yml)
 - 提议特性：[Feature Issue 模板](https://github.com/hyyyyyyz/dramai/issues/new?template=feature_request.yml)
 - 提交 PR：见下文工作流
-- 文档/翻译：欢迎补充 `docs/` 与 `README_EN.md`
+- 文档/翻译：欢迎补充 `docs/` 与 `README_CN.md`
 - 测试新 OpenAI 兼容服务商：在 [docs/PROVIDERS.md](./docs/PROVIDERS.md) 增加配置示例
 
 ## 🛠️ 本地开发流程
@@ -16,18 +16,18 @@ For contributors who prefer English, scroll to the bottom.
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git
 cd dramai
-nvm use      # 或确保 Node ≥ 20
-npm install
-npm run dev
+nvm use      # 或确保 Node ≥ 22.22.2
+pnpm install
+pnpm dev
 ```
 
 提交前请保证：
 
 ```bash
-npm run typecheck      # 类型检查
-npm run lint           # ESLint
-npm run format:check   # Prettier
-npm run build          # 生产构建无错
+pnpm typecheck      # 类型检查
+pnpm lint           # ESLint
+pnpm format:check   # Prettier
+pnpm build          # 生产构建无错
 ```
 
 ## 🌳 分支与 PR 规范
@@ -39,6 +39,23 @@ npm run build          # 生产构建无错
   - `docs(providers): add 302.AI example`
 - PR 描述请说明：**做了什么、为什么、如何测试**。涉及 UI 变化请附截图或动图。
 - 请保持 PR 小而聚焦，一个 PR 解决一件事。
+
+## Versioning and commit messages
+
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/); CI checks the title
+and fails when it does not. The commit type decides which part of the version a release bumps:
+
+| Commit type                                                        | Bumps                                                                                    |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `fix:`, `perf:`                                                    | Patch (`0.5.1 → 0.5.2`)                                                                  |
+| `feat:`                                                            | Minor (`0.5.2 → 0.6.0`)                                                                  |
+| A `!` after the type, or `BREAKING CHANGE:` in the body            | Major; before 1.0.0 it bumps minor and needs an "Incompatible changes" changelog section |
+| `docs:`, `test:`, `ci:`, `chore:`, `refactor:`, `style:`, `build:` | No release by themselves                                                                 |
+
+You do **not** need to change the version in your pull request: it is changed once, when a release is cut.
+The full rules (prereleases, tags, changelog requirements, the version tool) are in
+[docs/VERSIONING.md](./docs/VERSIONING.md), the release steps in [docs/RELEASING.md](./docs/RELEASING.md),
+and what CI runs in [docs/CI.md](./docs/CI.md).
 
 ## 🧹 代码规范
 
@@ -65,7 +82,7 @@ Thanks for considering a contribution!
 - Report bugs / request features through the issue templates.
 - Branch from `main`, name like `feat/<topic>` or `fix/<topic>`.
 - Use Conventional Commits in PR titles.
-- Run `npm run typecheck && npm run lint && npm run build` before pushing.
+- Run `pnpm typecheck && pnpm lint && pnpm build` before pushing.
 - Keep PRs small and focused.
 - Add yourself to `package.json` `contributors` if you wish.
 - Don't open public issues for security problems — see [SECURITY.md](./SECURITY.md).

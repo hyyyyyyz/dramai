@@ -1,0 +1,56 @@
+{
+  "name": "@dramai/workspace",
+  "private": true,
+  "version": "0.5.0-beta.1",
+  "type": "module",
+  "description": "dramai workspace SPA: talks to the local server over HTTP and SSE (shared by the WebUI and Desktop shells)",
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./dist/*": "./dist/*"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "e2e": "vite build && playwright test -c e2e/playwright.config.ts"
+  },
+  "dependencies": {
+    "@dramai/api": "workspace:*",
+    "@dramai/ui": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "i18next": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:",
+    "react-router": "catalog:"
+  },
+  "devDependencies": {
+    "@dramai/eslint-config": "workspace:*",
+    "@dramai/tsconfig": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@tailwindcss/vite": "^4.2.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.9",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "catalog:",
+    "jsdom": "^31.0.0",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "^8.0.10",
+    "vitest": "catalog:"
+  }
+}

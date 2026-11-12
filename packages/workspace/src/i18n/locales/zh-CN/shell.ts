@@ -1,0 +1,38 @@
+export default {
+  desktop: {
+    reveal: '在文件夹中显示',
+    revealProject: '在文件夹中显示项目',
+    revealMissing: '找不到这个文件，它可能已被移走',
+    dataDirHint: '想换数据文件夹：用应用菜单里的“更改数据目录…”。已有的数据不会被移动',
+    plainSecrets:
+      '这台电脑没有可用的系统密钥库，API Key 只靠文件权限保护，没有被系统加密。装好并启用系统密钥库后，会自动改为加密保存',
+    notifications: {
+      title: '桌面通知',
+      label: '任务完成或需要处理时通知我',
+      hint: '只在窗口不在前台时弹出，同时结束的任务合成一条',
+    },
+    notify: { done: '{{count}} 个任务已完成', attention: '{{count}} 个任务需要处理' },
+  },
+  shell: {
+    themeToLight: '切换到浅色',
+    themeToDark: '切换到深色',
+    language: '语言',
+    demoTitle: '演示模式',
+    demoNotice: '服务商是本机的模拟服务，不产生费用，生成的是占位内容',
+    serviceOk: '本地服务运行中',
+    serviceConnecting: '正在连接本地服务…',
+    serviceDown: '和本地服务断开了，正在重连',
+    ffmpegOk: 'ffmpeg 已就绪',
+    ffmpegLimited: 'ffmpeg 能力不全',
+    ffmpegMissing: '没有找到 ffmpeg',
+    dataDir: '数据目录 {{dir}}',
+    currentEpisode: '当前集',
+    noEpisodes: '还没有分集',
+    switchEpisode: '切换集',
+    allProjects: '全部项目',
+    projectNav: '项目导航',
+    episodeNav: '当前集导航',
+    mainNav: '主导航',
+    groupProject: '项目',
+  },
+}

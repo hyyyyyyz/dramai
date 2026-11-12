@@ -1,0 +1,4 @@
+/* 设计系统 v2：Tailwind + 自托管字体 + token + 元素默认值（不要同时加载旧入口 @dramai/ui） */
+@import '@dramai/ui/v2/styles.css';
+/* 工作台自己的源码也要被 Tailwind 扫描 */
+@source './';

@@ -1,9 +1,23 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (legacy, manual only)
 
+# ⚠️ 已停用自动触发，只能手动运行。
+#
+# 原因：这个工作流发布的是 packages/workspace 的构建产物。重构之后工作台不再是纯静态应用，
+# 它要连接本地服务（packages/server）才能工作；放到 GitHub Pages 上只会得到一个打不开数据的
+# 空壳，覆盖掉 Pages 上现有的页面。所以合并到 main 时不能再自动发布它。
+#
+# 之后的计划：做好宣传页 apps/site 之后，把这个文件换成 deploy-site.yml，构建并发布
+# apps/site；Pages 上不再提供工作台（上一个纯浏览器版本 v0.4.1 可以冻结到 /dramai/legacy/）。
+#
+# 手动运行需要勾选 confirm，防止误点。
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'I understand this publishes the workspace SPA, which cannot work on Pages without the local server'
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
@@ -17,33 +31,37 @@ concurrency:
 jobs:
   build:
     name: Build site
+    if: inputs.confirm
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # pnpm 版本取自根 package.json 的 "packageManager" 字段。
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      # See ci.yml for the rationale on `npm install` vs `npm ci`.
       - name: Install dependencies
-        run: npm install --prefer-offline --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm --filter @dramai/workspace build
         env:
           VITE_BASE: /dramai/
 
       # SPA 路由兜底：把 index.html 复制成 404.html，
       # 这样 GitHub Pages 在子路径刷新时会回到 SPA。
       - name: Add SPA 404 fallback
-        run: cp dist/index.html dist/404.html
+        run: cp packages/workspace/dist/index.html packages/workspace/dist/404.html
 
       - name: Disable Jekyll (avoid `_files` munging)
-        run: touch dist/.nojekyll
+        run: touch packages/workspace/dist/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -51,7 +69,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: packages/workspace/dist
 
   deploy:
     name: Deploy to GitHub Pages

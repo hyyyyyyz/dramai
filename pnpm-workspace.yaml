@@ -1,0 +1,32 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'tooling/*'
+
+# 多个包共用的依赖版本统一在这里声明，包内用 "catalog:" 引用。
+catalog:
+  '@eslint/js': ^10.0.1
+  '@playwright/test': ^1.65.0
+  '@types/node': ^24.12.2
+  '@tanstack/react-query': ^5.107.1
+  '@types/react': ^19.2.14
+  '@types/react-dom': ^19.2.3
+  eslint: ^10.2.1
+  eslint-plugin-react-hooks: ^7.1.1
+  eslint-plugin-react-refresh: ^0.5.2
+  globals: ^17.5.0
+  hono: ^4.13.0
+  i18next: ^27.1.1
+  '@hono/node-server': ^2.1.7
+  jszip: ^3.10.1
+  lucide-react: ^1.14.0
+  mammoth: ^1.12.0
+  react: ^19.2.5
+  react-dom: ^19.2.5
+  react-i18next: ^18.0.1
+  react-router: ^7.18.5
+  tailwindcss: ^4.2.4
+  typescript: ~6.0.2
+  typescript-eslint: ^8.58.2
+  vitest: ^4.1.0
+  zod: ^4.1.0

@@ -1,0 +1,10 @@
+/*
+ * 自托管字体，不请求任何外部域名（产品定位是数据和请求都不出本机）。
+ *  - Inter Variable：界面与数字的拉丁字母
+ *  - JetBrains Mono Variable：Base URL、模型名、提示词、时间码
+ *  - Noto Sans SC 700：只用于标题（--font-display），正文中文走系统字体
+ * 三者都按 unicode-range 切片，浏览器只下载页面用到的那几片。
+ */
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
+@import '../fonts/noto-sans-sc-700.css';

@@ -1,0 +1,463 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "id": "gemini-2.5-flash-image",
+      "protocol": "gemini-image",
+      "apiModel": "gemini-2.5-flash-image",
+      "displayName": "Nano Banana (Gemini 2.5 Flash Image)",
+      "capability": {
+        "media": "image",
+        "modes": {
+          "t2i": "supported",
+          "i2i": "unverified"
+        },
+        "refImages": {
+          "support": "unverified",
+          "value": 3,
+          "note": "参考图上限 3 取自 Google 公开文档的口径，未在本项目验证；参考图是否真的被用于保持角色一致也没验证"
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "supported",
+          "value": ["none"]
+        },
+        "aspectRatios": {
+          "support": "unverified",
+          "value": ["9:16", "16:9", "1:1"],
+          "note": "画幅经 generationConfig.imageConfig.aspectRatio 传出，服务商是否严格遵守没验证"
+        },
+        "verifiedAt": "2026-05-04"
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_image",
+          "amount": 0.35,
+          "range": [0.2, 0.5],
+          "note": "302.AI 页面给的是 0.2–0.5 PTC/张的区间，amount 取中值"
+        }
+      ],
+      "prompt": {
+        "lang": "en",
+        "negative": "inline",
+        "suffixFloor": []
+      },
+      "quirks": [
+        "画幅通过 generationConfig.imageConfig.aspectRatio 显式传出，不传时服务商给默认比例。",
+        "指令跟随比 Seedream 更精准，但更贵（预设备注，2026-05）。"
+      ],
+      "provenance": "文生图的协议与价格来自 v0.4 预设备注（302.AI，2026-05 端到端验证）；图生图 / 参考图 / 画幅未验证。"
+    },
+    {
+      "id": "doubao-seedream-5-0-260128",
+      "protocol": "openai-images",
+      "apiModel": "doubao-seedream-5-0-260128",
+      "displayName": "即梦 Seedream 5.0",
+      "capability": {
+        "media": "image",
+        "modes": {
+          "t2i": "supported",
+          "i2i": "unsupported"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0,
+          "note": "经 302.AI 的 /doubao 子路径，锁定角色参考图当前不通：服务商期望参考图是 URL 而不是 base64（2026-05 实测）"
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "supported",
+          "value": ["none"]
+        },
+        "aspectRatios": {
+          "support": "unverified",
+          "value": ["9:16", "16:9", "1:1"]
+        },
+        "verifiedAt": "2026-05-04"
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_image",
+          "amount": 0.035
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "field",
+        "suffixFloor": []
+      },
+      "quirks": [
+        "经 302.AI 的 /doubao 子路径调用时，锁定角色参考图当前不通：服务商期望参考图是 URL 而不是 base64（2026-05 实测）。因此这里标为不支持 i2i；需要多参考图一致性时，准入检查会显式失败而不是静默降级为纯文生图。"
+      ],
+      "provenance": "v0.4 预设备注（302.AI，2026-05 验证）。画幅未验证。"
+    },
+    {
+      "id": "wan2.2-i2v-flash",
+      "protocol": "aliyun-video",
+      "apiModel": "wan2.2-i2v-flash",
+      "displayName": "通义万相 Wan2.2 Flash",
+      "capability": {
+        "media": "video",
+        "modes": {
+          "i2v": "supported"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "supported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "supported",
+          "value": {
+            "values": [5]
+          }
+        },
+        "resolutions": {
+          "support": "supported",
+          "value": ["480P", "720P"]
+        },
+        "aspectRatios": {
+          "support": "supported",
+          "value": ["9:16", "16:9", "1:1"]
+        },
+        "verifiedAt": "2026-05-04",
+        "aspectFromSource": true,
+        "sizeStep": 2
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.02,
+          "dimensions": {
+            "resolution": "480P"
+          }
+        },
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.04,
+          "dimensions": {
+            "resolution": "720P"
+          }
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none",
+        "suffixFloor": []
+      },
+      "quirks": [
+        "时长固定 5 秒（预设备注）。",
+        "输出比例跟随输入的起始帧，所以起始帧必须已经是项目画幅。"
+      ],
+      "provenance": "v0.4 预设备注与协议注释（302.AI，2026-05 验证）。480P 来自价目表，只有 720P 是端到端跑过的。"
+    },
+    {
+      "id": "wan2.2-i2v-plus",
+      "protocol": "aliyun-video",
+      "apiModel": "wan2.2-i2v-plus",
+      "displayName": "通义万相 Wan2.2 Plus",
+      "capability": {
+        "media": "video",
+        "modes": {
+          "i2v": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unverified",
+        "lastFrame": "unverified",
+        "nativeAudio": "unverified",
+        "durations": {
+          "support": "unverified",
+          "value": {
+            "values": [3, 4, 5, 10, 15]
+          }
+        },
+        "resolutions": {
+          "support": "unverified",
+          "value": ["480P", "1080P"]
+        },
+        "aspectRatios": {
+          "support": "unverified",
+          "value": ["9:16", "16:9", "1:1"]
+        },
+        "aspectFromSource": true,
+        "sizeStep": 2
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.03,
+          "dimensions": {
+            "resolution": "480P"
+          }
+        },
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.15,
+          "dimensions": {
+            "resolution": "1080P"
+          }
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none",
+        "suffixFloor": []
+      },
+      "quirks": [],
+      "provenance": "价格来自 v0.4 协议注释（302.AI，2026-05）；能力项均未在本项目验证。"
+    },
+    {
+      "id": "wan2.5-i2v-preview",
+      "protocol": "aliyun-video",
+      "apiModel": "wan2.5-i2v-preview",
+      "displayName": "通义万相 Wan2.5 预览版",
+      "capability": {
+        "media": "video",
+        "modes": {
+          "i2v": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unverified",
+        "lastFrame": "unverified",
+        "nativeAudio": "unverified",
+        "durations": {
+          "support": "unverified",
+          "value": {
+            "values": [3, 4, 5, 10, 15]
+          }
+        },
+        "resolutions": {
+          "support": "unverified",
+          "value": ["480P", "720P", "1080P"]
+        },
+        "aspectRatios": {
+          "support": "unverified",
+          "value": ["9:16", "16:9", "1:1"]
+        },
+        "aspectFromSource": true,
+        "sizeStep": 2
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.05,
+          "dimensions": {
+            "resolution": "480P"
+          }
+        },
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.1,
+          "dimensions": {
+            "resolution": "720P"
+          }
+        },
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.16,
+          "dimensions": {
+            "resolution": "1080P"
+          }
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none",
+        "suffixFloor": []
+      },
+      "quirks": ["协议注释写明支持音频，但当前适配器还没有发送音频参数。"],
+      "provenance": "价格来自 v0.4 协议注释（302.AI，2026-05）；能力项均未在本项目验证。"
+    },
+    {
+      "id": "wan2.7-i2v",
+      "protocol": "aliyun-video",
+      "apiModel": "wan2.7-i2v",
+      "displayName": "通义万相 Wan2.7",
+      "capability": {
+        "media": "video",
+        "modes": {
+          "i2v": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unverified",
+        "lastFrame": "unverified",
+        "nativeAudio": "unverified",
+        "durations": {
+          "support": "unverified",
+          "value": {
+            "values": [3, 4, 5, 10, 15]
+          }
+        },
+        "resolutions": {
+          "support": "unverified",
+          "value": ["720P", "1080P"]
+        },
+        "aspectRatios": {
+          "support": "unverified",
+          "value": ["9:16", "16:9", "1:1"]
+        },
+        "aspectFromSource": true,
+        "sizeStep": 2
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.1,
+          "dimensions": {
+            "resolution": "720P"
+          }
+        },
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.15,
+          "dimensions": {
+            "resolution": "1080P"
+          }
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none",
+        "suffixFloor": []
+      },
+      "quirks": [],
+      "provenance": "价格来自 v0.4 协议注释（302.AI，2026-05）；能力项均未在本项目验证。"
+    },
+    {
+      "id": "doubao-seedance-2-0-fast-260128",
+      "protocol": "volcengine-video",
+      "apiModel": "doubao-seedance-2-0-fast-260128",
+      "displayName": "即梦 Seedance 2.0 Fast",
+      "capability": {
+        "media": "video",
+        "modes": {
+          "i2v": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unverified",
+        "lastFrame": "unverified",
+        "nativeAudio": "unverified",
+        "durations": {
+          "support": "unverified",
+          "value": {
+            "min": 4,
+            "max": 15
+          },
+          "note": "来自 302.AI 产品页 OpenAPI 规格，未在本项目验证"
+        },
+        "resolutions": {
+          "support": "unverified",
+          "value": ["480p", "720p", "1080p"]
+        },
+        "aspectRatios": {
+          "support": "unverified",
+          "value": ["9:16", "16:9", "1:1"]
+        },
+        "sizeStep": 2
+      },
+      "pricing": [],
+      "prompt": {
+        "lang": "zh",
+        "recommendedMaxChars": 500,
+        "negative": "none",
+        "suffixFloor": []
+      },
+      "quirks": [
+        "generate_audio 默认开启时模型会自带人声：与独立 TTS 旁白并存会出现两层人声，发声归属见 voice.ts（阶段 5）。",
+        "首尾帧、全能参考等模式未在本项目验证，这里不声明。"
+      ],
+      "provenance": "时长范围、分辨率档位与 generate_audio 取自 v0.4 协议注释（302.AI，2026-05），均未在本项目验证；未定价。"
+    }
+  ]
+}

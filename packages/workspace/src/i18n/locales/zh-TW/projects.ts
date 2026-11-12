@@ -1,0 +1,47 @@
+export default {
+  projects: {
+    trashLink: '回收站',
+    delete: {
+      title: '刪除「{{name}}」？',
+      body: '專案會先移到回收站，可以在設定 · 資料與備份裡恢復。從回收站徹底清除才會刪除檔案。',
+      confirm: '移到回收站',
+      done: '已把「{{name}}」移到回收站',
+    },
+    title: '專案',
+    sub: '每個專案是資料目錄裡的一個資料夾，圖片和影片可以直接用其他軟體開啟',
+    search: '搜尋專案',
+    noMatch: '沒有符合條件的專案',
+    filter: { label: '篩選', all: '全部', active: '進行中', done: '已完成' },
+    empty: {
+      title: '還沒有專案',
+      body: '新建一個專案，放進小說或劇本，dramai 會把它拆成集、場和鏡頭',
+    },
+    card: {
+      menu: '專案 {{name}} 的更多操作',
+      delete: '刪除專案…',
+      episodesShots: '{{episodes}} 集 · {{shots}} 個鏡頭',
+      noEpisodes: '還沒分集',
+      draft: '草稿 · 還沒分集',
+      allPlanned: '{{count}} 集待拆分',
+      progressLabel: '各集進度',
+      episodeStatus: {
+        storyboarding: '第 {{n}} 集分鏡中',
+        producing: '第 {{n}} 集進行中',
+        composed: '第 {{n}} 集已合成',
+      },
+    },
+    new: {
+      open: '新建專案',
+      title: '新建專案',
+      name: '標題',
+      namePlaceholder: '例如：清朝宮廷',
+      nameRequired: '請填寫標題',
+      aspect: '畫幅',
+      aspectHint: '畫幅是整個專案唯一的畫幅，生圖、生影片和合成都按它來',
+      narration: '旁白怎麼出聲',
+      narrationHint: '之後可以改。影片模型自帶的人聲和旁白不能同時出現在一個鏡頭裡，所以需要先選定',
+      style: '風格',
+      submit: '建立並開啟',
+    },
+  },
+}

@@ -1,0 +1,55 @@
+export default {
+  export: {
+    title: '第 {{n}} 集 · {{title}} · 导出',
+    sub: '每件产物都记着它是按什么生成的。上游改了，下游会标为过期，但仍然可以下载',
+    goCompose: '去合成页',
+    block: { episode: '本集产物' },
+    ffmpeg: { ok: 'ffmpeg 可用', bad: 'ffmpeg 不可用，不能渲染成片' },
+    status: {
+      current: '最新',
+      stale: '已过期',
+      missing: '缺失',
+      blocked: '被拦下',
+      ready: '可下载',
+    },
+    download: '下载',
+    downloadAnyway: '仍然下载',
+    cut: {
+      title: '成片 mp4',
+      basis: {
+        current: '成片和当前的时间线、镜头一致',
+        stale: '渲染之后时间线或镜头改过。它仍然可以下载，dramai 不会自动重新渲染',
+        missing: '还没有渲染过成片',
+        blocked: '时间线有阻断问题，不能渲染',
+      },
+      render: '去渲染',
+      rerender: '重新渲染',
+    },
+    subs: {
+      title: '字幕 SRT / VTT',
+      basis: '由旁白文本和时间线实时生成，永远是当前这一版',
+      basisEmpty: '时间线是空的，还没有字幕可导',
+    },
+    narration: {
+      title: '旁白配音',
+      basis: '{{current}} / {{total}} 个镜头的配音是最新的',
+      none: '这一集没有旁白配音',
+      go: '去生成配音',
+    },
+    package: {
+      title: '素材包 zip',
+      basis: '按时间线整理的片段视频、旁白、字幕等素材，可以在剪辑软件里继续做',
+      basisBlocked: '要求时间线没有阻断问题，现在还有 {{count}} 个',
+      fix: '去处理',
+      download: '下载素材包',
+      options: '素材包里包含',
+      images: '分镜图',
+      cut: '渲染好的成片',
+      note: '下载素材包会把这一集标记为“已导出”。素材包是一个 zip，由你在剪辑软件里自行导入，能否顺利导入取决于你的软件版本。',
+    },
+    project: {
+      before: '整个项目的备份与导入旧版备份：',
+      link: '设置 · 数据与备份',
+    },
+  },
+}

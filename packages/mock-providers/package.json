@@ -1,0 +1,45 @@
+{
+  "name": "@dramai/mock-providers",
+  "private": true,
+  "version": "0.5.0-beta.1",
+  "type": "module",
+  "description": "Local mock AI providers (LLM / image / video / TTS) for frontend development, demos and manual end-to-end runs. Dev tool: nothing in the production start path depends on it.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "dramai-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "demo": "node --conditions=dramai-source --experimental-strip-types --disable-warning=ExperimentalWarning src/demo.ts"
+  },
+  "dependencies": {
+    "@dramai/api": "workspace:*",
+    "@dramai/core": "workspace:*",
+    "@dramai/server": "workspace:*",
+    "@hono/node-server": "catalog:",
+    "hono": "catalog:"
+  },
+  "devDependencies": {
+    "@dramai/eslint-config": "workspace:*",
+    "@dramai/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "jszip": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

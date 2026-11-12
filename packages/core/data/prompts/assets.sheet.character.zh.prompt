@@ -1,0 +1,14 @@
+---
+id: assets.sheet.character
+locale: zh
+schemaVersion: 1
+description: 角色设定图（生成后所有分镜以它为条件）
+---
+{{#if styleKeywords}}画风：{{styleKeywords}}。{{/if}}
+角色设定图，角色名：{{name}}。
+{{#if appearance}}外貌与造型（按这个顺序画）：{{appearance}}。{{/if}}
+{{#if originalsHint}}参考图是用户提供的照片 / 原稿，只用来确定长相与气质，请按画风重新绘制，不要照搬背景。{{/if}}
+{{#if multiView}}版式：一张图里并排画出同一个人的四个视图——左侧是正脸特写，右侧并排是正面、90 度侧面、背面三张等高的全身像，头顶与脚底对齐。特写与全身必须是同一张脸、同一发型、同一套服装。{{else}}版式：{{viewName}}全身像，单人居中。{{/if}}
+站姿中性放松（A 字站姿），双手自然下垂；纯白背景；均匀柔和的棚拍光，无强烈阴影。
+一致性优先于好看：这张图要中性、可复用，不要夸张表情和戏剧化姿势。
+{{#if wantsExclusion}}画面中只有这一个人物，没有其他人物和文字。{{/if}}

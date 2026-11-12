@@ -1,0 +1,32 @@
+name: Setup workspace
+description: Install pnpm and Node.js (with the pnpm store cached) and, by default, the workspace dependencies.
+
+inputs:
+  node-version:
+    description: Node.js version. Empty means "use .nvmrc".
+    required: false
+    default: ''
+  install:
+    description: Run `pnpm install --frozen-lockfile` after setup.
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    # pnpm 版本取自根 package.json 的 "packageManager" 字段。必须在 setup-node 之前，
+    # setup-node 的 `cache: pnpm` 需要 pnpm 已经在 PATH 上。
+    - name: Setup pnpm
+      uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+    - name: Setup Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - name: Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile

@@ -1,0 +1,225 @@
+/*
+ * dramai 设计系统 v2：token。
+ * 依据 design/DESIGN.md 2.1–2.4。深色「剪辑室」是默认，浅色「分镜稿纸」。
+ *
+ * 主题切换：
+ *   <html data-theme="dark|light">  显式指定
+ *   没有 data-theme                 跟随系统（没有 JS 时也正确）；系统没有偏好时是深色
+ *
+ * 注意：浅色变量写了两份（显式 [data-theme='light'] 与系统偏好的媒体查询），
+ * 两份必须一致，tests/theme.test.ts 会比较。
+ *
+ * 不要和旧入口 `@dramai/ui/styles/globals.css` 同时加载：两边的 token 同名、值不同。
+ */
+
+@source "../";
+
+/* ---------- 深色（默认） ---------- */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --background: oklch(0.165 0.006 70); /* #100E0C 墨 */
+  --surface: oklch(0.205 0.007 70);
+  --surface-2: oklch(0.245 0.008 70);
+  --sunken: oklch(0.135 0.005 70);
+  --foreground: oklch(0.94 0.006 80);
+  --muted-foreground: oklch(0.76 0.01 75);
+  --subtle: oklch(0.62 0.01 75);
+  --border: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --border-strong: color-mix(in oklab, var(--foreground) 22%, transparent);
+  --accent: oklch(0.619 0.19 40); /* #DF500C 朱砂：图形与实心按钮 */
+  --accent-text: oklch(0.74 0.16 40); /* #FD8358：文字与链接 */
+  --accent-hover: oklch(0.67 0.19 40);
+  --accent-soft: oklch(0.3 0.075 40);
+  --accent-foreground: oklch(0.165 0.006 70); /* 墨：压在朱砂上的字 */
+  --ring: oklch(0.619 0.19 40);
+  --success: oklch(0.78 0.14 155);
+  --success-soft: oklch(0.29 0.05 155);
+  --warn: oklch(0.83 0.14 90);
+  --warn-soft: oklch(0.31 0.05 90);
+  --danger: oklch(0.72 0.172 12);
+  --danger-soft: oklch(0.3 0.072 12);
+  --info: oklch(0.76 0.11 235);
+  --info-soft: oklch(0.29 0.05 235);
+  --shadow-pop: 0 8px 24px oklch(0 0 0 / 0.32), 0 0 0 1px var(--border);
+  --scrim: oklch(0 0 0 / 0.5);
+}
+
+/* ---------- 浅色：显式（也可用在局部容器上，做并排预览） ---------- */
+[data-theme='light'] {
+  color-scheme: light;
+  --background: oklch(0.974 0.0074 81); /* #F9F6F1 纸 */
+  --surface: oklch(0.995 0.004 85);
+  --surface-2: oklch(0.955 0.01 85);
+  --sunken: oklch(0.935 0.012 85);
+  --foreground: oklch(0.21 0.012 60);
+  --muted-foreground: oklch(0.42 0.012 65);
+  --subtle: oklch(0.52 0.012 70);
+  --border: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --border-strong: color-mix(in oklab, var(--foreground) 24%, transparent);
+  --accent: oklch(0.619 0.19 40); /* 与深色完全一样 */
+  --accent-text: oklch(0.52 0.16 40); /* #B13E06 */
+  --accent-hover: oklch(0.67 0.19 40);
+  --accent-soft: oklch(0.94 0.032 45);
+  --accent-foreground: oklch(0.165 0.006 70);
+  --ring: oklch(0.619 0.19 40);
+  --success: oklch(0.48 0.115 155);
+  --success-soft: oklch(0.94 0.04 155);
+  --warn: oklch(0.5 0.1 75);
+  --warn-soft: oklch(0.95 0.05 90);
+  --danger: oklch(0.52 0.198 12);
+  --danger-soft: oklch(0.95 0.024 12);
+  --info: oklch(0.48 0.105 240);
+  --info-soft: oklch(0.94 0.03 235);
+  --shadow-pop: 0 8px 24px oklch(0.3 0.02 60 / 0.16), 0 0 0 1px var(--border);
+  --scrim: oklch(0.2 0.01 60 / 0.4);
+}
+
+/* ---------- 浅色：没有 data-theme 且系统偏好浅色 ---------- */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --background: oklch(0.974 0.0074 81);
+    --surface: oklch(0.995 0.004 85);
+    --surface-2: oklch(0.955 0.01 85);
+    --sunken: oklch(0.935 0.012 85);
+    --foreground: oklch(0.21 0.012 60);
+    --muted-foreground: oklch(0.42 0.012 65);
+    --subtle: oklch(0.52 0.012 70);
+    --border: color-mix(in oklab, var(--foreground) 10%, transparent);
+    --border-strong: color-mix(in oklab, var(--foreground) 24%, transparent);
+    --accent: oklch(0.619 0.19 40);
+    --accent-text: oklch(0.52 0.16 40);
+    --accent-hover: oklch(0.67 0.19 40);
+    --accent-soft: oklch(0.94 0.032 45);
+    --accent-foreground: oklch(0.165 0.006 70);
+    --ring: oklch(0.619 0.19 40);
+    --success: oklch(0.48 0.115 155);
+    --success-soft: oklch(0.94 0.04 155);
+    --warn: oklch(0.5 0.1 75);
+    --warn-soft: oklch(0.95 0.05 90);
+    --danger: oklch(0.52 0.198 12);
+    --danger-soft: oklch(0.95 0.024 12);
+    --info: oklch(0.48 0.105 240);
+    --info-soft: oklch(0.94 0.03 235);
+    --shadow-pop: 0 8px 24px oklch(0.3 0.02 60 / 0.16), 0 0 0 1px var(--border);
+    --scrim: oklch(0.2 0.01 60 / 0.4);
+  }
+}
+
+/* ---------- Tailwind 主题：颜色指向运行时变量，切换主题只改变量 ---------- */
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-sunken: var(--sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-scrim: var(--scrim);
+  --shadow-pop: var(--shadow-pop);
+}
+
+@theme {
+  /* 字体：标题专用 display 把 Noto Sans SC 排在系统中文字体前（见 DESIGN.md 2.2）。没有衬线。 */
+  --font-sans:
+    'Inter Variable', 'Inter', 'PingFang SC', 'HarmonyOS Sans SC', 'Noto Sans SC',
+    'Microsoft YaHei UI', 'Microsoft YaHei', 'Hiragino Sans GB', system-ui, -apple-system,
+    sans-serif;
+  --font-display:
+    'Inter Variable', 'Inter', 'Noto Sans SC', 'PingFang SC', 'HarmonyOS Sans SC',
+    'Microsoft YaHei UI', 'Microsoft YaHei', 'Hiragino Sans GB', system-ui, -apple-system,
+    sans-serif;
+  --font-mono:
+    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo,
+    Consolas, monospace;
+
+  /* 字号 / 行高（DESIGN.md 2.2）。text-base 是工作台正文 14px，text-md 是宣传页正文 16px */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.6;
+  --text-md: 1rem;
+  --text-md--line-height: 1.75;
+  --text-title-sm: 1rem;
+  --text-title-sm--line-height: 1.4;
+  --text-title-md: 1.125rem;
+  --text-title-md--line-height: 1.4;
+  --text-title-lg: 1.625rem;
+  --text-title-lg--line-height: 1.3;
+  --text-title-xl: 2rem;
+  --text-title-xl--line-height: 1.3;
+
+  /* 圆角：比常见的 8–10 / 12–16 更紧，画框和分镜稿本来就是直角的 */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* 动效：整页只用一条曲线 */
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 320ms;
+
+  --animate-busy-slide: busy-slide 1.6s var(--ease-standard) infinite;
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-standard);
+  --animate-pop-in: pop-in var(--duration-slow) var(--ease-standard);
+  --animate-slide-in-right: slide-in-right var(--duration-slow) var(--ease-standard);
+  --animate-slide-in-bottom: slide-in-bottom var(--duration-slow) var(--ease-standard);
+  --animate-toast-in: toast-in var(--duration-slow) var(--ease-standard);
+
+  @keyframes busy-slide {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(280%);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes slide-in-bottom {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+}

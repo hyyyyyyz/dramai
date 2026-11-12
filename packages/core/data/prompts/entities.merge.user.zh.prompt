@@ -1,0 +1,11 @@
+---
+id: entities.merge.user
+locale: zh
+schemaVersion: 1
+description: 实体合并的用户消息
+---
+# 已登记的资产库
+{{libraryBlock}}
+
+# 初步分组（编号 · 类别 · 叫法 · 出现镜头 · 外貌描述）
+{{groupsBlock}}
