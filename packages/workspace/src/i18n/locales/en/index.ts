@@ -6,6 +6,7 @@ import overview from './overview'
 import materials from './materials'
 import settings from './settings'
 import jobs from './jobs'
+import production from './production'
 
 export default {
   ...common,
@@ -16,4 +17,5 @@ export default {
   ...materials,
   ...settings,
   ...jobs,
+  ...production,
 }

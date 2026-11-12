@@ -14,6 +14,10 @@ export const qk = {
   assets: (projectId: string) => ['assets', projectId] as const,
   candidates: (projectId: string) => ['candidates', projectId] as const,
   artifacts: ['artifacts'] as const,
+  episodeArtifacts: (episodeId: string) => ['artifacts', episodeId] as const,
+  /** 只读预检（镜头卡上的“不能生成”原因、批量确认里的费用）。键里带上请求内容。 */
+  preflight: ['preflight'] as const,
+  asset: (id: string) => ['asset', id] as const,
   timeline: ['timeline'] as const,
   jobs: ['jobs'] as const,
 }

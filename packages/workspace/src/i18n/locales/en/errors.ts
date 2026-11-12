@@ -29,6 +29,8 @@ export default {
   ARTIFACT_UPSTREAM_MISSING:
     'A required upstream product is missing. Finish the previous step first',
 
+  STYLE_REFERENCE_MISSING:
+    'A reference-image style needs an image uploaded first; it can’t be picked while creating a project, so create it and then upload',
   NOT_IN_TRASH: 'Only projects that are already in the trash can be purged',
   BUSY: 'A job is running. Wait for it to finish',
   MATERIAL_TOO_LARGE: 'The file is larger than 20 MB',
@@ -71,6 +73,10 @@ export default {
   ALREADY_FINISHED: 'The job has already finished',
   NOT_FAILED: 'Only failed jobs can be handled this way',
   NOTHING_TO_RESUME: 'There is no upstream job to continue. Regenerate instead',
+  NOT_RUNNING:
+    '“Ignore result” only applies to running jobs; a queued job hasn’t cost anything yet, so just cancel it',
+  NOT_APPLICABLE:
+    'This job has no “ignore result” (only paid jobs that generate images, videos or voice-over do)',
   CONFIRM_RECHARGE_REQUIRED:
     'Regenerating may be charged again, so it needs your explicit confirmation',
 }

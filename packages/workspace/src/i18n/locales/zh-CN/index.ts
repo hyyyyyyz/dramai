@@ -6,6 +6,7 @@ import overview from './overview'
 import materials from './materials'
 import settings from './settings'
 import jobs from './jobs'
+import production from './production'
 
 /** zh-CN 是文案的“源”：类型从这里推出来，en 必须有同样的键（tests/i18n.test.ts 逐键核对）。 */
 export default {
@@ -17,4 +18,5 @@ export default {
   ...materials,
   ...settings,
   ...jobs,
+  ...production,
 }

@@ -20,6 +20,8 @@ export function makeJob(patch: Partial<JobListItem> = {}): JobListItem {
     createdAt: now,
     updatedAt: now,
     needsAttention: false,
+    target: { kind: 'project' },
+    resultIgnored: false,
     ...patch,
   }
   job.needsAttention =

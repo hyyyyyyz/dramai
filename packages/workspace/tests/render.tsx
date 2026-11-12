@@ -6,6 +6,7 @@ import type { DramaiClient } from '@dramai/api'
 import { ToastProvider } from '@dramai/ui/v2'
 import { ApiProvider } from '@/data/api-context'
 import { EventSyncProvider } from '@/data/event-sync'
+import { JobOpsProvider } from '@/features/jobs/JobOpsProvider'
 import { i18n, initI18n, setLocale, type Locale } from '@/i18n'
 
 let ready: Promise<unknown> | undefined
@@ -25,7 +26,9 @@ export function renderApp(ui: ReactElement, opts: { client: DramaiClient; route?
       <ApiProvider client={opts.client}>
         <EventSyncProvider>
           <ToastProvider>
-            <MemoryRouter initialEntries={[opts.route ?? '/']}>{ui}</MemoryRouter>
+            <JobOpsProvider>
+              <MemoryRouter initialEntries={[opts.route ?? '/']}>{ui}</MemoryRouter>
+            </JobOpsProvider>
           </ToastProvider>
         </EventSyncProvider>
       </ApiProvider>

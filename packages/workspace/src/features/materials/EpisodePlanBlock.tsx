@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowDown, ArrowUp, MoreHorizontal, Pencil, Sparkles, Trash2 } from 'lucide-react'
 import type { CallOutput, JobListItem } from '@dramai/api'
@@ -12,74 +12,22 @@ import {
   Modal,
   Notice,
   Pill,
-  Progress,
   useToast,
   iconProps,
 } from '@dramai/ui/v2'
-import { useEventSnapshot } from '@/data/use-events'
 import { qk } from '@/data/keys'
 import { useCall } from '@/data/queries'
 import { Block } from '@/features/common/PageHead'
 import { ErrorNotice } from '@/features/common/error-text'
 import { failureKind } from '@/features/jobs/job-model'
 import { episodeStatusTone, sourceChapterRange } from '@/lib/episode'
-import { useFormat } from '@/i18n/format'
 import { useOnJobFinished, usePlanJob } from './use-plan-job'
+import { StreamedText } from '@/features/jobs/StreamedText'
 
 type EpisodeItem = CallOutput<'episodes.list'>['items'][number]
 type MaterialItem = CallOutput<'materials.list'>['items'][number]
 
 const DEFAULT_TARGET = 2500
-
-/** 流式文本：LLM 正在写的分集规划（原样的 JSON 输出），只显示最后一段。 */
-function StreamedText({ job }: { job: JobListItem }) {
-  const { t } = useTranslation()
-  const fmt = useFormat()
-  const stream = useEventSnapshot().streams[job.id]
-  const box = useRef<HTMLPreElement>(null)
-  useEffect(() => {
-    const el = box.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [stream?.text])
-  return (
-    <div
-      className="flex flex-col gap-2 rounded-md border border-border bg-background p-3"
-      data-testid="plan-stream"
-    >
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="font-medium">
-          {job.status === 'queued' ? t('materials.plan.queued') : t('materials.plan.running')}
-        </span>
-        {stream && (
-          <span className="font-mono text-xs text-muted-foreground">
-            {t('materials.plan.chars', { count: stream.chars, n: fmt.number(stream.chars) })}
-          </span>
-        )}
-      </div>
-      <Progress
-        aria-label={t('materials.plan.running')}
-        indeterminate={job.status === 'running'}
-        value={0}
-      />
-      {stream ? (
-        <pre
-          ref={box}
-          tabIndex={0}
-          aria-label={t('materials.plan.streamLabel')}
-          className="max-h-48 overflow-auto rounded-sm bg-sunken p-3 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground"
-        >
-          {stream.text.slice(-4000)}
-        </pre>
-      ) : (
-        <p className="text-xs text-subtle">
-          {job.status === 'running'
-            ? t('materials.plan.waitingText')
-            : t('materials.plan.queuedHint')}
-        </p>
-      )}
-    </div>
-  )
-}
 
 export function EpisodePlanBlock({
   projectId,
@@ -172,7 +120,18 @@ export function EpisodePlanBlock({
         )}
         {plan.isError && <ErrorNotice error={plan.error} />}
         {reorder.isError && <ErrorNotice error={reorder.error} />}
-        {active && <StreamedText job={job} />}
+        {active && (
+          <StreamedText
+            job={job}
+            labels={{
+              running: t('materials.plan.running'),
+              queued: t('materials.plan.queued'),
+              waiting: t('materials.plan.waitingText'),
+              queuedHint: t('materials.plan.queuedHint'),
+              streamLabel: t('materials.plan.streamLabel'),
+            }}
+          />
+        )}
         {failed && (
           <Notice tone="danger" title={t('materials.plan.failed')}>
             {t(`jobs.failure.${failureKind(job)}`)}

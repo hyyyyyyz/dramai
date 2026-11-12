@@ -93,11 +93,15 @@ type JobList = CallOutput<'jobs.list'>
 function mergeJob(
   old: JobList['items'][number] | undefined,
   job: Extract<ServerEvent, { type: 'job.updated' }>['job'],
-) {
+  target?: JobList['items'][number]['target'],
+): JobList['items'][number] {
   return {
     ...job,
     queuePosition: job.status === 'queued' ? old?.queuePosition : undefined,
     needsAttention: job.status === 'failed' && job.acknowledgedAt === undefined,
+    // 目标（镜头 / 资产名……）事件里可能带着；没带就沿用列表里已有的，随后的补充重取会校正
+    target: target ?? old?.target ?? { kind: 'project' },
+    resultIgnored: Boolean(job.ignoreResult) || Boolean(old?.resultIgnored),
   }
 }
 
@@ -149,6 +153,8 @@ export function keysForChange(
   const pid = e.projectId
   // 集的进度汇总（候选数、设定图数……）被很多实体影响，列表项也带它们
   const progress = [pid ? qk.episodes(pid) : ['episodes'], qk.projects]
+  // 镜头卡的“不能生成”原因、过期原因都由这些派生：实体一变就要重算
+  const derived = [qk.preflight, qk.artifacts]
   switch (e.entity) {
     case 'project':
       return [qk.projects, ...(e.ids?.length ? e.ids.map((id) => qk.project(id)) : [['project']])]
@@ -156,9 +162,9 @@ export function keysForChange(
       return [...progress, ['episode'], ...(pid ? [qk.project(pid)] : [['project']])]
     case 'scene':
     case 'shot':
-      return [...progress, ['episode']]
+      return [...progress, ['episode'], ...derived]
     case 'asset':
-      return [pid ? qk.assets(pid) : ['assets'], ...progress, ['candidates']]
+      return [pid ? qk.assets(pid) : ['assets'], ['asset'], ...progress, ['candidates'], ...derived]
     case 'candidate':
       return [
         pid ? qk.candidates(pid) : ['candidates'],
@@ -174,9 +180,9 @@ export function keysForChange(
     case 'timeline':
       return [qk.timeline, ...progress]
     case 'provider':
-      return [qk.providers, qk.settings]
+      return [qk.providers, qk.settings, qk.preflight]
     case 'settings':
-      return [qk.settings]
+      return [qk.settings, qk.preflight]
     case 'import':
       return [qk.projects, ['episodes'], ['project']]
   }
@@ -215,15 +221,23 @@ export function routeEvent(event: ServerEvent, deps: EventDeps): void {
         const items = old.items.map((j) => {
           if (j.id !== job.id) return j
           found = true
-          return mergeJob(j, job)
+          return mergeJob(j, job, event.target)
         })
-        return { items: found ? items : [mergeJob(undefined, job), ...items] }
+        return { items: found ? items : [mergeJob(undefined, job, event.target), ...items] }
       })
       // 队列位置、新任务的完整信息：补一次节流的重取
       invalidator.add(qk.jobs)
       if (TERMINAL.has(job.status)) {
         // 任务结束，对应的实体和进度很可能变了（事件通常会先到，这里是兜底）
         invalidator.add(job.projectId ? qk.episodes(job.projectId) : ['episodes'])
+        // 生成结束：镜头的版本、过期状态、能不能再生成都可能变了
+        invalidator.add(['episode'])
+        invalidator.add(qk.artifacts)
+        invalidator.add(qk.preflight)
+        // 设定图 / 候选也可能是这个任务产出的（服务端不一定另发 data.changed）
+        invalidator.add(['asset'])
+        invalidator.add(job.projectId ? qk.assets(job.projectId) : ['assets'])
+        invalidator.add(job.projectId ? qk.candidates(job.projectId) : ['candidates'])
         setTimeout(() => store.clearStream(job.id), STREAM_LINGER_MS)
       }
       return

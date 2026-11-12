@@ -41,12 +41,9 @@ describe('both languages are complete', () => {
       expect(zhV, `zh-CN missing ${base(k)}`).toBeDefined()
       const zhP = new Set(params(zhV!))
       // count 只在英文复数里出现；其余参数两边必须一致
-      const enP = params(v).filter((p) => p !== 'count' || zhP.has('count'))
-      const zhNoCount = [...zhP].filter((p) => p !== 'count')
-      expect(
-        enP.filter((p) => p !== 'count'),
-        k,
-      ).toEqual(zhNoCount)
+      const enP = [...new Set(params(v))].filter((p) => p !== 'count').sort()
+      const zhNoCount = [...zhP].filter((p) => p !== 'count').sort()
+      expect(enP, k).toEqual(zhNoCount)
     }
   })
 

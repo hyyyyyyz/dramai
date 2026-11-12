@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { useEpisodes } from './queries'
 
 /**
@@ -50,4 +50,17 @@ export function useCurrentEpisode(projectId: string) {
     [projectId],
   )
   return { current, episodes, select, isPending: query.isPending }
+}
+
+/** 打开某一集的页面时，把它记为当前集（侧栏的集切换器、概览的“下一步”都跟着它）。 */
+export function useCurrentEpisodeSync(projectId: string, episodeId: string) {
+  useEffect(() => {
+    if (!projectId || !episodeId) return
+    try {
+      localStorage.setItem(key(projectId), episodeId)
+    } catch {
+      /* 存储不可用 */
+    }
+    for (const fn of listeners) fn()
+  }, [projectId, episodeId])
 }

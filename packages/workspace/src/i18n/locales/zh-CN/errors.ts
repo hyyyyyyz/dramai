@@ -27,6 +27,7 @@ export default {
   ARTIFACT_INPUTS_BLOCKED: '缺少必需的输入，暂时不能生成',
   ARTIFACT_UPSTREAM_MISSING: '缺少必需的上游产物，请先完成上一步',
 
+  STYLE_REFERENCE_MISSING: '参考图风格需要先上传一张图片；创建项目时不能直接选，先创建再上传',
   NOT_IN_TRASH: '只能彻底删除已经在回收站里的项目',
   BUSY: '有任务正在运行，请等它结束',
   MATERIAL_TOO_LARGE: '素材文件超过 20 MB',
@@ -65,5 +66,7 @@ export default {
   ALREADY_FINISHED: '任务已经结束',
   NOT_FAILED: '只有失败的任务才能这样操作',
   NOTHING_TO_RESUME: '没有可以续上的上游任务，请直接重新生成',
+  NOT_RUNNING: '“忽略结果”只对运行中的任务有效；排队中的任务还没花钱，直接取消即可',
+  NOT_APPLICABLE: '这个任务没有“忽略结果”（只有生成图片、视频、配音的付费任务才有）',
   CONFIRM_RECHARGE_REQUIRED: '重新生成可能再次计费，需要你明确确认',
 }

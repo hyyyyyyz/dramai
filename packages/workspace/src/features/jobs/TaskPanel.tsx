@@ -5,7 +5,6 @@ import type { JobListItem } from '@dramai/api'
 import {
   Button,
   IconButton,
-  Modal,
   Notice,
   Skeleton,
   Tabs,
@@ -14,14 +13,13 @@ import {
   iconProps,
 } from '@dramai/ui/v2'
 import { useEventSnapshot } from '@/data/use-events'
-import { isApiCode } from '@/data/errors'
 import { useJobs, useProjects } from '@/data/queries'
 import { useNow } from '@/lib/use-now'
 import { useErrorText } from '@/features/common/use-error-text'
 import { TaskItem } from './TaskItem'
 import { jobContext } from './job-context'
-import { groupJobs, jobActions, jobCounts, type JobGroup } from './job-model'
-import { useJobActions } from './use-job-actions'
+import { groupJobs, jobCounts, type JobGroup } from './job-model'
+import { useJobOps } from './job-ops-context'
 
 type Filter = 'all' | 'running' | 'queued' | 'attention'
 
@@ -32,52 +30,13 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
   const projects = useProjects()
   const snapshot = useEventSnapshot()
   const errorText = useErrorText()
-  const actions = useJobActions()
+  const ops = useJobOps()
   const [filter, setFilter] = useState<Filter>('all')
-  const [confirm, setConfirm] = useState<JobListItem | undefined>()
-  const [actionError, setActionError] = useState<unknown>()
 
   const items = useMemo(() => jobs.data?.items ?? [], [jobs.data])
   const groups = useMemo(() => groupJobs(items), [items])
   const counts = useMemo(() => jobCounts(items), [items])
   const now = useNow(1000, counts.running > 0)
-  const busyId = actions.cancel.isPending
-    ? actions.cancel.variables?.params.jobId
-    : actions.resume.isPending
-      ? actions.resume.variables?.params.jobId
-      : actions.retry.isPending
-        ? actions.retry.variables?.params.jobId
-        : actions.acknowledge.isPending
-          ? actions.acknowledge.variables?.params.jobId
-          : undefined
-
-  const run = async (p: Promise<unknown>) => {
-    setActionError(undefined)
-    try {
-      await p
-    } catch (err) {
-      setActionError(err)
-    }
-  }
-
-  const regenerate = async (job: JobListItem, confirmed: boolean) => {
-    setActionError(undefined)
-    try {
-      await actions.retry.mutateAsync({
-        params: { jobId: job.id },
-        body: confirmed ? { confirmRecharge: true } : {},
-      })
-      setConfirm(undefined)
-    } catch (err) {
-      // 服务端认为这次重新生成可能再次计费：按稳定的错误码弹出确认，而不是读文案
-      if (!confirmed && isApiCode(err, 'CONFIRM_RECHARGE_REQUIRED')) setConfirm(job)
-      else {
-        setConfirm(undefined)
-        setActionError(err)
-      }
-    }
-  }
-
   const label = (n: number) => t('common.episodeN', { n })
   const render = (job: JobListItem) => (
     <TaskItem
@@ -86,15 +45,11 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
       context={jobContext(job, projects.data?.items, label)}
       now={now}
       streamedChars={snapshot.streams[job.id]?.chars}
-      busy={busyId === job.id}
-      onCancel={(j) => run(actions.cancel.mutateAsync({ params: { jobId: j.id } }))}
-      onResume={(j) => run(actions.resume.mutateAsync({ params: { jobId: j.id } }))}
-      onAcknowledge={(j) => run(actions.acknowledge.mutateAsync({ params: { jobId: j.id } }))}
-      onRegenerate={(j) => {
-        // 可能再次计费：先让用户明确确认（服务端也会校验，见 regenerate 里的 CONFIRM_RECHARGE_REQUIRED）
-        if (jobActions(j).regenerate === 'recharge') setConfirm(j)
-        else void regenerate(j, false)
-      }}
+      busy={ops.busyId === job.id}
+      onCancel={ops.cancel}
+      onResume={ops.resume}
+      onAcknowledge={ops.acknowledge}
+      onRegenerate={ops.regenerate}
     />
   )
 
@@ -150,9 +105,9 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
             {t('jobs.workerErrorBody')}
           </Notice>
         )}
-        {actionError !== undefined && (
+        {ops.error !== undefined && (
           <Notice tone="danger" className="mb-3" role="alert">
-            {errorText(actionError)}
+            {errorText(ops.error)}
           </Notice>
         )}
         {jobs.isPending && (
@@ -197,40 +152,6 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
       <div className="flex-none border-t border-border px-4 py-3 text-xs text-subtle">
         {t('jobs.footer')}
       </div>
-
-      <Modal
-        open={confirm !== undefined}
-        onClose={() => setConfirm(undefined)}
-        dismissOnBackdrop={false}
-        size="sm"
-        title={t('jobs.confirm.title')}
-        closeLabel={t('common.close')}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setConfirm(undefined)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="danger-solid"
-              loading={actions.retry.isPending}
-              onClick={() => confirm && regenerate(confirm, true)}
-            >
-              {t('jobs.confirm.action')}
-            </Button>
-          </>
-        }
-      >
-        <div className="flex flex-col gap-3 text-sm">
-          <p>
-            {confirm?.error?.category === 'submission_unknown'
-              ? t('jobs.confirm.bodyUnknown')
-              : t('jobs.confirm.bodyUpstream')}
-          </p>
-          {confirm?.error?.recoverable && (
-            <p className="text-muted-foreground">{t('jobs.confirm.preferResume')}</p>
-          )}
-        </div>
-      </Modal>
     </div>
   )
 }

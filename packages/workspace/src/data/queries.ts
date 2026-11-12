@@ -1,10 +1,12 @@
 import {
+  keepPreviousData,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   type UseMutationOptions,
 } from '@tanstack/react-query'
-import type { CallInput, CallOutput, RouteName } from '@dramai/api'
+import type { CallInput, CallOutput, GenerateItem, RouteName } from '@dramai/api'
 import { useApi } from './use-api'
 import { qk } from './keys'
 
@@ -94,6 +96,74 @@ export function useCandidates(projectId: string) {
   return useQuery({
     queryKey: qk.candidates(projectId),
     queryFn: () => api.call('candidates.list', { params: { projectId } }),
+  })
+}
+
+export function useEpisode(episodeId: string) {
+  const api = useApi()
+  return useQuery({
+    queryKey: qk.episode(episodeId),
+    queryFn: () => api.call('episodes.get', { params: { episodeId } }),
+  })
+}
+
+/** 项目里所有集的详情（候选、资产详情里要把镜头 id 翻成“第几集 · 镜头几号”）。 */
+export function useEpisodeDetails(episodeIds: string[]) {
+  const api = useApi()
+  return useQueries({
+    queries: episodeIds.map((episodeId) => ({
+      queryKey: qk.episode(episodeId),
+      queryFn: () => api.call('episodes.get', { params: { episodeId } }),
+    })),
+  })
+}
+
+/** 一集的产物清单：每个镜头图 / 视频的状态（最新 / 已过期 / 缺失 / 被拦下）和过期原因。 */
+export function useEpisodeArtifacts(episodeId: string) {
+  const api = useApi()
+  return useQuery({
+    queryKey: qk.episodeArtifacts(episodeId),
+    queryFn: () => api.call('episodes.artifacts', { params: { episodeId } }),
+  })
+}
+
+/** 项目级产物清单：资产设定图 / 衍生形态设定图是否最新、是否过期。 */
+export function useProjectArtifacts(projectId: string) {
+  const api = useApi()
+  return useQuery({
+    queryKey: [...qk.artifacts, 'project', projectId],
+    queryFn: () => api.call('projects.artifacts', { params: { projectId } }),
+  })
+}
+
+export function useAsset(assetId: string) {
+  const api = useApi()
+  return useQuery({
+    queryKey: qk.asset(assetId),
+    queryFn: () => api.call('assets.get', { params: { assetId } }),
+  })
+}
+
+/**
+ * 只读预检：不创建任务，不花钱。镜头卡据此在点“生成”之前就显示“不能生成”和原因，
+ * 批量确认弹窗据此显示哪些能跑、哪些被拦、预估费用。请求里最多 500 项。
+ */
+export function usePreflight(
+  projectId: string,
+  items: GenerateItem[],
+  options: { confirmUnverified?: boolean; enabled?: boolean } = {},
+) {
+  const api = useApi()
+  return useQuery({
+    queryKey: [...qk.preflight, projectId, items, options.confirmUnverified ?? false],
+    queryFn: () =>
+      api.call('generate.preflight', {
+        params: { projectId },
+        body: { items, ...(options.confirmUnverified ? { confirmUnverified: true } : {}) },
+      }),
+    enabled: (options.enabled ?? true) && items.length > 0,
+    placeholderData: keepPreviousData,
+    staleTime: 5_000,
   })
 }
 

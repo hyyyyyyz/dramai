@@ -107,9 +107,9 @@ describe('cache invalidation per entity', () => {
     expect(keys({ type: 'data.changed', entity: 'provider' })).toEqual(
       expect.arrayContaining([JSON.stringify(qk.providers), JSON.stringify(qk.settings)]),
     )
-    expect(keys({ type: 'data.changed', entity: 'settings' })).toEqual([
+    expect(keys({ type: 'data.changed', entity: 'settings' })).toContain(
       JSON.stringify(qk.settings),
-    ])
+    )
     expect(keys({ type: 'data.changed', entity: 'timeline' })).toContain(
       JSON.stringify(qk.timeline),
     )
@@ -173,6 +173,23 @@ describe('jobs', () => {
     t.send({ type: 'job.updated', job: makeJob({ id: 'a', status: 'succeeded', projectId: 'p9' }) })
     vi.advanceTimersByTime(20)
     expect(t.invalidated).toContainEqual(qk.episodes('p9'))
+  })
+
+  it('a finished job also refreshes what it may have produced: shot versions, asset sheets, candidates', () => {
+    const t = setup()
+    seedJobs(t)
+    t.send({ type: 'job.updated', job: makeJob({ id: 'a', status: 'succeeded', projectId: 'p9' }) })
+    vi.advanceTimersByTime(20)
+    expect(t.invalidated).toEqual(
+      expect.arrayContaining([
+        ['episode'],
+        ['asset'],
+        qk.assets('p9'),
+        qk.candidates('p9'),
+        qk.preflight,
+        qk.artifacts,
+      ]),
+    )
   })
 
   it('job.progress updates only that job', () => {
