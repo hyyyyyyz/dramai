@@ -29,6 +29,14 @@ export function expectedInstallers(version: string, family: PlatformFamily, arch
   return REQUIRED_KINDS[family].map((ext) => `dramai-${version}-${family}-${arch}.${ext}`)
 }
 
+/** The systems a release is built on (the CI build matrix is generated from this list, see `cli.ts matrix`). */
+export const RELEASE_TARGETS = [
+  { name: 'mac-arm64', os: 'macos-latest', family: 'mac', arch: 'arm64' },
+  { name: 'mac-x64', os: 'macos-15-intel', family: 'mac', arch: 'x64' },
+  { name: 'win-x64', os: 'windows-latest', family: 'win', arch: 'x64' },
+  { name: 'linux-x64', os: 'ubuntu-latest', family: 'linux', arch: 'x64' },
+] as const satisfies readonly { name: string; os: string; family: PlatformFamily; arch: Arch }[]
+
 /** A problem that makes the build unusable for a release. `problems` has one line per issue. */
 export class CollectError extends Error {
   readonly problems: string[]
@@ -98,4 +106,24 @@ export function collectAssets(options: {
   mkdirSync(out, { recursive: true })
   for (const name of expected) copyFileSync(join(dir, name), join(out, name))
   return { collected: [...expected], ignored }
+}
+
+/**
+ * Check that `dir` (all the downloaded installers of a release) holds exactly the installers of every
+ * release target: nothing missing (for example a system whose artifact never arrived) and nothing extra.
+ */
+export function verifyReleaseSet(dir: string, version: string): string[] {
+  const expected = RELEASE_TARGETS.flatMap((t) => expectedInstallers(version, t.family, t.arch))
+  const present = readdirSync(dir).filter(
+    (name) => name.startsWith('dramai-') && statSync(join(dir, name)).isFile(),
+  )
+  const problems: string[] = []
+  for (const name of expected) {
+    if (!present.includes(name)) problems.push(`Missing ${name}: the release would ship without it`)
+  }
+  for (const name of present) {
+    if (!expected.includes(name)) problems.push(`Unexpected ${name}: not part of this release`)
+  }
+  if (problems.length > 0) throw new CollectError(problems)
+  return expected
 }

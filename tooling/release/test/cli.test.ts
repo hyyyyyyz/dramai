@@ -312,4 +312,38 @@ describe('cli', () => {
     expect(r.out).toContain('Suggestion: minor -> 0.6.0') // 0.x 的不兼容变更折算成次版本
     expect(r.out).toContain('Incompatible changes')
   })
+
+  it('matrix prints the four release systems as JSON for the workflow', () => {
+    const r = run(['matrix'])
+    expect(r.code).toBe(0)
+    const { include } = JSON.parse(r.out) as {
+      include: { name: string; os: string; family: string; arch: string }[]
+    }
+    expect(include.map((t) => t.name)).toEqual(['mac-arm64', 'mac-x64', 'win-x64', 'linux-x64'])
+    expect(include.find((t) => t.name === 'mac-x64')).toMatchObject({
+      os: 'macos-15-intel',
+      arch: 'x64',
+    })
+  })
+
+  it('verify-release fails when a system is missing and passes when all eight installers are there', () => {
+    mkdirSync(join(root, 'assets'))
+    const bad = run(['verify-release', '--dir', 'assets', '--version', '0.5.0'])
+    expect(bad.code).toBe(1)
+    expect(bad.err).toContain('::error::Missing dramai-0.5.0-mac-arm64.dmg')
+    for (const f of [
+      'mac-arm64.dmg',
+      'mac-arm64.zip',
+      'mac-x64.dmg',
+      'mac-x64.zip',
+      'win-x64.exe',
+      'win-x64.zip',
+      'linux-x64.AppImage',
+      'linux-x64.tar.gz',
+    ])
+      writeFileSync(join(root, 'assets', `dramai-0.5.0-${f}`), 'x')
+    const ok = run(['verify-release', '--dir', 'assets', '--version', '0.5.0'])
+    expect(ok.code).toBe(0)
+    expect(ok.out).toContain('All 8 installers of 4 systems are present.')
+  })
 })

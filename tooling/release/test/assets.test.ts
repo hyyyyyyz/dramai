@@ -2,7 +2,14 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { CollectError, REQUIRED_KINDS, collectAssets, expectedInstallers } from '../src/assets.ts'
+import {
+  CollectError,
+  RELEASE_TARGETS,
+  REQUIRED_KINDS,
+  collectAssets,
+  expectedInstallers,
+  verifyReleaseSet,
+} from '../src/assets.ts'
 
 let dir: string
 let out: string
@@ -150,6 +157,44 @@ describe('collectAssets: an installer is misnamed', () => {
     )
     expect(problems).toEqual([
       'Found dramai-0.5.0-linux-x64.deb, which is not an installer this system should produce (expected only dramai-0.5.0-linux-x64.AppImage, dramai-0.5.0-linux-x64.tar.gz)',
+    ])
+  })
+})
+
+describe('verifyReleaseSet (the release job: every system arrived, nothing else)', () => {
+  const all = (version: string) =>
+    RELEASE_TARGETS.flatMap((t) => expectedInstallers(version, t.family, t.arch))
+
+  it('has four targets with eight installers', () => {
+    expect(RELEASE_TARGETS.map((t) => t.name)).toEqual([
+      'mac-arm64',
+      'mac-x64',
+      'win-x64',
+      'linux-x64',
+    ])
+    expect(all('0.5.0')).toHaveLength(8)
+  })
+
+  it('passes when all eight are present, ignoring files that are not dramai-*', () => {
+    touch(...all('0.5.0'), 'SHA256SUMS.txt')
+    expect(verifyReleaseSet(dir, '0.5.0')).toEqual(all('0.5.0'))
+  })
+
+  it('fails when a whole system never arrived', () => {
+    touch(...all('0.5.0').filter((f) => !f.includes('-win-')))
+    const problems = problemsOf(() => verifyReleaseSet(dir, '0.5.0'))
+    expect(problems).toEqual([
+      'Missing dramai-0.5.0-win-x64.exe: the release would ship without it',
+      'Missing dramai-0.5.0-win-x64.zip: the release would ship without it',
+    ])
+  })
+
+  it('fails on a leftover file from another version or an extra installer', () => {
+    touch(...all('0.5.0'), 'dramai-0.4.1-mac-arm64.dmg', 'dramai-0.5.0-linux-x86_64.AppImage')
+    const problems = problemsOf(() => verifyReleaseSet(dir, '0.5.0'))
+    expect(problems).toEqual([
+      'Unexpected dramai-0.4.1-mac-arm64.dmg: not part of this release',
+      'Unexpected dramai-0.5.0-linux-x86_64.AppImage: not part of this release',
     ])
   })
 })
