@@ -106,6 +106,18 @@ providers only. It has not been run against any real AI provider.** See "Known l
 - **Demo mode** (`pnpm demo`): a local mock of every provider type plus the server, with its own data
   directory (`~/.dramai-demo`). No account, no key and no cost; the generated content is
   placeholder content. Options simulate latency and failures.
+- **Desktop app** (Electron, `apps/desktop`): the same local server and workspace in their own window,
+  in three forms: run from source (`pnpm desktop:dev`), build and install on your own machine
+  (`pnpm desktop:install`, `desktop:uninstall`; per-user, no administrator rights and no certificate
+  needed) and installers built by the release workflow (`pnpm desktop:dist`: `.dmg` and `.zip` on macOS,
+  `.exe` and `.zip` on Windows, `.AppImage` and `.tar.gz` on Linux). API keys are stored with the
+  operating system's key store where one exists. The installers are **not signed** and there is no
+  automatic update; the app only tells you when a newer release exists. ffmpeg is not bundled.
+  **Where it has been run:** on macOS (Apple silicon) by hand. On Linux the app builds and the
+  install, smoke-check and uninstall self-check passes in CI. On Windows it builds and installs and the
+  installed app starts, but the post-install self-check does not fully pass yet and is being fixed.
+  macOS Intel is built but has not been run, and nothing has been tried on a machine without an OS key
+  store.
 - **Browser end-to-end tests** (`pnpm e2e`, Playwright): they run in demo mode, so they cost nothing and
   need no key, and walk from creating a project to downloading the cut, resuming a failed upstream
   task, the English interface and keyboard-only use.
@@ -128,8 +140,6 @@ providers only. It has not been run against any real AI provider.** See "Known l
 
 Listed so nothing here is mistaken for finished work:
 
-- The **desktop app** (Electron): run from source, build-and-install on your machine, and downloadable
-  installers.
 - Writing a real JianYing draft (today the export is an asset package).
 - An npm package and a Docker image for the WebUI, and the landing page.
 
@@ -151,7 +161,8 @@ Listed so nothing here is mistaken for finished work:
   to run on Linux, macOS and Windows (end-to-end on Linux), but that has not been exercised yet.
 - The end-to-end tests run against the mock providers only, so they prove the application flow, not
   that any real provider accepts the requests.
-- Unsigned, unpackaged: there are no installers in this version.
+- Installers are unsigned: macOS and Windows warn on first launch (the release notes explain how to open
+  them), and building locally with `pnpm desktop:install` avoids the warnings.
 
 ## [0.4.1] - 2026-05-04
 

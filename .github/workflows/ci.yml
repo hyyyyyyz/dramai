@@ -189,16 +189,14 @@ jobs:
       - name: actionlint
         run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
 
-  # 桌面端在三个系统上的编译检查（pnpm desktop:build：只编译出本机可运行的应用，不安装），
-  # 以及无人值守的“安装 → 校验 → 卸载”自检（pnpm desktop:check-install，由桌面端提供）。
-  # 根 package.json 里还没有对应脚本时，对应步骤空过。
+  # 桌面端在三个系统上的编译检查和安装自检（命令见 apps/desktop/README.md）：
+  #   desktop:build          编译出本机可运行的应用（构建前端、打包、electron-builder，不安装）
+  #   desktop:check-install  无人值守的“沙箱安装 → 冒烟检查 → 卸载 → 清除数据”，在每个系统上真的装一次
+  # 这两个脚本在根 package.json 里；以后如果被删掉，这个 job 应该失败，而不是悄悄跳过。
   desktop:
     name: Desktop (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
-    outputs:
-      build: ${{ steps.detect.outputs.build }}
-      check: ${{ steps.detect.outputs.check }}
     strategy:
       fail-fast: false
       matrix:
@@ -210,8 +208,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # 没有脚本时这个 job 仍然显示为成功，因为什么都没执行。为了不让人误读，
-      # 这里把“未运行”和原因写进任务摘要，并打一条警告注释（运行页面上是黄色的）。
       # Electron 和 electron-builder 的下载（每个系统和架构各约 100 MB）按锁文件缓存。
       # 两个缓存目录用环境变量固定到同一个临时位置，三个系统共用同一套写法；
       # 必须在安装依赖之前设置，因为 electron 的 postinstall 就会下载二进制。
@@ -229,47 +225,18 @@ jobs:
           key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: electron-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Look for desktop scripts
-        id: detect
-        run: |
-          has() { node -p "Boolean(require('./package.json').scripts?.['$1'])"; }
-          build="$(has desktop:build)"
-          check="$(has desktop:check-install)"
-          echo "build=$build" >> "$GITHUB_OUTPUT"
-          echo "check=$check" >> "$GITHUB_OUTPUT"
-          if [ "$build" != "true" ]; then
-            echo "::warning::Desktop build was NOT RUN on ${{ matrix.label }}: the root package.json has no 'desktop:build' script yet."
-            {
-              echo "### ⚠️ Desktop build: NOT RUN on ${{ matrix.label }}"
-              echo
-              echo "Reason: the root \`package.json\` has no \`desktop:build\` script yet. This job is green only because nothing was executed; it says nothing about whether the desktop app builds."
-            } >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$check" != "true" ]; then
-            echo "::warning::The install/uninstall self-check was NOT RUN on ${{ matrix.label }}: the root package.json has no 'desktop:check-install' script yet."
-            {
-              echo "### ⚠️ Desktop install/uninstall self-check: NOT RUN on ${{ matrix.label }}"
-              echo
-              echo "Reason: the root \`package.json\` has no \`desktop:check-install\` script yet. The build step did run; installing and uninstalling the app was not checked."
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
       - name: Setup workspace
-        if: steps.detect.outputs.build == 'true'
         uses: ./.github/actions/setup
 
-      # desktop:build 假定依赖的包已经构建好，所以先做一次全仓构建。
-      - name: Build workspace
-        if: steps.detect.outputs.build == 'true'
-        run: pnpm build
-
+      # desktop:build 自己会构建前端并打包，不需要先做全仓构建。
       - name: Build desktop app
-        if: steps.detect.outputs.build == 'true'
         run: pnpm desktop:build
 
-      # 在运行器上真的安装一次、确认能启动，再卸载。Windows 和 Linux 的本地安装只能靠这一步在 CI 里验证。
+      # 复用上一步的构建（--skip-build），在运行器上沙箱安装、冒烟检查、卸载。
+      # Linux 上脚本自己处理无显示（xvfb-run）和被限制的用户命名空间（--no-sandbox）。
+      # Windows 和 Linux 的本地安装只能靠这一步在 CI 里验证。
       - name: Install and uninstall self-check
-        if: steps.detect.outputs.check == 'true'
-        run: pnpm desktop:check-install
+        run: pnpm desktop:check-install --skip-build
 
   # 浏览器端到端测试（packages/workspace/e2e，Playwright）：在演示模式下走完整条路径，
   # 不花钱、不需要密钥。`pnpm e2e` 会先构建前端，再由 Playwright 自己起演示服务。
@@ -316,8 +283,7 @@ jobs:
           if-no-files-found: ignore
 
   # 分支保护里只需要把这一个检查设为必需：它汇总上面所有 job。
-  # 被跳过的 job 不算失败，但摘要里会明确写出哪些检查“没有运行”以及原因，
-  # 避免把“跳过”读成“通过”。
+  # 被跳过的 job 不算失败；现在所有 job 都会真的运行，摘要里列出每个 job 的结果。
   ci-ok:
     name: CI passed
     if: always()
@@ -333,16 +299,8 @@ jobs:
           BUILD: ${{ needs.build.result }}
           WORKFLOWS: ${{ needs.workflows.result }}
           DESKTOP: ${{ needs.desktop.result }}
-          DESKTOP_BUILD: ${{ needs.desktop.outputs.build }}
-          DESKTOP_CHECK: ${{ needs.desktop.outputs.check }}
           E2E: ${{ needs.e2e.result }}
         run: |
-          desktop_label="$DESKTOP"
-          if [ "$DESKTOP" = "success" ] && [ "$DESKTOP_BUILD" != "true" ]; then
-            desktop_label="success, but NOT RUN (no script yet)"
-          elif [ "$DESKTOP" = "success" ] && [ "$DESKTOP_CHECK" != "true" ]; then
-            desktop_label="success (install self-check NOT RUN)"
-          fi
           {
             echo "### CI summary"
             echo
@@ -352,19 +310,8 @@ jobs:
             echo "| Test (Linux, macOS, Windows) | $TEST |"
             echo "| Build | $BUILD |"
             echo "| Lint workflows | $WORKFLOWS |"
-            echo "| Desktop build | $desktop_label |"
+            echo "| Desktop (build + install self-check) | $DESKTOP |"
             echo "| E2E (browser) | $E2E |"
-            not_run=""
-            if [ "$DESKTOP" = "success" ] && [ "$DESKTOP_BUILD" != "true" ]; then
-              not_run="$not_run\n- **Desktop build did not run**: the root package.json has no \`desktop:build\` script yet, so its green result means nothing."
-            elif [ "$DESKTOP" = "success" ] && [ "$DESKTOP_CHECK" != "true" ]; then
-              not_run="$not_run\n- **Desktop install/uninstall self-check did not run**: the root package.json has no \`desktop:check-install\` script yet."
-            fi
-            if [ -n "$not_run" ]; then
-              echo
-              echo "#### ⚠️ Not run"
-              printf "%b\n" "$not_run"
-            fi
           } >> "$GITHUB_STEP_SUMMARY"
           echo "job results: $RESULTS"
           case "$RESULTS" in

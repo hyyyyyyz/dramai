@@ -15,15 +15,15 @@ dependencies.
 
 ## Jobs in ci.yml
 
-| Job                     | What it does                                                                                                                                                                                                                                                                                                                                          |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Format, lint, typecheck | Every package is at the same valid version (`pnpm version:check`), `pnpm format:check`, `pnpm lint`, `pnpm typecheck` (Linux). On pull requests it also checks that the version is not lower than the target branch's and that the PR title follows Conventional Commits (commits inside the branch only warn). Rules: [VERSIONING.md](VERSIONING.md) |
-| Test                    | `pnpm test` on Linux (Node 24 and 22.13), macOS (arm64) and Windows. It runs **every** package's tests even when one fails and then lists the failing packages in the job summary, so one run shows the whole picture per system. The job installs ffmpeg itself; on Linux the build must have libass so the subtitle burn-in test really runs        |
-| Build                   | `pnpm build`                                                                                                                                                                                                                                                                                                                                          |
-| Desktop                 | `pnpm desktop:build` on Linux, macOS and Windows; and, once `pnpm desktop:check-install` exists, an unattended install, verify and uninstall. While a root script is missing the step does not run: the job still ends green, but it writes a **NOT RUN** warning and the reason into its summary, and `CI passed` repeats it                         |
-| Lint workflows          | actionlint checks the syntax, expressions and inline shell in `.github/workflows/`                                                                                                                                                                                                                                                                    |
-| E2E (browser)           | `pnpm e2e`: Playwright specs in demo mode (installs ffmpeg and Chromium; uploads `test-results/` as an artifact on failure)                                                                                                                                                                                                                           |
-| CI passed               | Summarises all the jobs above in a table. Branch protection only needs this one as a required check; skipped jobs do not count as failures, but anything that did not actually run is listed under "Not run" in the summary                                                                                                                           |
+| Job                     | What it does                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Format, lint, typecheck | Every package is at the same valid version (`pnpm version:check`), `pnpm format:check`, `pnpm lint`, `pnpm typecheck` (Linux). On pull requests it also checks that the version is not lower than the target branch's and that the PR title follows Conventional Commits (commits inside the branch only warn). Rules: [VERSIONING.md](VERSIONING.md)                                |
+| Test                    | `pnpm test` on Linux (Node 24 and 22.13), macOS (arm64) and Windows. It runs **every** package's tests even when one fails and then lists the failing packages in the job summary, so one run shows the whole picture per system. The job installs ffmpeg itself; on Linux the build must have libass so the subtitle burn-in test really runs                                       |
+| Build                   | `pnpm build`                                                                                                                                                                                                                                                                                                                                                                         |
+| Desktop                 | `pnpm desktop:build` (builds the frontend, bundles the app and runs electron-builder into `apps/desktop/release/`), then `pnpm desktop:check-install --skip-build` (an unattended install into a temporary folder, a smoke check of the installed app, uninstall, and purging the data), on Linux, macOS and Windows. Electron and electron-builder downloads are cached (see below) |
+| Lint workflows          | actionlint checks the syntax, expressions and inline shell in `.github/workflows/`                                                                                                                                                                                                                                                                                                   |
+| E2E (browser)           | `pnpm e2e`: Playwright specs in demo mode (installs ffmpeg and Chromium; uploads `test-results/` as an artifact on failure)                                                                                                                                                                                                                                                          |
+| CI passed               | Summarises all the jobs above in a table. Branch protection only needs this one as a required check; skipped jobs do not count as failures, but anything that did not actually run is listed under "Not run" in the summary                                                                                                                                                          |
 
 When a branch or pull request gets a new commit, the older run is cancelled (never on `main`).
 
@@ -54,3 +54,28 @@ When a branch or pull request gets a new commit, the older run is cancelled (nev
 6. A failure with no code change is most often an external service (apt, Homebrew or Chocolatey
    downloads) or a runner image update; re-run once and read the log if it keeps failing. Actions are
    pinned to commit SHAs, so they cannot change under you.
+
+## Reading the desktop install self-check
+
+`pnpm desktop:check-install` prints one line per step, each starting with `✓` or `✗`:
+
+1. `install` / `app installed`: the app was installed into a temporary home (nothing outside that folder is touched).
+2. The smoke check starts the installed app and drives it over Chromium's remote debugging port. It checks that the
+   server is healthy, the first screen renders, the security boundaries hold (no token or a wrong token gives 401, a
+   forged `Host` gives 403, the page cannot reach Node), and that the app **exits cleanly on SIGTERM and releases the
+   data directory lock**. A failure ends with `SMOKE FAILED` and the tail of the app's output, which is where to look first.
+3. `uninstall` / `app removed` / `user data kept by default`: uninstalling removes the app but keeps projects and keys.
+4. `--purge-data` refuses without `--yes` and deletes the data with it.
+
+The run ends with `SELFTEST FAILED` if any `✗` appeared. On Linux the script re-runs itself under `xvfb-run` when there
+is no display and adds `--no-sandbox` when the runner blocks unprivileged user namespaces; a note says so in the log.
+Locally, run `pnpm desktop:build` first and then `pnpm desktop:check-install --skip-build`.
+
+## Download caches
+
+The desktop jobs set `ELECTRON_CACHE` and `ELECTRON_BUILDER_CACHE` to `electron-cache` and `electron-builder-cache`
+inside the runner's temp directory (before dependencies are installed, because Electron's postinstall downloads its
+binary there) and cache both with `actions/cache`, keyed on the OS, architecture and `pnpm-lock.yaml`. Without the
+variables the defaults would be `~/Library/Caches/electron` and `~/Library/Caches/electron-builder` (macOS),
+`~/.cache/electron` and `~/.cache/electron-builder` (Linux), and `%LOCALAPPDATA%\electron\Cache` and
+`%LOCALAPPDATA%\electron-builder\Cache` (Windows).

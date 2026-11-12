@@ -62,7 +62,8 @@ describe('collectAssets', () => {
     mkdirSync(join(dir, 'dramai-0.5.0-mac-arm64.dir')) // 目录忽略
     const r = collectAssets({ dir, out, version: '0.5.0', family: 'mac', arch: 'arm64' })
     expect(r.collected).toEqual(['dramai-0.5.0-mac-arm64.dmg', 'dramai-0.5.0-mac-arm64.zip'])
-    expect(r.ignored).toEqual(['dramai-0.5.0-mac-arm64.dmg.blockmap', 'dramai-0.5.0-mac-x64.dmg'])
+    // .blockmap files are not uploaded either, but they are expected and do not produce a warning
+    expect(r.ignored).toEqual(['dramai-0.5.0-mac-x64.dmg'])
     expect(readdirSync(out).sort()).toEqual(r.collected)
   })
 
@@ -80,5 +81,35 @@ describe('collectAssets', () => {
     expect(() => collectAssets({ dir, out, version: '0.5.0', family: 'win', arch: 'x64' })).toThrow(
       /no dramai-\* files/,
     )
+  })
+
+  it('collects exactly the files the desktop build produces on each system', () => {
+    const cases = [
+      ['mac', 'arm64', ['dramai-0.5.0-mac-arm64.dmg', 'dramai-0.5.0-mac-arm64.zip']],
+      ['mac', 'x64', ['dramai-0.5.0-mac-x64.dmg', 'dramai-0.5.0-mac-x64.zip']],
+      ['win', 'x64', ['dramai-0.5.0-win-x64.exe', 'dramai-0.5.0-win-x64.zip']],
+      ['linux', 'x64', ['dramai-0.5.0-linux-x64.AppImage', 'dramai-0.5.0-linux-x64.tar.gz']],
+    ] as const
+    for (const [family, arch, files] of cases) {
+      rmSync(dir, { recursive: true, force: true })
+      mkdirSync(dir)
+      touch(
+        ...files,
+        ...files.map((f) => `${f}.blockmap`),
+        'builder-debug.yml',
+        'latest.yml',
+        'latest-mac.yml',
+      )
+      mkdirSync(join(dir, 'win-unpacked'))
+      const r = collectAssets({
+        dir,
+        out: join(dir, '..', `out-${family}-${arch}`),
+        version: '0.5.0',
+        family,
+        arch,
+      })
+      expect(r.collected, `${family}-${arch}`).toEqual([...files].sort())
+      expect(r.ignored).toEqual([])
+    }
   })
 })
