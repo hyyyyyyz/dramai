@@ -7,7 +7,7 @@ import { join } from 'node:path'
 export type PlatformFamily = 'mac' | 'win' | 'linux'
 export type Arch = 'arm64' | 'x64'
 
-/** 约定里“系统”一段的写法没有定死，这里接受常见别名，由 desktop 会话确认后可收紧。 */
+/** 约定里“系统”一段的写法没有定死，这里接受常见别名，桌面端定下来之后可以收紧。 */
 const OS_TOKENS: Record<PlatformFamily, string[]> = {
   mac: ['mac', 'macos', 'darwin'],
   win: ['win', 'windows'],

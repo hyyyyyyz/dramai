@@ -87,7 +87,7 @@ jobs:
             exit 1
           fi
 
-      # 固定说明（未签名安装包怎么打开、需要自己装 ffmpeg）由 desktop 会话维护；有就带上。
+      # 固定说明（未签名安装包怎么打开、需要自己装 ffmpeg）由桌面端维护；有就带上。
       - name: Add fixed install notes
         run: |
           if [ -f apps/desktop/release-notes-footer.md ]; then
@@ -135,7 +135,7 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup
 
-      # `pnpm desktop:dist` 打包当前平台，产物在 apps/desktop/release/（与 desktop 会话的约定）。
+      # `pnpm desktop:dist` 打包当前平台，产物在 apps/desktop/release/（桌面端的约定）。
       # 先做一次全仓构建，让它依赖的包都已就绪；这里不设置 GH_TOKEN，
       # electron-builder 因此不会自己去发布。
       #
@@ -206,7 +206,7 @@ jobs:
           cat SHA256SUMS.txt
 
       # 发布说明 = CHANGELOG 小节 + 固定的“怎么打开未签名安装包 / 需要自己装 ffmpeg”说明 + 校验方法。
-      # 固定说明由 desktop 会话维护在 apps/desktop/release-notes-footer.md；文件不存在时用下面的简短默认文字。
+      # 固定说明由桌面端维护在 apps/desktop/release-notes-footer.md；文件不存在时用下面的简短默认文字。
       - name: Compose release notes
         run: |
           {

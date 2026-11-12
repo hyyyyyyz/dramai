@@ -6,8 +6,8 @@ name: Deploy to GitHub Pages (legacy, manual only)
 # 它要连接本地服务（packages/server）才能工作；放到 GitHub Pages 上只会得到一个打不开数据的
 # 空壳，覆盖掉 Pages 上现有的页面。所以合并到 main 时不能再自动发布它。
 #
-# 之后的计划（REFACTOR_PLAN.md 阶段 4）：宣传页 apps/site 做好后，把这个文件换成
-# deploy-site.yml，构建并发布 apps/site；旧版工作台冻结到 /dramai/legacy/。
+# 之后的计划：做好宣传页 apps/site 之后，把这个文件换成 deploy-site.yml，构建并发布
+# apps/site；Pages 上不再提供工作台（上一个纯浏览器版本 v0.4.1 可以冻结到 /dramai/legacy/）。
 #
 # 手动运行需要勾选 confirm，防止误点。
 on:

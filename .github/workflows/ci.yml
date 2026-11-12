@@ -162,7 +162,7 @@ jobs:
         run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
 
   # 桌面端在三个系统上的编译检查（pnpm desktop:build：只编译出本机可运行的应用，不安装），
-  # 以及无人值守的“安装 → 校验 → 卸载”自检（pnpm desktop:check-install，由 desktop 会话提供）。
+  # 以及无人值守的“安装 → 校验 → 卸载”自检（pnpm desktop:check-install，由桌面端提供）。
   # 根 package.json 里还没有对应脚本时，对应步骤空过。
   desktop:
     name: Desktop (${{ matrix.label }})
@@ -207,8 +207,8 @@ jobs:
         if: steps.detect.outputs.check == 'true'
         run: pnpm desktop:check-install
 
-  # 浏览器端到端测试的位置。约定见 docs/RELEASING.md 的 “E2E 接入约定”：
-  # 根 package.json 里有 `test:e2e` 脚本就会运行，没有就整个 job 空过。
+  # 浏览器端到端测试（packages/workspace/e2e，Playwright）：在演示模式下走完整条路径，
+  # 不花钱、不需要密钥。`pnpm e2e` 会先构建前端，再由 Playwright 自己起演示服务。
   e2e:
     name: E2E (browser)
     runs-on: ubuntu-latest
@@ -217,30 +217,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Look for a test:e2e script
-        id: detect
-        run: |
-          if [ "$(node -p "Boolean(require('./package.json').scripts?.['test:e2e'])")" = "true" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "No root 'test:e2e' script yet; skipping the E2E steps."
-          fi
-
       - name: Setup workspace
-        if: steps.detect.outputs.enabled == 'true'
         uses: ./.github/actions/setup
 
+      # 主流程用例会一路跑到合成并下载成片，合成步骤需要 ffmpeg（运行器镜像不带）。
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -version | head -n 1
+
+      # 浏览器二进制约 150 MB，按锁文件缓存；系统依赖（--with-deps）每次都要装，但很快。
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Install Playwright browser
-        if: steps.detect.outputs.enabled == 'true'
         run: pnpm --filter @dramai/workspace exec playwright install --with-deps chromium
 
       - name: Run E2E
-        if: steps.detect.outputs.enabled == 'true'
-        run: pnpm test:e2e
+        run: pnpm e2e
 
       - name: Upload E2E report
-        if: failure() && steps.detect.outputs.enabled == 'true'
+        if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-report
@@ -251,7 +252,7 @@ jobs:
           if-no-files-found: ignore
 
   # 分支保护里只需要把这一个检查设为必需：它汇总上面所有 job，
-  # 被跳过的 job（例如还没接入的 E2E）不算失败。
+  # 被跳过的 job（例如还没有桌面端脚本时的 Desktop）不算失败。
   ci-ok:
     name: CI passed
     if: always()

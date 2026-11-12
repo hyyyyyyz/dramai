@@ -86,7 +86,7 @@ configuration.
 
 A Release description is the matching `CHANGELOG.md` section + a fixed text + how to verify. The fixed
 text explains how to open unsigned installers on macOS, Windows and Linux and that you must install
-ffmpeg yourself. It lives in **`apps/desktop/release-notes-footer.md`** (maintained by the desktop work;
+ffmpeg yourself. It lives in **`apps/desktop/release-notes-footer.md`** (maintained with the desktop app;
 the verify job of the release workflow carries it into the release). If the file does not exist, a short
 default text is used (English first, then Chinese) and the log shows a notice.
 
@@ -195,19 +195,11 @@ The release workflow relies on what the desktop app delivers. The conventions ag
   and the merge has to be decided first). Extend `tooling/release/src/assets.ts` and `release-desktop.yml`
   when auto-update is built.
 
-## Hooking up E2E tests
+## End-to-end tests
 
-`ci.yml` already has an `E2E (browser)` job. It does nothing for now because there is no `test:e2e` script.
-When the end-to-end tests are delivered, they need to provide:
-
-1. A root `package.json` script **`test:e2e`** that prepares everything it needs (builds, starts the server,
-   preferably with the demo mode of `@dramai/mock-providers` and never with real keys, and runs the tests) and
-   exits non-zero on failure. CI just runs `pnpm test:e2e`.
-2. **Playwright** as a devDependency of `@dramai/workspace` (CI runs
-   `pnpm --filter @dramai/workspace exec playwright install --with-deps chromium`). If another framework
-   is used, that step has to change too.
-3. Reports written to `playwright-report/` and `test-results/` (already in `.gitignore`); on failure CI
-   uploads them as an artifact.
-4. Only Linux and Chromium are needed, and no extra secrets.
-
-As soon as the script is merged, the job starts running for real and counts towards `CI passed`.
+The `E2E (browser)` job in `ci.yml` runs the Playwright specs in `packages/workspace/e2e` with
+`pnpm e2e` (it builds the frontend first, then Playwright starts the demo server itself). They walk the whole
+path in demo mode, so they need no secrets and cost nothing. The job installs ffmpeg (the render step uses it),
+installs Playwright's Chromium with its system dependencies (the browser download is cached by lockfile hash),
+and, when something fails, uploads `test-results/` (screenshots and traces) as the `e2e-report` artifact.
+Details of the specs are in `packages/workspace/e2e/README.md`.
