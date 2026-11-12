@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # 拉取请求上要和目标分支比较版本和提交标题
 
       - name: Setup workspace
         uses: ./.github/actions/setup
@@ -38,6 +40,24 @@ jobs:
       # 所有包版本必须一致（tooling/release）。不依赖安装好的依赖，放前面快速失败。
       - name: Check package versions
         run: pnpm version:check
+
+      # 拉取请求：版本号不能比目标分支上的低（规则见 docs/VERSIONING.md）。
+      - name: Check the version does not go down
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: pnpm version:check --since "origin/$BASE_REF"
+
+      # 拉取请求：标题必须是约定式提交（合并后它就是提交标题，发版时据此判断该升哪一位）；
+      # 分支里的各个提交只给警告，不阻塞。标题通过环境变量传入，避免被当成脚本注入。
+      - name: Check Conventional Commits
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            tooling/release/src/cli.ts commits --base "origin/$BASE_REF" --title "$PR_TITLE"
 
       - name: Format check
         run: pnpm format:check

@@ -1,6 +1,6 @@
 # 发布流程
 
-dramai 全仓使用**同一个版本号**。推送形如 `v0.5.0` 的 tag，GitHub Actions 就会核对版本、跑一遍 CI、在
+dramai 全仓使用**同一个版本号**，更新规则见 [VERSIONING.md](VERSIONING.md)。推送形如 `v0.5.0` 的 tag，GitHub Actions 就会核对版本、跑一遍 CI、在
 macOS（Apple Silicon 和 Intel）、Windows 和 Linux 上构建桌面安装包、生成校验和，然后创建 GitHub Release 并上传。
 安装包**不签名**（见下文“不需要密钥”）。桌面端的另外两种安装形式（从源码运行、本地编译安装）不经过这条流水线。
 
@@ -20,15 +20,16 @@ macOS（Apple Silicon 和 Intel）、Windows 和 Linux 上构建桌面安装包�
 
 ## 发一个正式版
 
-1. **统一版本号**（在 `main` 最新代码上开一个分支）：
+1. **确定并统一版本号**（在 `main` 最新代码上开一个分支）。先看建议，再按规则升级：
 
    ```bash
-   pnpm version:set 0.5.0     # 全仓所有 package.json 改成 0.5.0；加 --dry-run 只预览
+   pnpm version:suggest       # 按上个版本以来的提交类型建议升哪一位
+   pnpm version:bump minor    # 全仓所有 package.json 一起升；patch / minor / major，加 --dry-run 只预览
    ```
 
 2. **写更新日志**：在 `CHANGELOG.md` 里把 `[Unreleased]` 下的内容整理成 `## [0.5.0] - 2026-12-20` 一节，
    并在文末补上 `[0.5.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0`。
-   这一节会原样成为 Release 说明；**正式版没有这一节，发布会失败**。
+   这一节会原样成为 Release 说明；**没有这一节的版本不能发布，发布会失败**。有不兼容变更时加“不兼容变更”和“升级说明”两节。
 3. **提交并合并到 `main`**（走拉取请求，等 `CI passed` 变绿）：`chore(release): v0.5.0`。
 4. **打 tag 并推送**（在合并后的 `main` 上）：
 
@@ -49,13 +50,18 @@ macOS（Apple Silicon 和 Intel）、Windows 和 Linux 上构建桌面安装包�
 tag 带后缀就是预发布，Release 会标成 Pre-release，也不会成为 “Latest”：
 
 ```bash
-pnpm version:set 0.5.0-beta.1
+pnpm version:bump preminor              # 0.4.1 → 0.5.0-beta.1（开始预发布；--preid rc 则从 rc.1 开始）
+# 之后每出一个试用版：
+pnpm version:bump prerelease            # 0.5.0-beta.1 → 0.5.0-beta.2
+pnpm version:bump prerelease --preid rc # 0.5.0-beta.2 → 0.5.0-rc.1
+pnpm version:bump release               # 0.5.0-rc.1 → 0.5.0，没问题就转正
+
 git commit -am "chore(release): v0.5.0-beta.1"
 git tag v0.5.0-beta.1 && git push origin HEAD v0.5.0-beta.1
 ```
 
 - 预发布可以从任何分支打 tag（例如在重构分支上试发），不要求在 `main` 上。
-- `CHANGELOG.md` 里有 `## [0.5.0-beta.1]` 就用它；没有则回退到 GitHub 自动生成的说明。
+- 预发布同样要在 `CHANGELOG.md` 里有 `## [0.5.0-beta.1] - 2026-12-01` 这一节，否则发布失败。
 
 ## 演练（不创建 Release）
 
@@ -77,15 +83,16 @@ CI 在 verify 阶段把它带进发布流程）。文件不存在时使用一小
 2. 演练通过后，在要验证的分支上打一个**预发布** tag，例如：
 
    ```bash
-   pnpm version:set 0.5.0-rc.1 && git commit -am "chore(release): v0.5.0-rc.1"
+   pnpm version:bump preminor --preid rc && git commit -am "chore(release): v0.5.0-rc.1"
    git tag v0.5.0-rc.1 && git push origin HEAD v0.5.0-rc.1
    ```
 
-   预发布不要求在 `main` 上，也不会成为 “Latest”，CHANGELOG 里没有对应小节时用自动生成的说明。
+   预发布不要求在 `main` 上，也不会成为 “Latest”；CHANGELOG 里要先加上对应的小节。
 
 3. 看 Release 里是否有四个平台的安装包和 `SHA256SUMS.txt`，下载一个核对校验和。
 4. 验证完清理：`gh release delete v0.5.0-rc.1 --cleanup-tag --yes && git tag -d v0.5.0-rc.1`，
-   然后把版本号改回去（`pnpm version:set <原版本>`）。
+   然后把版本号和 CHANGELOG 改回去（`git revert` 那次版本提交，或 `pnpm version:set <原版本>`）。
+   注意：这是还没有对外使用过的试验版本才可以这样清理；已经有人用过的版本号不能复用，见 VERSIONING.md。
 
 ## 出了问题怎么办
 
@@ -133,16 +140,15 @@ CI 在 verify 阶段把它带进发布流程）。文件不存在时使用一小
 
 位置 `tooling/release/`（`@dramai/release-tools`），零依赖，只用 Node 内置模块。
 
-```bash
-pnpm version:set 0.5.0                  # 改全仓所有 package.json（根、apps、packages、tooling）
-pnpm version:set 0.5.0 --dry-run        # 只预览
-pnpm version:check                      # 所有包版本一致且是合法 semver
-pnpm version:check --tag v0.5.0         # 同时要求 tag 对应仓库版本
-```
+位置 `tooling/release/`（`@dramai/release-tools`），零依赖，只用 Node 内置模块。常用命令见
+[VERSIONING.md 的“用版本工具改版本号”](VERSIONING.md)：`version:bump`、`version:set`、`version:check`、`version:suggest`。
 
 - 只改 `package.json` 里顶层的那一行 `"version"`，其余格式不动。
-- CI 的 `checks` job 每次都会跑 `version:check`；发布工作流还会带上 tag 再核对一次。
-- 版本号出现在别的地方（比如界面里的版本显示）应该从 `package.json` 读取，而不是再写一份常量。
+- 版本格式、不降版本、不重复已有 tag 等规则都由工具检查，不合规会拒绝并说明原因。
+- CI 的 `checks` job 每次都会跑 `version:check`；拉取请求还会检查版本不低于目标分支、标题符合约定式提交；
+  发布工作流会带上 tag 再核对一次，并要求有对应的 CHANGELOG 小节。
+- 版本号出现在别的地方（界面里的版本显示、系统信息接口、命令行 `--version`、安装包文件名）都应从 `package.json` 读取，
+  而不是再写一份常量。
 
 ## 约定与假设
 

@@ -2,7 +2,7 @@ name: Release desktop
 
 # 推送形如 v0.5.0 / v0.5.0-beta.1 的 tag 时：核对版本 → 跑一遍 CI → 在各平台构建桌面安装包
 # （macOS arm64 / macOS x64 / Windows x64 / Linux x64）→ 生成校验和 → 创建 GitHub Release 并上传。
-# 带后缀的 tag 发为预发布。安装包不签名（见下面 “Package desktop app” 步骤里留的签名入口位置）。
+# 带后缀的 tag 发为预发布。每个版本（含预发布）在 CHANGELOG.md 里都要有一节，否则失败。安装包不签名（见下面 “Package desktop app” 步骤里留的签名入口位置）。
 # 手动触发（workflow_dispatch）只构建，产物留在运行页面的 Artifacts 里，不创建 Release，
 # 用来在打 tag 之前演练整条流水线。流程说明见 docs/RELEASING.md。
 on:
@@ -37,7 +37,6 @@ jobs:
       version: ${{ steps.check.outputs.version }}
       tag: ${{ steps.check.outputs.tag }}
       prerelease: ${{ steps.check.outputs.prerelease }}
-      notes: ${{ steps.notes.outputs.mode }}
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
       - name: Checkout
@@ -74,37 +73,23 @@ jobs:
             exit 1
           fi
 
-      # 发布说明：取 CHANGELOG.md 里对应版本的小节。
-      #   正式版：没有这一节就失败（发布说明是发布的一部分）。
-      #   预发布：没有就回退到 GitHub 自动生成的说明。
+      # 发布说明：取 CHANGELOG.md 里对应版本的小节。没有这一节的版本不能发布（正式版和预发布都一样），
+      # 预发布也需要一节，例如 `## [0.5.0-beta.1] - 2026-12-01`。
       - name: Prepare release notes
         id: notes
         env:
           VERSION: ${{ steps.check.outputs.version }}
-          PRERELEASE: ${{ steps.check.outputs.prerelease }}
         run: |
           mkdir -p release-notes
-          set +e
-          node --experimental-strip-types --disable-warning=ExperimentalWarning \
-            tooling/release/src/cli.ts notes "$VERSION" --out release-notes/changelog.md
-          status=$?
-          set -e
-          if [ "$status" -eq 0 ]; then
-            echo "mode=changelog" >> "$GITHUB_OUTPUT"
-          elif [ "$status" -eq 3 ] && [ "$PRERELEASE" = "true" ]; then
-            echo "::notice::No CHANGELOG section for $VERSION; the prerelease will use GitHub's generated notes."
-            echo "mode=generated" >> "$GITHUB_OUTPUT"
-          else
-            echo "::error::Add a '## [$VERSION]' section to CHANGELOG.md before releasing."
+          if ! node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            tooling/release/src/cli.ts notes "$VERSION" --out release-notes/changelog.md; then
+            echo "::error::CHANGELOG.md has no '## [$VERSION]' section. A version without a changelog entry cannot be released; add the section, commit, and re-tag."
             exit 1
           fi
 
       # 固定说明（未签名安装包怎么打开、需要自己装 ffmpeg）由 desktop 会话维护；有就带上。
       - name: Add fixed install notes
-        env:
-          MODE: ${{ steps.notes.outputs.mode }}
         run: |
-          echo "$MODE" > release-notes/mode.txt # 保证这个 artifact 永远不为空
           if [ -f apps/desktop/release-notes-footer.md ]; then
             cp apps/desktop/release-notes-footer.md release-notes/footer.md
           else
@@ -199,7 +184,6 @@ jobs:
       TAG: ${{ needs.verify.outputs.tag }}
       VERSION: ${{ needs.verify.outputs.version }}
       PRERELEASE: ${{ needs.verify.outputs.prerelease }}
-      NOTES_MODE: ${{ needs.verify.outputs.notes }}
     steps:
       - name: Download installers
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -226,10 +210,8 @@ jobs:
       - name: Compose release notes
         run: |
           {
-            if [ "$NOTES_MODE" = "changelog" ]; then
-              cat release-notes/changelog.md
-              printf '\n\n---\n\n'
-            fi
+            cat release-notes/changelog.md
+            printf '\n\n---\n\n'
             if [ -f release-notes/footer.md ]; then
               cat release-notes/footer.md
             else
@@ -252,7 +234,6 @@ jobs:
           files=(assets/dramai-* assets/SHA256SUMS.txt)
           flags=(--title "dramai $TAG" --notes-file release-body.md)
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); else flags+=(--latest); fi
-          if [ "$NOTES_MODE" = "generated" ]; then flags+=(--generate-notes); fi
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             if [ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" != "true" ]; then
