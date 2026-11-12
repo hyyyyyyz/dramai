@@ -16,7 +16,7 @@ For contributors who prefer English, scroll to the bottom.
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git
 cd dramai
-nvm use      # 或确保 Node ≥ 20
+nvm use      # 或确保 Node ≥ 22.22.2
 pnpm install
 pnpm dev
 ```

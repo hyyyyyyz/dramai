@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.5.0-beta.1",
   "type": "module",
-  "description": "Open-source AI short-drama studio. Turn docs / images / a sentence into a structured storyboard, images, and video clips — all powered by OpenAI-compatible APIs.",
+  "description": "An open-source AI short-drama studio that runs on your own computer: give it a novel or a script and it plans episodes, scenes and shots, generates images and video through the AI providers you choose, and composes a finished cut with narration and subtitles.",
   "keywords": [
     "ai",
     "short-drama",
@@ -15,7 +15,7 @@
   ],
   "author": "hyyyyyyz",
   "license": "Apache-2.0",
-  "homepage": "https://hyyyyyyz.github.io/dramai/",
+  "homepage": "https://github.com/hyyyyyyz/dramai",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hyyyyyyz/dramai.git"
@@ -25,7 +25,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.2"
   },
   "scripts": {
     "dev": "pnpm --filter @dramai/workspace dev",

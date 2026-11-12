@@ -10,7 +10,7 @@ The Dramai desktop app: an Electron shell around the same local server (`@dramai
 | Build and install locally | `pnpm desktop:install` (`desktop:build`, `desktop:uninstall`) | Anyone with the repo and Node + pnpm; no download warnings, no certificate |
 | Installer from a release  | `pnpm desktop:dist` (CI runs it on a version tag)             | Everyone else; unsigned, see "Opening an unsigned installer"               |
 
-Requirements for the first two: Node 22.13+ (24 recommended), pnpm 9, and `pnpm install` run once at the repo root. ffmpeg is not bundled in any form; see [ffmpeg](#ffmpeg).
+Requirements for the first two: Node 22.22.2+ (24 recommended), pnpm 9, and `pnpm install` run once at the repo root. ffmpeg is not bundled in any form; see [ffmpeg](#ffmpeg).
 
 ```bash
 pnpm install

@@ -6,7 +6,7 @@
   "description": "Local mock AI providers (LLM / image / video / TTS) for frontend development, demos and manual end-to-end runs. Dev tool: nothing in the production start path depends on it.",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.2"
   },
   "files": [
     "dist",

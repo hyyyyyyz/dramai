@@ -6,7 +6,7 @@
   "description": "Version and release helpers for the dramai monorepo (one version for every package)",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.2"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

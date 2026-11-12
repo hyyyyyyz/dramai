@@ -12,7 +12,7 @@
   "homepage": "https://hyyyyyyz.github.io/dramai/",
   "main": "dist/main.js",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.2"
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",

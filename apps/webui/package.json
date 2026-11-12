@@ -6,7 +6,7 @@
   "description": "dramai WebUI launcher: starts the local server, serves the built workspace and opens the browser",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.2"
   },
   "bin": {
     "dramai": "./bin/dramai.js"

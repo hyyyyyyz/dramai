@@ -31,7 +31,7 @@ It is for people who make serialised short dramas and want to keep control of th
 
 Demo mode runs the whole studio against simulated providers on your machine: no account, no key, no cost. What it generates is placeholder content (numbered colour blocks and test footage), so it shows how the workflow behaves, not what real models produce.
 
-You need [Node.js](https://nodejs.org) 22.13 or newer, [pnpm](https://pnpm.io) 9 and [ffmpeg](https://ffmpeg.org) on your `PATH`.
+You need [Node.js](https://nodejs.org) 22.22.2 or newer, [pnpm](https://pnpm.io) 9 and [ffmpeg](https://ffmpeg.org) on your `PATH`.
 
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git
@@ -115,7 +115,7 @@ In words: source text → episodes → scenes → shots → shot images → shot
 - **Desktop, build and install on your machine**: `pnpm desktop:install`. Builds the app locally and installs it for the current user. No certificate and no download warnings, because the app is made on your machine. `pnpm desktop:uninstall` removes it and keeps your data.
 - **Desktop, installer**: no installer yet. Installers for macOS, Windows and Linux are built by the release workflow and will be attached to a GitHub release once the first beta is published. They are unsigned.
 
-Everything starts from a checkout, with Node.js 22.13+, pnpm 9 and ffmpeg:
+Everything starts from a checkout, with Node.js 22.22.2+, pnpm 9 and ffmpeg:
 
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git
