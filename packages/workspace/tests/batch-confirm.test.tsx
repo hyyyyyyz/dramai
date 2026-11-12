@@ -218,7 +218,9 @@ describe('BatchConfirmDialog', () => {
         admission: makePreflight([]),
       }),
     })
-    await userEvent.click(await screen.findByRole('button', { name: /确认并加入队列/ }))
+    const confirm = await screen.findByRole('button', { name: /确认并加入队列/ })
+    await waitFor(() => expect(confirm).toBeEnabled()) // 预检结果回来之前确认是不可用的
+    await userEvent.click(confirm)
     await waitFor(() => expect(server.calls.some((c) => c.path.endsWith('/generate'))).toBe(true))
     expect(await screen.findByText('有的没有加入队列')).toBeInTheDocument()
     expect(screen.getByText(/1 项已加入队列，2 项没有成功/)).toBeInTheDocument()

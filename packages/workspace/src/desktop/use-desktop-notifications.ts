@@ -13,7 +13,7 @@ const BATCH_MS = 1500
  * itself stays quiet while its window is focused. Several jobs ending within a moment become one notification.
  * Does nothing in a browser.
  */
-export function useDesktopNotifications() {
+export function useDesktopNotifications(batchMs: number = BATCH_MS) {
   const { t } = useTranslation()
   const jobs = useJobs()
   const seen = useRef(new Map<string, JobListItem['status']>())
@@ -59,12 +59,12 @@ export function useDesktopNotifications() {
               false,
             )
           }
-        }, BATCH_MS)
+        }, batchMs)
       }
     }
     seen.current = new Map(items.map((j) => [j.id, j.status]))
     loaded.current = true
-  }, [jobs.data, t])
+  }, [jobs.data, t, batchMs])
 
   useEffect(() => () => clearTimeout(timer.current), [])
 }

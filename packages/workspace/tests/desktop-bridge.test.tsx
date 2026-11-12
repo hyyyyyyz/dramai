@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useQueryClient } from '@tanstack/react-query'
+import { useJobs } from '@/data/queries'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ArtifactReport } from '@dramai/api'
 import { Route, Routes } from 'react-router'
@@ -188,10 +189,13 @@ describe('settings in the desktop app', () => {
 })
 
 function Watcher() {
-  useDesktopNotifications()
+  // a short batch window: the test cares about batching, not about waiting 1.5 s of wall clock
+  useDesktopNotifications(20)
   const qc = useQueryClient()
+  const loaded = useJobs().data !== undefined
   return (
     <button
+      data-loaded={loaded}
       onClick={() =>
         qc.setQueryData(['jobs'], {
           items: [
@@ -217,10 +221,9 @@ describe('system notifications for finished tasks', () => {
     const server = fakeServer({ 'GET /api/jobs': () => ({ items: running() }) })
     renderApp(<Watcher />, { client: server.client })
     const btn = await screen.findByRole('button', { name: 'finish' })
-    await waitFor(() => expect(server.calls.some((c) => c.path === '/api/jobs')).toBe(true))
-    await new Promise((r) => setTimeout(r, 50))
+    await waitFor(() => expect(btn).toHaveAttribute('data-loaded', 'true')) // the running jobs have been seen
     await userEvent.click(btn)
-    await waitFor(() => expect(b.notify).toHaveBeenCalledTimes(1), { timeout: 4000 })
+    await waitFor(() => expect(b.notify).toHaveBeenCalledTimes(1))
     expect(b.notify).toHaveBeenCalledWith({ title: '2 个任务已完成', body: undefined })
   })
 
@@ -231,9 +234,10 @@ describe('system notifications for finished tasks', () => {
     const server = fakeServer({ 'GET /api/jobs': () => ({ items: running() }) })
     renderApp(<Watcher />, { client: server.client })
     const btn = await screen.findByRole('button', { name: 'finish' })
-    await new Promise((r) => setTimeout(r, 100))
+    await waitFor(() => expect(btn).toHaveAttribute('data-loaded', 'true'))
     await userEvent.click(btn)
-    await new Promise((r) => setTimeout(r, 2200))
+    // a negative cannot be waited for: the batch window is 20 ms, so 400 ms is twenty windows
+    await new Promise((r) => setTimeout(r, 400))
     expect(b.notify).not.toHaveBeenCalled()
   })
 
@@ -241,8 +245,9 @@ describe('system notifications for finished tasks', () => {
     const server = fakeServer({ 'GET /api/jobs': () => ({ items: running() }) })
     renderApp(<Watcher />, { client: server.client })
     const btn = await screen.findByRole('button', { name: 'finish' })
+    await waitFor(() => expect(btn).toHaveAttribute('data-loaded', 'true'))
     await userEvent.click(btn)
-    await new Promise((r) => setTimeout(r, 1800))
-    expect(server.calls.filter((c) => c.path === '/api/jobs').length).toBeGreaterThan(0)
+    await new Promise((r) => setTimeout(r, 400))
+    expect(screen.getByRole('button', { name: 'finish' })).toBeInTheDocument() // nothing threw
   })
 })

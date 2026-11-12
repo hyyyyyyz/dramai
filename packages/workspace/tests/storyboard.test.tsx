@@ -165,7 +165,9 @@ describe('storyboard instructions and cross-scene moves', () => {
         'PUT /api/scenes/scene_1/shot-order': () => d.scenes[0],
       },
     })
-    expect(await within(await card(1)).findByRole('button', { name: '镜头 1 上移' })).toBeDisabled()
+    await waitFor(async () =>
+      expect(within(await card(1)).getByRole('button', { name: '镜头 1 上移' })).toBeDisabled(),
+    )
     await userEvent.click(within(await card(3)).getByRole('button', { name: '镜头 3 上移' }))
     await waitFor(() =>
       expect(server.calls.find((c) => c.path === '/api/shots/c/move')?.body).toEqual({
@@ -173,7 +175,10 @@ describe('storyboard instructions and cross-scene moves', () => {
       }),
     )
     // 场内仍然是调序
-    await userEvent.click(within(await card(2)).getByRole('button', { name: '镜头 2 上移' }))
+    // the buttons are off while the move is in flight
+    const up2 = within(await card(2)).getByRole('button', { name: '镜头 2 上移' })
+    await waitFor(() => expect(up2).toBeEnabled())
+    await userEvent.click(up2)
     await waitFor(() =>
       expect(server.calls.find((c) => c.path === '/api/scenes/scene_1/shot-order')?.body).toEqual({
         order: ['b', 'a'],

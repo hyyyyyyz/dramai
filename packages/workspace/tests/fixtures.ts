@@ -86,6 +86,9 @@ export function fakeServer(routes: Record<string, Handler>) {
     } catch {
       body = init?.body
     }
+    // Stress knob for checking that tests wait for conditions instead of racing: FAKE_SERVER_DELAY_MS=200 pnpm test
+    const delay = Number(process.env.FAKE_SERVER_DELAY_MS ?? 0)
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay))
     calls.push({ method, path: url.pathname, body })
     const handler = routes[key]
     if (!handler) return json(404, { error: { code: 'NOT_FOUND', message: `no route ${key}` } })

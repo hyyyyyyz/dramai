@@ -1,10 +1,11 @@
 import { QueryClient } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { ProjectListItem } from '@dramai/api'
 import { App } from '@/app/App'
 import { apiError, fakeServer, makeSystem } from './fixtures'
+import { preloadRoutes } from './preload-routes'
 import { useLocale } from './render'
 
 const emptyProgress = {
@@ -46,6 +47,11 @@ const base = {
   'GET /api/jobs': () => ({ items: [] }),
   'GET /api/projects': () => ({ items: [project()] }),
 }
+
+// Load every lazy page up front so a cold import is never counted against an assertion's wait (see preload-routes.ts).
+beforeAll(async () => {
+  await preloadRoutes()
+}, 60_000)
 
 beforeEach(async () => {
   await useLocale('zh-CN')

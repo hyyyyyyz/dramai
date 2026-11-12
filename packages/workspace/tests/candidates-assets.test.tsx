@@ -96,8 +96,11 @@ describe('candidates page', () => {
     )
     const row = await screen.findByTestId('candidate-掌事姑姑')
     expect(within(row).getByText('置信度 高')).toBeInTheDocument()
-    expect(within(row).getByText('首次出现：第 2 集 镜头 01')).toBeInTheDocument()
-    expect(within(row).getByText(/出现在：第 2 集 镜头 01、第 2 集 镜头 02/)).toBeInTheDocument()
+    // the shot list arrives in a separate request, after the row itself
+    expect(await within(row).findByText('首次出现：第 2 集 镜头 01')).toBeInTheDocument()
+    expect(
+      await within(row).findByText(/出现在：第 2 集 镜头 01、第 2 集 镜头 02/),
+    ).toBeInTheDocument()
     expect(within(row).getByText('掌事姑姑站在门外，没有进来。')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '角色' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '道具' })).toBeInTheDocument()
@@ -433,6 +436,7 @@ describe('assets pages', () => {
     await userEvent.click(next)
     const confirm = await screen.findByRole('dialog', { name: '用指令修改设定图' })
     expect(within(confirm).getByText('把发髻换成双丫髻')).toBeInTheDocument()
+    await waitFor(() => expect(server.calls.some((c) => c.path.endsWith('/preflight'))).toBe(true))
     const pre = server.calls.find((c) => c.path.endsWith('/preflight'))!
     expect((pre.body as { items: { target: unknown }[] }).items[0]!.target).toEqual({
       kind: 'asset_sheet',

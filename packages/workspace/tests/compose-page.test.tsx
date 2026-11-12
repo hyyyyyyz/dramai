@@ -146,8 +146,11 @@ describe('compose page', () => {
     })
     await userEvent.click((await screen.findAllByRole('button', { name: '渲染成片' }))[0]!)
     const dialog = await screen.findByRole('dialog')
-    expect(within(dialog).getByRole('radio', { name: '烧进画面' })).toBeDisabled()
-    expect(within(dialog).getByText(/没有字幕滤镜/)).toBeInTheDocument()
+    // what ffmpeg can do comes from /api/system, which may still be on its way when the dialog opens
+    await waitFor(() =>
+      expect(within(dialog).getByRole('radio', { name: '烧进画面' })).toBeDisabled(),
+    )
+    expect(await within(dialog).findByText(/没有字幕滤镜/)).toBeInTheDocument()
     await userEvent.click(within(dialog).getByRole('radio', { name: '720p' }))
     await userEvent.click(within(dialog).getByRole('button', { name: '开始渲染' }))
     await waitFor(() =>

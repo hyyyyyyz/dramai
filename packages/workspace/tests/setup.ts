@@ -1,6 +1,11 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
+
+// Async queries (`findBy…`, `waitFor`) return as soon as the condition holds, so a long limit costs nothing when
+// things are fast; it only stops a slow CI machine from turning "not there yet" into a failure. The real fixes for
+// slowness (preloading lazy routes, injectable timers) live where the slowness comes from.
+configure({ asyncUtilTimeout: 5000 })
 
 afterEach(() => cleanup())
 
