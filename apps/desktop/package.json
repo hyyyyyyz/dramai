@@ -1,7 +1,7 @@
 {
   "name": "@dramai/desktop",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0-beta.1",
   "type": "module",
   "description": "dramai desktop app: an Electron shell around the local server and the workspace",
   "license": "Apache-2.0",
@@ -24,7 +24,8 @@
     "test": "vitest run",
     "app:build": "node scripts/build-app.mjs",
     "install:local": "node scripts/install.mjs",
-    "uninstall:local": "node scripts/uninstall.mjs"
+    "uninstall:local": "node scripts/uninstall.mjs",
+    "check:install": "node scripts/check-install.mjs"
   },
   "devDependencies": {
     "@dramai/api": "workspace:*",

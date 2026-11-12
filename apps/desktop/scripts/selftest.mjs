@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // Unattended check of the local install, for CI and for you:
-//   pnpm desktop:build && node apps/desktop/scripts/selftest.mjs [--arg=--no-sandbox]
+//   pnpm desktop:check-install   (builds first if needed)   or   node scripts/selftest.mjs after `pnpm desktop:build`
 // It installs the built app into a throw-away sandbox folder (nothing outside it is touched, no OS registration),
 // checks the files, starts the installed app and runs the smoke check against it, uninstalls, and verifies that
 // the app is gone while user data is kept (and only goes with --purge-data --yes).
-// On a headless Linux runner wrap it in `xvfb-run -a`; add --arg=--no-sandbox if the runner blocks user namespaces.
+// On Linux it handles headless runners (re-runs itself under xvfb-run) and runners that block user namespaces
+// (adds --no-sandbox for this check) by itself.
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,6 +15,47 @@ import { installPaths } from './lib/install-paths.mjs'
 
 const scripts = fileURLToPath(new URL('.', import.meta.url))
 const passthrough = process.argv.slice(2).filter((a) => a.startsWith('--arg='))
+
+// Linux CI runners: no display -> run under xvfb; restricted user namespaces (Ubuntu 24.04+) -> no Chromium sandbox
+// for this check only (the app itself keeps the sandbox on; see README).
+if (process.platform === 'linux') {
+  const read = (f) => {
+    try {
+      return readFileSync(f, 'utf8').trim()
+    } catch {
+      return undefined
+    }
+  }
+  const restricted =
+    read('/proc/sys/kernel/apparmor_restrict_unprivileged_userns') === '1' ||
+    read('/proc/sys/kernel/unprivileged_userns_clone') === '0'
+  if (restricted && !passthrough.includes('--arg=--no-sandbox')) {
+    console.log(
+      'note: user namespaces are restricted here; running the app with --no-sandbox for this check',
+    )
+    passthrough.push('--arg=--no-sandbox')
+  }
+  if (!process.env.DISPLAY && !process.env.WAYLAND_DISPLAY && !process.env.DRAMAI_UNDER_XVFB) {
+    const r = spawnSync(
+      'xvfb-run',
+      [
+        '-a',
+        process.execPath,
+        ...process.argv.slice(1),
+        ...passthrough.filter((a) => !process.argv.includes(a)),
+      ],
+      {
+        stdio: 'inherit',
+        env: { ...process.env, DRAMAI_UNDER_XVFB: '1' },
+      },
+    )
+    if (r.error) {
+      console.error('no display and xvfb-run is not installed (apt install xvfb)')
+      process.exit(1)
+    }
+    process.exit(r.status ?? 1)
+  }
+}
 const root = mkdtempSync(join(tmpdir(), 'dramai-selftest-'))
 let failed = false
 const check = (name, ok) => {
