@@ -195,6 +195,26 @@ The release workflow relies on what the desktop app delivers. The conventions ag
   and the merge has to be decided first). Extend `tooling/release/src/assets.ts` and `release-desktop.yml`
   when auto-update is built.
 
+## What the desktop build produces
+
+`pnpm desktop:dist` builds the frontend and the app itself (so the release job does not run a separate full build)
+and writes these files to `apps/desktop/release/`:
+
+| System  | Files                                                                                           |
+| ------- | ----------------------------------------------------------------------------------------------- |
+| macOS   | `dramai-<version>-mac-arm64.dmg` and `.zip`; `dramai-<version>-mac-x64.dmg` and `.zip` on Intel |
+| Windows | `dramai-<version>-win-x64.exe` (installer) and `.zip` (portable)                                |
+| Linux   | `dramai-<version>-linux-x64.AppImage` and `.tar.gz`                                             |
+
+The release job collects exactly these (and fails if a system produced none); `.blockmap`, `builder-debug.yml`,
+`latest*.yml` and unpacked folders are ignored, and `SHA256SUMS.txt` is computed over the collected files. macOS Intel
+is built natively on a `macos-15-intel` runner, so no architecture flag is needed (cross-building it on an arm64
+runner would need `--arch x64`). No signing variables are passed.
+
+**Not known until the first real release:** whether the Linux `tar.gz` target makes electron-builder download an
+extra tool. The dry run does not reveal it differently from a real release, but a first run on a tag is where a
+surprise download (or a failure from it) would show up, so check that job's log the first time.
+
 ## End-to-end tests
 
 The `E2E (browser)` job in `ci.yml` runs the Playwright specs in `packages/workspace/e2e` with
