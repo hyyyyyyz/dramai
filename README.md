@@ -2,236 +2,200 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./packages/ui/src/brand/banner-ink.svg" />
-  <img src="./packages/ui/src/brand/banner-paper.svg" alt="dramai · 在本机运行的开源 AI 短剧工作室" width="720" />
+  <img src="./packages/ui/src/brand/banner-paper.svg" alt="dramai, an open-source AI short-drama studio that runs on your own computer" width="720" />
 </picture>
 
-文本 / 文档 / 参考图 → 分镜脚本 → 角色一致的图 → 视频片段 → 一键导出剪映草稿
-全程纯前端、零后端、可直接 fork 部署到 GitHub Pages。
+**English** · [简体中文](./README_CN.md)
 
-[English](./README_EN.md) ·
-[文档](./docs/ARCHITECTURE.md) ·
-[路线图](./docs/ROADMAP.md) ·
-[在线 Demo](https://hyyyyyyz.github.io/dramai/)（部署后可用）
-
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-v0.4.0-brightgreen)](./docs/ROADMAP.md)
-[![Made with React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![Version](https://img.shields.io/github/package-json/v/hyyyyyyz/dramai?color=DF500C&label=version)](./CHANGELOG.md)
 
 </div>
 
----
+dramai is an open-source AI short-drama studio that runs on your own computer. Give it a novel or a script and it plans episodes, scenes and shots, generates images and video through the AI providers you choose, and composes a finished cut with narration and subtitles.
 
-## ✨ 它是什么
+It is for people who make serialised short dramas and want to keep control of the work. Projects are ordinary folders on your disk, API keys stay on your machine, and nothing passes through a service we run.
 
-`dramai` 是一个**完全跑在浏览器里的 AI 短剧创作工具**：
+> [!IMPORTANT]
+> **This is `0.5.0-beta.1`, a beta.** It has been verified with automated tests and built-in mock providers only, and has **not yet been run against a real AI provider**. The desktop app has only been run on macOS. No release is published yet: there are no installers, npm package or Docker image to download. See [Status](#status).
 
-- 你把自己的故事素材（doc / txt / md / 参考图）丢进去；
-- 在输入框里写下一句"我想要的短剧是什么样子"；
-- 它会调用你自己配置的 OpenAI 兼容 API，先生成结构化分镜脚本；
-- 然后逐个分镜生图、生成视频片段、合成成片；
-- 想要二次剪辑？直接导出 [剪映](https://www.capcut.cn/) 草稿。
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/storyboard-dark.webp" />
+    <img src="./docs/assets/readme/en/storyboard-light.webp" alt="The storyboard page: shots grouped by scene, each with its image, video, narration, prompt and the assets it uses" width="100%" />
+  </picture>
+  <br />
+  <sub>The storyboard of a small demo project. The images and video are placeholders made by demo mode.</sub>
+</p>
 
-零后端意味着：你只要会 fork 这个仓库 + 启用 GitHub Pages，就拥有了**自己的私有部署**。
-你的数据、API Key 都不会经过任何中间服务器。
+## Try it in a minute, with no API key
 
-## 🚀 完整教程 · 从注册到第一部短剧
+Demo mode runs the whole studio against simulated providers on your machine: no account, no key, no cost. What it generates is placeholder content (numbered colour blocks and test footage), so it shows how the workflow behaves, not what real models produce.
 
-> 📌 **预计耗时**：首次配置 30 分钟 + 跑一次约 30 分钟（含等视频生成）
-> 💰 **预计花费**：先充 **¥30-50** 试水，单部 30 秒短剧成本 **¥40-50** 左右
-
-### Step 1 · 准备两个账号 + API Key（10 分钟）
-
-dramai 不存你的 key，所以**你需要直接去 AI 服务商充值**。下面这两个组合是验证过的最便宜组合：
-
-#### ① DeepSeek（写分镜剧本，几乎免费）
-
-1. 打开 [https://platform.deepseek.com](https://platform.deepseek.com) → 注册（手机号/邮箱）
-2. 充值 **¥10**（够写几十部短剧的分镜）
-3. 左侧 **「API keys」** → **「Create new API key」** → 复制保存（`sk-xxxxxx`）
-
-#### ② 302.AI（生图 + 生视频，主要花费在这里）
-
-1. 打开 [https://302.ai](https://302.ai)（推广链接 [https://share.302.ai/d6IJUM](https://share.302.ai/d6IJUM) 通常带充值优惠）→ 注册
-2. **「账户」/「充值」** → 充 **¥30-50**（够 3-5 部短剧试水）
-3. **「API 管理」/「密钥管理」** → 创建一个 API Key（命名为 "dramai"）→ 复制保存
-
-> ⚠️ 一个 302 key 通常能调它对接的所有模型，**不需要给生图、生视频分别建 key**——下面 3 个 provider 共用同一个就行。
-
-### Step 2 · 在 dramai 里配 4 个 Provider（5 分钟）
-
-打开 [https://hyyyyyyz.github.io/dramai/settings](https://hyyyyyyz.github.io/dramai/settings)（或你 fork 部署的地址）。
-
-每个 provider **直接点预设 chip**自动填好配置，**只需粘贴 API Key + 保存 + 激活**：
-
-| 顺序      | 点这个预设 chip                                       | 粘什么 key         | 激活 |
-| --------- | ----------------------------------------------------- | ------------------ | ---- |
-| ①         | **DeepSeek 直连 (LLM)**                               | DeepSeek 的 sk-... | ✅   |
-| ②         | **302.AI · 即梦 Seedream 5.0 (字节，便宜)**           | 302 的 sk-...      | ✅   |
-| ③         | **⭐ 302.AI · 通义万相 Wan2.2 Flash (最便宜 · 阿里)** | 302 的 sk-...      | ✅   |
-| ④（可选） | **302.AI · Nano Banana (Gemini 文生图)**              | 302 的 sk-...      | 备用 |
-
-**激活**：每个 provider 卡片上点「激活」按钮，让它成为该类型的当前选项。
-
-> 测试连接：DeepSeek 的会显示模型数量；图/视频的预设可能显示「该协议无标准列表端点，请直接生成验证」——**这是正常的**，不代表配错了。
-
-### Step 3 · 创建项目，喂故事素材（5 分钟）
-
-1. 顶栏点 **「项目」** → **「+ 新建项目」**
-2. 填：
-   - **标题**：随便（如"清朝宫廷"）
-   - **风格**：点一个预设 chip（漫剧/动画 / 古风仙侠漫 / 现代都市短剧 等）
-   - **简介**：可选
-3. 点「创建并打开」
-4. **「素材」** 卡片：上传一个 `.txt` / `.md` / `.docx`（你的故事原文，500-3000 字最佳），或者图片做参考
-
-### Step 4 · 生成分镜（30 秒到 1 分钟）
-
-在 **「分镜生成」** 卡片：
-
-1. 在指令框写你的需求，例如：
-
-   > 把上传的故事改写成 6 个分镜，温馨童话风格。每镜 5 秒。重点表现主角的心理变化。
-
-2. 点 **「生成分镜」**
-3. 等下方实时刷出 6 个分镜（含场景、旁白、英文 image prompt、出场角色、时长）
-4. 不满意可以改指令重生；满意再下一步
-
-### Step 5 · 批量生图（2-5 分钟）
-
-分镜列表上方点 **「批量生图」**：
-
-- dramai 顺序给每个分镜调 Seedream 5.0
-- 每张图 10-30 秒，6 张约 1-3 分钟
-- 完成后每个分镜卡片左侧出现缩略图
-- **预算**：6 × 0.035 PTC ≈ **¥1.5**
-
-### Step 6 · 批量生视频（10-20 分钟，最慢的一步）
-
-点 **「批量生视频」**：
-
-- 顺序调 Wan2.2 Flash，每条 1-3 分钟
-- 6 条总耗时约 6-18 分钟（**别刷新页面**——任务恢复轮询是 v0.5 才有）
-- **预算**：6 × 0.2 PTC ≈ **¥8**
-- 完成后分镜卡片缩略图变成可播放的 video
-
-### Step 7 · 合成 + 字幕 + 剪映 ZIP（5 分钟）
-
-滚到 **「合成 / 字幕 / 剪映导出」** 卡片：
-
-1. 点 **「合成成片（6 段）」**
-   - **首次**会下载 ~30MB 的 FFmpeg.wasm core（仅一次，浏览器缓存住）
-   - 转码每段 → 拼接 → 完成约 30 秒-2 分钟
-2. 点 **「下载成片 mp4」** → 你这部 30 秒短剧到手 🎬
-3. 同时点 **「导出 SRT」** → 拿到字幕文件
-4. （可选）点 **「剪映 ZIP」** → 下载一个含 mp4 + 图 + SRT 的 zip
-
-### Step 8 · 在剪映加配音（5 分钟，可选）
-
-dramai 当前不生成旁白音频。要让旁白被读出来：
-
-1. 桌面端打开 **剪映**（CapCut）
-2. 新建项目 → 把 dramai 下载的 mp4 拖到主轨
-3. 把 SRT 拖到字幕轨
-4. **选中字幕 → 右侧面板「文本朗读」** → 选音色（小学语文老师 / 抒情女声 / 新闻男声等）
-5. 一键生成配音，剪映会按 SRT 时间轴自动对齐
-
-✨ **完成**——你刚刚做完一部完整的 AI 短剧。
-
----
-
-## 🎯 已验证组合（2026-05-04 端到端跑通）
-
-下面这套配置是经过**真人实测**从素材 → 分镜 → 图 → 视频 → 成片 → 剪映 ZIP 全流程跑通的，**强烈推荐新用户照抄**——dramai 内置预设也只保留这 4 个：
-
-| 角色           | 服务商                         | Base URL                    | Model                        | API 协议风格       | 价格档          |
-| -------------- | ------------------------------ | --------------------------- | ---------------------------- | ------------------ | --------------- |
-| LLM 写分镜     | DeepSeek 直连                  | `https://api.deepseek.com`  | `deepseek-chat`              | OpenAI 兼容        | 极便宜          |
-| 文生图         | 302.AI · 即梦 Seedream 5.0     | `https://api.302.ai/doubao` | `doubao-seedream-5-0-260128` | OpenAI 兼容        | ~0.035 PTC/张   |
-| 文生图（备选） | 302.AI · Nano Banana           | `https://api.302.ai`        | `gemini-2.5-flash-image`     | **Gemini 原生**    | ~0.2-0.5 PTC/张 |
-| 图生视频       | 302.AI · 通义万相 Wan2.2 Flash | `https://api.302ai.cn`      | `wan2.2-i2v-flash`           | **阿里 DashScope** | ~0.04 PTC/秒    |
-
-**单部 30 秒短剧成本预估**（6 个分镜 / 720P）：
-
-```
-LLM        ¥0.x         （写分镜，便宜到忽略）
-文生图      6 × 0.035 PTC = 0.21 PTC ≈ ¥1.5
-图生视频    6 × 1 PTC ≈ 6 PTC ≈ ¥40         ← 大头在这里（Wan2.2-flash 5秒720P 约 0.2 PTC）
-合成      免费（FFmpeg.wasm 在你浏览器跑）
-配音      免费（导入剪映 → AI 配音内置）
-─────────────────────────
-总计       约 ¥40-50 一部
-```
-
-> 旁白音频不在 dramai 里生成，**导出剪映 ZIP 后**用剪映自带的「文本朗读」/「AI 配音」给 SRT 字幕配音，**免费且中文音色丰富**。这是当前最省事的路径。
-
-## 🚀 本地开发
+You need [Node.js](https://nodejs.org) 22.13 or newer, [pnpm](https://pnpm.io) 9 and [ffmpeg](https://ffmpeg.org) on your `PATH`.
 
 ```bash
 git clone https://github.com/hyyyyyyz/dramai.git
 cd dramai
 pnpm install
-pnpm dev
-# 浏览器访问 http://localhost:5173/dramai/
+pnpm build
+pnpm demo --static-dir packages/workspace/dist
 ```
 
-> 注：因为 `vite.config.ts` 默认 `base = "/dramai/"`（适配 GitHub Pages），
-> 本地开发的访问路径也是 `/dramai/`。
-> 想用根路径，请设置环境变量：`VITE_BASE=/ pnpm dev`。
+Open <http://127.0.0.1:8787>. Create a project, upload a short story, plan episodes, break them into shots, confirm the characters and locations, then generate images and video and compose the cut. The simulated language model only understands Chinese text, so use a Chinese story. Demo data lives in `~/.dramai-demo`, separate from your real data; add `--fresh` to start over.
 
-可用脚本：
+## What is different
 
-| 命令                           | 说明                          |
-| ------------------------------ | ----------------------------- |
-| `pnpm dev`                     | 开发模式（HMR）               |
-| `pnpm build`                   | 类型检查 + 生产构建到 `dist/` |
-| `pnpm preview`                 | 预览构建产物                  |
-| `pnpm typecheck`               | 仅类型检查                    |
-| `pnpm lint` / `lint:fix`       | ESLint                        |
-| `pnpm format` / `format:check` | Prettier                      |
+- **Local, with your keys.** A server on `127.0.0.1` does all the work. Projects are folders of ordinary files plus a SQLite database. Provider requests are made by that server, so there is no CORS limit and no relay in between.
+- **Long texts and serials.** A project holds episodes, episodes hold scenes, scenes hold shots. Long texts are split into episodes by chapter.
+- **A reusable library.** Characters, locations, props and costumes are assets that shots refer to. Each asset has one reference sheet that every shot using it is generated from. The visual style is chosen once, when the project is created.
+- **Checks before paid generation.** Shots that refer to an unregistered asset, or one without a reference image, are blocked. A batch runs completely or not at all, a shot has at most one video task in flight, and a cost estimate from the model's price table is shown before you confirm.
+- **A task queue that survives restarts.** Closing the browser does not stop work. After a restart, a video task that has an upstream task id resumes polling. One without it is marked "submission unconfirmed" and is never resubmitted automatically. Cancelling only affects tasks that are still queued.
+- **Versions kept.** Regenerating adds a version and does not overwrite the previous one. When something upstream changes, what depends on it is marked out of date, and nothing is regenerated on its own.
+- **Native ffmpeg composition.** The cut is rendered with the ffmpeg installed on your machine, in 9:16, 16:9 or 1:1, with narration voice, soft or burned-in subtitles, SRT and VTT, and an asset package for editing elsewhere.
 
-## 🧠 核心概念
+The workspace speaks English, Simplified Chinese and Traditional Chinese, in a light and a dark theme.
 
-- **项目（Project）**：一部短剧。包含元信息、原始素材、分镜列表、角色卡、生成结果。
-- **角色卡（Character）**：一个项目内可创建多个角色，每个角色可绑定一张参考图，使其在不同分镜中保持形象一致；不绑定的角色会随机生成且与主角不同。
-- **分镜（Storyboard / Shot）**：一段画面。包含场景描述、旁白、角色出场表、生图提示词、运镜参数、最终图与视频。
-- **Pipeline 阶段**：`parse → rewrite → storyboard → image → camera → video`，参考 [xhongc/ai_story](https://github.com/xhongc/ai_story) 的责任链思路，但完全在浏览器内执行。
+## How a project moves
 
-更多见 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)。
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/pipeline-en-dark.svg" />
+    <img src="./docs/assets/readme/pipeline-en-light.svg" alt="Source text, episodes, scenes and shots are planned first. Shot images, shot videos, narration, the cut and the export follow. Checks run before any paid job; versions are kept; the task queue survives restarts." width="100%" />
+  </picture>
+</p>
 
-## 🗺️ 路线图
+In words: source text → episodes → scenes → shots → shot images → shot videos → narration → composed cut with subtitles → export.
 
-| 版本   | 范围                                    | 状态      |
-| ------ | --------------------------------------- | --------- |
-| v0.0.1 | 项目骨架 + GitHub Pages 部署            | ✅ 已发布 |
-| v0.1   | 文本/文件/参考图 → 分镜脚本（LLM 流式） | ✅ 已发布 |
-| v0.2   | 角色卡 + 文生图                         | ✅ 已发布 |
-| v0.3   | 图生视频 + 运镜                         | ✅ 已发布 |
-| v0.4   | 视频合成 + 字幕 + 剪映导出              | ✅ 已发布 |
-| v0.5   | 性能 / 文档 / 模板库 / 完整 i18n        | 🚧 规划中 |
+<details>
+<summary><strong>More screens</strong>: project overview, asset library, checks before generating, compose timeline, task panel</summary>
 
-完整路线图见 [docs/ROADMAP.md](./docs/ROADMAP.md)。
+<br />
 
-## 🤝 贡献
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/overview-dark.webp" />
+  <img src="./docs/assets/readme/en/overview-light.webp" alt="Project overview with the next steps of the current episode, the episode list and project settings" width="100%" />
+</picture>
 
-非常欢迎贡献！请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md) 与
-[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)。
+**Project overview.** The next steps for the current episode, and the state of every episode.
 
-- 报告 bug：请使用 [Bug Issue 模板](https://github.com/hyyyyyyz/dramai/issues/new?template=bug_report.yml)。
-- 申请新特性：[Feature Issue 模板](https://github.com/hyyyyyyz/dramai/issues/new?template=feature_request.yml)。
-- 安全问题：见 [SECURITY.md](./SECURITY.md)。
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/assets-dark.webp" />
+  <img src="./docs/assets/readme/en/assets-light.webp" alt="The asset library with character reference sheets" width="100%" />
+</picture>
 
-## 🙏 致谢
+**Asset library.** Characters, locations, props and costumes. The sheets shown here are placeholders from demo mode.
 
-`dramai` 在架构与产品形态上参考了以下两个开源项目：
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/confirm-dark.webp" />
+  <img src="./docs/assets/readme/en/confirm-light.webp" alt="The confirmation dialog before a batch video job, with the model, aspect ratio, estimated cost and warnings" width="100%" />
+</picture>
 
-- [xhongc/ai_story](https://github.com/xhongc/ai_story)：Pipeline 责任链与 AI 客户端抽象层的设计思路。
-- [freestylefly/director_ai](https://github.com/freestylefly/director_ai)：人物一致性"三视图"方案、视频生成完整流程文档。
+**Checks before generating.** Nothing is ordered from a provider until you confirm. The amount is in the demo's fictional currency.
 
-`dramai` 是上述思路在"纯浏览器 / 零后端 / 可托管 GitHub Pages"约束下的全新 TypeScript
-重写，**不包含任何来自上述项目的源代码**。
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/compose-dark.webp" />
+  <img src="./docs/assets/readme/en/compose-light.webp" alt="The compose page with a timeline of picture, narration and subtitle tracks and a list of issues" width="100%" />
+</picture>
 
-## 📄 许可证
+**Compose.** A timeline of picture, narration, subtitles and music, with a list of issues that would block rendering.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/tasks-dark.webp" />
+  <img src="./docs/assets/readme/en/tasks-light.webp" alt="The storyboard with the task panel open, showing two video tasks in progress" width="100%" />
+</picture>
+
+**Task panel.** Running, queued and finished tasks. Tasks already submitted to a provider cannot be cancelled and are billed as usual.
+
+</details>
+
+## Run it
+
+- **WebUI**: `pnpm webui`. Starts the server, serves the workspace and opens your browser.
+- **Desktop, run from source**: `pnpm desktop:dev`. An Electron window around the same server and workspace.
+- **Desktop, build and install on your machine**: `pnpm desktop:install`. Builds the app locally and installs it for the current user. No certificate and no download warnings, because the app is made on your machine. `pnpm desktop:uninstall` removes it and keeps your data.
+- **Desktop, installer**: no installer yet. Installers for macOS, Windows and Linux are built by the release workflow and will be attached to a GitHub release once the first beta is published. They are unsigned.
+
+Everything starts from a checkout, with Node.js 22.13+, pnpm 9 and ffmpeg:
+
+```bash
+git clone https://github.com/hyyyyyyz/dramai.git
+cd dramai
+pnpm install
+pnpm build          # needed for the WebUI
+pnpm webui          # or: pnpm desktop:install
+```
+
+ffmpeg is not bundled in any form. Install it with `brew install ffmpeg` (macOS), `winget install Gyan.FFmpeg` (Windows) or your package manager (`apt install ffmpeg`). Burning subtitles into the picture needs a build with libass; Settings → About shows what your ffmpeg can do.
+
+<details>
+<summary><strong>WebUI options and where data lives</strong></summary>
+
+<br />
+
+```bash
+pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
+```
+
+The default address is `http://127.0.0.1:8787` and the default data directory is `~/.dramai`. The server only listens on `127.0.0.1`; to reach it from another device you must pass `--host` together with an access token. In the WebUI, API keys are kept in `secrets.json` in the data directory, readable only by your operating system user and not encrypted. See [apps/webui](./apps/webui/README.md).
+
+</details>
+
+<details>
+<summary><strong>Desktop app details</strong></summary>
+
+<br />
+
+The desktop app keeps your data in your user folder (for example `~/Library/Application Support/Dramai/data` on macOS) and stores API keys with the operating system's key store where one exists. Installers are unsigned, so macOS and Windows will warn the first time you open one; the steps are in [apps/desktop](./apps/desktop/README.md), along with the build, install and uninstall details.
+
+</details>
+
+## Status
+
+**Works today**
+
+- The whole workflow runs end to end in demo mode: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export.
+- Browser tests (Playwright) cover that path, a failed task being resumed, the English interface and keyboard-only use.
+- The desktop app passes its checks on macOS.
+
+**Not verified**
+
+- Any real AI provider. The four provider presets carry model ids and prices last checked in May 2026.
+- The desktop app on Windows and Linux. On Linux, CI builds and installs it; on Windows it builds and installs, but the installed app has not yet passed the launch check in CI. Treat both as untested.
+- CI on all three systems is still being fixed.
+- API keys are not encrypted in the WebUI.
+
+**Not released**
+
+- Installers, an npm package, a Docker image and a landing page. GitHub Pages no longer serves a workspace.
+
+Known limits: transitions are hard cuts, there is a single music track, and the in-browser preview leaves out subtitles, music and transitions. Setting up providers (language model, image, video and voice) will be documented separately; until then, Settings → Providers in the app lists the presets and can test a connection. The full list is in the [changelog](./CHANGELOG.md).
+
+## Coming from v0.4
+
+v0.4 was a browser-only app and kept its data inside the browser, so the new version cannot see it. Export a JSON backup from the old app while you still can, then import it in Settings → Data & backup. [CHANGELOG.md](./CHANGELOG.md) has the upgrade steps. The last browser-only version is [v0.4.1](https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.1).
+
+## Documentation
+
+- [CHANGELOG.md](./CHANGELOG.md): What `0.5.0-beta.1` contains, incompatible changes and upgrade notes
+- [apps/webui](./apps/webui/README.md) · [apps/desktop](./apps/desktop/README.md): Starting the server, and the three desktop forms
+- [packages/mock-providers](./packages/mock-providers/README.md): Demo mode and the simulated providers
+- [packages/server](./packages/server/README.md) · [packages/api](./packages/api/README.md) · [packages/core](./packages/core/README.md) · [packages/workspace](./packages/workspace/README.md): The local server, its typed API, the engine and the workspace
+- [docs/VERSIONING.md](./docs/VERSIONING.md) · [docs/RELEASING.md](./docs/RELEASING.md) · [docs/CI.md](./docs/CI.md): Version numbers, releasing, continuous integration
+
+The architecture, provider and deployment guides in `docs/` still describe v0.4 and are being rewritten.
+
+## Contributing
+
+Issues and pull requests are welcome; see [CONTRIBUTING.md](./CONTRIBUTING.md). Commits follow Conventional Commits, and `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm format:check` should pass before you open a pull request.
+
+## Versioning
+
+One version number covers every package. While the major version is 0, new features and incompatible changes raise the minor number and fixes raise the patch number; incompatible changes are always called out in the changelog. Pre-release versions such as `0.5.0-beta.1` are marked as pre-releases on GitHub. The rules are in [docs/VERSIONING.md](./docs/VERSIONING.md).
+
+## License
 
 [Apache License 2.0](./LICENSE) © 2026 hyyyyyyz and dramai contributors.
+
+## Acknowledgements
+
+dramai draws on two open-source projects for ideas: [xhongc/ai_story](https://github.com/xhongc/ai_story) for the pipeline and the design of the AI client layer, and [freestylefly/director_ai](https://github.com/freestylefly/director_ai) for the character-consistency approach and the documented video workflow. dramai is an independent TypeScript implementation and contains no source code from either.

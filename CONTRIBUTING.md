@@ -8,7 +8,7 @@ For contributors who prefer English, scroll to the bottom.
 - 报告 bug：[Bug Issue 模板](https://github.com/hyyyyyyz/dramai/issues/new?template=bug_report.yml)
 - 提议特性：[Feature Issue 模板](https://github.com/hyyyyyyz/dramai/issues/new?template=feature_request.yml)
 - 提交 PR：见下文工作流
-- 文档/翻译：欢迎补充 `docs/` 与 `README_EN.md`
+- 文档/翻译：欢迎补充 `docs/` 与 `README_CN.md`
 - 测试新 OpenAI 兼容服务商：在 [docs/PROVIDERS.md](./docs/PROVIDERS.md) 增加配置示例
 
 ## 🛠️ 本地开发流程
