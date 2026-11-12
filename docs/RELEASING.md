@@ -211,9 +211,10 @@ The release job collects exactly these (and fails if a system produced none); `.
 is built natively on a `macos-15-intel` runner, so no architecture flag is needed (cross-building it on an arm64
 runner would need `--arch x64`). No signing variables are passed.
 
-**Not known until the first real release:** whether the Linux `tar.gz` target makes electron-builder download an
-extra tool. The dry run does not reveal it differently from a real release, but a first run on a tag is where a
-surprise download (or a failure from it) would show up, so check that job's log the first time.
+**Not known yet:** whether the Linux `tar.gz` target makes electron-builder download an extra tool, which would
+slow the job or fail it on a restricted network. Nobody has run `desktop:dist` on Linux yet. The dry run (Actions →
+Release desktop → Run workflow) builds every system, Linux included, without creating a Release, so it will show this
+before any tag is pushed; read the Linux job's log for download lines the first time.
 
 ## End-to-end tests
 
