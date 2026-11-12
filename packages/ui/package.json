@@ -1,7 +1,7 @@
 {
   "name": "@dramai/ui",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0-beta.1",
   "type": "module",
   "description": "dramai shared UI: primitives, brand assets and design tokens (Tailwind v4)",
   "license": "Apache-2.0",

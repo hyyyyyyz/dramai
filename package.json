@@ -1,7 +1,7 @@
 {
   "name": "dramai-monorepo",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0-beta.1",
   "type": "module",
   "description": "Open-source AI short-drama studio. Turn docs / images / a sentence into a structured storyboard, images, and video clips — all powered by OpenAI-compatible APIs.",
   "keywords": [

@@ -1,7 +1,7 @@
 {
   "name": "@dramai/release-tools",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0-beta.1",
   "type": "module",
   "description": "Version and release helpers for the dramai monorepo (one version for every package)",
   "license": "Apache-2.0",
