@@ -12,7 +12,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build, context } from 'esbuild'
-import { SQUARE_ART, writePngSizes } from './lib/icons.mjs'
+import { generateAppIcons, iconPng } from './lib/icons.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const repo = join(root, '../..')
@@ -73,9 +73,10 @@ if (dev) {
 
 async function writeWindowIcon() {
   // Window / taskbar icon for Windows and Linux, generated from the brand artwork (macOS takes its icon from the bundle).
-  const [icon] = writePngSizes(SQUARE_ART, [512], () => 'window.png')
   await mkdir(join(dist, 'icons'), { recursive: true })
-  await writeFile(join(dist, 'icons', 'window.png'), icon.data)
+  await writeFile(join(dist, 'icons', 'window.png'), iconPng(process.platform, 512))
+  // The installed app's icon file for this platform (.icns / .ico / PNG set), generated from the brand artwork.
+  generateAppIcons(join(root, 'build', 'generated'))
 }
 
 async function copyAssets() {

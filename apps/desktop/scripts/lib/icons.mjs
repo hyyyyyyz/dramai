@@ -4,17 +4,32 @@
 // The resampler is an area average on premultiplied alpha: pure JS (pngjs), identical on every OS, and it
 // keeps small sizes clean (no ringing, no halo at the transparent edges).
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
 
 export const brandDir = fileURLToPath(
   new URL('../../../../packages/ui/src/brand/', import.meta.url),
 )
-export const MAC_ART = join(brandDir, 'app-icon-1024.png')
-export const SQUARE_ART = join(brandDir, 'app-icon-square-1024.png')
+
+/**
+ * One artwork per platform plus a small-size variant (see packages/ui/src/brand/README.md):
+ *   mac      app-icon-1024.png          824 px plate, continuous corners, drop shadow, 100 px margin
+ *   windows  app-icon-windows-1024.png  976 px plate, small corner radius
+ *   linux    app-icon-linux-1024.png    928 px plate, continuous corners
+ *   small    app-icon-small-*.png       used for every rendered size up to 48 px, on every platform
+ */
+export const ART = {
+  mac: join(brandDir, 'app-icon-1024.png'),
+  windows: join(brandDir, 'app-icon-windows-1024.png'),
+  linux: join(brandDir, 'app-icon-linux-1024.png'),
+  small: join(brandDir, 'app-icon-small-1024.png'),
+}
+export const SMALL_MAX = 48
+const platformArt = (platform) =>
+  ART[platform === 'darwin' ? 'mac' : platform === 'win32' ? 'windows' : platform]
 
 export function readPng(file) {
   return PNG.sync.read(readFileSync(file))
@@ -97,29 +112,76 @@ export function opaqueBounds(png, threshold = 8) {
       }
 }
 
-/** Write the PNG sizes into outDir as <size>.png. */
-export function writeIconDir(sourceFile, sizes, outDir) {
-  mkdirSync(outDir, { recursive: true })
-  for (const icon of writePngSizes(sourceFile, sizes, (s) => `${s}.png`))
-    writeFileSync(join(outDir, icon.name), icon.data)
+/**
+ * The PNG for one rendered size on one platform: the small variant up to 48 px (its pre-rendered exact sizes when the
+ * brand folder has them), the platform artwork above that. Never a downscale of the 1024 px plate for small sizes.
+ */
+export function iconPng(platform, size) {
+  if (size <= SMALL_MAX) {
+    const exact = join(brandDir, `app-icon-small-${size}.png`)
+    if (existsSync(exact)) return readFileSync(exact)
+    return PNG.sync.write(resizePng(readPng(ART.small), size))
+  }
+  return PNG.sync.write(resizePng(readPng(platformArt(platform)), size))
 }
 
-/** macOS only: build an .icns from the macOS artwork with `iconutil` (used for the source-run dev app). */
-export function makeIcns(outFile, sourceFile = MAC_ART) {
+/** macOS .icns (needs `iconutil`, so macOS only): 16–512 px at 1x and 2x. */
+export function makeIcns(outFile) {
   const work = mkdtempSync(join(tmpdir(), 'dramai-iconset-'))
   try {
     const set = join(work, 'icon.iconset')
     mkdirSync(set)
-    const src = readPng(sourceFile)
     for (const base of [16, 32, 128, 256, 512]) {
-      writeFileSync(join(set, `icon_${base}x${base}.png`), PNG.sync.write(resizePng(src, base)))
-      writeFileSync(
-        join(set, `icon_${base}x${base}@2x.png`),
-        PNG.sync.write(resizePng(src, base * 2)),
-      )
+      writeFileSync(join(set, `icon_${base}x${base}.png`), iconPng('darwin', base))
+      writeFileSync(join(set, `icon_${base}x${base}@2x.png`), iconPng('darwin', base * 2))
     }
+    mkdirSync(dirname(outFile), { recursive: true })
     execFileSync('iconutil', ['-c', 'icns', set, '-o', outFile])
   } finally {
     rmSync(work, { recursive: true, force: true })
   }
+}
+
+/** Windows .ico: PNG-compressed images (Vista and later), exact sizes so Windows rarely has to rescale. */
+export const ICO_SIZES = [16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 128, 256]
+export function icoBuffer(sizes = ICO_SIZES) {
+  const images = sizes.map((size) => ({ size, data: iconPng('win32', size) }))
+  const header = Buffer.alloc(6 + images.length * 16)
+  header.writeUInt16LE(0, 0)
+  header.writeUInt16LE(1, 2) // type: icon
+  header.writeUInt16LE(images.length, 4)
+  let offset = header.length
+  images.forEach((image, i) => {
+    const e = 6 + i * 16
+    header.writeUInt8(image.size >= 256 ? 0 : image.size, e)
+    header.writeUInt8(image.size >= 256 ? 0 : image.size, e + 1)
+    header.writeUInt16LE(1, e + 4) // planes
+    header.writeUInt16LE(32, e + 6) // bits per pixel
+    header.writeUInt32LE(image.data.length, e + 8)
+    header.writeUInt32LE(offset, e + 12)
+    offset += image.data.length
+  })
+  return Buffer.concat([header, ...images.map((i) => i.data)])
+}
+export function makeIco(outFile) {
+  mkdirSync(dirname(outFile), { recursive: true })
+  writeFileSync(outFile, icoBuffer())
+}
+
+/** Linux: <size>x<size>.png files (electron-builder takes a folder of these; the local install copies them into hicolor). */
+export const LINUX_SIZES = [16, 24, 32, 48, 64, 128, 256, 512]
+export function linuxIcons(sizes = LINUX_SIZES) {
+  return sizes.map((size) => ({ size, data: iconPng('linux', size) }))
+}
+export function writeLinuxIconDir(outDir) {
+  mkdirSync(outDir, { recursive: true })
+  for (const { size, data } of linuxIcons())
+    writeFileSync(join(outDir, `${size}x${size}.png`), data)
+}
+
+/** Everything the build needs for the platform it runs on, under apps/desktop/build/generated/. */
+export function generateAppIcons(generatedDir) {
+  if (process.platform === 'darwin') makeIcns(join(generatedDir, 'icon.icns'))
+  else if (process.platform === 'win32') makeIco(join(generatedDir, 'icon.ico'))
+  else writeLinuxIconDir(join(generatedDir, 'linux-icons'))
 }
