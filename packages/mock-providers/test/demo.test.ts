@@ -57,9 +57,10 @@ interface Running {
   stop: () => Promise<void>
 }
 const running: Running[] = []
-afterEach(async () => {
+const stopAll = async () => {
   for (const r of running.splice(0)) await r.stop()
-})
+}
+afterEach(stopAll)
 
 /** 真的启动演示入口（子进程），工作目录是包目录，INIT_CWD 是“用户所在的目录”。 */
 async function startDemo(userDir: string, args: string[]): Promise<Running> {
@@ -95,17 +96,20 @@ async function startDemo(userDir: string, args: string[]): Promise<Running> {
   const appUrl = /(?:App \/ API|界面 \/ 接口|介面 \/ API)\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(
     out,
   )![1]!
+  let stopped: Promise<void> | undefined
   const r: Running = {
     child,
     out: () => out,
     err: () => err,
     appUrl,
+    // Idempotent, and also fine when the process is already gone (killed by a signal: exitCode stays null but
+    // signalCode is set and 'exit' has fired, so waiting for it again would hang forever).
     stop: () =>
-      new Promise<void>((resolve) => {
-        if (child.exitCode !== null) return resolve()
+      (stopped ??= new Promise<void>((resolve) => {
+        if (child.exitCode !== null || child.signalCode !== null) return resolve()
         child.once('exit', () => resolve())
         child.kill('SIGTERM')
-      }),
+      })),
   }
   running.push(r)
   return r
@@ -134,6 +138,7 @@ describe('pnpm demo with relative paths', () => {
       const home = await fetch(`${demo.appUrl}/`)
       expect(await home.text()).toContain('<title>mine</title>')
     } finally {
+      await stopAll() // Windows cannot delete files a running process still has open
       await rm(userDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   }, 60_000)
@@ -169,6 +174,7 @@ describe('pnpm demo with relative paths', () => {
       )![1]!
       expect(after.every((p) => p.baseUrl === mockUrl)).toBe(true)
     } finally {
+      await stopAll() // Windows cannot delete files a running process still has open
       await rm(userDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   }, 90_000)
@@ -195,6 +201,7 @@ describe('pnpm demo with relative paths', () => {
         (await createClient({ baseUrl: again.appUrl }).call('providers.list')).items,
       ).toHaveLength(6)
     } finally {
+      await stopAll() // Windows cannot delete files a running process still has open
       await rm(userDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   }, 90_000)

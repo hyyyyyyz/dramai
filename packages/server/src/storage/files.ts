@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { mkdir, open, readFile, stat, unlink, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve, sep } from 'node:path'
+import * as nodePath from 'node:path'
+import type { PlatformPath } from 'node:path'
 import { isReservedFileName, removeRetry, renameRetry } from '@dramai/core'
 import type { FileInfo, FileStore } from '@dramai/core'
 
@@ -21,13 +22,16 @@ const WINDOWS_HOSTILE = /[\u0000-\u001f\u007f:<>"|?*]/
 
 export class FsFileStore implements FileStore {
   readonly root: string
-  constructor(dataDir: string) {
-    this.root = join(dataDir, 'projects')
+  private readonly path: PlatformPath
+  /** `pathApi` is the platform's path rules; only tests pass `path.win32` / `path.posix` to check the other platform. */
+  constructor(dataDir: string, pathApi: PlatformPath = nodePath) {
+    this.path = pathApi
+    this.root = pathApi.join(dataDir, 'projects')
   }
 
   projectDir(projectId: string): string {
     if (!/^[A-Za-z0-9_-]+$/.test(projectId)) throw new UnsafePathError(projectId)
-    return join(this.root, projectId)
+    return this.path.join(this.root, projectId)
   }
 
   /**
@@ -48,15 +52,18 @@ export class FsFileStore implements FileStore {
       )
     )
       throw new UnsafePathError(path)
-    const base = resolve(this.projectDir(projectId))
-    const full = resolve(base, ...parts)
-    if (full !== base && !full.startsWith(base + sep)) throw new UnsafePathError(path)
+    const base = this.path.resolve(this.projectDir(projectId))
+    const full = this.path.resolve(base, ...parts)
+    // Containment by `relative`, which follows the platform's rules (Windows: case-insensitive, either separator).
+    const rel = this.path.relative(base, full)
+    if (!rel || rel === '..' || rel.startsWith(`..${this.path.sep}`) || this.path.isAbsolute(rel))
+      throw new UnsafePathError(path)
     return full
   }
 
   async put(projectId: string, path: string, data: Uint8Array): Promise<FileInfo> {
     const full = this.resolve(projectId, path)
-    await mkdir(dirname(full), { recursive: true })
+    await mkdir(this.path.dirname(full), { recursive: true })
     const tmp = `${full}.${randomBytes(4).toString('hex')}.tmp`
     try {
       await writeFile(tmp, data)

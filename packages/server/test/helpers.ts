@@ -12,6 +12,8 @@ export interface Harness {
   raw(path: string, init?: RequestInit): Promise<Response>
   stop(options?: { graceful?: boolean }): Promise<void>
   cleanup(): Promise<void>
+  /** True when this harness created the data directory (and so removes it). */
+  ownsDir: boolean
 }
 
 const live: Harness[] = []
@@ -43,17 +45,31 @@ export async function startServer(
     stop: (o) => server.close(o),
     cleanup: async () => {
       await server.close({ graceful: false }).catch(() => {})
-      if (!options.dataDir)
-        await rm(dataDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
+      if (!options.dataDir) await removeDir(dataDir)
     },
+    ownsDir: !options.dataDir,
   }
   live.push(h)
   return h
 }
 
-export async function cleanupAll(): Promise<void> {
-  for (const h of live.splice(0)) await h.cleanup()
+const removeDir = (dir: string) =>
+  rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
+
+/**
+ * Stop every server first, then delete the data directories. A "restart" test starts a second server on the first
+ * one's directory, so removing the directory when the *first* is cleaned up would delete files the second still has
+ * open. POSIX allows that; Windows refuses (`EBUSY` on `dramai.sqlite-shm` / `-wal`).
+ * `remove` is a parameter so a test can observe the order.
+ */
+export async function cleanupAllWith(remove: (dir: string) => Promise<void>): Promise<void> {
+  const all = live.splice(0)
+  for (const h of all) await h.server.close({ graceful: false }).catch(() => {})
+  for (const h of all) if (h.ownsDir) await remove(h.dataDir)
 }
+
+/** Used as `afterEach(cleanupAll)` (vitest passes its own argument, so no parameters here). */
+export const cleanupAll = (): Promise<void> => cleanupAllWith(removeDir)
 
 import { connect } from 'node:net'
 
