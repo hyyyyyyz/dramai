@@ -1,10 +1,11 @@
-import { copyFile, mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { AspectRatio } from '../domain/common.ts'
 import { probeMedia, requireFeature, runFfmpeg } from './ffmpeg.ts'
 import type { FfmpegBinaries, FfmpegCapabilities, MediaInfo } from './ffmpeg.ts'
 import { resolveOutputSize } from './output-size.ts'
+import { removeRetry, renameRetry } from '../util/fs.ts'
 
 /**
  * 成片渲染原语：规整、拼接、混旁白、字幕。
@@ -88,6 +89,14 @@ export async function normalizeClip(env: RenderEnv, opts: NormalizeOptions): Pro
   return probeMedia(env.bins, opts.output)
 }
 
+/**
+ * One line of a concat-demuxer list. The list format treats a backslash as an escape, so a Windows path
+ * (`C:\\Users\\me\\a.mp4`) is written with forward slashes; a single quote is closed, escaped and reopened.
+ */
+export function concatListEntry(path: string): string {
+  return `file '${path.replace(/\\/g, '/').replace(/'/g, `'\\''`)}'`
+}
+
 /** 拼接已经规整过（参数一致）的片段，`-c copy`，音轨保留。 */
 export async function concatClips(
   env: RenderEnv,
@@ -96,7 +105,7 @@ export async function concatClips(
   workDir: string,
 ): Promise<void> {
   if (inputs.length === 0) throw new Error('没有可拼接的视频')
-  const list = inputs.map((p) => `file '${p.replace(/'/g, `'\\''`)}'`).join('\n')
+  const list = inputs.map((p) => concatListEntry(p)).join('\n')
   const listPath = join(workDir, 'concat.txt')
   await writeFile(listPath, list, 'utf8')
   await runFfmpeg(
@@ -218,6 +227,14 @@ export function escapeFilterValue(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/[:',[\];]/g, (c) => `\\${c}`)
 }
 
+/**
+ * 滤镜里的文件路径：Windows 路径（`C:\Users\me\a.srt`）统一写成正斜杠（`C:/Users/me/a.srt`）再转义。
+ * 反斜杠在“滤镜图”和“选项值”两层转义里都有特殊含义，正斜杠 Windows 的 ffmpeg 同样认，只剩盘符的冒号需要转义。
+ */
+export function filterPath(path: string): string {
+  return escapeFilterValue(path.replace(/\\/g, '/'))
+}
+
 export interface SubtitleStyle {
   fontName?: string
   /** libass 脚本坐标下的字号（默认画布 288 高）。 */
@@ -242,8 +259,8 @@ export function buildSubtitlesFilter(
   ]
     .filter(Boolean)
     .join(',')
-  const parts = [`filename='${escapeFilterValue(srtPath)}'`]
-  if (fontsDir) parts.push(`fontsdir='${escapeFilterValue(fontsDir)}'`)
+  const parts = [`filename='${filterPath(srtPath)}'`]
+  if (fontsDir) parts.push(`fontsdir='${filterPath(fontsDir)}'`)
   parts.push(`force_style='${escapeFilterValue(force)}'`)
   return `subtitles=${parts.join(':')}`
 }
@@ -410,13 +427,13 @@ export async function composeSequence(
 
     await mkdir(dirname(opts.output), { recursive: true })
     try {
-      await rename(current, opts.output)
+      await renameRetry(current, opts.output)
     } catch {
       await copyFile(current, opts.output)
     }
     opts.onProgress?.({ phase: 'done' })
     return { output: opts.output, info: await probeMedia(env.bins, opts.output), subtitleMode }
   } finally {
-    if (ownsDir) await rm(dir, { recursive: true, force: true })
+    if (ownsDir) await removeRetry(dir)
   }
 }

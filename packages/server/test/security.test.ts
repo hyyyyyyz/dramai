@@ -49,7 +49,7 @@ describe('listen address + token', () => {
       ).rejects.toThrow(TokenRequiredError)
       await expect(stat(join(dir, 'd'))).rejects.toThrow() // 没有创建数据目录 / 锁
     } finally {
-      await rm(dir, { recursive: true, force: true })
+      await rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   })
 
@@ -58,7 +58,7 @@ describe('listen address + token', () => {
     try {
       await expect(createServer({ dataDir: dir, token: 'short' })).rejects.toThrow(/token/)
     } finally {
-      await rm(dir, { recursive: true, force: true })
+      await rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   })
 
@@ -247,7 +247,7 @@ describe('data directory lock', () => {
       expect((await h.client.call('system.get')).dataDir).toBe(dir)
     } finally {
       await cleanupAll()
-      await rm(dir, { recursive: true, force: true })
+      await rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   })
 })

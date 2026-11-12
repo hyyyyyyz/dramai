@@ -1,8 +1,9 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runFfmpeg } from './ffmpeg.ts'
 import type { FfmpegBinaries } from './ffmpeg.ts'
+import { removeRetry } from '../util/fs.ts'
 
 /**
  * 参考图压缩（A3，ArcReel ADR 0012）。
@@ -178,7 +179,7 @@ export function createFfmpegImageEncoder(bins: Pick<FfmpegBinaries, 'ffmpeg'>): 
       await runFfmpeg(bins, args)
       return { bytes: new Uint8Array(await readFile(dst)), mime: 'image/jpeg' }
     } finally {
-      await rm(dir, { recursive: true, force: true })
+      await removeRetry(dir)
     }
   }
 }

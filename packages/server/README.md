@@ -59,6 +59,32 @@ WebUI / 容器场景没有系统加密可用，靠文件权限和数据目录隔
 - 请求体上限：JSON 8MB，multipart 1GB。
 - 项目文件下载：路径严格限制在项目文件夹内；`nosniff`、`default-src 'none'; sandbox`；只有图片 / 视频 / 音频内联，其余强制 attachment。
 
+### Content-Security-Policy of the hosted frontend (English)
+
+`index.html` served from `staticDir` carries the policy in [`src/http/csp.ts`](src/http/csp.ts) (`APP_CSP`); other static assets and every API response get no page policy. Each directive is the narrowest value the built frontend needs:
+
+| Directive                                                     | Value                                     | Why                                                                                                                                                                                                              |
+| ------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `default-src`                                                 | `'self'`                                  | Everything not listed below is same-origin only.                                                                                                                                                                 |
+| `script-src`                                                  | `'self'`                                  | Only the bundled scripts. No `'unsafe-inline'`, no `'unsafe-eval'` — `@dramai/api` switches zod to its non-`eval` mode in browsers (`z.config({ jitless: true })`), because zod's JIT probes `new Function('')`. |
+| `style-src`                                                   | `'self' 'unsafe-inline'`                  | The UI library injects inline styles at runtime. Styles cannot run code.                                                                                                                                         |
+| `font-src`                                                    | `'self' data:`                            | Self-hosted font files, and fonts the bundler inlines as `data:` URLs when they are small.                                                                                                                       |
+| `img-src`                                                     | `'self' data: blob:`                      | Project images are served by this server; `data:` for inlined icons; `blob:` for previews of files the user just picked.                                                                                         |
+| `media-src`                                                   | `'self' blob:`                            | Project video/audio come from this server (Range requests).                                                                                                                                                      |
+| `connect-src`                                                 | `'self'`                                  | The JSON API and the SSE event stream are same-origin. Nothing can talk to a third-party host.                                                                                                                   |
+| `object-src` / `base-uri` / `form-action` / `frame-ancestors` | `'none'` / `'self'` / `'self'` / `'none'` | No plugins, no `<base>` hijacking, no cross-site form posts, cannot be framed.                                                                                                                                   |
+
+`test/csp.test.ts` keeps this honest: it reads the **built** frontend (`packages/workspace/dist`, built on demand), checks that every script, stylesheet, font, image, and `fetch`/`EventSource` target it references is allowed by the policy, that the policy has no directive the build does not need, and — when Playwright's Chromium is installed — loads the page in a real browser and fails on any `securitypolicyviolation`.
+
+### Windows notes (English)
+
+The server runs on Windows, macOS and Linux; the test suite is run on all three in CI. What was made portable, and how it is tested on any machine (`test/files.test.ts`, `test/static.test.ts`, and core's `test/windows.test.ts`):
+
+- **Project file paths.** `FsFileStore.resolve` rejects, on every platform, anything Windows would read differently: drive letters and UNC (`C:/…`, `//server/…`), alternate data streams (`a.txt:stream`), `< > " | ? *`, control characters, segments ending in a dot or space, and device names (`CON`, `nul.txt`, `COM1`, …). A project folder therefore stays valid when copied between systems, and a path that is harmless on macOS cannot be an attack on Windows.
+- **Static hosting.** A request path containing a backslash, a colon or NUL never maps to a file (it may still fall back to `index.html` as an app route).
+- **Busy files.** On Windows an antivirus scan or indexer can hold a file open for a moment, which makes `rename`/`unlink` fail with `EBUSY`/`EPERM`. Atomic writes, the secrets file, the data-directory lock, and project removal retry briefly; other errors surface immediately.
+- **Line endings and encodings** are handled in `@dramai/core`: bundled prompts, styles and model files read the same with CRLF line endings or a UTF-8 BOM; uploaded `.txt` files in GBK/GB18030, Big5 or UTF-16 are decoded instead of turning into mojibake.
+
 ## 事件（SSE）与重连
 
 唯一的通道 `GET /api/events`。事件类型见 `@dramai/api` 的 `serverEvent`：`hello`、`resync`、`job.updated`、`job.progress`、`job.worker_error`、`text.delta`、`data.changed`、`artifact.changed`。
@@ -112,6 +138,8 @@ WebUI / 容器场景没有系统加密可用，靠文件权限和数据目录隔
 **用户自己填写的内容永远原样返回**；只有和内置原文一致（没被改过）的文案才会被翻译——例如由预设创建的服务商，名称 / 备注 / 限制没改就按语言显示，改过的就是用户的文字。
 
 请求用哪种语言：`?lang=en` 或请求头 `X-Dramai-Locale: en`（`createClient({ locale })`）→ 应用设置里的 `locale` → `Accept-Language` → 中文。画面关键词（`imageKeywords`）是提示词素材，不翻译。
+
+**Languages (English).** The built-in data exists in three locales: `zh` (Simplified Chinese, the source language and the default), `zh-Hant` (Traditional Chinese, Taiwan wording — translated, not converted character by character: 影格 not 帧, 底片 not 胶片, 短影音 not 短视频, 賽博龐克 not 赛博朋克), and `en`. Request locale is chosen as: `?lang=` / `X-Dramai-Locale` → the `locale` app setting → `Accept-Language` → `zh`. `zh-TW`, `zh-HK` and `zh-Hant-*` select `zh-Hant`; `zh-CN` / `zh-Hans-*` select `zh`. A missing translation falls back to Simplified Chinese, so a locale can be filled in gradually. User-written text is always returned as written; only built-in text that is still unchanged is translated.
 受影响的接口：`styles.list`、`presets.list`、`providers.*`、`projects.*`（`style.label` / `style.description`）、`system.get`（`demo.notice`）。
 没有翻译的：错误响应里的 `message`（前端按 `code` 展示自己的文案）、ffmpeg 缺失说明（`system.get.ffmpeg.missing`）。
 

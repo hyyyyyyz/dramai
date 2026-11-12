@@ -1,4 +1,4 @@
-import type { Locale } from '../i18n.ts'
+import type { Locale, TranslatedLocale } from '../i18n.ts'
 import type { ProviderConfig, ProviderKind } from './types.ts'
 
 /**
@@ -26,7 +26,9 @@ export interface ProviderPreset {
   verifiedAt: string
   knownLimitations: string[]
   /** 其他语言的内置文案（中文是源语言）。 */
-  i18n?: { en?: { label: string; notes: string; knownLimitations: string[] } }
+  i18n?: Partial<
+    Record<TranslatedLocale, { label: string; notes: string; knownLimitations: string[] }>
+  >
 }
 
 export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
@@ -47,6 +49,11 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
         knownLimitations: [
           'Text-only model: it does not accept image input, so reference images cannot be passed as multimodal context.',
         ],
+      },
+      'zh-Hant': {
+        label: 'DeepSeek 直連 (LLM)',
+        notes: '官方直連，中文極強 + 便宜。驗證 2026-05',
+        knownLimitations: ['純文字模型：不接受圖片輸入，參考圖無法作為多模態上下文傳入。'],
       },
     },
   },
@@ -72,6 +79,14 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
           'Reference images (character consistency) do not take effect on this route: the provider expects reference images as URLs rather than base64. Use Nano Banana when you need multi-reference consistency.',
         ],
       },
+      'zh-Hant': {
+        label: '302.AI · 即夢 Seedream 5.0 (位元組跳動，便宜)',
+        notes:
+          '約 0.035 PTC/張。驗證 2026-05。注意：locked character 參考圖目前不通——doubao 期望參考圖是 URL 不是 base64',
+        knownLimitations: [
+          '參考圖（角色一致性）經此路徑不生效：服務商期望參考圖是 URL 而不是 base64。需要多參考圖一致性時請改用 Nano Banana。',
+        ],
+      },
     },
   },
   {
@@ -93,6 +108,12 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
         knownLimitations: [
           'The price is a 0.2–0.5 PTC range, so cost estimates can only give a range.',
         ],
+      },
+      'zh-Hant': {
+        label: '302.AI · Nano Banana (Gemini 文生圖)',
+        notes:
+          '⚠️ base URL 不帶 /v1（Gemini 協定自己的路徑就是 /v1beta/models/{model}:generateContent）。約 0.2-0.5 PTC/張，比 Seedream 貴但指令跟隨更精準。驗證 2026-05',
+        knownLimitations: ['單價是 0.2–0.5 PTC 的區間，成本估算只能給出區間。'],
       },
     },
   },
@@ -116,6 +137,12 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
           'Fixed 5-second duration; no first/last-frame control; no spoken voice.',
           'Output aspect ratio follows the start frame.',
         ],
+      },
+      'zh-Hant': {
+        label: '⭐ 302.AI · 通義萬相 Wan2.2 Flash (最便宜 · 阿里)',
+        notes:
+          '🟢 性價比之王：5 秒 720P 僅約 0.2 PTC，6 個分鏡 ≈ 1.2 PTC（¥8 左右）；時長固定 5 秒。驗證 2026-05',
+        knownLimitations: ['時長固定 5 秒；不支援首尾影格；不帶人聲。', '輸出比例跟隨起始影格。'],
       },
     },
   },
@@ -156,7 +183,7 @@ export function localizeProviderPreset(
   preset: ProviderPreset,
   locale: Locale,
 ): Pick<ProviderPreset, 'label' | 'notes' | 'knownLimitations'> {
-  const t = locale === 'en' ? preset.i18n?.en : undefined
+  const t = locale === 'zh' ? undefined : preset.i18n?.[locale]
   return {
     label: t?.label ?? preset.label,
     notes: t?.notes ?? preset.notes,

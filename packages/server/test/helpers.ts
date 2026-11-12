@@ -43,7 +43,8 @@ export async function startServer(
     stop: (o) => server.close(o),
     cleanup: async () => {
       await server.close({ graceful: false }).catch(() => {})
-      if (!options.dataDir) await rm(dataDir, { recursive: true, force: true })
+      if (!options.dataDir)
+        await rm(dataDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     },
   }
   live.push(h)

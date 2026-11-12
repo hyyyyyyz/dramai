@@ -85,7 +85,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await server?.close({ graceful: false })
   await mock?.close()
-  await rm(dataDir, { recursive: true, force: true })
+  await rm(dataDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
 })
 
 const real = (name: string, fn: () => Promise<void>) =>

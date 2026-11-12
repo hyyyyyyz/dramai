@@ -1,5 +1,6 @@
-import { mkdir, open, readFile, unlink } from 'node:fs/promises'
+import { mkdir, open, readFile } from 'node:fs/promises'
 import { unlinkSync } from 'node:fs'
+import { removeRetry } from '@dramai/core'
 import { join } from 'node:path'
 
 /**
@@ -46,7 +47,14 @@ export async function acquireDataDirLock(dataDir: string): Promise<DataDirLock> 
       await fh.close()
       break
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err
+      const code = (err as NodeJS.ErrnoException).code
+      // Windows: a lock file that is being deleted (by the instance shutting down, or an antivirus scan) refuses to be
+      // opened for a moment (EPERM / EACCES / EBUSY) instead of reporting EEXIST — wait and look again.
+      if ((code === 'EPERM' || code === 'EACCES' || code === 'EBUSY') && attempt < 2) {
+        await new Promise((r) => setTimeout(r, 100))
+        continue
+      }
+      if (code !== 'EEXIST') throw err
       let info: { pid?: number; startedAt?: number } = {}
       try {
         info = JSON.parse(await readFile(file, 'utf8')) as typeof info
@@ -55,7 +63,7 @@ export async function acquireDataDirLock(dataDir: string): Promise<DataDirLock> 
       }
       if (info.pid && alive(info.pid)) throw new DataDirLockedError(file, info.pid, info.startedAt)
       if (attempt === 2) throw new DataDirLockedError(file, info.pid, info.startedAt)
-      await unlink(file).catch(() => {}) // 陈旧锁：接管后重试
+      await removeRetry(file, { recursive: false }).catch(() => {}) // 陈旧锁：接管后重试
     }
   }
 
@@ -77,7 +85,7 @@ export async function acquireDataDirLock(dataDir: string): Promise<DataDirLock> 
       process.removeListener('exit', onExit)
       try {
         const info = JSON.parse(await readFile(file, 'utf8')) as { pid?: number }
-        if (info.pid === process.pid) await unlink(file)
+        if (info.pid === process.pid) await removeRetry(file, { recursive: false })
       } catch {
         /* 已经不在了 */
       }

@@ -4,6 +4,7 @@ import type { Material } from '../domain/material.ts'
 import { parseMaterial } from '../parsers/material.ts'
 import type { PipelineDeps } from './deps.ts'
 import { notFoundError } from '../errors.ts'
+import { safeFileName } from '../util/fs.ts'
 
 export interface IngestedMaterial {
   material: Material
@@ -24,7 +25,7 @@ export async function ingestMaterial(
   if (!project) throw notFoundError('project', projectId)
   const parsed = await parseMaterial(file)
   const id = deps.ids.next('mat')
-  const path = `materials/${id}/${file.name.replace(/[^\w.一-龥-]+/g, '_')}`
+  const path = `materials/${id}/${safeFileName(file.name)}`
   const info = await deps.files.put(projectId, path, file.bytes)
   const alloc = allocateNumber(project, 'material')
   const material: Material = {

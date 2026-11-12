@@ -14,6 +14,10 @@
             "en": {
               "label": "Shonen action manga",
               "description": "Shonen action manga: saturated colors, big dynamic poses, strong light and shadow contrast"
+            },
+            "zh-Hant": {
+              "label": "少年熱血漫",
+              "description": "少年熱血漫，色彩飽和，動作幅度大，光影對比強"
             }
           }
         },
@@ -26,6 +30,10 @@
             "en": {
               "label": "Healing slice-of-life",
               "description": "Healing slice-of-life manga: soft light, pale muted tones, warm and cozy mood"
+            },
+            "zh-Hant": {
+              "label": "療癒日常漫",
+              "description": "療癒日常漫，柔光，淡雅色調，溫馨氛圍"
             }
           }
         },
@@ -38,6 +46,10 @@
             "en": {
               "label": "Classical xianxia",
               "description": "Classical Chinese xianxia manga: ink-brush strokes, flowing robes, drifting mist"
+            },
+            "zh-Hant": {
+              "label": "古風仙俠漫",
+              "description": "古風仙俠漫，水墨筆觸，飄逸長袍，雲霧繚繞"
             }
           }
         },
@@ -50,6 +62,10 @@
             "en": {
               "label": "School romance manga",
               "description": "School romance manga: uniforms, sunrise or dusk light, bright colors"
+            },
+            "zh-Hant": {
+              "label": "校園青春漫",
+              "description": "校園青春漫，制服，朝陽／黃昏光線，明亮色彩"
             }
           }
         },
@@ -62,6 +78,10 @@
             "en": {
               "label": "Cute chibi",
               "description": "Cute chibi style: rounded lines, candy colors, adorable"
+            },
+            "zh-Hant": {
+              "label": "萌系 Q 版",
+              "description": "萌系 Q 版，圓潤線條，糖果色，可愛"
             }
           }
         }
@@ -69,6 +89,9 @@
       "i18n": {
         "en": {
           "label": "Anime / Animation"
+        },
+        "zh-Hant": {
+          "label": "漫劇 / 動畫"
         }
       }
     },
@@ -85,6 +108,10 @@
             "en": {
               "label": "Modern urban drama",
               "description": "Modern urban drama: realistic portraits, natural light"
+            },
+            "zh-Hant": {
+              "label": "現代都會短劇",
+              "description": "現代都會短劇，寫實人像，自然光"
             }
           }
         },
@@ -97,6 +124,10 @@
             "en": {
               "label": "Suspense realism",
               "description": "Suspense realism: cool tones, dramatic shadows, cinematic feel"
+            },
+            "zh-Hant": {
+              "label": "懸疑寫實",
+              "description": "懸疑寫實，冷色調，戲劇性陰影，電影感"
             }
           }
         },
@@ -109,6 +140,10 @@
             "en": {
               "label": "Lyrical realism",
               "description": "Lyrical realism: soft bokeh, film texture"
+            },
+            "zh-Hant": {
+              "label": "文藝寫實",
+              "description": "文藝寫實，柔和散景，底片質感"
             }
           }
         },
@@ -121,6 +156,10 @@
             "en": {
               "label": "Documentary / news look",
               "description": "Documentary or news look: natural and candid, film grain"
+            },
+            "zh-Hant": {
+              "label": "紀錄片 / 新聞感",
+              "description": "紀錄片 / 新聞感，自然紀實，顆粒感"
             }
           }
         },
@@ -133,6 +172,10 @@
             "en": {
               "label": "Vlog / short video",
               "description": "Vlog or short-video look: bright saturated colors, youthful camera language"
+            },
+            "zh-Hant": {
+              "label": "Vlog / 短影音",
+              "description": "Vlog / 短影音，明亮飽和，年輕的鏡頭語言"
             }
           }
         }
@@ -140,6 +183,9 @@
       "i18n": {
         "en": {
           "label": "Realistic drama"
+        },
+        "zh-Hant": {
+          "label": "寫實短劇"
         }
       }
     },
@@ -156,6 +202,10 @@
             "en": {
               "label": "Ink wash painting",
               "description": "Ink wash painting: generous negative space, brush strokes"
+            },
+            "zh-Hant": {
+              "label": "水墨畫",
+              "description": "水墨畫風，留白，毛筆筆觸"
             }
           }
         },
@@ -168,6 +218,10 @@
             "en": {
               "label": "Oil painting",
               "description": "Oil painting texture: thick impasto strokes, classical composition"
+            },
+            "zh-Hant": {
+              "label": "油畫",
+              "description": "油畫質感，厚塗筆觸，古典構圖"
             }
           }
         },
@@ -180,6 +234,10 @@
             "en": {
               "label": "3D CG animation",
               "description": "3D CG animation: Pixar / Disney-like quality"
+            },
+            "zh-Hant": {
+              "label": "3D CG 動畫",
+              "description": "3D CG 動畫，皮克斯／迪士尼質感"
             }
           }
         },
@@ -192,6 +250,10 @@
             "en": {
               "label": "Pixel art",
               "description": "Pixel art: low-resolution blocks, retro-game feel"
+            },
+            "zh-Hant": {
+              "label": "像素藝術",
+              "description": "像素藝術，低解析度方塊，復古遊戲感"
             }
           }
         },
@@ -204,6 +266,10 @@
             "en": {
               "label": "Low poly",
               "description": "Low poly: clean color blocks, geometric feel"
+            },
+            "zh-Hant": {
+              "label": "低多邊形",
+              "description": "低多邊形，簡潔色塊，幾何感"
             }
           }
         }
@@ -211,6 +277,9 @@
       "i18n": {
         "en": {
           "label": "Art styles"
+        },
+        "zh-Hant": {
+          "label": "美術風格"
         }
       }
     },
@@ -227,6 +296,10 @@
             "en": {
               "label": "Cyberpunk",
               "description": "Cyberpunk: neon cold light, rainy night streets"
+            },
+            "zh-Hant": {
+              "label": "Cyberpunk 賽博龐克",
+              "description": "Cyberpunk 賽博龐克，霓虹冷光，雨夜街景"
             }
           }
         },
@@ -239,6 +312,10 @@
             "en": {
               "label": "Steampunk",
               "description": "Steampunk: brass machinery, Victorian"
+            },
+            "zh-Hant": {
+              "label": "Steampunk 蒸汽龐克",
+              "description": "Steampunk 蒸汽龐克，黃銅機械，維多利亞"
             }
           }
         },
@@ -251,6 +328,10 @@
             "en": {
               "label": "Fairy-tale picture book",
               "description": "Fairy-tale picture book: warm hand-drawn look, soft colors"
+            },
+            "zh-Hant": {
+              "label": "童話繪本",
+              "description": "童話繪本，溫暖手繪，柔和色彩"
             }
           }
         },
@@ -263,6 +344,10 @@
             "en": {
               "label": "Horror suspense",
               "description": "Horror suspense: dark tones, fog, dramatic lighting"
+            },
+            "zh-Hant": {
+              "label": "恐怖懸疑",
+              "description": "恐怖懸疑，暗調，迷霧，戲劇性光線"
             }
           }
         },
@@ -275,6 +360,10 @@
             "en": {
               "label": "Retro 80s",
               "description": "Retro 80s: VHS grain, neon purple and pink"
+            },
+            "zh-Hant": {
+              "label": "復古 80s",
+              "description": "復古 80s，VHS 顆粒，霓虹紫粉"
             }
           }
         }
@@ -282,6 +371,9 @@
       "i18n": {
         "en": {
           "label": "Themed"
+        },
+        "zh-Hant": {
+          "label": "特殊主題"
         }
       }
     }

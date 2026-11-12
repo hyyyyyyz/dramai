@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseTemplate, renderNodes, TemplateError } from './template.ts'
 import type { TemplateNode } from './template.ts'
+import { stripBom, toLf } from '../util/text.ts'
 
 /**
  * 提示词库：模板放在数据文件（`*.prompt`）里，运行时加载，带 schemaVersion，
@@ -120,7 +121,7 @@ function splitFrontMatter(
   text: string,
   source: string,
 ): { front: Record<string, string>; body: string } {
-  const normalized = text.replace(/\r\n/g, '\n')
+  const normalized = toLf(stripBom(text))
   if (!normalized.startsWith('---\n')) return { front: {}, body: normalized }
   const end = normalized.indexOf('\n---\n', 4)
   if (end === -1) throw new TemplateError(`${source}: front matter is not closed`)

@@ -1,3 +1,4 @@
+import './zod-setup.ts'
 import { z } from 'zod'
 
 /**

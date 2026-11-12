@@ -27,7 +27,7 @@ const HELP = `用法：pnpm demo [选项]
   --static-dir <p>    同时托管前端构建产物
                       相对路径按你执行命令时所在的目录解析，不是按包目录
   --fresh             启动前清空演示数据目录
-  --lang <zh|en>      演示服务商的名称和终端提示用哪种语言（默认 zh；界面里的提示两种语言都带）
+  --lang <zh|zh-Hant|en>  演示服务商的名称和终端提示用哪种语言（默认 zh；界面里的提示三种语言都带）
   --latency <ms>      每个请求的固定延迟
   --jitter <ms>       再随机加 0..jitter 毫秒
   --video-ms <ms>     视频任务从提交到完成要多久（默认 3000）
@@ -93,7 +93,9 @@ const list = <T extends string>(
 }
 
 const lang = (values.lang ?? 'zh') as DemoLang
-if (lang !== 'zh' && lang !== 'en') fail(`--lang 只支持 zh / en，收到 "${values.lang}"`)
+if (lang !== 'zh' && lang !== 'zh-Hant' && lang !== 'en') {
+  fail(`--lang only supports zh / zh-Hant / en, got "${values.lang}"`)
+}
 
 // 相对路径按用户执行命令时所在的目录解析（pnpm 会先切到包目录，见 resolveUserPath）。
 const dataDir = resolveUserPath(
@@ -179,44 +181,56 @@ for (const w of demoProviders(lang)) {
 
 const bar = '═'.repeat(64)
 const c = mock.config
-const zh = lang === 'zh'
+/** Text per language: Simplified Chinese, Traditional Chinese (Taiwan wording), English. */
+const t = (simplified: string, traditional: string, english: string): string =>
+  lang === 'zh' ? simplified : lang === 'zh-Hant' ? traditional : english
 console.log(`\n${bar}`)
-console.log(zh ? '  DRAMAI · 演示模式' : '  DRAMAI · DEMO MODE')
+console.log(t('  DRAMAI · 演示模式', '  DRAMAI · 演示模式', '  DRAMAI · DEMO MODE'))
 console.log(bar)
-if (zh) {
+if (lang === 'zh') {
   console.log('  这是演示：所有“AI 服务商”都是本机的模拟服务，不会产生任何费用。')
   console.log('  生成的图片、视频、配音都是占位内容（带编号的色块、测试画面、简单音调），')
   console.log('  大模型的分集 / 分镜是本地规则算出来的——只用来走通整条流程，不是真实作品。')
   console.log('  费用预估里的金额是虚构的演示价格，币种 DMO（不是任何真实货币）。')
+} else if (lang === 'zh-Hant') {
+  console.log('  這是演示：所有「AI 服務商」都是本機的模擬服務，不會產生任何費用。')
+  console.log('  生成的圖片、影片、配音都是佔位內容（帶編號的色塊、測試畫面、簡單音調），')
+  console.log('  大型語言模型的分集 / 分鏡是本機規則算出來的——只用來走通整條流程，不是真實作品。')
+  console.log('  費用預估裡的金額是虛構的演示價格，幣別 DMO（不是任何真實貨幣）。')
 } else {
   console.log('  This is a demo: every "AI provider" is a local simulation. Nothing is charged.')
   console.log('  Images, videos and voice-overs are placeholders (numbered colour blocks, test')
   console.log(
     '  patterns, simple tones); episodes and shots come from local rules — not real work.',
   )
+  console.log('  Cost estimates use fictional demo prices in the made-up currency DMO.')
 }
 console.log(bar)
-console.log(`  ${zh ? '界面 / 接口  ' : 'App / API     '} ${server.url}`)
+console.log(`  ${t('界面 / 接口  ', '介面 / API    ', 'App / API     ')} ${server.url}`)
 console.log(
-  `  ${zh ? '模拟服务商  ' : 'Mock providers'} ${mock.url}   (${zh ? '控制面' : 'control'} ${mock.url}/__mock/state)`,
+  `  ${t('模拟服务商  ', '模擬服務商  ', 'Mock providers')} ${mock.url}   (${t('控制面', '控制面', 'control')} ${mock.url}/__mock/state)`,
 )
 console.log(
-  `  ${zh ? '演示数据目录' : 'Demo data dir'} ${dataDir}   (${zh ? '与正式数据分开；--fresh 清空' : 'separate from real data; --fresh wipes it'})`,
+  `  ${t('演示数据目录', '演示資料目錄', 'Demo data dir')} ${dataDir}   (${t('与正式数据分开；--fresh 清空', '與正式資料分開；--fresh 清空', 'separate from real data; --fresh wipes it')})`,
 )
-if (staticDir) console.log(`  ${zh ? '前端文件    ' : 'Static files '} ${staticDir}`)
+if (staticDir) console.log(`  ${t('前端文件    ', '前端檔案    ', 'Static files ')} ${staticDir}`)
 console.log(
-  `  ${zh ? '延迟' : 'latency'} ${c.latencyMs}ms${c.jitterMs ? `+0..${c.jitterMs}ms` : ''} · ${zh ? '视频' : 'video'} ${c.videoMs}ms · ${zh ? '随机失败' : 'random failures'} ${Math.round(c.failureRate * 100)}%${c.failureRate ? ` (${c.failureKinds.join('/')} → ${c.failureOn.join('/')}, seed ${c.seed})` : ''}`,
+  `  ${t('延迟', '延遲', 'latency')} ${c.latencyMs}ms${c.jitterMs ? `+0..${c.jitterMs}ms` : ''} · ${t('视频', '影片', 'video')} ${c.videoMs}ms · ${t('随机失败', '隨機失敗', 'random failures')} ${Math.round(c.failureRate * 100)}%${c.failureRate ? ` (${c.failureKinds.join('/')} → ${c.failureOn.join('/')}, seed ${c.seed})` : ''}`,
 )
 console.log(
-  zh
-    ? '  想让某个请求失败：在提示词里写 [[mock:rate_limit]]；更多见 pnpm demo --help'
-    : '  Make one request fail: put [[mock:rate_limit]] in a prompt; see pnpm demo --help',
+  t(
+    '  想让某个请求失败：在提示词里写 [[mock:rate_limit]]；更多见 pnpm demo --help',
+    '  想讓某個請求失敗：在提示詞裡寫 [[mock:rate_limit]]；更多見 pnpm demo --help',
+    '  Make one request fail: put [[mock:rate_limit]] in a prompt; see pnpm demo --help',
+  ),
 )
 if (!(await client.call('system.get')).ffmpeg.found) {
   console.log(
-    zh
-      ? '  ⚠ 没找到 ffmpeg：占位视频和成片合成都需要它（安装后重启）。'
-      : '  ⚠ ffmpeg not found: placeholder videos and cut composition need it (install, then restart).',
+    t(
+      '  ⚠ 没找到 ffmpeg：占位视频和成片合成都需要它（安装后重启）。',
+      '  ⚠ 找不到 ffmpeg：佔位影片和成片合成都需要它（安裝後重新啟動）。',
+      '  ⚠ ffmpeg not found: placeholder videos and cut composition need it (install, then restart).',
+    ),
   )
 }
 console.log(`${bar}\n`)

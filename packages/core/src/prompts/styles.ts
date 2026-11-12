@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 import type { StyleSnapshot } from '../domain/project.ts'
 import { DomainError } from '../errors.ts'
-import type { Locale } from '../i18n.ts'
+import type { Locale, TranslatedLocale } from '../i18n.ts'
+import { parseJsonText } from '../util/text.ts'
 
 /**
  * 风格预设（数据文件 `styles.json`）。预设只是给用户省手敲：可以不用、手写、或留空让 LLM 从素材推断。
@@ -12,9 +13,9 @@ import type { Locale } from '../i18n.ts'
 export const STYLE_SCHEMA_VERSION = 1
 
 /** 内置文案的其他语言版本（中文是源语言，写在 label / description 上）。 */
-export interface StylePresetI18n {
-  en?: { label: string; description: string }
-}
+export type StylePresetI18n = Partial<
+  Record<TranslatedLocale, { label: string; description: string }>
+>
 
 export interface StylePreset {
   id: string
@@ -29,7 +30,7 @@ export interface StylePresetGroup {
   id: string
   label: string
   presets: StylePreset[]
-  i18n?: { en?: { label: string } }
+  i18n?: Partial<Record<TranslatedLocale, { label: string }>>
 }
 
 const fileSchema = z.object({
@@ -38,7 +39,12 @@ const fileSchema = z.object({
     z.object({
       id: z.string(),
       label: z.string(),
-      i18n: z.object({ en: z.object({ label: z.string() }).optional() }).optional(),
+      i18n: z
+        .object({
+          en: z.object({ label: z.string() }).optional(),
+          'zh-Hant': z.object({ label: z.string() }).optional(),
+        })
+        .optional(),
       presets: z.array(
         z.object({
           id: z.string().min(1),
@@ -46,7 +52,10 @@ const fileSchema = z.object({
           description: z.string(),
           imageKeywords: z.string().min(1),
           i18n: z
-            .object({ en: z.object({ label: z.string(), description: z.string() }).optional() })
+            .object({
+              en: z.object({ label: z.string(), description: z.string() }).optional(),
+              'zh-Hant': z.object({ label: z.string(), description: z.string() }).optional(),
+            })
             .optional(),
         }),
       ),
@@ -100,7 +109,7 @@ export class StyleCatalog {
 }
 
 export function loadStyleCatalog(file: string): StyleCatalog {
-  const parsed = fileSchema.safeParse(JSON.parse(readFileSync(file, 'utf8')))
+  const parsed = fileSchema.safeParse(parseJsonText(readFileSync(file, 'utf8')))
   if (!parsed.success)
     throw new Error(`invalid style data ${file}: ${z.prettifyError(parsed.error)}`)
   return new StyleCatalog(parsed.data.groups)
@@ -181,19 +190,19 @@ export function localizeStylePreset(
   preset: StylePreset,
   locale: Locale,
 ): Pick<StylePreset, 'label' | 'description'> {
-  const t = locale === 'en' ? preset.i18n?.en : undefined
+  const t = locale === 'zh' ? undefined : preset.i18n?.[locale]
   return { label: t?.label ?? preset.label, description: t?.description ?? preset.description }
 }
 
 export function localizeStyleGroup(group: StylePresetGroup, locale: Locale): string {
-  return (locale === 'en' ? group.i18n?.en?.label : undefined) ?? group.label
+  return (locale === 'zh' ? undefined : group.i18n?.[locale]?.label) ?? group.label
 }
 
 /** 快照里内置的文案（“未指定”“自定义”“风格参考图”）。 */
-const BUILT_IN_STYLE_LABELS: Record<string, { en: string }> = {
-  未指定: { en: 'Unspecified' },
-  自定义: { en: 'Custom' },
-  风格参考图: { en: 'Style reference image' },
+const BUILT_IN_STYLE_LABELS: Record<string, Record<TranslatedLocale, string>> = {
+  未指定: { en: 'Unspecified', 'zh-Hant': '未指定' },
+  自定义: { en: 'Custom', 'zh-Hant': '自定義' },
+  风格参考图: { en: 'Style reference image', 'zh-Hant': '風格參考圖' },
 }
 
 /**
@@ -220,6 +229,6 @@ export function localizeStyleSnapshot(
       }
     }
   }
-  if (style.source !== 'template' && builtIn) return { ...style, label: builtIn.en }
+  if (style.source !== 'template' && builtIn) return { ...style, label: builtIn[locale] }
   return style
 }

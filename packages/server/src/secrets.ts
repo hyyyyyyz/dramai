@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
-import { chmod, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { renameRetry } from '@dramai/core'
 import type { SecretStore } from '@dramai/core'
 
 /**
@@ -71,7 +72,7 @@ export class FileSecretStore implements SecretStore {
     try {
       await writeFile(tmp, JSON.stringify(data, null, 2), { mode: 0o600 })
       await chmod(tmp, 0o600).catch(() => {}) // Windows 上无意义
-      await rename(tmp, this.file)
+      await renameRetry(tmp, this.file)
     } catch (err) {
       await unlink(tmp).catch(() => {})
       throw err

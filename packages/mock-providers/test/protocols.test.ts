@@ -205,7 +205,7 @@ describe('the mock answers real protocols', () => {
       expect(info.durationSec).toBeLessThan(3.5)
       expect(info.height! > info.width!).toBe(true) // 竖屏起始帧 → 竖屏视频
     } finally {
-      await rm(dir, { recursive: true, force: true })
+      await rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   })
 })

@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { bundledDataDir, loadCatalog } from '../src/data-dir.ts'
 import { parseTemplate, templateVariables } from '../src/prompts/template.ts'
@@ -10,17 +10,19 @@ const files = (d: string): string[] =>
   readdirSync(d).flatMap((n) =>
     statSync(join(d, n)).isDirectory() ? files(join(d, n)) : [join(d, n)],
   )
-const all = files(dir).filter((f) => f.endsWith('.prompt') && !f.includes('/partials/'))
+// Native separators on every platform, and a checkout may have CRLF line endings (git autocrlf on Windows).
+const all = files(dir).filter((f) => f.endsWith('.prompt') && !f.includes(`${sep}partials${sep}`))
+const read = (f: string) => readFileSync(f, 'utf8').replace(/\r\n/g, '\n')
 
 describe('prompt data files', () => {
   it('every prompt is a data file with id, locale and schemaVersion, and the id matches the file name', () => {
     expect(all.length).toBeGreaterThanOrEqual(19)
     for (const f of all) {
-      const text = readFileSync(f, 'utf8')
+      const text = read(f)
       const front = /^---\n([\s\S]*?)\n---\n/.exec(text)
       expect(front, f).not.toBeNull()
       const id = /^id:\s*(.+)$/m.exec(front![1])?.[1]
-      expect(f.split('/').pop()!.startsWith(`${id}.`), f).toBe(true)
+      expect(basename(f).startsWith(`${id}.`), f).toBe(true)
       expect(front![1], f).toMatch(/^schemaVersion:\s*1$/m)
       expect(front![1], f).toMatch(/^locale:\s*zh$/m)
       expect(front![1], f).toMatch(/^description:\s*\S/m)
@@ -92,7 +94,7 @@ describe('prompt data files', () => {
       ]
     }
     for (const f of all) {
-      const text = readFileSync(f, 'utf8')
+      const text = read(f)
       const id = /^id:\s*(.+)$/m.exec(text)![1]
       const body = text.replace(/^---\n[\s\S]*?\n---\n/, '')
       const vars = templateVariables(parseTemplate(body))
@@ -162,7 +164,7 @@ describe('prompt data files', () => {
       expect(c.prompts.render('entities.merge.system', {})).toBe('我的合并提示词')
       expect(loadCatalog().prompts.render('entities.merge.system', {})).toContain('剧本资料员')
     } finally {
-      await rm(d, { recursive: true, force: true })
+      await rm(d, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   })
 })

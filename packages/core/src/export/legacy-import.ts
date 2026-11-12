@@ -24,6 +24,8 @@ import { readImageSize } from '../parsers/image-size.ts'
 import { expandStyle } from '../prompts/styles.ts'
 import type { PipelineDeps } from '../pipeline/deps.ts'
 import { refreshEpisodeStatus } from '../pipeline/compose.ts'
+import { safeFileName } from '../util/fs.ts'
+import { parseJsonText } from '../util/text.ts'
 
 /**
  * 导入 v0.4 的 JSON 备份（`format: "dramai-backup"`，版本 1）。
@@ -121,7 +123,7 @@ export interface LegacyBackup {
 export function parseLegacyBackup(text: string): LegacyBackup {
   let json: Partial<LegacyBackup>
   try {
-    json = JSON.parse(text) as Partial<LegacyBackup>
+    json = parseJsonText(text) as Partial<LegacyBackup>
   } catch {
     throw new LegacyImportError('文件不是合法的 JSON')
   }
@@ -235,7 +237,7 @@ export async function importLegacyBackup(
       const blob = lm.assetId ? assetsById.get(lm.assetId) : undefined
       if (blob?.blobBase64) {
         const bytes = decodeB64(blob.blobBase64)
-        const path = `materials/${mid}/${lm.name.replace(/[^\w.一-龥-]+/g, '_')}`
+        const path = `materials/${mid}/${safeFileName(lm.name)}`
         const info = await deps.files.put(pid, path, bytes)
         file = { path, mime: blob.mimeType, bytes: info.bytes, sha256: info.sha256 }
         const dims = readImageSize(bytes)

@@ -31,7 +31,7 @@ describe('dev entry', () => {
     const h = await startServer()
     const r = await runDev({ DRAMAI_DATA_DIR: h.dataDir })
     expect(r.code).toBe(1)
-    const lines = r.stderr.trim().split('\n')
+    const lines = r.stderr.trim().split(/\r?\n/)
     expect(lines).toHaveLength(1)
     expect(lines[0]).toMatch(/^dramai: 无法启动：数据目录已被另一个 dramai 实例占用/)
     expect(r.stderr).not.toMatch(/\n\s+at /)

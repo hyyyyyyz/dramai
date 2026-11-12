@@ -10,6 +10,17 @@ export function bundledDataDir(): string {
   return fileURLToPath(new URL('../data/', import.meta.url))
 }
 
+/**
+ * 随包发布的字幕字体目录（`data/fonts`）：烧录字幕时交给 libass 的 `fontsdir`，字幕不再依赖系统装了什么字体。
+ * 桌面版打包时这个目录必须能被 ffmpeg 当普通文件读到（Electron 里要 `asarUnpack`）。
+ */
+export function bundledFontsDir(): string {
+  return join(bundledDataDir(), 'fonts')
+}
+
+/** 随包字体的字族名（libass 的 `FontName` 要和字体文件里的名字一致）。 */
+export const SUBTITLE_FONT_FAMILY = 'Noto Sans SC'
+
 export interface Catalog {
   prompts: PromptLibrary
   models: ModelRegistry

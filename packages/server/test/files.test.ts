@@ -1,3 +1,6 @@
+import { mkdtemp, readdir, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { parseRange } from '../src/http/range.ts'
 import { FsFileStore, UnsafePathError } from '../src/storage/files.ts'
@@ -24,14 +27,76 @@ describe('parseRange', () => {
 
 describe('FsFileStore path safety', () => {
   it('rejects traversal, absolute paths and odd project ids', async () => {
-    const store = new FsFileStore('/tmp/x')
+    const store = new FsFileStore(join(tmpdir(), 'x'))
     for (const bad of ['../x', 'a/../../x', '/etc/passwd', 'a//b', './a', 'a\\b', '', 'a\0b']) {
       expect(() => store.resolve('p1', bad), bad).toThrow(UnsafePathError)
     }
     for (const bad of ['../p', 'a/b', '', '.']) {
       expect(() => store.resolve(bad, 'a.png'), bad).toThrow(UnsafePathError)
     }
-    expect(store.resolve('p1', 'images/a.png')).toBe('/tmp/x/projects/p1/images/a.png')
+    expect(store.resolve('p1', 'images/a.png')).toBe(
+      join(tmpdir(), 'x', 'projects', 'p1', 'images', 'a.png'),
+    )
+  })
+
+  it('rejects what Windows reads differently: drive letters, UNC, streams, device names, trailing dots', () => {
+    const store = new FsFileStore(join(tmpdir(), 'x'))
+    const bad = [
+      'C:/Windows/win.ini', // drive letter
+      'C:win.ini', // drive-relative
+      '//server/share/a', // UNC
+      '\\\\server\\share\\a', // UNC with backslashes
+      'a.txt:stream', // NTFS alternate data stream
+      'a.txt::$DATA',
+      'images/CON',
+      'images/nul.png',
+      'audio/COM1.wav',
+      'media/lpt9',
+      'images/a.png.', // Windows strips the trailing dot: a.png.
+      'images/a.png ',
+      'images/dir./a.png',
+      'a<b',
+      'a>b',
+      'a"b',
+      'a|b',
+      'a?b',
+      'a*b',
+      'a\tb',
+      'a\nb',
+      'a\u007fb',
+    ]
+    for (const p of bad)
+      expect(() => store.resolve('p1', p), JSON.stringify(p)).toThrow(UnsafePathError)
+    // ordinary and non-ASCII names are fine, and so are names that merely contain a device name
+    for (const ok of [
+      'media/中文 名字.png',
+      'materials/m_1/第一章 开端.txt',
+      'output/ep_1/cut_9.mp4',
+      'images/console.png',
+      'images/com10.png',
+      'audio/bgm/bgm_ab12',
+      'a.b.c',
+    ]) {
+      expect(() => store.resolve('p1', ok), ok).not.toThrow()
+    }
+  })
+
+  it('writes without leaving temp files, replaces an existing file, and removes it', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dramai-files-'))
+    try {
+      const store = new FsFileStore(dir)
+      await store.put('p1', 'a/b.bin', new Uint8Array([1, 2, 3]))
+      await store.put('p1', 'a/b.bin', new Uint8Array([4, 5]))
+      expect(Array.from(await store.get('p1', 'a/b.bin'))).toEqual([4, 5])
+      expect(await readdir(join(dir, 'projects', 'p1', 'a'))).toEqual(['b.bin'])
+      await store.remove('p1', 'a/b.bin')
+      await store.remove('p1', 'a/b.bin') // already gone: not an error
+      expect(await store.exists('p1', 'a/b.bin')).toBe(false)
+      await store.removeProject('p1')
+      expect(await readdir(join(dir, 'projects'))).toEqual([])
+    } finally {
+      await rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
+    }
   })
 })
 

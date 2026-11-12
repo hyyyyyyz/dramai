@@ -1,3 +1,6 @@
+import { mkdtemp, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import JSZip from 'jszip'
 import { evaluateArtifacts } from '../src/artifacts/staleness.ts'
@@ -417,7 +420,7 @@ describe('after the cut: changing a sheet marks things stale — with reasons �
 })
 
 describe('burning subtitles into the picture (runs only where ffmpeg has libass)', () => {
-  it('burns the narration subtitles into the cut — the picture really changes', async (ctx) => {
+  it('burns the narration subtitles into the cut — the picture really changes, with no system fonts at all', async (ctx) => {
     if (!media) return ctx.skip()
     if (!media.caps.features.subtitleBurnIn) {
       console.warn(
@@ -425,6 +428,16 @@ describe('burning subtitles into the picture (runs only where ffmpeg has libass)
       )
       return ctx.skip('ffmpeg has no libass')
     }
+    // A machine with no usable CJK font (a bare Linux runner, a container): fontconfig finds nothing but the bundled
+    // font that the burn step hands to libass. (libass on macOS uses CoreText and ignores this variable; there the
+    // bundled font is what makes the text render too, because the system CJK font cannot be opened by ffmpeg.)
+    const emptyDir = await mkdtemp(join(tmpdir(), 'dramai-nofonts-'))
+    await writeFile(
+      join(emptyDir, 'fonts.conf'),
+      `<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd"><fontconfig><cachedir>${emptyDir}/cache</cachedir></fontconfig>`,
+    )
+    const previousFontconfig = process.env.FONTCONFIG_FILE
+    process.env.FONTCONFIG_FILE = join(emptyDir, 'fonts.conf')
     const plain = await composeEpisode(env.deps, ep.id, {
       subtitles: 'none',
       shortSide: SHORT_SIDE,
@@ -433,16 +446,29 @@ describe('burning subtitles into the picture (runs only where ffmpeg has libass)
       subtitles: 'burn',
       shortSide: SHORT_SIDE,
     })
+    if (previousFontconfig === undefined) delete process.env.FONTCONFIG_FILE
+    else process.env.FONTCONFIG_FILE = previousFontconfig
     expect(burned.subtitleMode).toBe('burn')
     const dims = async (p: string) =>
       probeMedia(media!.bins, await env.ports.files.localPath(env.projectId, p))
     expect(await dims(burned.path)).toMatchObject({ width: 270, height: 480, hasAudio: true })
-    // 字幕在画面下方：同一时刻、同一区域，烧录后和没烧录的画面不同
+    // 字幕在画面下方：同一时刻、同一区域，烧录后和没烧录的画面不同。
+    // 取第一条字幕的中点，保证这一刻画面上一定有字幕（第一条字幕从 1.0 秒才开始，取 0.5 秒时画面上本来就没有字）。
+    const srt = new TextDecoder().decode(await env.ports.files.get(env.projectId, burned.srtPath!))
+    const first = /(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+),(\d+)/.exec(srt)!
+    const sec = (h: string, m: string, s: string, ms: string) =>
+      +h * 3600 + +m * 60 + +s + +ms / 1000
+    const mid = (
+      (sec(first[1]!, first[2]!, first[3]!, first[4]!) +
+        sec(first[5]!, first[6]!, first[7]!, first[8]!)) /
+      2
+    ).toFixed(3)
+    expect(Number(mid)).toBeGreaterThan(0.5) // the old fixed 0.5 s sat before the first cue
     const frame = async (p: string) =>
       runProcess(media!.bins.ffmpeg, [
         '-hide_banner',
         '-ss',
-        '0.5',
+        mid,
         '-i',
         await env.ports.files.localPath(env.projectId, p),
         '-vf',

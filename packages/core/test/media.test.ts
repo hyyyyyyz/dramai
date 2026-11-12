@@ -1,6 +1,7 @@
+import { readdirSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   buildSubtitlesFilter,
@@ -131,8 +132,11 @@ describe('locating ffmpeg: option → DRAMAI_FFMPEG → PATH', () => {
     expect(viaOption).toMatchObject({ ffmpeg: real, source: 'option' })
     const viaEnv = await locateFfmpeg({ env: { DRAMAI_FFMPEG: real, PATH: '' } })
     expect(viaEnv).toMatchObject({ ffmpeg: real, source: 'env' })
-    const viaPath = await locateFfmpeg({ env: { PATH: dirname(real) } })
-    expect(viaPath).toMatchObject({ ffmpeg: real, source: 'path' })
+    // PATH lookup finds a binary by its conventional name; DRAMAI_FFMPEG may point at one named differently.
+    if (/^ffmpeg(\.exe)?$/i.test(basename(real))) {
+      const viaPath = await locateFfmpeg({ env: { PATH: dirname(real) } })
+      expect(viaPath).toMatchObject({ ffmpeg: real, source: 'path' })
+    }
   })
 })
 
@@ -240,7 +244,7 @@ realFfmpeg('native ffmpeg (real binary, lavfi test sources)', () => {
   }, 60_000)
 
   afterAll(async () => {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
   })
 
   it('reports capabilities, not just presence — and explains what is missing', () => {
@@ -433,17 +437,16 @@ realFfmpeg('native ffmpeg (real binary, lavfi test sources)', () => {
     })
 
     it('cleans up its own temporary directory', async () => {
-      const before = await runProcess('ls', [tmpdir()])
+      const before = readdirSync(tmpdir())
       await composeSequence(env, {
         clips: [f('a_audio.mp4')],
         aspectRatio: '9:16',
         shortSide: 240,
         output: f('tidy.mp4'),
       })
-      const after = await runProcess('ls', [tmpdir()])
-      const count = (s: string) =>
-        s.split('\n').filter((l) => l.startsWith('dramai-compose-')).length
-      expect(count(after.stdout)).toBe(count(before.stdout))
+      const after = readdirSync(tmpdir())
+      const count = (names: string[]) => names.filter((l) => l.startsWith('dramai-compose-')).length
+      expect(count(after)).toBe(count(before))
     })
   })
 

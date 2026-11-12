@@ -27,7 +27,7 @@ describe("the creator's breakdown instructions, end to end through the mock mode
     cleanups.push(async () => {
       await server.close({ graceful: false })
       await mock.close()
-      await rm(dataDir, { recursive: true, force: true })
+      await rm(dataDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     })
     const api = createClient({ baseUrl: server.url })
     await addProviders(api, mock.url)

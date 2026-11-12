@@ -35,7 +35,7 @@ async function boot(withDemoCatalog: boolean) {
   cleanups.push(async () => {
     await server.close({ graceful: false })
     await mock.close()
-    await rm(dataDir, { recursive: true, force: true })
+    await rm(dataDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
   })
   const api = createClient({ baseUrl: server.url })
   const ids = await addProviders(api, mock.url)

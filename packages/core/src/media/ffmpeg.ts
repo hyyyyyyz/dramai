@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { access, constants } from 'node:fs/promises'
-import { delimiter, dirname, join } from 'node:path'
+import { dirname, join, posix, win32 } from 'node:path'
 
 /**
  * 原生 ffmpeg 封装（A12）：定位、探测能力（而不只是"存不存在"）、运行。
@@ -50,14 +50,32 @@ async function isExecutable(file: string): Promise<boolean> {
   }
 }
 
-async function findOnPath(name: string, pathEnv: string | undefined): Promise<string | undefined> {
-  const exts = process.platform === 'win32' ? ['.exe', '.cmd', ''] : ['']
-  for (const dir of (pathEnv ?? '').split(delimiter)) {
+/**
+ * Every path where `name` could live on `PATH`, in lookup order. On Windows the entries are separated by `;`, the
+ * executable carries an extension, and `PATH` may be written `Path`; `platform` is a parameter so the Windows rules can
+ * be tested anywhere.
+ */
+export function pathCandidates(
+  name: string,
+  pathEnv: string | undefined,
+  platform: NodeJS.Platform = process.platform,
+): string[] {
+  const win = platform === 'win32'
+  const api = win ? win32 : posix
+  const exts = win ? ['.exe', '.cmd', '.bat', ''] : ['']
+  const out: string[] = []
+  for (const raw of (pathEnv ?? '').split(api.delimiter)) {
+    // Windows allows quoted entries in PATH: "C:\Program Files\ffmpeg\bin"
+    const dir = win ? raw.trim().replace(/^"(.*)"$/, '$1') : raw
     if (!dir) continue
-    for (const ext of exts) {
-      const candidate = join(dir, name + ext)
-      if (await isExecutable(candidate)) return candidate
-    }
+    for (const ext of exts) out.push(api.join(dir, name + ext))
+  }
+  return out
+}
+
+async function findOnPath(name: string, pathEnv: string | undefined): Promise<string | undefined> {
+  for (const candidate of pathCandidates(name, pathEnv)) {
+    if (await isExecutable(candidate)) return candidate
   }
   return undefined
 }

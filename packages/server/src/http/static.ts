@@ -1,6 +1,7 @@
 import { readFile, stat } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import type { MiddlewareHandler } from 'hono'
+import { APP_CSP } from './csp.ts'
 import { mimeOf } from './mime.ts'
 
 /**
@@ -19,6 +20,9 @@ export function staticFiles(staticDir: string): MiddlewareHandler {
     } catch {
       return next()
     }
+    // A backslash, a drive colon or a NUL never occurs in a real asset URL; on Windows they would reach other places
+    // (`..\\`, `C:`, alternate data streams), so such a path never maps to a file — it may still fall back to index.html.
+    const hostile = /[\0\\:]/.test(rel)
     const candidate = resolve(root, '.' + (rel.endsWith('/') ? rel + 'index.html' : rel))
     const tryFile = async (file: string) => {
       if (file !== root && !file.startsWith(root + sep)) return undefined
@@ -29,7 +33,7 @@ export function staticFiles(staticDir: string): MiddlewareHandler {
         return undefined
       }
     }
-    let file = await tryFile(candidate)
+    let file = hostile ? undefined : await tryFile(candidate)
     const hasExt = /\.[A-Za-z0-9]+$/.test(rel)
     if (!file && !hasExt) file = await tryFile(join(root, 'index.html'))
     if (!file) return next()
@@ -43,8 +47,7 @@ export function staticFiles(staticDir: string): MiddlewareHandler {
         'Cache-Control': isIndex ? 'no-cache' : 'public, max-age=31536000, immutable',
         ...(isIndex
           ? {
-              'Content-Security-Policy':
-                "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'",
+              'Content-Security-Policy': APP_CSP,
               'X-Frame-Options': 'DENY',
               'Referrer-Policy': 'no-referrer',
             }

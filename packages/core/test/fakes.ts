@@ -311,7 +311,7 @@ export function mediaFactory(bins: FfmpegBinaries) {
       cache.set(key, bytes)
       return new Uint8Array(bytes)
     } finally {
-      await rm(dir, { recursive: true, force: true })
+      await rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   }
   return {

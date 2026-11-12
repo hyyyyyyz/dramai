@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -227,7 +228,9 @@ describe('prompt library: data files loaded at runtime', () => {
   })
 
   it('ships the data directory next to the package', () => {
-    expect(bundledDataDir().endsWith('/data/')).toBe(true)
+    // a path with the platform's separators (on Windows `...\\data\\`)
+    expect(bundledDataDir().replaceAll('\\', '/').endsWith('/data/')).toBe(true)
+    expect(existsSync(join(bundledDataDir(), 'styles.json'))).toBe(true)
   })
 })
 

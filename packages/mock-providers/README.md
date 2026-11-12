@@ -22,7 +22,7 @@ pnpm demo --help
 | `--video-ms <ms>`                                                          | 视频任务从提交到完成要多久（默认 3000；期间轮询依次看到排队 → 进行中 → 完成）                                                                                                                         |
 | `--fail-rate <0..1>` `--fail-kinds a,b` `--fail-on image,video` `--seed n` | 随机失败；同样的种子 + 同样的操作顺序 = 同样的失败                                                                                                                                                    |
 | `--port` `--mock-port` `--data-dir` `--static-dir` `--verbose`             | 端口、数据目录、托管前端构建产物、打印每个模拟请求。`--data-dir` / `--static-dir` 的相对路径按**你执行命令时所在的目录**解析（pnpm 会先切到包目录，靠 `INIT_CWD` 还原；直接用 node 启动则是当前目录） |
-| `--lang zh\|en`                                                            | 演示服务商的名称和终端提示用的语言（默认 zh）。界面里的提示 `demo.notice` 两种语言都带，按请求的语言取                                                                                                |
+| `--lang zh\|zh-Hant\|en`                                                   | 演示服务商的名称和终端提示用的语言（默认 zh；zh-Hant 为台湾繁体用词）。界面里的提示 `demo.notice` 三种语言都带，按请求的语言取                                                                        |
 
 ## 它模拟什么
 

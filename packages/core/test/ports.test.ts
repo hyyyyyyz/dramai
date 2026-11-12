@@ -85,7 +85,7 @@ describe('in-memory ports', () => {
     expect(await files.exists('p', 'images/a.png')).toBe(true)
     expect(await files.exists('q', 'images/a.png')).toBe(false)
     const local = await files.localPath('p', 'images/a.png')
-    expect(local.endsWith('images/a.png')).toBe(true)
+    expect(local.replaceAll('\\', '/').endsWith('images/a.png')).toBe(true) // native separators on Windows
     await files.remove('p', 'images/a.png')
     await expect(files.get('p', 'images/a.png')).rejects.toThrow(/not found/)
   })

@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { mkdir, open, readFile, rename, rm, stat, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, open, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
+import { isReservedFileName, removeRetry, renameRetry } from '@dramai/core'
 import type { FileInfo, FileStore } from '@dramai/core'
 
 /**
@@ -15,6 +16,9 @@ export class UnsafePathError extends Error {
   }
 }
 
+// eslint-disable-next-line no-control-regex -- control characters are exactly what is being rejected
+const WINDOWS_HOSTILE = /[\u0000-\u001f\u007f:<>"|?*]/
+
 export class FsFileStore implements FileStore {
   readonly root: string
   constructor(dataDir: string) {
@@ -26,12 +30,24 @@ export class FsFileStore implements FileStore {
     return join(this.root, projectId)
   }
 
-  /** 把项目内相对路径解析成绝对路径；拒绝绝对路径、`..`、空段、NUL。 */
+  /**
+   * 把项目内相对路径解析成绝对路径；拒绝绝对路径、`..`、空段、NUL。
+   *
+   * Also rejects anything that means something special on Windows, whatever platform we run on, so a project
+   * folder stays valid when it is copied between machines and a path that is harmless here cannot be an attack there:
+   * `:` (drive letters `C:`, alternate data streams `a.txt:stream`), `< > " | ? *`, control characters, a segment
+   * that ends in a dot or space (Windows silently strips it), and device names (`CON`, `nul.txt`, `COM1` ...).
+   */
   resolve(projectId: string, path: string): string {
-    if (!path || path.includes('\0') || path.startsWith('/') || path.includes('\\'))
+    if (!path || path.startsWith('/') || path.includes('\\') || WINDOWS_HOSTILE.test(path))
       throw new UnsafePathError(path)
     const parts = path.split('/')
-    if (parts.some((p) => p === '' || p === '.' || p === '..')) throw new UnsafePathError(path)
+    if (
+      parts.some(
+        (p) => p === '' || p === '.' || p === '..' || /[. ]$/.test(p) || isReservedFileName(p),
+      )
+    )
+      throw new UnsafePathError(path)
     const base = resolve(this.projectDir(projectId))
     const full = resolve(base, ...parts)
     if (full !== base && !full.startsWith(base + sep)) throw new UnsafePathError(path)
@@ -44,7 +60,7 @@ export class FsFileStore implements FileStore {
     const tmp = `${full}.${randomBytes(4).toString('hex')}.tmp`
     try {
       await writeFile(tmp, data)
-      await rename(tmp, full)
+      await renameRetry(tmp, full)
     } catch (err) {
       await unlink(tmp).catch(() => {})
       throw err
@@ -65,7 +81,7 @@ export class FsFileStore implements FileStore {
   }
 
   async remove(projectId: string, path: string): Promise<void> {
-    await rm(this.resolve(projectId, path), { force: true })
+    await removeRetry(this.resolve(projectId, path), { recursive: false })
   }
 
   async localPath(projectId: string, path: string): Promise<string> {
@@ -92,7 +108,7 @@ export class FsFileStore implements FileStore {
   }
 
   async removeProject(projectId: string): Promise<void> {
-    await rm(this.projectDir(projectId), { recursive: true, force: true })
+    await removeRetry(this.projectDir(projectId), { recursive: true })
   }
 
   async readHead(projectId: string, path: string, bytes: number): Promise<Uint8Array> {

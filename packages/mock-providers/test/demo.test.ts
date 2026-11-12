@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdir, mkdtemp, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, posix, resolve, win32 } from 'node:path'
 import { createClient } from '@dramai/api'
 import { afterEach, describe, expect, it } from 'vitest'
 import { resolveUserPath } from '../src/demo-lib.ts'
@@ -11,16 +11,41 @@ const root = join(import.meta.dirname, '..')
 
 describe('resolveUserPath: relative paths follow where the user ran the command', () => {
   it('uses INIT_CWD (set by pnpm/npm before they chdir into the package), else the process cwd; absolute paths are untouched', () => {
-    expect(resolveUserPath('out/data', { INIT_CWD: '/work/proj' }, '/pkg/dir')).toBe(
+    const p = posix
+    expect(resolveUserPath('out/data', { INIT_CWD: '/work/proj' }, '/pkg/dir', p)).toBe(
       '/work/proj/out/data',
     )
-    expect(resolveUserPath('./web/dist', { INIT_CWD: '/work/proj' }, '/pkg/dir')).toBe(
+    expect(resolveUserPath('./web/dist', { INIT_CWD: '/work/proj' }, '/pkg/dir', p)).toBe(
       '/work/proj/web/dist',
     )
-    expect(resolveUserPath('../x', { INIT_CWD: '/work/proj' }, '/pkg/dir')).toBe('/work/x')
-    expect(resolveUserPath('out/data', {}, '/pkg/dir')).toBe('/pkg/dir/out/data')
-    expect(resolveUserPath('out/data', { INIT_CWD: '' }, '/pkg/dir')).toBe('/pkg/dir/out/data')
-    expect(resolveUserPath('/abs/data', { INIT_CWD: '/work/proj' }, '/pkg/dir')).toBe('/abs/data')
+    expect(resolveUserPath('../x', { INIT_CWD: '/work/proj' }, '/pkg/dir', p)).toBe('/work/x')
+    expect(resolveUserPath('out/data', {}, '/pkg/dir', p)).toBe('/pkg/dir/out/data')
+    expect(resolveUserPath('out/data', { INIT_CWD: '' }, '/pkg/dir', p)).toBe('/pkg/dir/out/data')
+    expect(resolveUserPath('/abs/data', { INIT_CWD: '/work/proj' }, '/pkg/dir', p)).toBe(
+      '/abs/data',
+    )
+  })
+
+  it('follows Windows rules for Windows-style paths (drive letters, backslashes, UNC), on any machine', () => {
+    const w = win32
+    const env = { INIT_CWD: 'C:\\Users\\me\\proj' }
+    const pkg = 'C:\\repo\\packages\\mock-providers'
+    expect(resolveUserPath('out\\data', env, pkg, w)).toBe('C:\\Users\\me\\proj\\out\\data')
+    expect(resolveUserPath('out/data', env, pkg, w)).toBe('C:\\Users\\me\\proj\\out\\data')
+    expect(resolveUserPath('..\\x', env, pkg, w)).toBe('C:\\Users\\me\\x')
+    expect(resolveUserPath('out\\data', {}, pkg, w)).toBe(
+      'C:\\repo\\packages\\mock-providers\\out\\data',
+    )
+    expect(resolveUserPath('D:\\demo', env, pkg, w)).toBe('D:\\demo')
+    expect(resolveUserPath('\\\\server\\share\\demo', env, pkg, w)).toBe('\\\\server\\share\\demo')
+    // a relative path on another drive keeps that drive's context
+    expect(resolveUserPath('D:demo', { INIT_CWD: 'D:\\work' }, pkg, w)).toBe('D:\\work\\demo')
+  })
+
+  it('without an explicit path API it follows the running platform', () => {
+    const abs = resolve('some', 'dir')
+    expect(resolveUserPath(abs, { INIT_CWD: join(abs, 'x') })).toBe(abs)
+    expect(resolveUserPath('a', { INIT_CWD: abs })).toBe(resolve(abs, 'a'))
   })
 })
 
@@ -59,15 +84,17 @@ async function startDemo(userDir: string, args: string[]): Promise<Running> {
   child.stderr!.on('data', (d) => (err += d.toString()))
   const end = Date.now() + 30_000
   while (
-    !/(?:Mock providers|模拟服务商)[^\n]*http/.test(out) ||
-    !out.includes('═'.repeat(64) + '\n\n')
+    !/(?:Mock providers|模拟服务商|模擬服務商)[^\n]*http/.test(out) ||
+    !new RegExp('═'.repeat(64) + '\\r?\\n\\r?\\n').test(out)
   ) {
     if (child.exitCode !== null)
       throw new Error(`demo exited early (${child.exitCode}): ${err}${out}`)
     if (Date.now() > end) throw new Error(`demo did not start: ${err}${out}`)
     await new Promise((r) => setTimeout(r, 50))
   }
-  const appUrl = /(?:App \/ API|界面 \/ 接口)\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(out)![1]!
+  const appUrl = /(?:App \/ API|界面 \/ 接口|介面 \/ API)\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(
+    out,
+  )![1]!
   const r: Running = {
     child,
     out: () => out,
@@ -107,7 +134,7 @@ describe('pnpm demo with relative paths', () => {
       const home = await fetch(`${demo.appUrl}/`)
       expect(await home.text()).toContain('<title>mine</title>')
     } finally {
-      await rm(userDir, { recursive: true, force: true })
+      await rm(userDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   }, 60_000)
 
@@ -137,12 +164,38 @@ describe('pnpm demo with relative paths', () => {
       expect(after).toHaveLength(6) // 没有重复创建
       expect(after.every((p) => p.label.startsWith('演示 ·'))).toBe(true)
       // 第二次的模拟服务商端口变了：配置的地址也跟着更新
-      const mockUrl = /(?:Mock providers|模拟服务商)\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(
+      const mockUrl = /(?:Mock providers|模拟服务商|模擬服務商)\s+(http:\/\/127\.0\.0\.1:\d+)/.exec(
         second.out(),
       )![1]!
       expect(after.every((p) => p.baseUrl === mockUrl)).toBe(true)
     } finally {
-      await rm(userDir, { recursive: true, force: true })
+      await rm(userDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
+    }
+  }, 90_000)
+
+  it('--lang zh-Hant: Traditional banner, provider names and notice (Taiwan wording: 影片)', async () => {
+    const userDir = await realpath(await mkdtemp(join(tmpdir(), 'dramai-demo-user-')))
+    try {
+      const demo = await startDemo(userDir, ['--data-dir', 'd', '--lang', 'zh-Hant'])
+      expect(demo.out()).toContain('這是演示')
+      expect(demo.out()).toContain('影片')
+      const items = (await createClient({ baseUrl: demo.appUrl }).call('providers.list')).items
+      expect(items).toHaveLength(6)
+      expect(items.every((p) => p.label.startsWith('演示 ·'))).toBe(true)
+      expect(items.some((p) => p.label.includes('圖生影片'))).toBe(true)
+      expect(items.map((p) => p.label).join('')).not.toMatch(/视频|图生/) // no Simplified leftovers
+      const notice = (
+        await createClient({ baseUrl: demo.appUrl, locale: 'zh-TW' }).call('system.get')
+      ).demo.notice
+      expect(notice).toContain('不會產生任何費用')
+      // the same data dir started again in English renames, not duplicates
+      await demo.stop()
+      const again = await startDemo(userDir, ['--data-dir', 'd', '--lang', 'en'])
+      expect(
+        (await createClient({ baseUrl: again.appUrl }).call('providers.list')).items,
+      ).toHaveLength(6)
+    } finally {
+      await rm(userDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
   }, 90_000)
 
@@ -165,7 +218,7 @@ describe('pnpm demo with relative paths', () => {
       c.on('exit', (code) => resolve({ code, err }))
     })
     expect(out.code).toBe(1)
-    expect(out.err.trim().split('\n')).toHaveLength(1)
+    expect(out.err.trim().split(/\r?\n/)).toHaveLength(1)
     expect(out.err).toContain('--lang')
   })
 })

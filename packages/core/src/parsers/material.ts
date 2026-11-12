@@ -1,6 +1,7 @@
 import { readImageSize } from './image-size.ts'
 
 import type { Chapter, MaterialKind } from '../domain/material.ts'
+import { decodeText } from '../util/text.ts'
 import { countChars, detectChapters, normalizeText } from './chapters.ts'
 import { DomainError } from '../errors.ts'
 
@@ -110,10 +111,7 @@ export async function parseMaterial(input: {
     case 'txt':
     case 'md': {
       // md 不展开为 HTML：LLM 自己读得懂，列表/标题对抽分镜更友好。
-      const text = new TextDecoder('utf-8')
-        .decode(input.bytes)
-        .replace(/^\uFEFF/, '')
-        .trim()
+      const text = decodeText(input.bytes).text.trim()
       return withText({
         kind,
         name: input.name,

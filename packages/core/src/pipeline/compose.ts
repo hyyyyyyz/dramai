@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildExpectations, buildRecord, evaluateArtifacts } from '../artifacts/staleness.ts'
@@ -19,6 +19,7 @@ import {
   burnSubtitles,
   embedSoftSubtitles,
 } from '../media/render.ts'
+import { bundledFontsDir, SUBTITLE_FONT_FAMILY } from '../data-dir.ts'
 import type { MixTrack, RenderEnv, SubtitleMode, SubtitleStyle } from '../media/render.ts'
 import { probeMedia, requireFeature } from '../media/ffmpeg.ts'
 import { buildSrt, buildVtt } from '../subtitles/index.ts'
@@ -38,6 +39,7 @@ import type { TimelineIssue } from '../timeline/issues.ts'
 import type { PipelineDeps } from './deps.ts'
 import { episodeShots } from './entities.ts'
 import { notFoundError } from '../errors.ts'
+import { removeRetry } from '../util/fs.ts'
 
 /**
  * 步骤 7：合成。从时间线文档出发——摆放（纯函数）驱动 ffmpeg 渲染。
@@ -208,6 +210,27 @@ export function cuesFromPlacement(placement: Placement): Cue[] {
   }))
 }
 
+/**
+ * 烧录字幕用的字体设置：缺省用随包的 Noto Sans SC（`data/fonts`），所以烧录不依赖系统字体；
+ * 调用方给了 `fontsDir` / `subtitleStyle.fontName` 就用调用方的（想用自己的字体）。
+ */
+export function subtitleBurnOptions(
+  options: Pick<ComposeEpisodeOptions, 'fontsDir' | 'subtitleStyle'>,
+): {
+  fontsDir: string
+  style: SubtitleStyle
+} {
+  const custom = options.fontsDir !== undefined
+  return {
+    fontsDir: options.fontsDir ?? bundledFontsDir(),
+    style: {
+      // 自带字体目录时不强行指定字族（用户的字体叫什么我们不知道）；用随包字体时指定它的字族名。
+      ...(custom ? {} : { fontName: SUBTITLE_FONT_FAMILY }),
+      ...options.subtitleStyle,
+    },
+  }
+}
+
 export interface ComposeEpisodeOptions {
   /** 字幕：soft（默认，mov_text 软字幕）/ burn（烧进画面，需要 libass，没有则报错）/ none。 */
   subtitles?: SubtitleMode
@@ -326,12 +349,13 @@ export async function composeEpisode(
       await writeFile(srtFile, srtText, 'utf8')
       const subbed = join(dir, 'subbed.mp4')
       if (mode === 'burn') {
+        const burn = subtitleBurnOptions(options)
         await burnSubtitles(env, {
           input: current,
           srtPath: srtFile,
           output: subbed,
-          fontsDir: options.fontsDir,
-          style: options.subtitleStyle,
+          fontsDir: burn.fontsDir,
+          style: burn.style,
         })
       } else {
         await embedSoftSubtitles(env, { input: current, srtPath: srtFile, output: subbed })
@@ -402,7 +426,7 @@ export async function composeEpisode(
       vttPath,
     }
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await removeRetry(dir)
   }
 }
 

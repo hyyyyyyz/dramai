@@ -12,6 +12,7 @@ import type {
   ProtocolId,
   ProviderConfig,
 } from './types.ts'
+import { parseJsonText } from '../util/text.ts'
 
 /**
  * 模型画像（能力 + 价目 + 提示词写法 + 已知脾气）放在数据文件里，运行时加载，
@@ -178,7 +179,7 @@ export function loadModelRegistryFromDir(dir: string, into = new ModelRegistry()
   for (const name of readdirSync(dir).sort()) {
     const full = join(dir, name)
     if (statSync(full).isDirectory() || !name.endsWith('.json')) continue
-    const parsed = fileSchema.safeParse(JSON.parse(readFileSync(full, 'utf8')))
+    const parsed = fileSchema.safeParse(parseJsonText(readFileSync(full, 'utf8')))
     if (!parsed.success) {
       throw new Error(`invalid model data ${full}: ${z.prettifyError(parsed.error)}`)
     }

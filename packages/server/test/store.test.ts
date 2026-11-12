@@ -37,7 +37,8 @@ afterEach(async () => {
       /* already closed */
     }
   }
-  for (const d of dirs.splice(0)) await rm(d, { recursive: true, force: true })
+  for (const d of dirs.splice(0))
+    await rm(d, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
 })
 
 const seed = (store: ServerStore) => {

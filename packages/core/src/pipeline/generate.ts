@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildExpectations, buildRecord } from '../artifacts/staleness.ts'
@@ -53,6 +53,7 @@ import {
   sheetAspect,
 } from './sheets.ts'
 import type { SheetLayout } from './sheets.ts'
+import { removeRetry } from '../util/fs.ts'
 
 /**
  * 生成类任务处理器：设定图 / 分镜图 / 视频 / 旁白配音。
@@ -214,7 +215,7 @@ async function probeBytes(
   } catch {
     return undefined
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await removeRetry(dir)
   }
 }
 
