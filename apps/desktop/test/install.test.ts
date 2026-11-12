@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -12,7 +12,15 @@ import {
 } from '../scripts/lib/install-paths.mjs'
 import { dataLocations, linuxSandboxWarning } from '../scripts/lib/install-os.mjs'
 import { PNG } from 'pngjs'
-import { ART, icoBuffer, iconPng, opaqueBounds, readPng, resizePng } from '../scripts/lib/icons.mjs'
+import {
+  ART,
+  brandDir as brand,
+  icoBuffer,
+  iconPng,
+  opaqueBounds,
+  readPng,
+  resizePng,
+} from '../scripts/lib/icons.mjs'
 
 const temp: string[] = []
 afterEach(() => {
@@ -223,5 +231,78 @@ describe('start-up stage report', () => {
     expect(stageReport(log + '\n2026 ERROR server failed to start: DATA_DIR_LOCKED')).toContain(
       'DATA_DIR_LOCKED',
     )
+  })
+})
+
+describe('files for external processes in the packaged app', () => {
+  it('starts the server from the unpacked copy when packaged, from dist/ otherwise', async () => {
+    const { serverEntryPath } = await import('../src/main/entry-path.ts')
+    expect(
+      serverEntryPath({
+        packaged: true,
+        resourcesPath: '/r',
+        distDir: '/r/app.asar/dist',
+      }).replaceAll('\\', '/'),
+    ).toBe('/r/app.asar.unpacked/dist/server/server.mjs')
+    expect(
+      serverEntryPath({ packaged: false, resourcesPath: '/r', distDir: '/repo/dist' }).replaceAll(
+        '\\',
+        '/',
+      ),
+    ).toBe('/repo/dist/server/server.mjs')
+  })
+
+  it('finds <resources> from the executable on each system', async () => {
+    const { resourcesDirOf, unpackedPaths } = await import('../scripts/lib/external-files.mjs')
+    expect(
+      resourcesDirOf('/A/Dramai.app/Contents/MacOS/Dramai', 'darwin').replaceAll('\\', '/'),
+    ).toBe('/A/Dramai.app/Contents/Resources')
+    expect(resourcesDirOf('/opt/dramai/dramai', 'linux').replaceAll('\\', '/')).toBe(
+      '/opt/dramai/resources',
+    )
+    expect(unpackedPaths('/res').font.replaceAll('\\', '/')).toBe(
+      '/res/app.asar.unpacked/dist/data/fonts/NotoSansSC-Regular-Subset.otf',
+    )
+  })
+
+  it('the font is part of what gets bundled into dist/data', () => {
+    expect(
+      existsSync(
+        join(brand, '..', '..', '..', 'core', 'data', 'fonts', 'NotoSansSC-Regular-Subset.otf'),
+      ),
+    ).toBe(true)
+  })
+
+  it('the packaging config unpacks the server script and the data folder', async () => {
+    const config = (await import('../electron-builder.config.mjs')).default as {
+      asarUnpack?: string[]
+    }
+    expect(config.asarUnpack).toEqual(expect.arrayContaining(['dist/server/**', 'dist/data/**']))
+  })
+})
+
+describe('check scripts import what they use', () => {
+  it('smoke.mjs names every helper it imports from cdp.mjs and uses no undeclared one', async () => {
+    const { readFileSync } = await import('node:fs')
+    const source = readFileSync(new URL('../scripts/smoke.mjs', import.meta.url), 'utf8')
+    const exported = [
+      ...readFileSync(new URL('../scripts/lib/cdp.mjs', import.meta.url), 'utf8').matchAll(
+        /export (?:async )?function (\w+)|export const (\w+)/g,
+      ),
+    ].map((m) => m[1] ?? m[2]!)
+    const imported = /import \{([^}]+)\} from '\.\/lib\/cdp\.mjs'/
+      .exec(source)![1]!
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    for (const name of exported) {
+      if (
+        new RegExp(`\\b${name}\\(`).test(
+          source.replace(/import \{[^}]+\} from '\.\/lib\/cdp\.mjs'/, ''),
+        )
+      ) {
+        expect(imported, `smoke.mjs calls ${name}() but does not import it`).toContain(name)
+      }
+    }
   })
 })

@@ -17,6 +17,7 @@ import { spawn } from 'node:child_process'
 import {
   apiCall,
   connect,
+  diagnose,
   launch,
   pageTarget,
   readAppLogs,
@@ -24,6 +25,7 @@ import {
   waitFor,
 } from './lib/cdp.mjs'
 import { walkFlow } from './lib/walk.mjs'
+import { checkExternalFiles } from './lib/external-files.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const argv = process.argv.slice(2)
@@ -136,6 +138,12 @@ try {
     (await rawGet(`${url}/api/health`, { Host: 'evil.example.com' })) === 403,
   )
   check('cookies: none set for the page', (await page.evaluate('document.cookie')) === '')
+
+  if (appPath) {
+    // Packaged app: files that ffmpeg (an external process) has to read must be real files outside app.asar.
+    for (const r of checkExternalFiles(appPath, await readAppLogs(userData, 200)))
+      check(r.name, r.ok, r.detail)
+  }
 
   await writeFile(join(work, 'smoke.png'), await page.screenshot())
   page.close()
