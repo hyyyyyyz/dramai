@@ -407,3 +407,20 @@ describe('debugging-protocol calls cannot hang a check', () => {
     expect(CALL_TIMEOUT_MS).toBeLessThanOrEqual(60_000)
   })
 })
+
+describe('stage report uses only the newest run', () => {
+  it('ignores earlier runs that share the same log file', async () => {
+    const { stageReport } = await import('../scripts/lib/cdp.mjs')
+    const old = [
+      'T INFO dramai desktop 1 (darwin/arm64), data: /a',
+      'T INFO server ready at http://127.0.0.1:1',
+      'T INFO page loaded: x',
+      'T INFO secret storage ready: os',
+    ].join('\n')
+    const now = 'T INFO dramai desktop 1 (darwin/arm64), data: /b'
+    const report = stageReport(old + '\n' + now)
+    expect(report).toContain('✓ app started')
+    expect(report).toContain('✗ server process ready')
+    expect(report).not.toContain('✓ page loaded')
+  })
+})

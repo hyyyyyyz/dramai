@@ -200,7 +200,10 @@ export async function readAppLogs(userDataDir, lines = 60) {
 }
 
 /** Which start-up stages the app log shows, in order; the first missing one is where the start stalled. */
-export function stageReport(logText) {
+export function stageReport(fullLog) {
+  // Only the newest run: on macOS every run of the app appends to the same log file.
+  const start = fullLog.search(/^.*dramai desktop \S+ \(.*$(?![\s\S]*dramai desktop \S+ \()/m)
+  const logText = start >= 0 ? fullLog.slice(start) : fullLog
   const stages = [
     ['app started', /dramai desktop \S+ \(/],
     ['server process ready', /server ready at /],
