@@ -424,3 +424,53 @@ describe('stage report uses only the newest run', () => {
     expect(report).not.toContain('✓ page loaded')
   })
 })
+
+describe('what is handed to electron-builder', () => {
+  it('passes the architecture being packaged (DRAMAI_ARCH equals --arch) and the distribution kind', async () => {
+    const { builderInvocation } = await import('../scripts/lib/app-build.mjs')
+    for (const arch of ['x64', 'arm64']) {
+      const { args, env } = builderInvocation({
+        platformFlag: '--linux',
+        arch,
+        distribution: 'package',
+        unpackedOnly: false,
+      })
+      expect(args).toContain(`--${arch}`)
+      expect(env.DRAMAI_ARCH).toBe(arch)
+      expect(env.DRAMAI_DISTRIBUTION).toBe('package')
+      expect(args).not.toContain('--dir')
+    }
+    const local = builderInvocation({
+      platformFlag: '--mac',
+      arch: 'arm64',
+      distribution: 'local',
+      unpackedOnly: true,
+    })
+    expect(local.args).toEqual(
+      expect.arrayContaining(['--mac', '--arm64', '--dir', '--publish', 'never']),
+    )
+  })
+
+  it('the arch given to electron-builder is the arch the AppImage is named after', async () => {
+    const { builderInvocation } = await import('../scripts/lib/app-build.mjs')
+    const { createConfig } = await import('../electron-builder.config.mjs')
+    const { env } = builderInvocation({
+      platformFlag: '--linux',
+      arch: 'x64',
+      distribution: 'package',
+      unpackedOnly: false,
+    })
+    const config = createConfig(env.DRAMAI_ARCH) as { appImage: { artifactName: string } }
+    expect(config.appImage.artifactName).toContain('-linux-x64.')
+  })
+
+  it('the build and check scripts reference nothing that nobody sets', async () => {
+    const { readFileSync } = await import('node:fs')
+    const builder = readFileSync(new URL('../scripts/lib/app-build.mjs', import.meta.url), 'utf8')
+    const config = readFileSync(new URL('../electron-builder.config.mjs', import.meta.url), 'utf8')
+    for (const name of ['DRAMAI_ARCH', 'DRAMAI_DISTRIBUTION']) {
+      expect(config).toContain(`process.env.${name}`)
+      expect(builder).toContain(name)
+    }
+  })
+})

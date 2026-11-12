@@ -26,7 +26,6 @@ export function expectedArtifacts({ version, platform, arch }) {
 export function verifyArtifacts({ version, platform, arch, files }) {
   const problems = []
   const expected = expectedArtifacts({ version, platform, arch })
-  const prefix = `dramai-${version}-${OS_LABEL[platform]}-`
   for (const name of expected) {
     if (files.includes(name)) continue
     const ext = EXTENSIONS[platform].find((e) => name.endsWith(`.${e}`))
@@ -39,6 +38,5 @@ export function verifyArtifacts({ version, platform, arch, files }) {
         : `${name} is missing`,
     )
   }
-  void prefix
   return { ok: problems.length === 0, problems }
 }
