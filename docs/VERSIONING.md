@@ -1,104 +1,126 @@
-# 版本号规则
+# Versioning
 
-版本号是三段：`主版本.次版本.修订号`，例如 `0.5.2`。**全仓所有包使用同一个版本号**，不单独给某个包定版本。
-当前版本见根目录 `package.json`。
+Versions have three parts: `MAJOR.MINOR.PATCH`, for example `0.5.2`. **Every package in the repository
+shares one version number**; no package is versioned on its own. The current version is in the root
+`package.json`.
 
-## 哪种更新改哪一位
+## Which part to bump
 
-| 改哪一位                                        | 什么时候                                                                                     | 例子                                                                                                                         |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **修订号**（第三位）`0.5.1 → 0.5.2`             | 只修问题或做不改变用法的小改进。升级后一切照旧，随时可以退回上一个修订版                     | 修 bug；服务商预设的模型名、价格、能力数据更新；提示词措辞微调；文案和翻译修正；界面细节打磨；性能优化；依赖的安全更新       |
-| **次版本**（第二位）`0.5.2 → 0.6.0`，修订号归零 | 增加了新功能，或者数据格式变了但能自动升级。旧项目升级后照常能用，但升级后的数据退不回旧版本 | 新页面或新流程步骤；新的服务商协议；新的导出格式；命令行新增选项；接口新增字段或路由；数据目录结构变化并带自动迁移           |
-| **主版本**（第一位）`0.6.0 → 1.0.0`，后两位归零 | 不兼容的变更：用户必须手动做些什么才能继续用，或者原来能用的东西不能用了                     | 旧项目无法自动升级，需要手动导出再导入；删除或改变已有的接口、命令行选项；不再支持某个系统；提高最低 Node 版本到不兼容的程度 |
+| Bump                                                        | When                                                                                                                                                                                   | Examples                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Patch** (third part) `0.5.1 → 0.5.2`                      | Only fixes problems or makes small improvements that do not change how things are used. Upgrading changes nothing else, and you can go back to the previous patch release at any time  | Bug fixes; updated model names, prices or capability data in provider presets; small prompt rewording; copy and translation fixes; UI polish; performance work; security updates of dependencies                                                         |
+| **Minor** (second part) `0.5.2 → 0.6.0`, patch reset to 0   | Adds a feature, or changes a data format in a way that upgrades automatically. Old projects keep working after the upgrade, but upgraded data cannot be taken back to an older version | A new page or workflow step; a new provider protocol; a new export format; a new command-line option; a new field or route in the API; a data directory layout change with an automatic migration                                                        |
+| **Major** (first part) `0.6.0 → 1.0.0`, last two reset to 0 | An incompatible change: users must do something by hand to keep going, or something that used to work no longer does                                                                   | Old projects cannot be upgraded automatically and must be exported and imported by hand; an existing API route or command-line option is removed or changed; a supported operating system is dropped; the minimum Node.js version is raised incompatibly |
 
-- **只改文档、测试、CI、内部重构**的提交不单独触发发版，随下一次发版带出。如果一次发版里只有这类改动，改修订号。
-- **一次发版里有多种改动**时，取其中级别最高的那一位。版本号在发版时改，不是每个提交都改。
+- Commits that only touch **documentation, tests, CI or internal refactoring** do not trigger a release
+  by themselves; they ship with the next release. If a release contains only such changes, bump the
+  patch version.
+- When a release contains **several kinds of change**, bump the highest level among them. The version is
+  changed when a release is cut, not in every commit.
 
-## 1.0.0 之前
+## Before 1.0.0
 
-主版本为 `0` 表示产品还没有承诺稳定。这期间：
+A major version of `0` means the product has not promised stability yet. While that holds:
 
-- 不兼容的变更改**次版本**，不改主版本。更新日志里必须有单独的“不兼容变更”一节，写明用户要做什么。
-- 新功能同样改次版本，修问题改修订号。也就是说，1.0.0 之前实际只用到后两位。
+- Incompatible changes bump the **minor** version, not the major one. The changelog must have a separate
+  "Incompatible changes" section that says what users have to do.
+- New features also bump the minor version; fixes bump the patch version. In other words, only the last
+  two parts are used before 1.0.0.
 
-发 1.0.0 的条件：三种桌面形式和 WebUI 在三个系统上都验证可用；用真实服务商走通过全流程；并且愿意承诺从此数据格式只做能自动升级的变更。
-所以版本工具不允许从 `0.x` 随手升到 `1.0.0`，必须明确确认（见下文）。
+Conditions for 1.0.0: all three desktop forms and the WebUI are verified on all three operating
+systems; the whole workflow has been run with real providers; and we are willing to promise that from
+then on data formats only change in ways that upgrade automatically. This is why the version tool
+refuses to go from `0.x` to `1.0.0` casually: it needs an explicit confirmation (see below).
 
-## 预发布版本
+## Prereleases
 
-正式版之前给人试用的版本，在版本号后面加后缀。只允许下面两种，序号从 1 开始：
+A version given to people to try out before the stable release carries a suffix. Only these two forms
+are allowed, and the number starts at 1:
 
-- `0.5.0-beta.1`、`0.5.0-beta.2`：功能基本齐了，可能还有问题。
-- `0.5.0-rc.1`：发布候选，没有发现问题就原样变成 `0.5.0`。
+- `0.5.0-beta.1`, `0.5.0-beta.2`: the features are mostly there, there may still be problems.
+- `0.5.0-rc.1`: a release candidate; if no problem turns up it becomes `0.5.0` unchanged.
 
-顺序是 `beta` → `rc` → 正式版，不能倒回去。预发布版本在 GitHub 上标记为预发布，不会被当成最新正式版。
-不接受其它后缀（如 `-alpha.1`）和构建元数据（如 `+build.5`）。
+The order is `beta` → `rc` → stable, and you cannot go back. Prereleases are marked as prereleases on
+GitHub and are never treated as the latest stable release. Other suffixes (such as `-alpha.1`) and build
+metadata (such as `+build.5`) are not accepted.
 
-## 提交信息和版本号
+## Commit messages and versions
 
-仓库使用[约定式提交](https://www.conventionalcommits.org/)，发版时据此判断该改哪一位：
+The repository uses [Conventional Commits](https://www.conventionalcommits.org/). When a release is cut,
+the commit types tell you which part to bump:
 
-| 提交类型                                                           | 对应                                           |
-| ------------------------------------------------------------------ | ---------------------------------------------- |
-| `fix:`、`perf:`                                                    | 修订号                                         |
-| `feat:`                                                            | 次版本                                         |
-| 类型后带 `!`，或正文里有 `BREAKING CHANGE:`                        | 主版本（1.0.0 之前改次版本，并写“不兼容变更”） |
-| `docs:`、`test:`、`ci:`、`chore:`、`refactor:`、`style:`、`build:` | 不单独触发发版                                 |
+| Commit type                                                        | Maps to                                                                         |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `fix:`, `perf:`                                                    | Patch                                                                           |
+| `feat:`                                                            | Minor                                                                           |
+| A `!` after the type, or `BREAKING CHANGE:` in the body            | Major (minor before 1.0.0, and add an "Incompatible changes" changelog section) |
+| `docs:`, `test:`, `ci:`, `chore:`, `refactor:`, `style:`, `build:` | No release by themselves                                                        |
 
-`pnpm version:suggest` 会读取上一个版本 tag 之后的提交，给出建议的升级位。它只是建议，最终由发版的人决定。
+`pnpm version:suggest` reads the commits since the last version tag and suggests which part to bump. It
+is only a suggestion; whoever cuts the release decides.
 
-## tag 与已发布的版本
+## Tags and published versions
 
-- tag 的格式是 `v` 加版本号：`v0.5.0`、`v0.5.0-beta.1`。**tag 必须和仓库里的版本号一致**，发布工作流会核对。
-- **已经发布的版本号不重复使用，也不改动。** 发出去的版本有问题，就发一个新的修订版来修，不去挪动或删除旧 tag。
-  版本工具会拒绝使用已经存在 tag 的版本号。
-- 版本号只升不降：新版本必须高于当前版本（`0.5.0-beta.2` < `0.5.0-rc.1` < `0.5.0`）。
+- A tag is `v` plus the version: `v0.5.0`, `v0.5.0-beta.1`. **The tag must match the version in the
+  repository**; the release workflow checks it.
+- **A published version number is never reused and never changed.** If a published version has a problem,
+  ship a new patch release to fix it; do not move or delete the old tag. The version tool refuses to use
+  a version whose tag already exists.
+- Versions only go up: the new version must be higher than the current one
+  (`0.5.0-beta.2` < `0.5.0-rc.1` < `0.5.0`).
 
-## 更新日志
+## Changelog
 
-每个版本在 `CHANGELOG.md` 里有一节 `## [0.5.0] - 2026-12-20`，内容分为新增、变更、修复；
-有不兼容变更时加“不兼容变更”和“升级说明”两节（英文更新日志里写作 `Incompatible changes` 和 `Upgrade notes`）。**预发布也一样，没有对应一节的版本不能发布**——发布工作流在没有这一节时会失败。
+Every version has a section in `CHANGELOG.md`, for example `## [0.5.0] - 2026-12-20`, with Added, Changed
+and Fixed parts. When there are incompatible changes, add "Incompatible changes" and "Upgrade notes"
+sections. **Prereleases are no different: a version without its changelog section cannot be released**;
+the release workflow fails when the section is missing.
 
-## 版本号出现的地方
+## Where the version appears
 
-应用的“关于”、系统信息接口、命令行的 `--version`、安装包文件名，都取自**同一个来源**：包的 `package.json` 里的 `version`。
-不要在代码里再写一份版本号常量。
+The app's "About" page, the system information API, the command line's `--version`, and the installer
+file names all take the version from the **same source**: the `version` field of the package's
+`package.json`. Do not write another copy of the version as a constant in code.
 
-数据格式的版本和应用版本是两回事：数据文档各自带 `schemaVersion`，接口契约也有自己的错误码表。
-它们变化时，应用版本至少要升次版本。
+A data format's version is a separate thing from the app version: data documents carry their own
+`schemaVersion`, and the API contract has its own error code table. When either changes, bump at least
+the minor version of the app.
 
-## 用版本工具改版本号
+## Changing the version with the tool
 
-位置 `tooling/release/`，在仓库根目录运行。所有命令都会一次性修改全仓所有 `package.json`，只改 `version` 那一行；加 `--dry-run` 只预览。
+The tool lives in `tooling/release/`; run it from the repository root. Every command changes all the
+`package.json` files at once, touching only the `version` line, and `--dry-run` previews without writing.
 
 ```bash
 pnpm version:bump patch        # 0.5.1 → 0.5.2
-pnpm version:bump minor        # 0.5.2 → 0.6.0（修订号归零）
-pnpm version:bump major        # 1.2.3 → 2.0.0（后两位归零）；0.x 时被拒绝，见下
-pnpm version:bump major --confirm-1.0   # 0.x → 1.0.0，明确确认才允许
+pnpm version:bump minor        # 0.5.2 → 0.6.0 (patch reset to 0)
+pnpm version:bump major        # 1.2.3 → 2.0.0 (last two reset to 0); refused on 0.x, see below
+pnpm version:bump major --confirm-1.0   # 0.x → 1.0.0, only with explicit confirmation
 
-pnpm version:bump preminor     # 0.5.2 → 0.6.0-beta.1，开始一个预发布（prepatch / premajor 同理）
-pnpm version:bump preminor --preid rc   # 直接从 rc.1 开始
-pnpm version:bump prerelease   # 0.6.0-beta.1 → 0.6.0-beta.2，序号加一
-pnpm version:bump prerelease --preid rc # 0.6.0-beta.2 → 0.6.0-rc.1，beta 推进到 rc
-pnpm version:bump release      # 0.6.0-rc.1 → 0.6.0，预发布转正
+pnpm version:bump preminor     # 0.5.2 → 0.6.0-beta.1, start a prerelease (prepatch / premajor likewise)
+pnpm version:bump preminor --preid rc   # start directly at rc.1
+pnpm version:bump prerelease   # 0.6.0-beta.1 → 0.6.0-beta.2, next number
+pnpm version:bump prerelease --preid rc # 0.6.0-beta.2 → 0.6.0-rc.1, move from beta to rc
+pnpm version:bump release      # 0.6.0-rc.1 → 0.6.0, promote a prerelease
 
-pnpm version:set 0.6.0         # 直接指定，同样要符合规则
-pnpm version:check             # 检查所有包版本一致且符合规则
-pnpm version:suggest           # 按提交类型建议该升哪一位
+pnpm version:set 0.6.0         # set it directly; the same rules apply
+pnpm version:check             # every package is at the same, valid version
+pnpm version:suggest           # suggest which part to bump from the commit types
 ```
 
-工具会拒绝并说明原因的情况：版本格式不对（缺位、`-alpha`、序号从 0 起等）；新版本比当前版本低；该版本的 tag 已经存在；
-对预发布版本用 `patch`/`minor`/`major`（有歧义，应该用 `release` 或 `prerelease`）；对正式版用 `prerelease`/`release`；
-从 `rc` 退回 `beta`；从 `0.x` 直接升主版本而没有确认。
+The tool refuses, and explains why, when: the version is malformed (missing parts, `-alpha`, a number that
+starts at 0, and so on); the new version is lower than the current one; the tag for that version already
+exists; `patch`/`minor`/`major` is used on a prerelease (ambiguous, use `release` or `prerelease`);
+`prerelease`/`release` is used on a stable version; going from `rc` back to `beta`; or going from `0.x`
+straight to a new major version without confirmation.
 
-## 自动检查
+## Automatic checks
 
-| 检查                                                                           | 在哪里        |
-| ------------------------------------------------------------------------------ | ------------- |
-| 所有包版本一致、版本符合规则（`pnpm version:check`）                           | 每次 CI       |
-| 拉取请求的版本不低于目标分支上的版本                                           | 拉取请求的 CI |
-| 拉取请求标题符合约定式提交（分支里不符合的提交只给警告）                       | 拉取请求的 CI |
-| tag 与仓库版本一致、`CHANGELOG.md` 里有这个版本的一节、预发布后缀 → 标记预发布 | 发布工作流    |
+| Check                                                                                                         | Where            |
+| ------------------------------------------------------------------------------------------------------------- | ---------------- |
+| All packages are at the same version and the version follows the rules (`pnpm version:check`)                 | Every CI run     |
+| A pull request's version is not lower than the target branch's                                                | Pull request CI  |
+| A pull request's title follows Conventional Commits (commits inside the branch only produce warnings)         | Pull request CI  |
+| The tag matches the repository version, `CHANGELOG.md` has a section for it, a prerelease suffix → prerelease | Release workflow |
 
-发版的完整步骤见 [RELEASING.md](RELEASING.md)。
+See [RELEASING.md](RELEASING.md) for the full release steps.

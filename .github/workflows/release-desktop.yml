@@ -218,6 +218,8 @@ jobs:
               echo "### Installing"
               echo
               echo "These installers are **not code-signed**, so macOS and Windows will warn the first time you open them. You also need to install ffmpeg yourself."
+              echo
+              echo "这些安装包**没有代码签名**，首次打开时 macOS 和 Windows 会弹出安全提示；另外需要自己安装 ffmpeg。"
             fi
             echo
             echo "### Verify your download"

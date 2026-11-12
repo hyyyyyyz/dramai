@@ -33,24 +33,29 @@ pnpm build          # 生产构建无错
 ## 🌳 分支与 PR 规范
 
 - 默认分支是 `main`，请基于 `main` 创建特性分支：`feat/<topic>` / `fix/<topic>` / `docs/<topic>`。
-- PR 标题遵循 [Conventional Commits](https://www.conventionalcommits.org/)（CI 会检查标题，不符合会失败），例如：
+- PR 标题遵循 [Conventional Commits](https://www.conventionalcommits.org/)，例如：
   - `feat(storyboard): add JSON streaming parser`
   - `fix(deploy): correct base path in vite.config`
   - `docs(providers): add 302.AI example`
-- 提交类型和版本号的对应关系（发版时据此判断该升哪一位）：
-
-  | 提交类型                                                           | 对应                                                   |
-  | ------------------------------------------------------------------ | ------------------------------------------------------ |
-  | `fix:`、`perf:`                                                    | 修订号（`0.5.1 → 0.5.2`）                              |
-  | `feat:`                                                            | 次版本（`0.5.2 → 0.6.0`）                              |
-  | 类型后带 `!`，或正文里有 `BREAKING CHANGE:`                        | 主版本；1.0.0 之前改次版本，并在更新日志写“不兼容变更” |
-  | `docs:`、`test:`、`ci:`、`chore:`、`refactor:`、`style:`、`build:` | 不单独触发发版                                         |
-
-  贡献者**不需要**自己改版本号：版本在发版时统一改。完整规则（含预发布版本、tag、更新日志要求、版本工具）见
-  [docs/VERSIONING.md](./docs/VERSIONING.md)，发版步骤见 [docs/RELEASING.md](./docs/RELEASING.md)，CI 说明见 [docs/CI.md](./docs/CI.md)。
-
 - PR 描述请说明：**做了什么、为什么、如何测试**。涉及 UI 变化请附截图或动图。
 - 请保持 PR 小而聚焦，一个 PR 解决一件事。
+
+## Versioning and commit messages
+
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/); CI checks the title
+and fails when it does not. The commit type decides which part of the version a release bumps:
+
+| Commit type                                                        | Bumps                                                                                    |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `fix:`, `perf:`                                                    | Patch (`0.5.1 → 0.5.2`)                                                                  |
+| `feat:`                                                            | Minor (`0.5.2 → 0.6.0`)                                                                  |
+| A `!` after the type, or `BREAKING CHANGE:` in the body            | Major; before 1.0.0 it bumps minor and needs an "Incompatible changes" changelog section |
+| `docs:`, `test:`, `ci:`, `chore:`, `refactor:`, `style:`, `build:` | No release by themselves                                                                 |
+
+You do **not** need to change the version in your pull request: it is changed once, when a release is cut.
+The full rules (prereleases, tags, changelog requirements, the version tool) are in
+[docs/VERSIONING.md](./docs/VERSIONING.md), the release steps in [docs/RELEASING.md](./docs/RELEASING.md),
+and what CI runs in [docs/CI.md](./docs/CI.md).
 
 ## 🧹 代码规范
 

@@ -1,48 +1,55 @@
-# CI 说明
+# CI
 
-工作流在 `.github/workflows/`。发布流程见 [RELEASING.md](RELEASING.md)。
+The workflows live in `.github/workflows/`. See [RELEASING.md](RELEASING.md) for how to cut a release.
 
-## 有哪些工作流
+## Workflows
 
-| 工作流                | 什么时候触发                                                                      | 作用                                                                                  |
-| --------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `ci.yml`              | 推送到 `main` 或 `refactor/**`；任何拉取请求；手动；被 `release-desktop.yml` 调用 | 日常检查，见下表                                                                      |
-| `release-desktop.yml` | 推送 `v*.*.*` tag；手动（只演练，不发布）                                         | 构建各系统安装包并创建 GitHub Release                                                 |
-| `deploy.yml`          | 仅手动                                                                            | 旧的 Pages 部署，已停用自动触发（旧工作台没有本地服务无法独立运行），宣传页做好后替换 |
+| Workflow              | When it runs                                                                                     | What it does                                                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`              | Pushes to `main` or `refactor/**`; every pull request; manually; called by `release-desktop.yml` | Everyday checks, see below                                                                                                                                       |
+| `release-desktop.yml` | Pushing a `v*.*.*` tag; manually (dry run, no release)                                           | Builds installers on each system and creates a GitHub Release                                                                                                    |
+| `deploy.yml`          | Manually only                                                                                    | The old Pages deployment. Automatic runs are off because the old workspace cannot run without the local server; it will be replaced once the landing page exists |
 
-Dependabot（`.github/dependabot.yml`）每周为 GitHub Actions 和 npm 依赖开更新拉取请求。
+Dependabot (`.github/dependabot.yml`) opens weekly update pull requests for GitHub Actions and npm
+dependencies.
 
-## ci.yml 里的 job
+## Jobs in ci.yml
 
-| job                     | 内容                                                                                                                                                   |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Format, lint, typecheck | 所有包版本一致（`pnpm version:check`）、`pnpm format:check`、`pnpm lint`、`pnpm typecheck`（Linux）                                                    |
-| Test                    | `pnpm test`，在 Linux（Node 24 和 22.13）、macOS（arm64）、Windows 上各跑一次。ffmpeg 由 job 自己安装；Linux 上必须有 libass，保证字幕烧录测试真的运行 |
-| Build                   | `pnpm build`                                                                                                                                           |
-| Desktop                 | 在 Linux、macOS、Windows 上各跑 `pnpm desktop:build`；有 `pnpm desktop:check-install` 时再跑一次无人值守的安装、校验、卸载                             |
-| Lint workflows          | actionlint 检查 `.github/workflows/` 里的语法、表达式和内嵌 shell                                                                                      |
-| E2E (browser)           | 根 `package.json` 有 `test:e2e` 脚本时运行 Playwright，没有就空过                                                                                      |
-| CI passed               | 汇总以上所有 job；分支保护只需要把它设为必需检查。被跳过的 job 不算失败                                                                                |
+| Job                     | What it does                                                                                                                                                                                                                                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format, lint, typecheck | Every package is at the same valid version (`pnpm version:check`), `pnpm format:check`, `pnpm lint`, `pnpm typecheck` (Linux). On pull requests it also checks that the version is not lower than the target branch's and that the PR title follows Conventional Commits (commits inside the branch only warn). Rules: [VERSIONING.md](VERSIONING.md) |
+| Test                    | `pnpm test` on Linux (Node 24 and 22.13), macOS (arm64) and Windows. The job installs ffmpeg itself; on Linux the build must have libass so the subtitle burn-in test really runs                                                                                                                                                                     |
+| Build                   | `pnpm build`                                                                                                                                                                                                                                                                                                                                          |
+| Desktop                 | `pnpm desktop:build` on Linux, macOS and Windows; and, once `pnpm desktop:check-install` exists, an unattended install, verify and uninstall. Both skip with a notice while the root scripts are missing                                                                                                                                              |
+| Lint workflows          | actionlint checks the syntax, expressions and inline shell in `.github/workflows/`                                                                                                                                                                                                                                                                    |
+| E2E (browser)           | Runs Playwright when the root `package.json` has a `test:e2e` script, and does nothing otherwise                                                                                                                                                                                                                                                      |
+| CI passed               | Summarises all the jobs above. Branch protection only needs this one as a required check; skipped jobs do not count as failures                                                                                                                                                                                                                       |
 
-同一个分支或拉取请求上有新的提交时，旧的运行会被取消（`main` 上不取消）。
+When a branch or pull request gets a new commit, the older run is cancelled (never on `main`).
 
-## 失败了怎么看
+## When a run fails
 
-1. 打开 PR 的 Checks 或仓库的 **Actions** 页，找到红色的 job，展开出错的步骤。
-2. 同样的命令在本地都能跑，先在根目录复现：
+1. Open the pull request's Checks tab, or the repository's **Actions** page, find the red job and expand
+   the failing step.
+2. The same commands run locally. Reproduce from the repository root first:
 
-   | 失败的步骤             | 本地命令                                                                                 |
-   | ---------------------- | ---------------------------------------------------------------------------------------- |
-   | Check package versions | `pnpm version:check`，不一致时 `pnpm version:set <版本>`                                 |
-   | Format check           | `pnpm format:check`，自动修复 `pnpm format`                                              |
-   | Lint / Typecheck       | `pnpm lint`（`pnpm lint:fix`）、`pnpm typecheck`                                         |
-   | Test                   | `pnpm test`，只跑一个包：`pnpm --filter <包名> test`                                     |
-   | Build desktop app      | `pnpm desktop:build`                                                                     |
-   | Lint workflows         | 本地装 [actionlint](https://github.com/rhysd/actionlint) 后在仓库根目录运行 `actionlint` |
+   | Failing step                                          | Local command                                                                                                                                                                            |
+   | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | Check package versions / the version does not go down | `pnpm version:check`; if packages disagree, `pnpm version:set <version>`; if the version was lowered, put it back                                                                        |
+   | Check Conventional Commits                            | Rename the PR to `<type>(<scope>): <description>` (types in [VERSIONING.md](VERSIONING.md)). Local check: `node tooling/release/src/cli.ts commits --base origin/main --title "<title>"` |
+   | Format check                                          | `pnpm format:check`; fix automatically with `pnpm format`                                                                                                                                |
+   | Lint / Typecheck                                      | `pnpm lint` (`pnpm lint:fix`), `pnpm typecheck`                                                                                                                                          |
+   | Test                                                  | `pnpm test`; a single package: `pnpm --filter <package> test`                                                                                                                            |
+   | Build desktop app                                     | `pnpm desktop:build`                                                                                                                                                                     |
+   | Lint workflows                                        | Install [actionlint](https://github.com/rhysd/actionlint) and run `actionlint` in the repository root                                                                                    |
 
-3. **某个系统独有的失败**（比如只有 Windows 红）：job 名字里带系统。常见原因是路径分隔符、换行符
-   （仓库用 `.gitattributes` 统一为 LF）、文件被占用、ffmpeg 的构建差异。macOS 的 Homebrew ffmpeg 和
-   Windows 的 Chocolatey ffmpeg 不一定带 libass，字幕烧录的测试在那里会改走“报错检查”（日志里有 warning），Linux 上必须带。
-4. 测试失败时 Vitest 的输出在 `Test` 步骤里；E2E 失败时报告在这次运行底部的 Artifacts（`e2e-report`）。
-5. 没有改动却突然失败：多半是外部服务（apt / Homebrew / Chocolatey 下载）或 runner 镜像升级，重跑一次，仍失败再查日志。
-   工作流里 action 都固定到了提交 SHA，不会因为 action 自己更新而变化。
+3. **A failure on one operating system only** (say, only Windows is red): the job name contains the
+   system. Usual causes are path separators, line endings (the repository forces LF through
+   `.gitattributes`), files held open, and differences between ffmpeg builds. The Homebrew ffmpeg on
+   macOS and the Chocolatey one on Windows may lack libass; there the subtitle burn-in test falls back to
+   the capability-error check (a warning appears in the log). On Linux libass is required.
+4. Vitest output is in the `Test` step. When E2E fails, the report is an artifact (`e2e-report`) at the
+   bottom of the run page.
+5. A failure with no code change is most often an external service (apt, Homebrew or Chocolatey
+   downloads) or a runner image update; re-run once and read the log if it keeps failing. Actions are
+   pinned to commit SHAs, so they cannot change under you.

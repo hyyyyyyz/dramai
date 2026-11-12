@@ -1,176 +1,213 @@
-# 发布流程
+# Releasing
 
-dramai 全仓使用**同一个版本号**，更新规则见 [VERSIONING.md](VERSIONING.md)。推送形如 `v0.5.0` 的 tag，GitHub Actions 就会核对版本、跑一遍 CI、在
-macOS（Apple Silicon 和 Intel）、Windows 和 Linux 上构建桌面安装包、生成校验和，然后创建 GitHub Release 并上传。
-安装包**不签名**（见下文“不需要密钥”）。桌面端的另外两种安装形式（从源码运行、本地编译安装）不经过这条流水线。
+All of dramai uses **one version number**; the rules for changing it are in [VERSIONING.md](VERSIONING.md).
+When you push a tag such as `v0.5.0`, GitHub Actions checks the version, runs CI again, builds the desktop
+installers on macOS (Apple Silicon and Intel), Windows and Linux, generates checksums, then creates a
+GitHub Release and uploads everything. The installers are **not code-signed** (see "No secrets needed").
+The other two desktop forms (run from source, build and install locally) do not go through this
+pipeline.
 
-> 这份文档描述的工作流在 `.github/workflows/`。它们只有推送到 GitHub 之后才会运行；
-> 第一次真正发布之前，请先按下面的“演练”跑一遍。
+> The workflows described here are in `.github/workflows/`. They only run once pushed to GitHub. Before
+> the first real release, run the "dry run" below.
 
-## 工作流一览
+## Workflows at a glance
 
-| 文件                  | 什么时候运行                                                         | 做什么                                                                                     |
-| --------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `ci.yml`              | 推送到 `main` 或 `refactor/**`；任何拉取请求；手动；被发布工作流调用 | 见 [CI.md](CI.md)                                                                          |
-| `release-desktop.yml` | 推送 `v*.*.*` tag；手动（只构建，不发布）                            | 核对 tag → 跑 CI → 构建四个平台的安装包 → 校验和 → 创建 Release                            |
-| `deploy.yml`          | 仅手动                                                               | 旧的 Pages 部署，已停用自动触发（原因写在文件头部），宣传页 `apps/site` 做好后换成它的部署 |
-| `dependabot.yml`      | 每周                                                                 | 更新 GitHub Actions（固定到 SHA）和 npm 依赖，新版本先冷却 7 天                            |
+| File                  | When it runs                                                                                    | What it does                                                                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`              | Pushes to `main` or `refactor/**`; every pull request; manually; called by the release workflow | See [CI.md](CI.md)                                                                                                                             |
+| `release-desktop.yml` | Pushing a `v*.*.*` tag; manually (build only, no release)                                       | Check the tag → run CI → build installers on four platforms → checksums → create the Release                                                   |
+| `deploy.yml`          | Manually only                                                                                   | The old Pages deployment, automatic runs disabled (reason in the file header); replaced by the landing page deployment once `apps/site` exists |
+| `dependabot.yml`      | Weekly                                                                                          | Updates GitHub Actions (pinned to SHAs) and npm dependencies; new versions wait 7 days                                                         |
 
-自定义的组合步骤在 `.github/actions/setup/`（安装 pnpm 和 Node、缓存 pnpm store、安装依赖）。
+The shared composite step is in `.github/actions/setup/` (installs pnpm and Node, caches the pnpm store,
+installs dependencies).
 
-## 发一个正式版
+## Cutting a stable release
 
-1. **确定并统一版本号**（在 `main` 最新代码上开一个分支）。先看建议，再按规则升级：
+1. **Decide the version and update every package** (on a branch from the latest `main`). Look at the
+   suggestion first, then bump by the rules:
 
    ```bash
-   pnpm version:suggest       # 按上个版本以来的提交类型建议升哪一位
-   pnpm version:bump minor    # 全仓所有 package.json 一起升；patch / minor / major，加 --dry-run 只预览
+   pnpm version:suggest       # suggests which part to bump from the commit types since the last version
+   pnpm version:bump minor    # bumps every package.json together: patch / minor / major; --dry-run previews
    ```
 
-2. **写更新日志**：在 `CHANGELOG.md` 里把 `[Unreleased]` 下的内容整理成 `## [0.5.0] - 2026-12-20` 一节，
-   并在文末补上 `[0.5.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0`。
-   这一节会原样成为 Release 说明；**没有这一节的版本不能发布，发布会失败**。有不兼容变更时加“不兼容变更”和“升级说明”两节。
-3. **提交并合并到 `main`**（走拉取请求，等 `CI passed` 变绿）：`chore(release): v0.5.0`。
-4. **打 tag 并推送**（在合并后的 `main` 上）：
+2. **Write the changelog**: in `CHANGELOG.md`, turn what is under `[Unreleased]` into a section such as
+   `## [0.5.0] - 2026-12-20`, and add the link
+   `[0.5.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0` at the bottom. This section becomes the
+   Release description as it is; **a version without this section cannot be released and the workflow
+   fails**. When there are incompatible changes, add "Incompatible changes" and "Upgrade notes"
+   sections.
+3. **Commit and merge to `main`** through a pull request, once `CI passed` is green:
+   `chore(release): v0.5.0`.
+4. **Tag and push** (on the merged `main`):
 
    ```bash
    git switch main && git pull
-   pnpm version:check --tag v0.5.0     # 本地先核对一次
+   pnpm version:check --tag v0.5.0     # check locally first
    git tag v0.5.0
    git push origin v0.5.0
    ```
 
-5. 在仓库的 **Actions → Release desktop** 看进度。全部通过后，Release 里有安装包、`SHA256SUMS.txt`，
-   说明里有更新日志、未签名安装包怎么打开的固定文字和校验方法。
+5. Watch **Actions → Release desktop**. When everything passes, the Release has the installers and
+   `SHA256SUMS.txt`, and its description has the changelog, the fixed text about opening unsigned
+   installers, and how to verify the download.
 
-正式版 tag 指向的提交必须在 `main` 上，否则工作流会失败并提示。
+The commit a stable tag points at must be on `main`; otherwise the workflow fails and says so.
 
-## 发一个预发布
+## Cutting a prerelease
 
-tag 带后缀就是预发布，Release 会标成 Pre-release，也不会成为 “Latest”：
+A tag with a suffix is a prerelease. The Release is marked Pre-release and never becomes "Latest":
 
 ```bash
-pnpm version:bump preminor              # 0.4.1 → 0.5.0-beta.1（开始预发布；--preid rc 则从 rc.1 开始）
-# 之后每出一个试用版：
+pnpm version:bump preminor              # 0.4.1 → 0.5.0-beta.1 (start a prerelease; --preid rc starts at rc.1)
+# for each further trial version:
 pnpm version:bump prerelease            # 0.5.0-beta.1 → 0.5.0-beta.2
 pnpm version:bump prerelease --preid rc # 0.5.0-beta.2 → 0.5.0-rc.1
-pnpm version:bump release               # 0.5.0-rc.1 → 0.5.0，没问题就转正
+pnpm version:bump release               # 0.5.0-rc.1 → 0.5.0, when it is good
 
 git commit -am "chore(release): v0.5.0-beta.1"
 git tag v0.5.0-beta.1 && git push origin HEAD v0.5.0-beta.1
 ```
 
-- 预发布可以从任何分支打 tag（例如在重构分支上试发），不要求在 `main` 上。
-- 预发布同样要在 `CHANGELOG.md` 里有 `## [0.5.0-beta.1] - 2026-12-01` 这一节，否则发布失败。
+- A prerelease tag can be created from any branch (for example to try a release from the refactor
+  branch); it does not need to be on `main`.
+- A prerelease also needs a section such as `## [0.5.0-beta.1] - 2026-12-01` in `CHANGELOG.md`, or the
+  release fails.
 
-## 演练（不创建 Release）
+## Dry run (no Release is created)
 
-**Actions → Release desktop → Run workflow**，选要试的分支。它会核对版本、跑 CI、构建全部平台，
-安装包留在这次运行页面底部的 Artifacts 里（保留 7 天），**不会**创建 Release。第一次发布前、
-以及改动了打包配置之后都建议这样跑一遍。
+**Actions → Release desktop → Run workflow**, picking the branch to try. It checks the versions, runs CI
+and builds every platform; the installers stay under Artifacts at the bottom of the run page (kept for 7
+days) and **no Release is created**. Run it before the first release and after changing the packaging
+configuration.
 
-## Release 说明里的固定文字
+## The fixed text in the Release description
 
-Release 说明 = `CHANGELOG.md` 的对应小节 + 一段固定文字 + 校验方法。固定文字讲未签名安装包在 macOS / Windows / Linux
-上怎么打开、需要自己安装 ffmpeg，写在 **`apps/desktop/release-notes-footer.md`**（由 desktop 会话维护，
-CI 在 verify 阶段把它带进发布流程）。文件不存在时使用一小段默认文字，日志里会有一条提示。
+A Release description is the matching `CHANGELOG.md` section + a fixed text + how to verify. The fixed
+text explains how to open unsigned installers on macOS, Windows and Linux and that you must install
+ffmpeg yourself. It lives in **`apps/desktop/release-notes-footer.md`** (maintained by the desktop work;
+the verify job of the release workflow carries it into the release). If the file does not exist, a short
+default text is used (English first, then Chinese) and the log shows a notice.
 
-## 第一次验证发布流程的最小步骤
+## Minimum steps to verify the release pipeline for the first time
 
-发布会在 GitHub 上公开创建一个 Release，验证前需要仓库所有者同意。最小、可清理的做法：
+A release publicly creates a Release on GitHub, so the repository owner has to agree before it is tried.
+The smallest, cleanable way to do it:
 
-1. 先**演练**：Actions → Release desktop → Run workflow（选分支）。不创建 Release，只检查构建和打包能不能跑通。
-2. 演练通过后，在要验证的分支上打一个**预发布** tag，例如：
+1. Do a **dry run** first: Actions → Release desktop → Run workflow (pick the branch). It creates no Release
+   and only checks that building and packaging work.
+2. When the dry run passes, push a **prerelease** tag from the branch you want to verify, for example:
 
    ```bash
    pnpm version:bump preminor --preid rc && git commit -am "chore(release): v0.5.0-rc.1"
    git tag v0.5.0-rc.1 && git push origin HEAD v0.5.0-rc.1
    ```
 
-   预发布不要求在 `main` 上，也不会成为 “Latest”；CHANGELOG 里要先加上对应的小节。
+   A prerelease does not need to be on `main` and never becomes "Latest"; add the matching section to the
+   changelog first.
 
-3. 看 Release 里是否有四个平台的安装包和 `SHA256SUMS.txt`，下载一个核对校验和。
-4. 验证完清理：`gh release delete v0.5.0-rc.1 --cleanup-tag --yes && git tag -d v0.5.0-rc.1`，
-   然后把版本号和 CHANGELOG 改回去（`git revert` 那次版本提交，或 `pnpm version:set <原版本>`）。
-   注意：这是还没有对外使用过的试验版本才可以这样清理；已经有人用过的版本号不能复用，见 VERSIONING.md。
+3. Check that the Release has the installers for four platforms and `SHA256SUMS.txt`, and download one to
+   verify its checksum.
+4. Clean up afterwards: `gh release delete v0.5.0-rc.1 --cleanup-tag --yes && git tag -d v0.5.0-rc.1`,
+   then put the version and the changelog back (`git revert` the version commit, or
+   `pnpm version:set <previous version>`). Note: this clean-up is only for trial versions nobody has used;
+   a version number that anyone has used must not be reused, see VERSIONING.md.
 
-## 出了问题怎么办
+## When something goes wrong
 
-| 情况                                                                  | 处理                                                                                                                                           |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 报 “Tag … is version X, but the repository is at Y”                   | tag 和包版本不一致。要么 `pnpm version:set X` 后提交并重新打 tag，要么删掉 tag 改用 `vY`                                                       |
-| 报 “… is at "0.4.1", expected "0.5.0”（某个 package.json 的版本不对） | 有包的版本漂移了，`pnpm version:set <版本>` 一次性对齐                                                                                         |
-| 报缺 CHANGELOG 小节                                                   | 补上 `## [<版本>]` 一节，提交后重新打 tag                                                                                                      |
-| 构建失败（Release 还没创建）                                          | 修好后：同一提交可以在 Actions 里 “Re-run failed jobs”；要换提交就删 tag 重打（见下）                                                          |
-| 上传到一半失败                                                        | Release 是**草稿**，用户看不到。重跑工作流会刷新草稿里的文件后再发布                                                                           |
-| 已发布但发现有问题                                                    | 先把它变回草稿，用户就下载不到了：`gh release edit v0.5.0 --draft`。修复后再用新的补丁版本（`0.5.1`）发布                                      |
-| 彻底撤回一个版本                                                      | `gh release delete v0.5.0 --cleanup-tag --yes`（同时删掉远端 tag），本地再 `git tag -d v0.5.0`。已经有人下载过的版本号不要复用，改发下一个版本 |
-| 要删 tag 重打（从没公开过）                                           | `git push --delete origin v0.5.0 && git tag -d v0.5.0`，修复后重新 `git tag` 和 `git push`                                                     |
+| Situation                                                                  | What to do                                                                                                                                                                                |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Tag … is version X, but the repository is at Y"                           | The tag and the package versions disagree. Either run `pnpm version:set X`, commit and re-tag, or delete the tag and use `vY`                                                             |
+| `… is at "0.4.1", expected "0.5.0"` (a package.json has the wrong version) | A package drifted. `pnpm version:set <version>` aligns all of them                                                                                                                        |
+| The changelog section is missing                                           | Add `## [<version>]`, commit, and tag again                                                                                                                                               |
+| The build fails (no Release exists yet)                                    | After fixing, "Re-run failed jobs" in Actions works for the same commit; for a different commit, delete the tag and tag again (below)                                                     |
+| An upload fails halfway                                                    | The Release is a **draft**, so users cannot see it. Re-running the workflow refreshes the files in the draft and then publishes it                                                        |
+| A published release turns out to have a problem                            | Turn it back into a draft so it cannot be downloaded: `gh release edit v0.5.0 --draft`. Fix it and publish a new patch version (`0.5.1`)                                                  |
+| Withdraw a version completely                                              | `gh release delete v0.5.0 --cleanup-tag --yes` (also deletes the remote tag), then `git tag -d v0.5.0` locally. Do not reuse a version number anyone downloaded; release the next version |
+| Delete a tag and redo it (never made public)                               | `git push --delete origin v0.5.0 && git tag -d v0.5.0`; after the fix, `git tag` and `git push` again                                                                                     |
 
-已发布的 Release 不会被工作流覆盖：对一个已发布的 tag 重跑会报错，需要先按上表撤回。
+The workflow never overwrites a published Release: re-running for an already published tag fails, so
+withdraw it first as in the table.
 
-## 需要在 GitHub 上配置什么
+## What to configure on GitHub
 
-下面按“建议做”的顺序列出，全部是可选的加固，没有它们发布也能工作。
+In the order of "worth doing"; everything here is optional hardening and releases work without it.
 
-### 仓库设置（Settings）
+### Repository settings
 
-1. **Actions → General → Workflow permissions**：保持默认的 “Read repository contents”。
-   每个工作流都自己声明权限，只有发布 job 申请 `contents: write`。
-2. **Actions → General → Actions permissions**：如果选了 “Allow select actions”，要允许
-   GitHub 官方 action、`pnpm/action-setup@*`，以及 Dependabot 引入的其它 action。
-3. **Rules → Rulesets（或 Branches）**：给 `main` 加保护——要求拉取请求、要求状态检查
-   **`CI passed`** 通过。这是 `ci.yml` 里汇总所有 job 的那一个，只需要把它设为必需；被跳过的 job（比如 E2E 接入前）不算失败。
-4. **Rules → Rulesets**：新建一个针对 tag `v*` 的规则，限制只有维护者能创建、更新、删除，
-   防止误推或被人篡改已发布的版本 tag。
-5. **Code security**：开启 Dependabot alerts / security updates，`.github/dependabot.yml` 会驱动版本更新。
-6. **Pages**：Source 保持 “GitHub Actions”（旧部署手动运行时用；宣传页上线后继续沿用）。
-7. （可选）**Environments**：新建 `release` 环境并设置必需审批人，然后在 `release-desktop.yml` 的 `release` job
-   里加一行 `environment: release`，发布前就需要人工点一下确认。
+1. **Actions → General → Workflow permissions**: keep the default "Read repository contents". Every
+   workflow declares its own permissions, and only the release job asks for `contents: write`.
+2. **Actions → General → Actions permissions**: if you choose "Allow select actions", allow GitHub's own
+   actions, `pnpm/action-setup@*`, and any other action Dependabot brings in.
+3. **Rules → Rulesets (or Branches)**: protect `main`: require pull requests and require the status check
+   **`CI passed`**. It is the job in `ci.yml` that summarises all the others, so it is the only one you
+   need to mark as required; skipped jobs (for example E2E before it is wired up) do not count as failures.
+4. **Rules → Rulesets**: add a rule for tags `v*` that only lets maintainers create, update or delete them,
+   so a version tag cannot be pushed by mistake or tampered with after release.
+5. **Code security**: turn on Dependabot alerts and security updates; `.github/dependabot.yml` drives the
+   version updates.
+6. **Pages**: keep the source set to "GitHub Actions" (the old deployment uses it when run by hand; the
+   landing page keeps using it once it exists).
+7. (Optional) **Environments**: create a `release` environment with required reviewers, then add
+   `environment: release` to the `release` job of `release-desktop.yml`, so a person has to confirm before
+   anything is published.
 
-### 不需要密钥
+### No secrets needed
 
-发布不需要任何密钥或变量：不签名，也不做公证。工作流只用自带的 `GITHUB_TOKEN`。
+Releasing needs no secrets and no variables: there is no signing and no notarization. The workflow only
+uses the built-in `GITHUB_TOKEN`.
 
-以后要加签名时，只需在 `release-desktop.yml` 的 “Package desktop app” 步骤里把 electron-builder 的
-`CSC_LINK` / `CSC_KEY_PASSWORD`（Windows 用 `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD`，macOS 公证用 `APPLE_ID` /
-`APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID`）从 secrets 映射进 `env`，其余流程不用动。
+To add signing later, map electron-builder's `CSC_LINK` / `CSC_KEY_PASSWORD` (`WIN_CSC_LINK` /
+`WIN_CSC_KEY_PASSWORD` for Windows, and `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` for macOS
+notarization) from secrets into `env` in the "Package desktop app" step of `release-desktop.yml`; nothing else
+has to change.
 
-## 版本工具
+## The version tool
 
-位置 `tooling/release/`（`@dramai/release-tools`），零依赖，只用 Node 内置模块。
+It lives in `tooling/release/` (`@dramai/release-tools`), has no dependencies and only uses Node's built-in
+modules. The everyday commands are in
+[VERSIONING.md, "Changing the version with the tool"](VERSIONING.md): `version:bump`, `version:set`,
+`version:check` and `version:suggest`.
 
-位置 `tooling/release/`（`@dramai/release-tools`），零依赖，只用 Node 内置模块。常用命令见
-[VERSIONING.md 的“用版本工具改版本号”](VERSIONING.md)：`version:bump`、`version:set`、`version:check`、`version:suggest`。
+- It only changes the top-level `"version"` line in each `package.json` and leaves the rest of the file alone.
+- The version format, "never go down", "never reuse an existing tag" and the other rules are all checked by
+  the tool, which refuses and explains when something is off.
+- The `checks` job of CI runs `version:check` every time; pull requests also check that the version is not
+  lower than the target branch's and that the title follows Conventional Commits; the release workflow
+  checks again with the tag and requires the changelog section.
+- Everywhere else the version appears (the version shown in the UI, the system information API, the
+  command line's `--version`, installer file names) must read it from `package.json` rather than keeping
+  its own constant.
 
-- 只改 `package.json` 里顶层的那一行 `"version"`，其余格式不动。
-- 版本格式、不降版本、不重复已有 tag 等规则都由工具检查，不合规会拒绝并说明原因。
-- CI 的 `checks` job 每次都会跑 `version:check`；拉取请求还会检查版本不低于目标分支、标题符合约定式提交；
-  发布工作流会带上 tag 再核对一次，并要求有对应的 CHANGELOG 小节。
-- 版本号出现在别的地方（界面里的版本显示、系统信息接口、命令行 `--version`、安装包文件名）都应从 `package.json` 读取，
-  而不是再写一份常量。
+## Conventions and assumptions
 
-## 约定与假设
+The release workflow relies on what the desktop app delivers. The conventions agreed for it:
 
-发布工作流依赖 `desktop` 会话交付的东西，约定见 `REFACTOR_PLAN.md`“阶段 6 的调整”：
+- `pnpm desktop:dist` packages the current system, with output in `apps/desktop/release/`, and does not
+  publish by itself (the workflow provides no `GH_TOKEN`).
+- Installers are named `dramai-<version>-<os>-<arch>.<extension>`, for example `dramai-0.5.0-mac-arm64.dmg`
+  and `dramai-0.5.0-beta.1-win-x64.exe`. For now the `<os>` part accepts `mac|macos|darwin`, `win|windows` and
+  `linux`, and the extension accepts `dmg zip exe msi AppImage deb rpm tar.gz`; files that do not match are not
+  uploaded and the log shows a warning.
+- There is no automatic update, so the `latest*.yml` files and `.blockmap` files used by auto-update are
+  **not uploaded** for now (the two macOS architectures would produce a `latest-mac.yml` with the same name
+  and the merge has to be decided first). Extend `tooling/release/src/assets.ts` and `release-desktop.yml`
+  when auto-update is built.
 
-- `pnpm desktop:dist` 打包当前系统，产物在 `apps/desktop/release/`，不自行发布（工作流不提供 `GH_TOKEN`）。
-- 安装包命名 `dramai-<版本>-<系统>-<架构>.<扩展名>`，例如 `dramai-0.5.0-mac-arm64.dmg`、
-  `dramai-0.5.0-beta.1-win-x64.exe`。“系统”目前接受 `mac|macos|darwin`、`win|windows`、`linux`，
-  扩展名接受 `dmg zip exe msi AppImage deb rpm tar.gz`；不符合的文件不会上传，日志里会有警告。
-- 不做自动更新，所以自动更新用的 `latest*.yml` 和 `.blockmap` 目前**不上传**（两个 macOS 架构会产生同名的 `latest-mac.yml`，
-  需要先决定怎么合并）。做自动更新时再扩展 `tooling/release/src/assets.ts` 和 `release-desktop.yml`。
+## Hooking up E2E tests
 
-## E2E 接入约定
+`ci.yml` already has an `E2E (browser)` job. It does nothing for now because there is no `test:e2e` script.
+When the end-to-end tests are delivered, they need to provide:
 
-`ci.yml` 里已经有 `E2E (browser)` 这个 job，现在没有 `test:e2e` 脚本所以会空过。前端会话交付端到端测试时，需要提供：
+1. A root `package.json` script **`test:e2e`** that prepares everything it needs (builds, starts the server,
+   preferably with the demo mode of `@dramai/mock-providers` and never with real keys, and runs the tests) and
+   exits non-zero on failure. CI just runs `pnpm test:e2e`.
+2. **Playwright** as a devDependency of `@dramai/workspace` (CI runs
+   `pnpm --filter @dramai/workspace exec playwright install --with-deps chromium`). If another framework
+   is used, that step has to change too.
+3. Reports written to `playwright-report/` and `test-results/` (already in `.gitignore`); on failure CI
+   uploads them as an artifact.
+4. Only Linux and Chromium are needed, and no extra secrets.
 
-1. 根 `package.json` 里的 **`test:e2e`** 脚本：自己准备好所需的一切（构建、启动服务——建议用 `@dramai/mock-providers`
-   的演示模式，不要用真实 Key——并运行测试），失败时以非零码退出。CI 里就是 `pnpm test:e2e`。
-2. **Playwright** 作为 `@dramai/workspace` 的 devDependency（CI 会执行
-   `pnpm --filter @dramai/workspace exec playwright install --with-deps chromium`）。
-   用别的框架的话，需要同时改这一步。
-3. 报告输出到 `playwright-report/` 和 `test-results/`（已在 `.gitignore`），失败时 CI 会把它们作为 Artifact 上传。
-4. 只依赖 Linux + Chromium，不需要额外密钥。
-
-脚本一合并，这个 job 就自动开始真正运行，并计入 `CI passed`。
+As soon as the script is merged, the job starts running for real and counts towards `CI passed`.
