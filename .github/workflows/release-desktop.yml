@@ -104,21 +104,13 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-      # 构建矩阵。macOS 的 arm64 与 x64 各用自己的运行器（原生构建，不交叉编译）。
+      # 构建矩阵由 tooling/release 里的 RELEASE_TARGETS 生成（也是 release job 核对产物时用的同一份清单）。
+      # macOS 的 arm64 与 x64 各用自己的运行器（原生构建，不交叉编译）。
       - name: Plan build matrix
         id: plan
         run: |
-          matrix="$(node -p '
-            const include = [
-              { name: "mac-arm64", os: "macos-latest", family: "mac", arch: "arm64" },
-              { name: "mac-x64", os: "macos-15-intel", family: "mac", arch: "x64" },
-              { name: "win-x64", os: "windows-latest", family: "win", arch: "x64" },
-              { name: "linux-x64", os: "ubuntu-latest", family: "linux", arch: "x64" },
-            ]
-            JSON.stringify({ include })
-          ')"
-          echo "Build matrix: $matrix"
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            tooling/release/src/cli.ts matrix
 
   build:
     name: Desktop (${{ matrix.name }})
@@ -201,12 +193,32 @@ jobs:
       VERSION: ${{ needs.verify.outputs.version }}
       PRERELEASE: ${{ needs.verify.outputs.prerelease }}
     steps:
+      # 只检出 tooling/release（核对产物用的脚本），不带凭据。
+      - name: Checkout release tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: tooling/release
+          persist-credentials: false
+
+      # 运行器自带的 Node 可能低于 22.6，跑不了 --experimental-strip-types；版本与 .nvmrc 保持一致。
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
       - name: Download installers
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: desktop-*
           merge-multiple: true
           path: assets
+
+      # 发布前核对：每个系统的安装包都在，并且没有多余的文件。缺任何一个就失败，
+      # 不会发出一个少了某个系统的 Release。
+      - name: Verify the full set of installers
+        run: |
+          node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            tooling/release/src/cli.ts verify-release --dir assets --version "$VERSION"
 
       - name: Download release notes
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -259,6 +271,14 @@ jobs:
               exit 1
             fi
             echo "Draft release $TAG exists; refreshing its assets."
+            # 草稿里上次运行留下的、不在这次文件清单里的资源要删掉，否则会被一起发布出去
+            current="$(printf '%s\n' "${files[@]}" | xargs -n1 basename)"
+            for asset in $(gh release view "$TAG" --json assets --jq '.assets[].name'); do
+              if ! printf '%s\n' "$current" | grep -qxF "$asset"; then
+                echo "Removing stale asset $asset from the draft"
+                gh release delete-asset "$TAG" "$asset" --yes
+              fi
+            done
             gh release upload "$TAG" "${files[@]}" --clobber
             gh release edit "$TAG" "${flags[@]}"
           else

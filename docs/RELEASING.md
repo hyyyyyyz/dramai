@@ -187,9 +187,10 @@ The release workflow relies on what the desktop app delivers. The conventions ag
 - `pnpm desktop:dist` packages the current system, with output in `apps/desktop/release/`, and does not
   publish by itself (the workflow provides no `GH_TOKEN`).
 - Installers are named `dramai-<version>-<os>-<arch>.<extension>`, for example `dramai-0.5.0-mac-arm64.dmg`
-  and `dramai-0.5.0-beta.1-win-x64.exe`. For now the `<os>` part accepts `mac|macos|darwin`, `win|windows` and
-  `linux`, and the extension accepts `dmg zip exe msi AppImage deb rpm tar.gz`; files that do not match are not
-  uploaded and the log shows a warning.
+  and `dramai-0.5.0-beta.1-win-x64.exe`, with `<os>` exactly `mac`, `win` or `linux` and `<arch>` exactly `arm64` or
+  `x64`. The kinds each system must produce are listed in `tooling/release/src/assets.ts` and in the table below. A
+  missing installer, or a file that looks like an installer but is named differently (for example
+  `…-linux-x86_64.AppImage`), **fails the build job** with the expected file name in the error.
 - There is no automatic update, so the `latest*.yml` files and `.blockmap` files used by auto-update are
   **not uploaded** for now (the two macOS architectures would produce a `latest-mac.yml` with the same name
   and the merge has to be decided first). Extend `tooling/release/src/assets.ts` and `release-desktop.yml`
@@ -206,15 +207,21 @@ and writes these files to `apps/desktop/release/`:
 | Windows | `dramai-<version>-win-x64.exe` (installer) and `.zip` (portable)                                |
 | Linux   | `dramai-<version>-linux-x64.AppImage` and `.tar.gz`                                             |
 
-The release job collects exactly these (and fails if a system produced none); `.blockmap`, `builder-debug.yml`,
-`latest*.yml` and unpacked folders are ignored, and `SHA256SUMS.txt` is computed over the collected files. macOS Intel
-is built natively on a `macos-15-intel` runner, so no architecture flag is needed (cross-building it on an arm64
-runner would need `--arch x64`). No signing variables are passed.
+Each build job runs `collect`, which requires exactly the two files of its system, with exactly these names, and
+fails when one is missing or misnamed. `.blockmap` files, `builder-debug.yml`, `latest*.yml` and unpacked folders are
+never uploaded and never an error. The `release` job downloads every system's installers and runs `verify-release`
+first, which fails unless all eight files (four systems) are present and nothing else is, so a Release is never created
+from a partial set; only then does it compute `SHA256SUMS.txt` over them. The list of systems is `RELEASE_TARGETS` in
+`tooling/release/src/assets.ts`, and the build matrix is generated from it. When a draft Release already exists (a
+re-run), assets in it that are not in the new set are removed before publishing. macOS Intel is built natively on a
+`macos-15-intel` runner, so no architecture flag is needed (cross-building it on an arm64 runner would need
+`--arch x64`). No signing variables are passed.
 
-**Not known yet:** whether the Linux `tar.gz` target makes electron-builder download an extra tool, which would
-slow the job or fail it on a restricted network. Nobody has run `desktop:dist` on Linux yet. The dry run (Actions →
-Release desktop → Run workflow) builds every system, Linux included, without creating a Release, so it will show this
-before any tag is pushed; read the Linux job's log for download lines the first time.
+**Worth watching:** whether the Linux `tar.gz` target makes electron-builder download an extra tool, which would slow
+the first builds or fail them on a restricted network. A dry run (Actions → Release desktop → Run workflow) builds
+every system, Linux included, without creating a Release; read the Linux job's log for download lines. The `release`
+job itself (checksums, creating the Release) only runs for a pushed tag and has been checked by reading and by unit
+tests, not by running it.
 
 ## End-to-end tests
 
