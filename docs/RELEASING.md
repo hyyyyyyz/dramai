@@ -1,19 +1,20 @@
 # 发布流程
 
 dramai 全仓使用**同一个版本号**。推送形如 `v0.5.0` 的 tag，GitHub Actions 就会核对版本、跑一遍 CI、在
-macOS（Apple Silicon 和 Intel）与 Windows 上构建桌面安装包、生成校验和，然后创建 GitHub Release 并上传。
+macOS（Apple Silicon 和 Intel）、Windows 和 Linux 上构建桌面安装包、生成校验和，然后创建 GitHub Release 并上传。
+安装包**不签名**（见下文“不需要密钥”）。桌面端的另外两种安装形式（从源码运行、本地编译安装）不经过这条流水线。
 
 > 这份文档描述的工作流在 `.github/workflows/`。它们只有推送到 GitHub 之后才会运行；
 > 第一次真正发布之前，请先按下面的“演练”跑一遍。
 
 ## 工作流一览
 
-| 文件                  | 什么时候运行                                                         | 做什么                                                                                                                                                                 |
-| --------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`              | 推送到 `main` 或 `refactor/**`；任何拉取请求；手动；被发布工作流调用 | 版本一致性、格式、lint、类型检查（Linux）；测试（Linux Node 24 / Node 22.13、macOS、Windows）；构建；工作流静态检查（actionlint）；E2E（接入后）。汇总检查 `CI passed` |
-| `release-desktop.yml` | 推送 `v*.*.*` tag；手动（只构建，不发布）                            | 核对 tag → 跑 CI → 构建三个平台的安装包 → 校验和 → 创建 Release                                                                                                        |
-| `deploy.yml`          | 仅手动                                                               | 旧的 Pages 部署，已停用自动触发（原因写在文件头部），宣传页 `apps/site` 做好后换成它的部署                                                                             |
-| `dependabot.yml`      | 每周                                                                 | 更新 GitHub Actions（固定到 SHA）和 npm 依赖，新版本先冷却 7 天                                                                                                        |
+| 文件                  | 什么时候运行                                                         | 做什么                                                                                     |
+| --------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `ci.yml`              | 推送到 `main` 或 `refactor/**`；任何拉取请求；手动；被发布工作流调用 | 见 [CI.md](CI.md)                                                                          |
+| `release-desktop.yml` | 推送 `v*.*.*` tag；手动（只构建，不发布）                            | 核对 tag → 跑 CI → 构建四个平台的安装包 → 校验和 → 创建 Release                            |
+| `deploy.yml`          | 仅手动                                                               | 旧的 Pages 部署，已停用自动触发（原因写在文件头部），宣传页 `apps/site` 做好后换成它的部署 |
+| `dependabot.yml`      | 每周                                                                 | 更新 GitHub Actions（固定到 SHA）和 npm 依赖，新版本先冷却 7 天                            |
 
 自定义的组合步骤在 `.github/actions/setup/`（安装 pnpm 和 Node、缓存 pnpm store、安装依赖）。
 
@@ -39,7 +40,7 @@ macOS（Apple Silicon 和 Intel）与 Windows 上构建桌面安装包、生成�
    ```
 
 5. 在仓库的 **Actions → Release desktop** 看进度。全部通过后，Release 里有安装包、`SHA256SUMS.txt`，
-   说明里有更新日志、校验方法和每个平台的签名状态。
+   说明里有更新日志、未签名安装包怎么打开的固定文字和校验方法。
 
 正式版 tag 指向的提交必须在 `main` 上，否则工作流会失败并提示。
 
@@ -62,6 +63,30 @@ git tag v0.5.0-beta.1 && git push origin HEAD v0.5.0-beta.1
 安装包留在这次运行页面底部的 Artifacts 里（保留 7 天），**不会**创建 Release。第一次发布前、
 以及改动了打包配置之后都建议这样跑一遍。
 
+## Release 说明里的固定文字
+
+Release 说明 = `CHANGELOG.md` 的对应小节 + 一段固定文字 + 校验方法。固定文字讲未签名安装包在 macOS / Windows / Linux
+上怎么打开、需要自己安装 ffmpeg，写在 **`apps/desktop/release-notes-footer.md`**（由 desktop 会话维护，
+CI 在 verify 阶段把它带进发布流程）。文件不存在时使用一小段默认文字，日志里会有一条提示。
+
+## 第一次验证发布流程的最小步骤
+
+发布会在 GitHub 上公开创建一个 Release，验证前需要仓库所有者同意。最小、可清理的做法：
+
+1. 先**演练**：Actions → Release desktop → Run workflow（选分支）。不创建 Release，只检查构建和打包能不能跑通。
+2. 演练通过后，在要验证的分支上打一个**预发布** tag，例如：
+
+   ```bash
+   pnpm version:set 0.5.0-rc.1 && git commit -am "chore(release): v0.5.0-rc.1"
+   git tag v0.5.0-rc.1 && git push origin HEAD v0.5.0-rc.1
+   ```
+
+   预发布不要求在 `main` 上，也不会成为 “Latest”，CHANGELOG 里没有对应小节时用自动生成的说明。
+
+3. 看 Release 里是否有四个平台的安装包和 `SHA256SUMS.txt`，下载一个核对校验和。
+4. 验证完清理：`gh release delete v0.5.0-rc.1 --cleanup-tag --yes && git tag -d v0.5.0-rc.1`，
+   然后把版本号改回去（`pnpm version:set <原版本>`）。
+
 ## 出了问题怎么办
 
 | 情况                                                                  | 处理                                                                                                                                           |
@@ -79,8 +104,7 @@ git tag v0.5.0-beta.1 && git push origin HEAD v0.5.0-beta.1
 
 ## 需要在 GitHub 上配置什么
 
-工作流本身不需要任何必须配置的密钥——没有配置时安装包是**未签名**的，工作流会在日志里明确说明。
-下面按“建议做”的顺序列出。
+下面按“建议做”的顺序列出，全部是可选的加固，没有它们发布也能工作。
 
 ### 仓库设置（Settings）
 
@@ -97,30 +121,13 @@ git tag v0.5.0-beta.1 && git push origin HEAD v0.5.0-beta.1
 7. （可选）**Environments**：新建 `release` 环境并设置必需审批人，然后在 `release-desktop.yml` 的 `release` job
    里加一行 `environment: release`，发布前就需要人工点一下确认。
 
-### 仓库变量（Settings → Secrets and variables → Actions → Variables）
+### 不需要密钥
 
-| 变量                   | 作用                                                    |
-| ---------------------- | ------------------------------------------------------- |
-| `DRAMAI_RELEASE_LINUX` | 设为 `true` 时，发布也构建 Linux x64 安装包。默认不构建 |
+发布不需要任何密钥或变量：不签名，也不做公证。工作流只用自带的 `GITHUB_TOKEN`。
 
-### 密钥（Secrets，全部可选）
-
-没有配置时对应平台的安装包不签名，其余流程照常。名字对应 electron-builder 的环境变量
-（`CSC_LINK`、`CSC_KEY_PASSWORD`、`WIN_CSC_LINK`、`WIN_CSC_KEY_PASSWORD`、`APPLE_ID`、
-`APPLE_APP_SPECIFIC_PASSWORD`、`APPLE_TEAM_ID`），由工作流在构建前映射。
-
-| 密钥                           | 内容                                                                                    |
-| ------------------------------ | --------------------------------------------------------------------------------------- |
-| `MACOS_CERTIFICATE`            | “Developer ID Application” 证书导出的 `.p12`，做 base64：`base64 -i cert.p12 \| pbcopy` |
-| `MACOS_CERTIFICATE_PASSWORD`   | 导出 `.p12` 时设的密码                                                                  |
-| `APPLE_ID`                     | Apple ID 邮箱（公证用）                                                                 |
-| `APPLE_APP_SPECIFIC_PASSWORD`  | 在 appleid.apple.com 生成的 App 专用密码（公证用）                                      |
-| `APPLE_TEAM_ID`                | 开发者团队 ID（公证用）                                                                 |
-| `WINDOWS_CERTIFICATE`          | 代码签名证书 `.pfx` 的 base64                                                           |
-| `WINDOWS_CERTIFICATE_PASSWORD` | 证书密码                                                                                |
-
-macOS 签名和公证必须同时配置证书和三个 `APPLE_*`，只配证书得到的是“已签名但未公证”的包，Gatekeeper 仍会警告。
-需要 Apple 开发者账号（每年 99 美元）和 Windows 代码签名证书，见 `REFACTOR_PLAN.md` 的“需要用户决定或提供的”。
+以后要加签名时，只需在 `release-desktop.yml` 的 “Package desktop app” 步骤里把 electron-builder 的
+`CSC_LINK` / `CSC_KEY_PASSWORD`（Windows 用 `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD`，macOS 公证用 `APPLE_ID` /
+`APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID`）从 secrets 映射进 `env`，其余流程不用动。
 
 ## 版本工具
 
@@ -141,11 +148,11 @@ pnpm version:check --tag v0.5.0         # 同时要求 tag 对应仓库版本
 
 发布工作流依赖 `desktop` 会话交付的东西，约定见 `REFACTOR_PLAN.md`“阶段 6 的调整”：
 
-- `pnpm desktop:dist` 打包当前平台，产物在 `apps/desktop/release/`，不自行发布（工作流不提供 `GH_TOKEN`）。
+- `pnpm desktop:dist` 打包当前系统，产物在 `apps/desktop/release/`，不自行发布（工作流不提供 `GH_TOKEN`）。
 - 安装包命名 `dramai-<版本>-<系统>-<架构>.<扩展名>`，例如 `dramai-0.5.0-mac-arm64.dmg`、
   `dramai-0.5.0-beta.1-win-x64.exe`。“系统”目前接受 `mac|macos|darwin`、`win|windows`、`linux`，
   扩展名接受 `dmg zip exe msi AppImage deb rpm tar.gz`；不符合的文件不会上传，日志里会有警告。
-- 自动更新用的 `latest*.yml` 和 `.blockmap` 目前**不上传**（两个 macOS 架构会产生同名的 `latest-mac.yml`，
+- 不做自动更新，所以自动更新用的 `latest*.yml` 和 `.blockmap` 目前**不上传**（两个 macOS 架构会产生同名的 `latest-mac.yml`，
   需要先决定怎么合并）。做自动更新时再扩展 `tooling/release/src/assets.ts` 和 `release-desktop.yml`。
 
 ## E2E 接入约定
