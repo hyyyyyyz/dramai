@@ -282,6 +282,6 @@ describe('cli', () => {
     const r = run(['suggest', '--since', 'v0.4.0'])
     expect(r.code).toBe(0)
     expect(r.out).toContain('Suggestion: minor -> 0.6.0') // 0.x 的不兼容变更折算成次版本
-    expect(r.out).toContain('不兼容变更')
+    expect(r.out).toContain('Incompatible changes')
   })
 })

@@ -208,7 +208,7 @@ function main(argv: string[]): number {
       }
       if (s.breaking) {
         console.log(
-          'There are incompatible changes: the CHANGELOG needs a "不兼容变更" section that says what users must do.',
+          'There are incompatible changes: the CHANGELOG needs an "Incompatible changes" section (and "Upgrade notes") that says what users must do.',
         )
       }
       if (s.counts.unconventional > 0) {

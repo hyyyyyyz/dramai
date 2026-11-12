@@ -6,6 +6,140 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.5.0-beta.1] - 2026-11-11
+
+First beta of 0.5.0, a rewrite of dramai. It is **no longer a browser-only app**: the studio now runs
+on a local server on your own machine, which is what removes the browser's limits (CORS, storage
+quota, in-browser video encoding) and makes long-running work survive closing the tab.
+
+**This is a beta. Everything in it was verified with automated tests and with the built-in mock
+providers only. It has not been run against any real AI provider.** See "Known limitations".
+
+### Incompatible changes
+
+- **A local server is now required.** The workspace is no longer a static site that runs entirely in
+  the browser. Start it from a checkout of the repository (`pnpm install`, `pnpm build`, `pnpm webui`)
+  and open the printed address. Node.js 22.13 or newer is required, and the project now uses pnpm
+  instead of npm.
+- **Data from v0.4 does not appear automatically.** v0.4 kept projects in your browser's IndexedDB and
+  provider settings in localStorage; the new version cannot read either. Before the old app goes away,
+  open it and use Settings → export all as JSON. This beta can import that file through the API
+  (`POST /api/import/legacy`), but **there is no screen for it yet**.
+- **GitHub Pages no longer serves a usable workspace.** The workspace cannot work without the local
+  server, so the automatic Pages deployment has been turned off (it can only be run by hand), and a
+  landing page will replace the app there in a later release. The last browser-only version is
+  [v0.4.1](https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.1).
+- **API keys have moved.** They are no longer in the browser; the local server keeps them in
+  `secrets.json` in the data directory (default `~/.dramai`), readable only by your operating system
+  user and **not encrypted** in this beta. You need to enter your keys again.
+- **Video composition uses the ffmpeg installed on your machine** instead of the in-browser
+  ffmpeg.wasm. Install ffmpeg yourself; it is not bundled. Burned-in subtitles need an ffmpeg
+  built with libass.
+- **A different project structure.** A project is now project → episodes → scenes → shots, with a
+  library of characters, locations, props and costumes that shots refer to, instead of one flat list
+  of at most 12 shots.
+
+### Upgrade notes
+
+1. While you still can, open your existing v0.4 workspace and export a backup JSON; keep the file.
+2. Install Node.js 22.13+, pnpm and ffmpeg, then run the steps above to start the server. Data lives
+   in `~/.dramai` by default (`--data-dir` changes it).
+3. Add your providers again in Settings → Providers and use "test connection".
+4. To bring old projects over, send the backup file to `POST /api/import/legacy` (multipart field
+   `file`). Each old project becomes a new project with a single episode "第一集" and scene
+   "导入的镜头"; the aspect ratio is set to 16:9 and narration to "added in post", because v0.4 had
+   neither. Importing never changes existing projects, and importing the same old project twice is
+   skipped unless you ask for it.
+
+### Added
+
+- **Local server** (`@dramai/server`, with the typed contract in `@dramai/api`): about 90 routes,
+  live events over SSE, SQLite storage through Node's built-in `node:sqlite`, projects as folders
+  on disk (images and videos are ordinary files), and a task queue that survives restarts. It only
+  listens on `127.0.0.1` by default, checks the `Host` header, refuses cross-origin writes, locks
+  the data directory so two instances cannot write at once, and refuses to listen on any other
+  address without an access token.
+- **`dramai` launcher** (`pnpm webui`): starts the server, serves the workspace and opens the
+  browser. Options for port, host, data directory and token; `--version`; one-line startup errors.
+- **A rewritten workspace** on top of the API, with Chinese and English interfaces and light and dark
+  themes: project list and creation, project overview, materials and episode planning with streamed
+  output, a storyboard page grouped by scene, the asset library and asset detail pages, a
+  confirmation page for candidates found in the text, a confirmation step before batch generation,
+  provider settings with connection tests, and a task panel for queued, running and failed tasks.
+- **A story model that scales past one clip chain**: episodes, scenes and shots; characters,
+  locations, props and costumes as reusable assets that shots reference; a style chosen at project
+  creation (20 built-in style presets) and kept as a snapshot.
+- **Generation pipeline**: storyboard breakdown, asset reference sheets, shot images generated from
+  several reference images, and image-to-video. Every regeneration keeps the earlier versions
+  instead of overwriting them. When something upstream changes, downstream results are marked
+  outdated; nothing is regenerated automatically.
+- **Checks before spending money**: shots that refer to an unregistered asset or one without a
+  reference image are blocked, a batch either runs completely or not at all, a shot can have only
+  one video task in flight, and a cost estimate is computed from the model's price table.
+- **A task system built to avoid double charges**: separate lanes for text, image, video and audio
+  work, classified failures, and recovery after a restart. A video task that already has an upstream
+  task id resumes polling; one that does not is marked "submission unconfirmed" and is **never
+  resubmitted automatically**. Cancelling only affects tasks that are still queued.
+- **Provider protocols, run on the server so there is no CORS**: OpenAI-compatible chat, OpenAI
+  Images, Gemini image, Alibaba DashScope video, Volcengine video, Kling video, a generic video
+  protocol, and OpenAI-compatible text-to-speech. Adapters are pure functions that never touch the
+  network, model capabilities and prices live in a data file, and a missing capability fails with
+  an explanation instead of silently switching models. Prompts are data files too.
+- **Composition and export on the server** (no screens for them yet): native ffmpeg rendering with
+  the project's aspect ratio (9:16, 16:9 or 1:1), soft or burned-in subtitles, SRT and VTT, and an
+  asset package (videos, images, subtitles and a manifest in a zip) for editing elsewhere. ffmpeg
+  capabilities such as subtitle burn-in are detected rather than assumed.
+- **Import of v0.4 backups** (see Upgrade notes).
+- **Demo mode** (`pnpm demo`): a local mock of every provider type plus the server, with its own data
+  directory (`~/.dramai-demo`). No account, no key and no cost; the generated content is
+  placeholder content. Options simulate latency and failures.
+- **For contributors**: a pnpm monorepo (`apps/`, `packages/`, `tooling/`), shared TypeScript and ESLint
+  configs, CI on Linux, macOS and Windows, one version number for every package with a tool to
+  change it (`pnpm version:bump`), and the versioning rules in `docs/VERSIONING.md`.
+
+### Changed
+
+- The design system was redone (`@dramai/ui`): new brand marks, a light "storyboard paper" theme
+  and a dark "editing room" theme, self-hosted fonts and a new set of components.
+- Node.js engine range is now `>=22.13.0` (v0.4 refused Node 25).
+
+### Removed
+
+- The in-browser data layer (Dexie / IndexedDB), the in-browser ffmpeg.wasm, and the settings store
+  that kept API keys in localStorage.
+
+### In progress, not included in this version
+
+Listed so nothing here is mistaken for finished work:
+
+- The **desktop app** (Electron): run from source, build-and-install on your machine, and downloadable
+  installers.
+- The workspace screens for **composition (timeline), export**, and the remaining settings pages
+  (general, access, data, about). Their routes exist and show an "under development" page; the server
+  side already works.
+- A screen for **importing v0.4 backups**, narration/voice-over controls in the interface, and
+  writing a real JianYing draft (today the export is an asset package).
+- An npm package and a Docker image for the WebUI, the landing page, and automated browser-based
+  end-to-end tests.
+
+### Known limitations
+
+- **No real provider has been used with this version.** Every check so far used automated tests and
+  the mock providers. Request formats come from the providers' documentation and from what v0.4
+  learned in May 2026.
+- **The four presets are old data.** The DeepSeek, Seedream 5.0, Nano Banana and Wan2.2 Flash
+  presets (the image and video ones reach their models through the 302.AI relay) carry model ids, endpoints and prices last checked in May
+  2026; they may have changed. The other video models in the model data (Wan2.2 Plus, Wan2.5,
+  Wan2.7, Seedance 2.0 Fast) are listed from documentation only, and details such as multi-image
+  references and aspect ratios are marked unverified in the model data rather than assumed.
+- **Cost figures are estimates** from those price tables. The README's per-drama cost (about ¥10
+  versus ¥40–50) has still not been checked against a real run.
+- **Character consistency is not proven.** The multi-reference approach is implemented but has not been
+  compared with the old "locked reference image" on a real image service.
+- Only run on macOS during development. The automated tests are set up to run on Linux, macOS and
+  Windows, but that has not been exercised yet.
+- Unsigned, unpackaged: there are no installers in this version.
+
 ## [0.4.1] - 2026-05-04
 
 Hot patch surfaced by a real test: 302.AI exposes Nano Banana
@@ -167,7 +301,8 @@ own OpenAI-compatible LLM — all in the browser.
 - `vite.config.ts` configured with `base = "/dramai/"` for GitHub Pages.
 - Initial documentation: ARCHITECTURE.md, DEPLOYMENT.md, PROVIDERS.md, ROADMAP.md.
 
-[Unreleased]: https://github.com/hyyyyyyz/dramai/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/hyyyyyyz/dramai/compare/v0.5.0-beta.1...HEAD
+[0.5.0-beta.1]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0-beta.1
 [0.4.1]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.1
 [0.4.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.0
 [0.1.0]: https://github.com/hyyyyyyz/dramai/releases/tag/v0.1.0
