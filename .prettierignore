@@ -6,3 +6,6 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 public
 .github
+
+# desktop installer output
+apps/desktop/release
