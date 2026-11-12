@@ -48,7 +48,8 @@ export function collectAssets(options: {
   for (const name of readdirSync(dir).sort()) {
     if (!name.startsWith('dramai-') || !statSync(join(dir, name)).isFile()) continue
     if (pattern.test(name)) collected.push(name)
-    else ignored.push(name)
+    // electron-builder's differential-update maps: expected next to the installers, never uploaded, no warning
+    else if (!name.endsWith('.blockmap')) ignored.push(name)
   }
   if (collected.length === 0) {
     throw new Error(
