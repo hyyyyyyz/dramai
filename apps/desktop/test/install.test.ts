@@ -147,3 +147,16 @@ describe('icons come from the brand artwork', () => {
     expect(Math.abs(b.left - 0.09)).toBeLessThan(0.04)
   })
 })
+
+describe('failed-check diagnostics', () => {
+  it('readAppLogs returns the tail of the app log so CI shows why a check failed', async () => {
+    const { readAppLogs } = await import('../scripts/lib/cdp.mjs')
+    const dir = tmp()
+    mkdirSync(join(dir, 'logs'), { recursive: true })
+    writeFileSync(join(dir, 'logs', 'main.log'), Array.from({ length: 100 }, (_, i) => `line ${i}`).join('\n'))
+    const text = await readAppLogs(dir, 5)
+    expect(text).toContain('line 99')
+    expect(text).not.toContain('line 10\n')
+    expect(await readAppLogs(tmp(), 5)).toBeTypeOf('string')
+  })
+})

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
@@ -24,7 +24,7 @@ import { withToolDirs } from './ffmpeg.ts'
 import { createFileLogger } from './logger.ts'
 import { buildMenuTemplate } from './menu.ts'
 import { canOpenExternally, isAppUrl, isTrustedSender } from './navigation.ts'
-import { cleanText, parseFolderRequest, resolveProjectPath } from './native.ts'
+import { cleanText, isInside, parseFolderRequest, resolveProjectPath } from './native.ts'
 import { resolveDataDir } from './paths.ts'
 import { isPermissionAllowed } from './permissions.ts'
 import { chooseListenPort } from './ports.ts'
@@ -44,6 +44,8 @@ const devUrl = process.env.DRAMAI_DESKTOP_DEV_URL // 开发形态：窗口加载
 const isDev = Boolean(devUrl)
 const repo = repoSlug(pkg.repository.url) ?? 'hyyyyyyz/dramai'
 const PARTITION = 'persist:dramai'
+/** Set by the smoke / install self-test: no informational dialogs (they would wait for a click on a headless runner). */
+const quiet = process.env.DRAMAI_DESKTOP_QUIET === '1'
 const WINDOW_ICON = join(distDir, 'icons', 'window.png')
 const APP_ID = 'io.github.hyyyyyyz.dramai'
 /** source = run from the repo; local = built and installed on this machine; package = a downloaded installer. */
@@ -338,7 +340,7 @@ async function runUpdateCheck(manual: boolean): Promise<void> {
 }
 
 function scheduleUpdateCheck(): void {
-  if (isDev || !config.get().checkForUpdates) return
+  if (isDev || quiet || !config.get().checkForUpdates) return
   const last = config.get().lastUpdateCheck ?? 0
   if (Date.now() - last < 6 * 60 * 60 * 1000) return // 对 GitHub 的匿名接口客气一点
   setTimeout(() => void runUpdateCheck(false), 8_000).unref()
@@ -376,7 +378,7 @@ async function showFfmpegHelp(automatic: boolean): Promise<void> {
 }
 
 async function maybeWarnAboutFfmpeg(): Promise<void> {
-  if (config.get().ffmpegNoticeDismissed) return
+  if (quiet || config.get().ffmpegNoticeDismissed) return
   if ((await ffmpegFound()) === false) await showFfmpegHelp(true)
 }
 
@@ -486,6 +488,13 @@ function registerIpc(): void {
     const v = (typeof arg === 'object' && arg !== null ? arg : {}) as Record<string, unknown>
     const full = resolveProjectPath(state.dataDir, v.projectId, v.path)
     if (!full || !existsSync(full)) return false
+    // A symlink / junction inside the project folder must not lead outside it.
+    try {
+      const realBase = realpathSync(resolveProjectPath(state.dataDir, v.projectId, undefined) ?? '')
+      if (!isInside(realBase, realpathSync(full)) && realpathSync(full) !== realBase) return false
+    } catch {
+      return false
+    }
     if (v.path === undefined || v.path === '') void shell.openPath(full)
     else shell.showItemInFolder(full)
     return true
@@ -621,7 +630,7 @@ async function main(): Promise<void> {
     }
   }
 
-  if (state.secretMode === 'plain' && !config.get().plainSecretsNoticeShown) {
+  if (state.secretMode === 'plain' && !config.get().plainSecretsNoticeShown && !quiet) {
     config.update({ plainSecretsNoticeShown: true })
     void dialog.showMessageBox({
       type: 'info',

@@ -1,12 +1,13 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { delimiter, join, sep } from 'node:path'
+import * as path from 'node:path'
+import { delimiter, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ConfigStore } from '../src/main/config.ts'
 import { withToolDirs } from '../src/main/ffmpeg.ts'
 import { readDistribution } from '../src/main/distribution.ts'
 import { buildMenuTemplate } from '../src/main/menu.ts'
-import { cleanText, parseFolderRequest, resolveProjectPath } from '../src/main/native.ts'
+import { cleanText, isInside, parseFolderRequest, resolveProjectPath } from '../src/main/native.ts'
 import { resolveDataDir } from '../src/main/paths.ts'
 import {
   detectLang,
@@ -90,17 +91,55 @@ describe('ffmpeg: system install', () => {
 })
 
 describe('native bridge argument checks', () => {
-  const data = join(sep, 'data')
-  it('resolves files inside the project folder only', () => {
-    expect(resolveProjectPath(data, 'proj_1', 'images/a.png')).toBe(
-      join(data, 'projects', 'proj_1', 'images', 'a.png'),
-    )
-    expect(resolveProjectPath(data, 'proj_1', undefined)).toBe(join(data, 'projects', 'proj_1'))
-    for (const bad of ['../x', 'a/../../x', '/etc/passwd', 'a\\b', 'a//b', './a', 'a\0b'])
-      expect(resolveProjectPath(data, 'proj_1', bad)).toBeUndefined()
-    for (const id of ['../x', 'a/b', '', 5, undefined, 'a b'])
-      expect(resolveProjectPath(data, id, 'a')).toBeUndefined()
+  const posixData = '/data'
+  const winData = 'D:\\data'
+  const bad = ['../x', 'a/../../x', '/etc/passwd', 'a\\b', 'a//b', './a', 'a\0b', '', 'a/']
+
+  it('POSIX: resolves files inside the project folder only', () => {
+    const r = (id: unknown, p: unknown) => resolveProjectPath(posixData, id, p, path.posix)
+    expect(r('proj_1', 'images/a.png')).toBe('/data/projects/proj_1/images/a.png')
+    expect(r('proj_1', undefined)).toBe('/data/projects/proj_1')
+    for (const p of bad.filter((x) => x !== '')) expect(r('proj_1', p)).toBeUndefined()
+    for (const id of ['../x', 'a/b', '', 5, undefined, 'a b']) expect(r(id, 'a')).toBeUndefined()
   })
+
+  it('Windows: drive letters, backslashes, UNC / device paths, alternate streams and case tricks cannot escape', () => {
+    const r = (id: unknown, p: unknown) => resolveProjectPath(winData, id, p, path.win32)
+    expect(r('proj_1', 'images/a.png')).toBe('D:\\data\\projects\\proj_1\\images\\a.png')
+    expect(r('proj_1', undefined)).toBe('D:\\data\\projects\\proj_1')
+    const attacks = [
+      ...bad.filter((x) => x !== ''),
+      'C:/Windows/System32',
+      'C:',
+      'c:/x',
+      '//server/share/x',
+      '\\\\server\\share\\x',
+      '\\\\?\\C:\\x',
+      'a/b:stream',
+      'file.txt:$DATA',
+      'a/CON:',
+      'x/..\\..\\y',
+      'name.',
+      'name ',
+      'a/b*',
+      'a?b',
+      '<x>',
+    ]
+    for (const p of attacks) expect(r('proj_1', p), p).toBeUndefined()
+    for (const id of ['..\\x', 'C:', 'a/b', 'a\\b', ''])
+      expect(r(id, 'a'), String(id)).toBeUndefined()
+  })
+
+  it('containment is case-insensitive on Windows and exact on POSIX', () => {
+    expect(isInside('D:\\Data\\p', 'd:\\data\\p\\x', path.win32)).toBe(true)
+    expect(isInside('D:\\Data\\p', 'D:\\Data\\p', path.win32)).toBe(false) // the folder itself is not "inside"
+    expect(isInside('D:\\Data\\p', 'D:\\Data\\p2\\x', path.win32)).toBe(false) // look-alike prefix
+    expect(isInside('D:\\Data\\p', 'E:\\Data\\p\\x', path.win32)).toBe(false) // other drive
+    expect(isInside('/a/p', '/a/p/x', path.posix)).toBe(true)
+    expect(isInside('/a/p', '/a/P/x', path.posix)).toBe(false)
+    expect(isInside('/a/p', '/a/p2/x', path.posix)).toBe(false)
+  })
+
   it('cleans notification text', () => {
     expect(cleanText('  hi\u0000 there  ', 50)).toBe('hi there')
     expect(cleanText('x'.repeat(500), 10)).toHaveLength(10)

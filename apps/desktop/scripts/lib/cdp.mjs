@@ -34,7 +34,7 @@ export async function launch({ command, args = [], env = {}, userDataDir, cwd })
     [...args, `--user-data-dir=${userDataDir}`, '--remote-debugging-port=0'],
     {
       cwd,
-      env: { ...process.env, ...env, ELECTRON_ENABLE_LOGGING: '1' },
+      env: { ...process.env, ...env, ELECTRON_ENABLE_LOGGING: '1', DRAMAI_DESKTOP_QUIET: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
   )
@@ -114,7 +114,46 @@ export const apiCall = (page, method, path, body) =>
     return { status: res.status, body: json }
   })()`)
 
-export async function terminate(app, signal = 'SIGTERM', timeoutMs = 20_000) {
-  app.child.kill(signal)
-  return Promise.race([app.exit, sleep(timeoutMs).then(() => ({ timeout: true }))])
+/**
+ * Ask the app to quit the way a user would, then wait for it to exit.
+ * POSIX: SIGTERM (the app quits cleanly). Windows has no signals: Node's kill() there is TerminateProcess, which
+ * skips the app's shutdown (the data-dir lock would stay behind), so close every window through the debugging
+ * protocol instead; on Windows closing the last window quits the app.
+ */
+export async function terminate(app, timeoutMs = 20_000) {
+  if (process.platform === 'win32') {
+    try {
+      const { webSocketDebuggerUrl } = await (
+        await fetch(`http://127.0.0.1:${app.port}/json/version`)
+      ).json()
+      const ws = new WebSocket(webSocketDebuggerUrl)
+      await new Promise((resolve, reject) => {
+        ws.onopen = resolve
+        ws.onerror = reject
+      })
+      ws.send(JSON.stringify({ id: 1, method: 'Browser.close' }))
+    } catch {
+      app.child.kill()
+    }
+  } else {
+    app.child.kill('SIGTERM')
+  }
+  const result = await Promise.race([app.exit, sleep(timeoutMs).then(() => ({ timeout: true }))])
+  if (result.timeout) app.child.kill('SIGKILL')
+  return result
+}
+
+/** The tail of the app's own log file(s), for a failed check (CI logs otherwise show nothing about why). */
+export async function readAppLogs(userDataDir, lines = 60) {
+  const candidates = [
+    join(userDataDir, 'logs', 'main.log'),
+    join(process.env.HOME ?? '', 'Library', 'Logs', 'Dramai', 'main.log'),
+  ]
+  const out = []
+  for (const file of candidates) {
+    if (!existsSync(file)) continue
+    const text = (await readFile(file, 'utf8')).split('\n').slice(-lines).join('\n')
+    out.push(`--- ${file} ---\n${text}`)
+  }
+  return out.join('\n') || '(no app log file found)'
 }
