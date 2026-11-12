@@ -25,6 +25,7 @@ import { createFileLogger } from './logger.ts'
 import { buildMenuTemplate } from './menu.ts'
 import { canOpenExternally, isAppUrl, isTrustedSender } from './navigation.ts'
 import { cleanText, isInside, parseFolderRequest, resolveProjectPath } from './native.ts'
+import { serverEntryPath } from './entry-path.ts'
 import { resolveDataDir } from './paths.ts'
 import { isPermissionAllowed } from './permissions.ts'
 import { chooseListenPort } from './ports.ts'
@@ -630,9 +631,15 @@ async function main(): Promise<void> {
   }
 
   const env = withToolDirs(process.env as Record<string, string | undefined>)
+  const serverEntry = serverEntryPath({
+    packaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    distDir,
+  })
+  log('info', `server entry: ${serverEntry}`)
   host = new ServerHost({
     fork: () =>
-      utilityProcess.fork(join(distDir, 'server', 'server.mjs'), [], {
+      utilityProcess.fork(serverEntry, [], {
         serviceName: 'dramai-server',
         stdio: 'pipe',
         env: env as Record<string, string>,

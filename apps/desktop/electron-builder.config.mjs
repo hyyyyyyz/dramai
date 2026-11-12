@@ -30,6 +30,10 @@ export default {
   extraMetadata: { dramai: { distribution } },
   afterSign: join(root, 'scripts/ad-hoc-sign.mjs'),
   asar: true,
+  // The server script and the data folder (prompts, models, the subtitle font) live outside app.asar: ffmpeg reads the
+  // font as a plain file and cannot open anything inside the archive. The server is started from the unpacked copy
+  // (src/main/entry-path.ts), so its `../data/` is a real folder.
+  asarUnpack: ['dist/server/**', 'dist/data/**'],
   npmRebuild: false,
   publish: null,
   compression: 'normal',
