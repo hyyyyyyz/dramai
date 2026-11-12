@@ -7,8 +7,7 @@
 
 **English** · [简体中文](./README_CN.md)
 
-[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE)
-[![Version](https://img.shields.io/github/package-json/v/hyyyyyyz/dramai?color=DF500C&label=version)](./CHANGELOG.md)
+[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![Version](https://img.shields.io/github/package-json/v/hyyyyyyz/dramai?color=DF500C&label=version)](./CHANGELOG.md)
 
 </div>
 
@@ -46,15 +45,13 @@ Open <http://127.0.0.1:8787>. Create a project, upload a short story, plan episo
 
 ## What is different
 
-|                                         |                                                                                                                                                                                                                                                                    |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Local, with your keys**               | A server on `127.0.0.1` does all the work. Projects are folders of ordinary files plus a SQLite database. Provider requests are made by that server, so there is no CORS limit and no relay in between.                                                            |
-| **Long texts and serials**              | A project holds episodes, episodes hold scenes, scenes hold shots. Long texts are split into episodes by chapter.                                                                                                                                                  |
-| **A reusable library**                  | Characters, locations, props and costumes are assets that shots refer to. Each asset has one reference sheet that every shot using it is generated from. The visual style is chosen once, when the project is created.                                             |
-| **Checks before paid generation**       | Shots that refer to an unregistered asset, or one without a reference image, are blocked. A batch runs completely or not at all, a shot has at most one video task in flight, and a cost estimate from the model's price table is shown before you confirm.        |
-| **A task queue that survives restarts** | Closing the browser does not stop work. After a restart, a video task that has an upstream task id resumes polling. One without it is marked "submission unconfirmed" and is never resubmitted automatically. Cancelling only affects tasks that are still queued. |
-| **Versions kept**                       | Regenerating adds a version and does not overwrite the previous one. When something upstream changes, what depends on it is marked out of date, and nothing is regenerated on its own.                                                                             |
-| **Native ffmpeg composition**           | The cut is rendered with the ffmpeg installed on your machine, in 9:16, 16:9 or 1:1, with narration voice, soft or burned-in subtitles, SRT and VTT, and an asset package for editing elsewhere.                                                                   |
+- **Local, with your keys.** A server on `127.0.0.1` does all the work. Projects are folders of ordinary files plus a SQLite database. Provider requests are made by that server, so there is no CORS limit and no relay in between.
+- **Long texts and serials.** A project holds episodes, episodes hold scenes, scenes hold shots. Long texts are split into episodes by chapter.
+- **A reusable library.** Characters, locations, props and costumes are assets that shots refer to. Each asset has one reference sheet that every shot using it is generated from. The visual style is chosen once, when the project is created.
+- **Checks before paid generation.** Shots that refer to an unregistered asset, or one without a reference image, are blocked. A batch runs completely or not at all, a shot has at most one video task in flight, and a cost estimate from the model's price table is shown before you confirm.
+- **A task queue that survives restarts.** Closing the browser does not stop work. After a restart, a video task that has an upstream task id resumes polling. One without it is marked "submission unconfirmed" and is never resubmitted automatically. Cancelling only affects tasks that are still queued.
+- **Versions kept.** Regenerating adds a version and does not overwrite the previous one. When something upstream changes, what depends on it is marked out of date, and nothing is regenerated on its own.
+- **Native ffmpeg composition.** The cut is rendered with the ffmpeg installed on your machine, in 9:16, 16:9 or 1:1, with narration voice, soft or burned-in subtitles, SRT and VTT, and an asset package for editing elsewhere.
 
 The workspace speaks English, Simplified Chinese and Traditional Chinese, in a light and a dark theme.
 
@@ -113,12 +110,10 @@ In words: source text → episodes → scenes → shots → shot images → shot
 
 ## Run it
 
-| Form                                           | Command                | Notes                                                                                                                                                                                                   |
-| ---------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **WebUI**                                      | `pnpm webui`           | Starts the server, serves the workspace and opens your browser.                                                                                                                                         |
-| **Desktop, run from source**                   | `pnpm desktop:dev`     | An Electron window around the same server and workspace.                                                                                                                                                |
-| **Desktop, build and install on your machine** | `pnpm desktop:install` | Builds the app locally and installs it for the current user. No certificate and no download warnings, because the app is made on your machine. `pnpm desktop:uninstall` removes it and keeps your data. |
-| **Desktop, installer**                         | none yet               | Installers for macOS, Windows and Linux are built by the release workflow and will be attached to a GitHub release once the first beta is published. They are unsigned.                                 |
+- **WebUI**: `pnpm webui`. Starts the server, serves the workspace and opens your browser.
+- **Desktop, run from source**: `pnpm desktop:dev`. An Electron window around the same server and workspace.
+- **Desktop, build and install on your machine**: `pnpm desktop:install`. Builds the app locally and installs it for the current user. No certificate and no download warnings, because the app is made on your machine. `pnpm desktop:uninstall` removes it and keeps your data.
+- **Desktop, installer**: no installer yet. Installers for macOS, Windows and Linux are built by the release workflow and will be attached to a GitHub release once the first beta is published. They are unsigned.
 
 Everything starts from a checkout, with Node.js 22.13+, pnpm 9 and ffmpeg:
 
@@ -156,11 +151,22 @@ The desktop app keeps your data in your user folder (for example `~/Library/Appl
 
 ## Status
 
-| Works today                                                                                                                                                                                                                                                                                                                                      | Not verified                                                                                                                                                                                                                      | Not released                                                                                              |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| The whole workflow runs end to end in demo mode: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export. Browser tests (Playwright) cover that path, a failed task being resumed, the English interface and keyboard-only use. The desktop app passes its checks on macOS. | Any real AI provider: the four provider presets carry model ids and prices last checked in May 2026. The desktop app on Windows and Linux. CI on all three systems is still being fixed. API keys are not encrypted in the WebUI. | Installers, an npm package, a Docker image and a landing page. GitHub Pages no longer serves a workspace. |
+**Works today**
 
-On the desktop app: on Linux, CI builds and installs it; on Windows it builds and installs, but the installed app has not yet passed the launch check in CI. Treat both as untested.
+- The whole workflow runs end to end in demo mode: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export.
+- Browser tests (Playwright) cover that path, a failed task being resumed, the English interface and keyboard-only use.
+- The desktop app passes its checks on macOS.
+
+**Not verified**
+
+- Any real AI provider. The four provider presets carry model ids and prices last checked in May 2026.
+- The desktop app on Windows and Linux. On Linux, CI builds and installs it; on Windows it builds and installs, but the installed app has not yet passed the launch check in CI. Treat both as untested.
+- CI on all three systems is still being fixed.
+- API keys are not encrypted in the WebUI.
+
+**Not released**
+
+- Installers, an npm package, a Docker image and a landing page. GitHub Pages no longer serves a workspace.
 
 Known limits: transitions are hard cuts, there is a single music track, and the in-browser preview leaves out subtitles, music and transitions. Setting up providers (language model, image, video and voice) will be documented separately; until then, Settings → Providers in the app lists the presets and can test a connection. The full list is in the [changelog](./CHANGELOG.md).
 
@@ -170,13 +176,11 @@ v0.4 was a browser-only app and kept its data inside the browser, so the new ver
 
 ## Documentation
 
-|                                                                                                                                                                                               |                                                                      |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| [CHANGELOG.md](./CHANGELOG.md)                                                                                                                                                                | What `0.5.0-beta.1` contains, incompatible changes and upgrade notes |
-| [apps/webui](./apps/webui/README.md) · [apps/desktop](./apps/desktop/README.md)                                                                                                               | Starting the server, and the three desktop forms                     |
-| [packages/mock-providers](./packages/mock-providers/README.md)                                                                                                                                | Demo mode and the simulated providers                                |
-| [packages/server](./packages/server/README.md) · [packages/api](./packages/api/README.md) · [packages/core](./packages/core/README.md) · [packages/workspace](./packages/workspace/README.md) | The local server, its typed API, the engine and the workspace        |
-| [docs/VERSIONING.md](./docs/VERSIONING.md) · [docs/RELEASING.md](./docs/RELEASING.md) · [docs/CI.md](./docs/CI.md)                                                                            | Version numbers, releasing, continuous integration                   |
+- [CHANGELOG.md](./CHANGELOG.md): What `0.5.0-beta.1` contains, incompatible changes and upgrade notes
+- [apps/webui](./apps/webui/README.md) · [apps/desktop](./apps/desktop/README.md): Starting the server, and the three desktop forms
+- [packages/mock-providers](./packages/mock-providers/README.md): Demo mode and the simulated providers
+- [packages/server](./packages/server/README.md) · [packages/api](./packages/api/README.md) · [packages/core](./packages/core/README.md) · [packages/workspace](./packages/workspace/README.md): The local server, its typed API, the engine and the workspace
+- [docs/VERSIONING.md](./docs/VERSIONING.md) · [docs/RELEASING.md](./docs/RELEASING.md) · [docs/CI.md](./docs/CI.md): Version numbers, releasing, continuous integration
 
 The architecture, provider and deployment guides in `docs/` still describe v0.4 and are being rewritten.
 
