@@ -33,7 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "catalog:",
-    "tailwind-merge": "^3.5.0",
+    "tailwind-merge": "^3.7.0",
     "tailwindcss": "catalog:",
     "tailwindcss-animate": "^1.0.7"
   },
@@ -44,19 +44,19 @@
   "devDependencies": {
     "@dramai/eslint-config": "workspace:*",
     "@dramai/tsconfig": "workspace:*",
-    "@tailwindcss/vite": "^4.2.4",
+    "@tailwindcss/vite": "^4.3.4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.9",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@vitejs/plugin-react": "^6.2.1",
     "eslint": "catalog:",
     "jsdom": "^31.0.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
-    "vite": "^8.0.10",
+    "vite": "^8.3.6",
     "vitest": "catalog:"
   }
 }

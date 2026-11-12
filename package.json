@@ -53,6 +53,6 @@
     "desktop:dist": "pnpm --filter @dramai/desktop dist"
   },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "prettier": "^3.9.10"
   }
 }
