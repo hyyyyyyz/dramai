@@ -335,7 +335,12 @@ export function requireFeature(caps: FfmpegCapabilities, feature: MediaFeature):
 // === 媒体信息 ===
 
 export interface MediaInfo {
+  /** The container's duration: the end of its longest stream. */
   durationSec?: number
+  /** The video stream's own duration (ffprobe only). */
+  videoDurationSec?: number
+  /** The audio stream's own duration (ffprobe only). */
+  audioDurationSec?: number
   hasVideo: boolean
   hasAudio: boolean
   width?: number
@@ -391,8 +396,14 @@ export function parseFfprobeJson(json: string): MediaInfo {
     const [n, d] = fr.split('/').map(Number)
     if (d) fps = n / d
   }
+  const streamSec = (stream: FfprobeStream | undefined): number | undefined => {
+    const n = stream?.duration === undefined ? Number.NaN : Number(stream.duration)
+    return Number.isFinite(n) ? n : undefined
+  }
   return {
     durationSec: duration !== undefined && Number.isFinite(duration) ? duration : undefined,
+    videoDurationSec: streamSec(video),
+    audioDurationSec: streamSec(audio),
     hasVideo: video !== undefined,
     hasAudio: audio !== undefined,
     width: video?.width,

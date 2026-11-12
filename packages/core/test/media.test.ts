@@ -5,6 +5,7 @@ import { basename, dirname, join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   buildSubtitlesFilter,
+  buildNormalizeArgs,
   burnSubtitles,
   composeSequence,
   concatClips,
@@ -101,6 +102,62 @@ describe('ffmpeg output parsing (no binary needed)', () => {
     expect(f).toContain('FontName=Noto Sans CJK SC')
     expect(f).toContain('FontSize=16')
     expect(buildSubtitlesFilter('/x.srt')).not.toContain('fontsdir')
+  })
+})
+
+describe('normalized clip length: one rule, enforced on both streams (no binary needed)', () => {
+  const caps = { videoEncoder: 'libx264' } as FfmpegCapabilities
+  const silent = { hasVideo: true, hasAudio: false, durationSec: 1, videoDurationSec: 1 }
+  const withAudio = {
+    hasVideo: true,
+    hasAudio: true,
+    durationSec: 1.02,
+    videoDurationSec: 1,
+    audioDurationSec: 1.02,
+  }
+  const arg = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
+  const base = { input: 'in.mp4', output: 'out.mp4', aspectRatio: '9:16' as const, shortSide: 360 }
+
+  it('never uses -shortest: the length is given as -t, the silence source is finite, audio is padded to it', () => {
+    const args = buildNormalizeArgs(caps, base, silent)
+    expect(args).not.toContain('-shortest')
+    // the silence source is bounded by its own -t, placed before its -i
+    const anull = args.indexOf('anullsrc=channel_layout=stereo:sample_rate=48000')
+    expect(args.slice(anull - 5, anull - 2)).toEqual(['-t', '1', '-f'])
+    expect(arg(args, '-af')).toBe('apad=whole_dur=1')
+    // and the output is cut at the same length
+    expect(args[args.lastIndexOf('-t') + 1]).toBe('1')
+  })
+
+  it('follows the picture, not the container: audio longer than video does not make the clip longer', () => {
+    const args = buildNormalizeArgs(caps, base, withAudio)
+    expect(args[args.lastIndexOf('-t') + 1]).toBe('1')
+    expect(arg(args, '-af')).toBe('apad=whole_dur=1')
+  })
+
+  it('is a whole number of frames, and honours trim and hold', () => {
+    const odd = { ...silent, videoDurationSec: 1.013, durationSec: 1.013 }
+    expect(buildNormalizeArgs(caps, base, odd).at(-3)).toBe('-movflags') // sanity: -movflags is last but one pair
+    const at = (opts: object, info = silent, fps = 24) => {
+      const a = buildNormalizeArgs(caps, { ...base, fps, ...opts }, info)
+      return Number(a[a.lastIndexOf('-t') + 1])
+    }
+    expect(at({}, odd)).toBeCloseTo(1.0 + 0, 1) // 1.013 s at 24 fps = 24.3 frames -> 24 frames
+    expect(at({}, odd) * 24).toBeCloseTo(Math.round(at({}, odd) * 24), 9)
+    expect(at({ trimInSec: 0.25 })).toBeCloseTo(0.75, 6)
+    expect(at({ trimOutSec: 0.5 })).toBeCloseTo(0.5, 6)
+    expect(at({ trimInSec: 0.25, trimOutSec: 0.5 })).toBeCloseTo(0.25, 6)
+    expect(at({ trimOutSec: 5 })).toBeCloseTo(1, 6) // cannot be longer than the source
+    expect(at({ holdSec: 0.5 })).toBeCloseTo(1.5, 6)
+    expect(arg(buildNormalizeArgs(caps, { ...base, holdSec: 0.5 }, silent), '-af')).toBe(
+      'apad=whole_dur=1.5',
+    )
+  })
+
+  it('falls back to the old behaviour only when the source has no known duration', () => {
+    const args = buildNormalizeArgs(caps, base, { hasVideo: true, hasAudio: false })
+    expect(args).toContain('-shortest')
+    expect(args).not.toContain('apad=whole_dur=1')
   })
 })
 
@@ -383,6 +440,55 @@ realFfmpeg('native ffmpeg (real binary, lavfi test sources)', () => {
       expect(await meanVolume(out, 1.15, 0.7)).toBeLessThan(-70)
       expect(await meanVolume(out, 2.2, 0.6)).toBeGreaterThan(-40)
     })
+
+    it('a long cut keeps audio and picture the same length: no clip stretches, nothing accumulates', async () => {
+      // twelve clips of every kind: with sound, silent, other frame rates and sizes, trimmed, held; each is checked on
+      // its own and the whole cut is checked against their sum
+      const sources = ['a_audio.mp4', 'b_silent.mp4', 'c_square.mp4']
+      const tweaks = [
+        {},
+        { trimInSec: 0.2, trimOutSec: 0.8 },
+        { holdSec: 0.4 },
+        { trimOutSec: 0.5 },
+      ]
+      const clips: string[] = []
+      const expected: number[] = []
+      for (let i = 0; i < 12; i++) {
+        const out = f(`long_${i}.mp4`)
+        const tweak = tweaks[i % tweaks.length]!
+        const info = await normalizeClip(env, {
+          input: f(sources[i % sources.length]!),
+          output: out,
+          aspectRatio: '9:16',
+          shortSide: 180,
+          ...tweak,
+        })
+        // one AAC frame (1024 samples at 48 kHz = 21.3 ms) is the finest the audio can be cut
+        const v = info.videoDurationSec!
+        const a = info.audioDurationSec!
+        expect(Math.abs(v - a), `clip ${i}: video ${v}, audio ${a}`).toBeLessThanOrEqual(0.025)
+        expect(a, `clip ${i}: audio must not run past the picture`).toBeLessThanOrEqual(v + 0.025)
+        expect(
+          info.durationSec!,
+          `clip ${i}: the container follows the picture`,
+        ).toBeLessThanOrEqual(v + 0.025)
+        clips.push(out)
+        expected.push(v)
+      }
+      const res = await composeSequence(env, {
+        clips,
+        aspectRatio: '9:16',
+        shortSide: 180,
+        output: f('long_cut.mp4'),
+      })
+      const sum = expected.reduce((x, y) => x + y, 0)
+      const info = res.info
+      // the cut is the sum of its parts, to within a frame: no clip pushes the next one later
+      expect(Math.abs(info.videoDurationSec! - sum)).toBeLessThanOrEqual(0.05)
+      // and sound ends with the picture, to within an AAC frame, however many clips were joined
+      expect(Math.abs(info.audioDurationSec! - info.videoDurationSec!)).toBeLessThanOrEqual(0.05)
+      expect(info.durationSec!).toBeLessThanOrEqual(sum + 0.05)
+    }, 120_000)
 
     it('uses the project aspect ratio for 16:9 and 1:1 as well', async () => {
       const wide = await composeSequence(env, {

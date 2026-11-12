@@ -49,13 +49,24 @@ export interface NormalizeOptions {
  */
 export async function normalizeClip(env: RenderEnv, opts: NormalizeOptions): Promise<MediaInfo> {
   requireFeature(env.caps, 'h264')
+  const info = await probeMedia(env.bins, opts.input)
+  if (!info.hasVideo) throw new Error(`没有视频流：${opts.input}`)
+  const args = buildNormalizeArgs(env.caps, opts, info)
+  await runFfmpeg(env.bins, args, { signal: env.signal })
+  return probeMedia(env.bins, opts.output)
+}
+
+/** The ffmpeg arguments of {@link normalizeClip} (separate so the duration rules can be tested without running ffmpeg). */
+export function buildNormalizeArgs(
+  caps: FfmpegCapabilities,
+  opts: NormalizeOptions,
+  info: MediaInfo,
+): string[] {
   const { width, height } = resolveOutputSize({
     aspectRatio: opts.aspectRatio,
     resolution: opts.shortSide ?? 1080,
     step: 2,
   })
-  const info = await probeMedia(env.bins, opts.input)
-  if (!info.hasVideo) throw new Error(`没有视频流：${opts.input}`)
   const fps = opts.fps ?? 24
   const hold = Math.max(0, opts.holdSec ?? 0)
   const vf = [
@@ -72,21 +83,45 @@ export async function normalizeClip(env: RenderEnv, opts: NormalizeOptions): Pro
   if (opts.trimOutSec !== undefined) {
     inArgs.push('-t', String(Math.max(0.04, opts.trimOutSec - (opts.trimInSec ?? 0))))
   }
+  // The length of the normalized clip, decided here and enforced on BOTH streams. It follows the picture (the video
+  // stream, not the container, whose duration is the longer of the two streams), trimmed and extended as asked, and
+  // is a whole number of frames. Audio is padded with silence up to it and cut at it. Never rely on `-shortest` for
+  // this: with an endless silence source (`anullsrc`) the muxer decides which stream is "shortest" by how far each
+  // encoder has got, so under load (a busy CI machine, ffmpeg 8 on Linux) the audio ran up to ~0.6 s past the
+  // picture; the concat demuxer then shifts every later clip by that much, the cut grows and the sound drifts.
+  const sourceSec = info.videoDurationSec ?? info.durationSec
+  let target: number | undefined
+  if (sourceSec !== undefined) {
+    const from = opts.trimInSec ?? 0
+    const to = Math.min(sourceSec, opts.trimOutSec ?? sourceSec)
+    const base = Math.max(0.04, to - from)
+    target = Math.max(1 / fps, Math.round((base + hold) * fps) / fps)
+  }
   const af = [
     ...(opts.volume !== undefined && opts.volume !== 1 ? [`volume=${opts.volume}`] : []),
-    ...(hold > 0 ? [`apad=pad_dur=${hold}`] : []),
+    ...(target !== undefined
+      ? [`apad=whole_dur=${target}`]
+      : hold > 0
+        ? [`apad=pad_dur=${hold}`]
+        : []),
   ].join(',')
 
   const args: string[] = [...inArgs, '-i', opts.input]
   if (!info.hasAudio)
-    args.push('-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000')
+    args.push(
+      ...(target !== undefined ? ['-t', String(target)] : []),
+      '-f',
+      'lavfi',
+      '-i',
+      'anullsrc=channel_layout=stereo:sample_rate=48000',
+    )
   args.push('-map', '0:v:0', '-map', info.hasAudio ? '0:a:0' : '1:a:0', '-vf', vf)
   if (af) args.push('-af', af)
-  args.push(...videoEncoderArgs(env.caps), '-pix_fmt', 'yuv420p', ...AUDIO_ARGS)
-  if (!info.hasAudio || trimmed || hold > 0) args.push('-shortest')
+  args.push(...videoEncoderArgs(caps), '-pix_fmt', 'yuv420p', ...AUDIO_ARGS)
+  if (target !== undefined) args.push('-t', String(target))
+  else if (!info.hasAudio || trimmed || hold > 0) args.push('-shortest') // no duration known: the old way
   args.push('-movflags', '+faststart', opts.output)
-  await runFfmpeg(env.bins, args, { signal: env.signal })
-  return probeMedia(env.bins, opts.output)
+  return args
 }
 
 /**
