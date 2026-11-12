@@ -24,12 +24,12 @@ It is for people who make serialised short dramas and want to keep control of th
     <img src="./docs/assets/readme/en/storyboard-light.webp" alt="The storyboard page: shots grouped by scene, each with its image, video, narration, prompt and the assets it uses" width="100%" />
   </picture>
   <br />
-  <sub>The storyboard of a small demo project. The images and video are placeholders made by demo mode.</sub>
+  <sub>The storyboard of a small demo project. The pictures are placeholder sketches made by demo mode, not generated art.</sub>
 </p>
 
 ## Try it in a minute, with no API key
 
-Demo mode runs the whole studio against simulated providers on your machine: no account, no key, no cost. What it generates is placeholder content (numbered colour blocks and test footage), so it shows how the workflow behaves, not what real models produce.
+Demo mode runs the whole studio against simulated providers on your machine: no account, no key, no cost. What it generates is placeholder content: storyboard-style sketches of a figure in a frame, marked DEMO, and short clips built from them. It shows how the workflow behaves, not what real models produce.
 
 You need [Node.js](https://nodejs.org) 22.22.2 or newer, [pnpm](https://pnpm.io) 9 and [ffmpeg](https://ffmpeg.org) on your `PATH`.
 
@@ -38,7 +38,7 @@ git clone https://github.com/hyyyyyyz/dramai.git
 cd dramai
 pnpm install
 pnpm build
-pnpm demo --static-dir packages/workspace/dist
+pnpm demo
 ```
 
 Open <http://127.0.0.1:8787>. Create a project, upload a short story, plan episodes, break them into shots, confirm the characters and locations, then generate images and video and compose the cut. The simulated language model only understands Chinese text, so use a Chinese story. Demo data lives in `~/.dramai-demo`, separate from your real data; add `--fresh` to start over.
@@ -83,7 +83,7 @@ In words: source text → episodes → scenes → shots → shot images → shot
   <img src="./docs/assets/readme/en/assets-light.webp" alt="The asset library with character reference sheets" width="100%" />
 </picture>
 
-**Asset library.** Characters, locations, props and costumes. The sheets shown here are placeholders from demo mode.
+**Asset library.** Characters, locations, props and costumes. The three-view sheets shown here are placeholder sketches from demo mode.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/confirm-dark.webp" />
@@ -101,10 +101,10 @@ In words: source text → episodes → scenes → shots → shot images → shot
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/tasks-dark.webp" />
-  <img src="./docs/assets/readme/en/tasks-light.webp" alt="The storyboard with the task panel open, showing two video tasks in progress" width="100%" />
+  <img src="./docs/assets/readme/en/tasks-light.webp" alt="The storyboard with the task panel open: one task needing action, three running and three queued" width="100%" />
 </picture>
 
-**Task panel.** Running, queued and finished tasks. Tasks already submitted to a provider cannot be cancelled and are billed as usual.
+**Task panel.** Tasks that need action, running tasks and the queue, with the storyboard updating beside it. The task at the top was cut off before the provider confirmed it: dramai says so, asks you to check the provider's dashboard, and never resubmits it on its own. Tasks already submitted to a provider cannot be cancelled and are billed as usual.
 
 </details>
 
@@ -155,13 +155,13 @@ The desktop app keeps your data in your user folder (for example `~/Library/Appl
 
 - The whole workflow runs end to end in demo mode: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export.
 - Browser tests (Playwright) cover that path, a failed task being resumed, the English interface and keyboard-only use.
-- The desktop app passes its checks on macOS.
+- The desktop app has been run on macOS.
 
 **Not verified**
 
 - Any real AI provider. The four provider presets carry model ids and prices last checked in May 2026.
-- The desktop app on Windows and Linux. On Linux, CI builds and installs it; on Windows it builds and installs, but the installed app has not yet passed the launch check in CI. Treat both as untested.
-- CI on all three systems is still being fixed.
+- The desktop app on Windows and Linux. CI builds it and runs an install self-check on both, but nobody has used it on a real Linux or Windows desktop yet.
+- CI runs on Linux, macOS and Windows; it was not yet fully green when this was written.
 - API keys are not encrypted in the WebUI.
 
 **Not released**

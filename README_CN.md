@@ -24,12 +24,12 @@ dramai 是一个开源的 AI 短剧工作室，在你自己的电脑上运行。
     <img src="./docs/assets/readme/zh/storyboard-light.webp" alt="分镜页：镜头按场分组，每个镜头带有图片、视频、旁白、提示词和引用的资产" width="100%" />
   </picture>
   <br />
-  <sub>一个小型演示项目的分镜页。图片和视频是演示模式生成的占位内容。</sub>
+  <sub>一个小型演示项目的分镜页。画面是演示模式生成的占位草图，不是生成出来的作品。</sub>
 </p>
 
 ## 一分钟试用，不需要 API Key
 
-演示模式会在你的电脑上用模拟的服务商跑完整个工作室：不用注册账号，不用 Key，不产生费用。它生成的是占位内容（带编号的色块和测试画面），用来展示工作流怎么运转，而不是真实模型的效果。
+演示模式会在你的电脑上用模拟的服务商跑完整个工作室：不用注册账号，不用 Key，不产生费用。它生成的是占位内容：画框里一个人形的分镜草图，标着 DEMO，再用它们做成的短片段。它用来展示工作流怎么运转，而不是真实模型的效果。
 
 你需要 [Node.js](https://nodejs.org) 22.22.2 或更新版本、[pnpm](https://pnpm.io) 9，以及在 `PATH` 里能找到的 [ffmpeg](https://ffmpeg.org)。
 
@@ -38,7 +38,7 @@ git clone https://github.com/hyyyyyyz/dramai.git
 cd dramai
 pnpm install
 pnpm build
-pnpm demo --static-dir packages/workspace/dist
+pnpm demo
 ```
 
 打开 <http://127.0.0.1:8787>。新建一个项目，上传一个短篇故事，规划分集，拆分镜头，确认角色和地点，然后生成图片和视频，最后合成成片。演示用的数据放在 `~/.dramai-demo`，和你的正式数据分开；加上 `--fresh` 可以清空重来。
@@ -83,7 +83,7 @@ pnpm demo --static-dir packages/workspace/dist
   <img src="./docs/assets/readme/zh/assets-light.webp" alt="资产库：角色设定图" width="100%" />
 </picture>
 
-**资产库。** 角色、地点、道具和服装。这里的设定图是演示模式的占位图。
+**资产库。** 角色、地点、道具和服装。这里的三视图设定图是演示模式的占位草图。
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/zh/confirm-dark.webp" />
@@ -101,10 +101,10 @@ pnpm demo --static-dir packages/workspace/dist
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/zh/tasks-dark.webp" />
-  <img src="./docs/assets/readme/zh/tasks-light.webp" alt="打开任务面板的分镜页，显示两个进行中的视频任务" width="100%" />
+  <img src="./docs/assets/readme/zh/tasks-light.webp" alt="打开任务面板的分镜页：一个需要处理、三个进行中、三个排队" width="100%" />
 </picture>
 
-**任务面板。** 进行中、排队中和已完成的任务。已经提交给服务商的任务不能取消，照常计费。
+**任务面板。** 需要处理的任务、进行中的任务和排队的任务，分镜页在旁边同步更新。最上面那个任务在服务商确认之前就断开了：dramai 会如实说明，请你去服务商后台核对，并且绝不会自己重新提交。已经提交给服务商的任务不能取消，照常计费。
 
 </details>
 
@@ -155,13 +155,13 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 
 - 整条流程在演示模式下端到端可用：上传文本、规划分集、拆分镜头、确认角色和地点、生成图片和视频、合成、导出。
 - 浏览器测试（Playwright）覆盖了这条路径、失败任务的恢复、英文界面和纯键盘操作。
-- 桌面端在 macOS 上通过了自己的检查。
+- 桌面端在 macOS 上实机运行过。
 
 **还没验证的**
 
 - 任何真实的 AI 服务商。四个服务商预设里的模型名和价格，最后核对于 2026 年 5 月。
-- 桌面端在 Windows 和 Linux 上的表现。Linux 上 CI 能编译并安装它；Windows 上能编译和安装，但安装后的应用还没有通过 CI 的启动检查。请把这两个系统都当作未经测试。
-- 三个系统上的 CI 仍在修复中。
+- 桌面端在 Windows 和 Linux 上的表现。CI 在这两个系统上编译了它，并跑了安装自检，但还没有人在真实的 Linux 或 Windows 桌面环境里操作过。
+- CI 在 Linux、macOS 和 Windows 上都在跑；写这份说明时还没有全部通过。
 - WebUI 下 API Key 没有加密。
 
 **还没发布的**
