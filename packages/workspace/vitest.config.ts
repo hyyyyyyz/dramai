@@ -14,7 +14,9 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}'],
     setupFiles: ['tests/setup.ts'],
     css: false,
-    // With FAKE_SERVER_DELAY_MS every request is slow on purpose, so a test needs more than the default 5 s
-    testTimeout: process.env.FAKE_SERVER_DELAY_MS ? 30_000 : 5_000,
+    // Must be larger than asyncUtilTimeout in tests/setup.ts: when a wait runs out, the failure should name the
+    // assertion that did not hold, not a bare "Test timed out". With FAKE_SERVER_DELAY_MS every request is slow on
+    // purpose, so a test gets more room still.
+    testTimeout: process.env.FAKE_SERVER_DELAY_MS ? 30_000 : 15_000,
   },
 })
