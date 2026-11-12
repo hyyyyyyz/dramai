@@ -122,18 +122,35 @@ export const apiCall = (page, method, path, body) =>
  */
 export async function terminate(app, timeoutMs = 20_000) {
   if (process.platform === 'win32') {
-    try {
-      const { webSocketDebuggerUrl } = await (
-        await fetch(`http://127.0.0.1:${app.port}/json/version`)
-      ).json()
-      const ws = new WebSocket(webSocketDebuggerUrl)
+    // 1) close the browser; 2) if the app is still there after a few seconds, close the page window itself.
+    const send = async (url, method) => {
+      const ws = new WebSocket(url)
       await new Promise((resolve, reject) => {
         ws.onopen = resolve
         ws.onerror = reject
       })
-      ws.send(JSON.stringify({ id: 1, method: 'Browser.close' }))
+      ws.send(
+        JSON.stringify({
+          id: 1,
+          method,
+          params: method === 'Runtime.evaluate' ? { expression: 'window.close()' } : {},
+        }),
+      )
+      setTimeout(() => ws.close(), 1000)
+    }
+    try {
+      const { webSocketDebuggerUrl } = await (
+        await fetch(`http://127.0.0.1:${app.port}/json/version`)
+      ).json()
+      await send(webSocketDebuggerUrl, 'Browser.close')
+      const early = await Promise.race([app.exit, sleep(6000).then(() => undefined)])
+      if (!early) {
+        const pages = await (await fetch(`http://127.0.0.1:${app.port}/json/list`)).json()
+        const page = pages.find((t) => t.type === 'page')
+        if (page) await send(page.webSocketDebuggerUrl, 'Runtime.evaluate')
+      }
     } catch {
-      app.child.kill()
+      /* the app may already be gone */
     }
   } else {
     app.child.kill('SIGTERM')
