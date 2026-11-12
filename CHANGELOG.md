@@ -19,7 +19,7 @@ providers only. It has not been run against any real AI provider.** See "Known l
 
 - **A local server is now required.** The workspace is no longer a static site that runs entirely in
   the browser. Start it from a checkout of the repository (`pnpm install`, `pnpm build`, `pnpm webui`)
-  and open the printed address. Node.js 22.13 or newer is required, and the project now uses pnpm
+  and open the printed address. Node.js 22.22.2 or newer is required, and the project now uses pnpm
   instead of npm.
 - **Data from v0.4 does not appear automatically.** v0.4 kept projects in your browser's IndexedDB and
   provider settings in localStorage; the new version cannot read either. Before the old app goes away,
@@ -42,7 +42,7 @@ providers only. It has not been run against any real AI provider.** See "Known l
 ### Upgrade notes
 
 1. While you still can, open your existing v0.4 workspace and export a backup JSON; keep the file.
-2. Install Node.js 22.13+, pnpm and ffmpeg, then run the steps above to start the server. Data lives
+2. Install Node.js 22.22.2+, pnpm and ffmpeg, then run the steps above to start the server. Data lives
    in `~/.dramai` by default (`--data-dir` changes it).
 3. Add your providers again in Settings → Providers and use "test connection".
 4. To bring old projects over, open Settings → Data & backup → Import an old backup and choose the file
@@ -113,11 +113,10 @@ providers only. It has not been run against any real AI provider.** See "Known l
   `.exe` and `.zip` on Windows, `.AppImage` and `.tar.gz` on Linux). API keys are stored with the
   operating system's key store where one exists. The installers are **not signed** and there is no
   automatic update; the app only tells you when a newer release exists. ffmpeg is not bundled.
-  **Where it has been run:** on macOS (Apple silicon) by hand. On Linux the app builds and the
-  install, smoke-check and uninstall self-check passes in CI. On Windows it builds and installs and the
-  installed app starts, but the post-install self-check does not fully pass yet and is being fixed.
-  macOS Intel is built but has not been run, and nothing has been tried on a machine without an OS key
-  store.
+  **Where it has been run:** on macOS (Apple silicon) by hand. On Linux and on Windows the app builds
+  and the unattended install, smoke-check and uninstall self-check passes in CI; nobody has operated it
+  by hand on a real Linux or Windows desktop. macOS Intel is built but has not been run, and nothing has
+  been tried on a machine without an OS key store.
 - **Browser end-to-end tests** (`pnpm e2e`, Playwright): they run in demo mode, so they cost nothing and
   need no key, and walk from creating a project to downloading the cut, resuming a failed upstream
   task, the English interface and keyboard-only use.
@@ -129,7 +128,7 @@ providers only. It has not been run against any real AI provider.** See "Known l
 
 - The design system was redone (`@dramai/ui`): new brand marks, a light "storyboard paper" theme
   and a dark "editing room" theme, self-hosted fonts and a new set of components.
-- Node.js engine range is now `>=22.13.0` (v0.4 refused Node 25).
+- Node.js engine range is now `>=22.22.2` (v0.4 refused Node 25).
 
 ### Removed
 
@@ -157,8 +156,9 @@ Listed so nothing here is mistaken for finished work:
   versus ¥40–50) has still not been checked against a real run.
 - **Character consistency is not proven.** The multi-reference approach is implemented but has not been
   compared with the old "locked reference image" on a real image service.
-- Only run on macOS during development. The automated tests and the browser end-to-end tests are set up
-  to run on Linux, macOS and Windows (end-to-end on Linux), but that has not been exercised yet.
+- Run by hand only on macOS. The automated tests have passed in CI on Linux, macOS and Windows, the
+  browser end-to-end tests on Linux, and the desktop install self-check on all three systems, but
+  nobody has used the app by hand on Linux or Windows.
 - The end-to-end tests run against the mock providers only, so they prove the application flow, not
   that any real provider accepts the requests.
 - Installers are unsigned: macOS and Windows warn on first launch (the release notes explain how to open
