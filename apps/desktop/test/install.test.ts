@@ -306,3 +306,68 @@ describe('check scripts import what they use', () => {
     }
   })
 })
+
+describe('installer names', () => {
+  it('every system and architecture produces dramai-<version>-<os>-<arch>.<ext>', async () => {
+    const { expectedArtifacts } = await import('../scripts/lib/artifacts.mjs')
+    const v = '0.5.0-beta.1'
+    expect(expectedArtifacts({ version: v, platform: 'darwin', arch: 'arm64' })).toEqual([
+      `dramai-${v}-mac-arm64.dmg`,
+      `dramai-${v}-mac-arm64.zip`,
+    ])
+    expect(expectedArtifacts({ version: v, platform: 'darwin', arch: 'x64' })).toEqual([
+      `dramai-${v}-mac-x64.dmg`,
+      `dramai-${v}-mac-x64.zip`,
+    ])
+    expect(expectedArtifacts({ version: v, platform: 'win32', arch: 'x64' })).toEqual([
+      `dramai-${v}-win-x64.exe`,
+      `dramai-${v}-win-x64.zip`,
+    ])
+    expect(expectedArtifacts({ version: v, platform: 'linux', arch: 'x64' })).toEqual([
+      `dramai-${v}-linux-x64.AppImage`,
+      `dramai-${v}-linux-x64.tar.gz`,
+    ])
+    expect(expectedArtifacts({ version: v, platform: 'linux', arch: 'arm64' })).toEqual([
+      `dramai-${v}-linux-arm64.AppImage`,
+      `dramai-${v}-linux-arm64.tar.gz`,
+    ])
+  })
+
+  it('the packaging config spells the architecture out for AppImage (electron-builder would say x86_64)', async () => {
+    const { createConfig } = await import('../electron-builder.config.mjs')
+    for (const arch of ['x64', 'arm64']) {
+      const config = createConfig(arch) as {
+        artifactName: string
+        appImage: { artifactName: string }
+      }
+      expect(config.artifactName).toBe('dramai-${version}-${os}-${arch}.${ext}')
+      expect(config.appImage.artifactName).toBe(`dramai-\${version}-linux-${arch}.\${ext}`)
+    }
+  })
+
+  it('verifyArtifacts passes a complete set and names what is missing or misnamed', async () => {
+    const { verifyArtifacts, expectedArtifacts } = await import('../scripts/lib/artifacts.mjs')
+    const v = '0.5.0-beta.1'
+    const linux = { version: v, platform: 'linux' as const, arch: 'x64' }
+    expect(
+      verifyArtifacts({ ...linux, files: [...expectedArtifacts(linux), 'builder-debug.yml'] }).ok,
+    ).toBe(true)
+    const bad = verifyArtifacts({
+      ...linux,
+      files: [`dramai-${v}-linux-x86_64.AppImage`, `dramai-${v}-linux-x64.tar.gz`],
+    })
+    expect(bad.ok).toBe(false)
+    expect(bad.problems[0]).toContain(`dramai-${v}-linux-x64.AppImage is missing`)
+    expect(bad.problems[0]).toContain('x86_64')
+    const missing = verifyArtifacts({
+      version: v,
+      platform: 'win32',
+      arch: 'x64',
+      files: [`dramai-${v}-win-x64.zip`],
+    })
+    expect(missing.problems).toEqual([`dramai-${v}-win-x64.exe is missing`])
+    expect(
+      verifyArtifacts({ version: v, platform: 'darwin', arch: 'arm64', files: [] }).problems,
+    ).toHaveLength(2)
+  })
+})
