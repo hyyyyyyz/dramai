@@ -1,8 +1,10 @@
-import { spawnSync } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { join } from 'node:path'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { APP_CSP, APP_CSP_DIRECTIVES } from '../src/http/csp.ts'
 import { cleanupAll, startServer } from './helpers.ts'
 
@@ -86,24 +88,50 @@ describe('the policy itself', () => {
 // === the real build ===
 
 const workspaceDir = join(import.meta.dirname, '../../workspace')
-const dist = join(workspaceDir, 'dist')
+// The frontend is built by this test into its own private folder, never into `packages/workspace/dist`:
+// - it does not depend on whether someone built the workspace before (CI's test job does not), nor on a stale `dist`;
+// - parallel test runs of other packages cannot be writing the same folder;
+// - only `vite build` is run (about a second), not the workspace's `build` script (type check first, then vite).
+let dist = ''
 let haveDist = false
 
-beforeAll(() => {
-  if (!existsSync(join(dist, 'index.html'))) {
-    // Build the frontend ourselves (a few seconds). If it cannot be built (e.g. work in progress there),
-    // the build-dependent checks are skipped loudly — that is the frontend's failure, not the server's.
-    const r = spawnSync('pnpm', ['--filter', '@dramai/workspace', 'build'], {
-      cwd: workspaceDir,
-      encoding: 'utf8',
-      shell: process.platform === 'win32', // pnpm is a .cmd shim on Windows
-    })
-    if (r.status !== 0)
-      console.warn(
-        `[csp] SKIPPED build-dependent checks: the workspace did not build\n${r.stdout}${r.stderr}`,
-      )
+beforeAll(async () => {
+  dist = await mkdtemp(join(tmpdir(), 'dramai-csp-dist-'))
+  const require = createRequire(join(workspaceDir, 'package.json'))
+  const vitePkg = require.resolve('vite/package.json')
+  const bin = (JSON.parse(readFileSync(vitePkg, 'utf8')) as { bin: { vite: string } }).bin.vite
+  const r = await new Promise<{ code: number | null; out: string }>((resolve) => {
+    execFile(
+      process.execPath, // run vite's script with node directly: no pnpm, no .cmd shim, no shell quoting
+      [
+        join(dirname(vitePkg), bin),
+        'build',
+        '--outDir',
+        dist,
+        '--emptyOutDir',
+        '--logLevel',
+        'warn',
+      ],
+      { cwd: workspaceDir, timeout: 150_000, maxBuffer: 20 * 1024 * 1024 },
+      (error, stdout, stderr) =>
+        resolve({
+          code: error ? ((error as { code?: number }).code ?? 1) : 0,
+          out: `${stdout}${stderr}`,
+        }),
+    )
+  })
+  haveDist = r.code === 0 && existsSync(join(dist, 'index.html'))
+  if (!haveDist) {
+    const message = `the frontend did not build (exit ${r.code}):\n${r.out}`
+    // In CI the checks must run, so a frontend that does not build is a failure. On a developer machine it is
+    // usually work in progress in the frontend — skip loudly instead of failing the server's tests.
+    if (process.env.CI) throw new Error(message)
+    console.warn(`[csp] SKIPPED build-dependent checks: ${message}`)
   }
-  haveDist = existsSync(join(dist, 'index.html'))
+}, 180_000)
+
+afterAll(async () => {
+  if (dist) await rm(dist, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
 })
 
 const buildIt = (name: string, fn: () => Promise<void> | void) =>
