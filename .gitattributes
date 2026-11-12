@@ -1,0 +1,3 @@
+# 所有文本文件在任何系统上都以 LF 检出，避免 Windows 上 CRLF 干扰 prettier、
+# 快照和脚本；二进制文件由 git 自动识别。
+* text=auto eol=lf

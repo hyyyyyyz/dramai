@@ -1,0 +1,31 @@
+# 依赖更新：GitHub Actions 的版本（我们把 action 固定到提交 SHA，由它来更新 SHA 和注释里的版本号）
+# 和 npm 依赖（pnpm workspace）。每周一次，小版本和补丁版本合并成一个 PR，主版本单独一个 PR。
+# cooldown：新发布的版本先放 7 天再提议，降低被投毒的新版本直接进来的风险（安全更新不受影响）。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - '/'
+      - '/.github/actions/*'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: 'ci'
+
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ['minor', 'patch']
+    commit-message:
+      prefix: 'chore(deps)'

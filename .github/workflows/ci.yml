@@ -1,38 +1,46 @@
 name: CI
 
+# 拉取请求、推送（main 和重构分支 refactor/**）、手动触发都会运行；
+# 也可以被发布工作流作为可复用工作流调用（打 tag 前再确认一遍）。
 on:
   push:
-    branches: [main]
+    branches: [main, 'refactor/**']
   pull_request:
-    branches: [main]
+  workflow_dispatch:
+  workflow_call:
 
+# 默认只读；个别 job 需要更多权限时在 job 内单独声明。
 permissions:
   contents: read
 
+# 同一分支 / PR 上新的运行会取消旧的；main 上不取消，保证每个提交都有完整结果。
+# PR 和它的源分支的推送共用一个组，所以只会留下最新的一次。
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.head_ref && format('refs/heads/{0}', github.head_ref) || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  build:
-    name: Lint, typecheck, test, build
+  checks:
+    name: Format, lint, typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # pnpm 版本取自根 package.json 的 "packageManager" 字段。
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
+      # 所有包版本必须一致（tooling/release）。不依赖安装好的依赖，放前面快速失败。
+      - name: Check package versions
+        run: pnpm version:check
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Format check
+        run: pnpm format:check
 
       - name: Lint
         run: pnpm lint
@@ -40,30 +48,156 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Format check
-        run: pnpm format:check
+  test:
+    name: Test (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      # 一个系统失败不要中断其它系统，方便一次看全三个系统的结果。
+      fail-fast: false
+      matrix:
+        include:
+          # Node 版本与 .nvmrc（24）保持一致；22.13.0 是 engines 下限。
+          - { label: 'Linux, Node 24', os: ubuntu-latest, node: '24', libass: required }
+          - { label: 'Linux, Node 22.13', os: ubuntu-latest, node: '22.13.0', libass: required }
+          - { label: 'macOS (arm64)', os: macos-latest, node: '24', libass: log }
+          - { label: 'Windows', os: windows-latest, node: '24', libass: log }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # ubuntu-latest 镜像不带 ffmpeg / ffprobe（见 actions/runner-images 的
-      # Ubuntu 24.04 / 26.04 软件清单），而 packages/core 的 media 测试在找不到
-      # ffmpeg 时会整组跳过。这里安装它，让这组测试在 CI 上真正运行。
-      - name: Install ffmpeg
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 三个系统的运行器镜像都不带 ffmpeg / ffprobe（见 actions/runner-images 的软件清单），
+      # 而 packages/core 的 media 测试在找不到 ffmpeg 时会整组跳过，所以在这里安装。
+      - name: Install ffmpeg (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg
+
+      - name: Install ffmpeg (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg --no-progress -y
+
+      # 字幕烧录测试需要带 libass 的 ffmpeg（subtitles 滤镜）。Linux 上必须有，
+      # 缺了就让这一步失败，而不是让那条测试悄悄退化成“报错检查”；
+      # 其它系统只记录，方便在日志里看到实际情况。
+      - name: Show ffmpeg capabilities
+        run: |
           ffmpeg -version | head -n 1
           ffprobe -version | head -n 1
+          if ffmpeg -hide_banner -filters | grep -qE '^ .{2} subtitles '; then
+            echo "libass: available (subtitle burn-in test will run for real)"
+          elif [ "${{ matrix.libass }}" = "required" ]; then
+            echo "::error::ffmpeg on this runner has no libass/subtitles filter; the burn-in test would be skipped"
+            exit 1
+          else
+            echo "::warning::ffmpeg on this runner has no libass/subtitles filter; the burn-in test falls back to the capability-error check"
+          fi
 
-      # 放在构建之前：测试比完整构建快，失败时更早给出反馈。
       - name: Test
         run: pnpm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
 
       - name: Build
         run: pnpm build
 
-      - name: Upload build artifact
+      - name: Upload workspace build
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: dist
+          name: workspace-dist
           path: packages/workspace/dist
           retention-days: 7
+          if-no-files-found: error
+
+  # 工作流文件自身的静态检查（语法、表达式、内嵌 shell 脚本）。
+  workflows:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+
+  # 浏览器端到端测试的位置。约定见 docs/RELEASING.md 的 “E2E 接入约定”：
+  # 根 package.json 里有 `test:e2e` 脚本就会运行，没有就整个 job 空过。
+  e2e:
+    name: E2E (browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Look for a test:e2e script
+        id: detect
+        run: |
+          if [ "$(node -p "Boolean(require('./package.json').scripts?.['test:e2e'])")" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "No root 'test:e2e' script yet; skipping the E2E steps."
+          fi
+
+      - name: Setup workspace
+        if: steps.detect.outputs.enabled == 'true'
+        uses: ./.github/actions/setup
+
+      - name: Install Playwright browser
+        if: steps.detect.outputs.enabled == 'true'
+        run: pnpm --filter @dramai/workspace exec playwright install --with-deps chromium
+
+      - name: Run E2E
+        if: steps.detect.outputs.enabled == 'true'
+        run: pnpm test:e2e
+
+      - name: Upload E2E report
+        if: failure() && steps.detect.outputs.enabled == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-report
+          path: |
+            **/playwright-report/
+            **/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # 分支保护里只需要把这一个检查设为必需：它汇总上面所有 job，
+  # 被跳过的 job（例如还没接入的 E2E）不算失败。
+  ci-ok:
+    name: CI passed
+    if: always()
+    needs: [checks, test, build, workflows, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          case "$RESULTS" in
+            *failure*|*cancelled*) echo "::error::At least one required job did not succeed."; exit 1 ;;
+          esac
