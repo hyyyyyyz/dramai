@@ -15,6 +15,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
+import { ensureDevApp } from './lib/dev-app.mjs'
 import { createServer } from 'node:net'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -80,7 +81,7 @@ if (!existsSync(join(electronPkg, 'path.txt'))) {
     ),
   )
 }
-const electronBin = require('electron')
+const electronBin = ensureDevApp()
 
 // 前端的构建产物只有“打包形态”才需要；开发形态窗口加载 Vite。
 const build = spawnLogged('build', 'node', ['scripts/build.mjs', '--watch', '--no-web'], {

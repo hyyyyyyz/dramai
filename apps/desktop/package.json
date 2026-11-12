@@ -21,7 +21,10 @@
     "smoke": "node scripts/smoke.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "app:build": "node scripts/build-app.mjs",
+    "install:local": "node scripts/install.mjs",
+    "uninstall:local": "node scripts/uninstall.mjs"
   },
   "devDependencies": {
     "@dramai/api": "workspace:*",
@@ -33,10 +36,12 @@
     "@dramai/workspace": "workspace:*",
     "@electron/fuses": "^2.1.3",
     "@types/node": "catalog:",
+    "@types/pngjs": "^6.0.5",
     "electron": "45.3.0",
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
     "eslint": "catalog:",
+    "pngjs": "^7.0.0",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

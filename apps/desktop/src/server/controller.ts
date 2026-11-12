@@ -58,10 +58,6 @@ export function createServerController(
         version: options.version,
         desktop: true,
         secretStore: remoteSecrets,
-        ffmpeg:
-          options.ffmpegPath || options.ffprobePath
-            ? { ffmpegPath: options.ffmpegPath, ffprobePath: options.ffprobePath }
-            : undefined,
         demo: options.demoNotice ? { notice: options.demoNotice } : undefined,
         logger: {
           error: (...a) => post({ type: 'log', level: 'error', text: a.map(String).join(' ') }),

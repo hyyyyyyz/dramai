@@ -3,11 +3,18 @@ import { tmpdir } from 'node:os'
 import { delimiter, join, sep } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ConfigStore } from '../src/main/config.ts'
-import { resolveBundledFfmpeg, withToolDirs } from '../src/main/ffmpeg.ts'
+import { withToolDirs } from '../src/main/ffmpeg.ts'
+import { readDistribution } from '../src/main/distribution.ts'
 import { buildMenuTemplate } from '../src/main/menu.ts'
 import { cleanText, parseFolderRequest, resolveProjectPath } from '../src/main/native.ts'
 import { resolveDataDir } from '../src/main/paths.ts'
-import { detectLang, isLangPreference, resolveLang, strings } from '../src/main/strings.ts'
+import {
+  detectLang,
+  ffmpegInstallLines,
+  isLangPreference,
+  resolveLang,
+  strings,
+} from '../src/main/strings.ts'
 import { classifyStartError } from '../src/shared/protocol.ts'
 
 let dir: string
@@ -68,21 +75,7 @@ describe('desktop config', () => {
   })
 })
 
-describe('ffmpeg resolution', () => {
-  it('finds a bundled ffmpeg (and ffprobe) in the resources folder, or nothing', () => {
-    const exists = (set: string[]) => (p: string) => set.includes(p)
-    const r = join('/res', 'ffmpeg')
-    expect(
-      resolveBundledFfmpeg('/res', 'darwin', exists([join(r, 'ffmpeg'), join(r, 'ffprobe')])),
-    ).toEqual({
-      ffmpegPath: join(r, 'ffmpeg'),
-      ffprobePath: join(r, 'ffprobe'),
-    })
-    expect(resolveBundledFfmpeg('/res', 'win32', exists([join(r, 'ffmpeg.exe')]))).toEqual({
-      ffmpegPath: join(r, 'ffmpeg.exe'),
-    })
-    expect(resolveBundledFfmpeg('/res', 'darwin', exists([]))).toBeUndefined()
-  })
+describe('ffmpeg: system install', () => {
   it('adds the usual install folders to PATH once (Finder-launched apps lack the shell PATH)', () => {
     const env = withToolDirs({ PATH: ['/usr/bin', '/opt/homebrew/bin'].join(delimiter) }, 'darwin')
     const parts = env.PATH!.split(delimiter)
@@ -148,6 +141,7 @@ describe('application menu', () => {
     openLogs: noop,
     openExternal: noop,
     setLanguage: noop,
+    ffmpegHelp: noop,
   }
   const input = {
     strings: strings.en,
@@ -237,6 +231,7 @@ describe('interface language', () => {
       issuesUrl: 'i',
       actions: {
         setLanguage: noop2,
+        ffmpegHelp: noop2,
         about: noop2,
         checkForUpdates: noop2,
         toggleAutoCheck: noop2,
@@ -253,5 +248,33 @@ describe('interface language', () => {
     const group = view.find((i) => i.label === '語言')!.submenu!
     expect(group.map((i) => i.label)).toEqual(['跟隨系統', 'English', '简体中文', '繁體中文'])
     expect(group.filter((i) => i.checked).map((i) => i.label)).toEqual(['繁體中文'])
+  })
+})
+
+describe('install kind', () => {
+  it('reads the distribution baked into package.json; anything else counts as an installer', () => {
+    expect(readDistribution(() => JSON.stringify({ dramai: { distribution: 'local' } }))).toBe(
+      'local',
+    )
+    expect(readDistribution(() => JSON.stringify({ dramai: { distribution: 'package' } }))).toBe(
+      'package',
+    )
+    expect(readDistribution(() => JSON.stringify({}))).toBe('package')
+    expect(readDistribution(() => 'not json')).toBe('package')
+    expect(
+      readDistribution(() => {
+        throw new Error('no file')
+      }),
+    ).toBe('package')
+  })
+})
+
+describe('ffmpeg install guidance', () => {
+  it('gives the command for the user own system', () => {
+    expect(ffmpegInstallLines('darwin', 'en')).toContain('brew install ffmpeg')
+    expect(ffmpegInstallLines('win32', 'en')).toContain('winget install')
+    expect(ffmpegInstallLines('linux', 'en')).toContain('apt install ffmpeg')
+    expect(strings['zh-TW'].ffmpegMissing('darwin')).toContain('brew install ffmpeg')
+    expect(strings['zh-CN'].ffmpegMissing('linux')).toContain('pacman')
   })
 })

@@ -8,6 +8,7 @@ export interface MenuActions {
   changeDataDir(): void
   showDataDir(): void
   openLogs(): void
+  ffmpegHelp(): void
   openExternal(url: string): void
   setLanguage(language: LangPreference): void
 }
@@ -122,6 +123,7 @@ export function buildMenuTemplate(input: MenuInput): MenuItemConstructorOptions[
       { label: s.menu.homepage, click: () => actions.openExternal(input.homepage) },
       { label: s.menu.reportIssue, click: () => actions.openExternal(input.issuesUrl) },
       { type: 'separator' },
+      { label: s.menu.ffmpegHelp, click: () => actions.ffmpegHelp() },
       { label: s.menu.openLogs, click: () => actions.openLogs() },
       { type: 'separator' },
       { label: s.menu.checkUpdates, click: () => actions.checkForUpdates() },

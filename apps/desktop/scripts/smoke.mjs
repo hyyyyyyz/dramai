@@ -3,6 +3,7 @@
 //
 //   node scripts/smoke.mjs                      源码形态（electron + dist/，需先 pnpm --filter @dramai/desktop build）
 //   node scripts/smoke.mjs --app <可执行文件>    打包形态（如 release/mac-arm64/Dramai.app/Contents/MacOS/Dramai）
+//   --arg=<switch>   extra switch for the packaged app (repeatable)
 //   --full   再走完整的验证：用模拟服务商走一遍短流程（建项目 → 上传 → 规划分集）、
 //            确认密钥是系统加密落盘的、重启后端口和密钥都还在、第二次启动会把已有窗口提到前面
 import { existsSync } from 'node:fs'
@@ -47,7 +48,8 @@ const dataDir = join(work, 'data')
 let command, args, cwd
 if (appPath) {
   command = appPath
-  args = []
+  // Extra switches for the app, e.g. `--arg=--no-sandbox` on a CI Linux runner that blocks user namespaces.
+  args = argv.filter((a) => a.startsWith('--arg=')).map((a) => a.slice('--arg='.length))
 } else {
   const require = createRequire(import.meta.url)
   command = require('electron')

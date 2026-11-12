@@ -18,6 +18,8 @@ export interface DesktopConfig {
   lastUpdateCheck?: number
   /** 已经提示过“没有系统加密，密钥以文件权限保护”。 */
   plainSecretsNoticeShown?: boolean
+  /** 用户选了“不再提醒”：没有找到 ffmpeg。 */
+  ffmpegNoticeDismissed?: boolean
   /** 界面语言（原生菜单和对话框）；`auto` 跟随系统。网页界面的语言由前端设置页决定，两边通过桥接保持一致。 */
   language?: LangPreference
   window?: { width: number; height: number; maximized: boolean }
@@ -70,6 +72,8 @@ function sanitize(raw: Partial<DesktopConfig>): Partial<DesktopConfig> {
   if (Number.isFinite(raw.lastUpdateCheck)) out.lastUpdateCheck = raw.lastUpdateCheck
   if (typeof raw.plainSecretsNoticeShown === 'boolean')
     out.plainSecretsNoticeShown = raw.plainSecretsNoticeShown
+  if (typeof raw.ffmpegNoticeDismissed === 'boolean')
+    out.ffmpegNoticeDismissed = raw.ffmpegNoticeDismissed
   if (isLangPreference(raw.language)) out.language = raw.language
   const w = raw.window
   if (

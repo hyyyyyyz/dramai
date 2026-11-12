@@ -12,6 +12,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build, context } from 'esbuild'
+import { SQUARE_ART, writePngSizes } from './lib/icons.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const repo = join(root, '../..')
@@ -70,7 +71,15 @@ if (dev) {
   })
 }
 
+async function writeWindowIcon() {
+  // Window / taskbar icon for Windows and Linux, generated from the brand artwork (macOS takes its icon from the bundle).
+  const [icon] = writePngSizes(SQUARE_ART, [512], () => 'window.png')
+  await mkdir(join(dist, 'icons'), { recursive: true })
+  await writeFile(join(dist, 'icons', 'window.png'), icon.data)
+}
+
 async function copyAssets() {
+  await writeWindowIcon()
   // 服务读数据目录用的是相对 server.mjs 的 ../data/（见 @dramai/core 的 bundledDataDir），所以数据放在 dist/data。
   await cp(join(repo, 'packages/core/data'), join(dist, 'data'), { recursive: true })
   if (withWeb) {

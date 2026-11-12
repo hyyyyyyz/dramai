@@ -22,6 +22,19 @@ export function resolveLang(preference: LangPreference | undefined, systemLocale
   return preference && preference !== 'auto' ? preference : detectLang(systemLocale)
 }
 
+/** Install commands for the user's system, one per line. */
+export function ffmpegInstallLines(platform: string, lang: Lang): string {
+  const alt = lang === 'en' ? 'or' : lang === 'zh-TW' ? '或' : '或'
+  if (platform === 'darwin') return '  brew install ffmpeg'
+  if (platform === 'win32')
+    return `  winget install Gyan.FFmpeg   (${alt}: choco install ffmpeg / scoop install ffmpeg)`
+  return [
+    '  Debian / Ubuntu:  sudo apt install ffmpeg',
+    '  Fedora:           sudo dnf install ffmpeg',
+    '  Arch:             sudo pacman -S ffmpeg',
+  ].join('\n')
+}
+
 const zhCN = {
   appName: 'Dramai',
   startFailedTitle: '无法启动 Dramai',
@@ -64,6 +77,12 @@ const zhCN = {
   plainSecretsTitle: '没有可用的系统加密',
   plainSecrets:
     '这台电脑上没有可用的系统密钥库，API Key 会以仅当前用户可读的文件保存（没有加密）。在 Linux 上安装并解锁 GNOME Keyring 或 KWallet 后，重启应用会自动改为加密保存。',
+  updateLocalHint:
+    '这是本地编译安装的版本。更新方法：拉取最新代码，再运行一次 pnpm desktop:install（会覆盖旧版本，不影响你的数据）。',
+  ffmpegMissingTitle: '没有找到 ffmpeg',
+  ffmpegMissing: (platform: string) =>
+    `合成视频和导出成片需要 ffmpeg，这台电脑上没有找到。\n\n安装后重启 Dramai：\n${ffmpegInstallLines(platform, 'zh-CN')}\n\n把字幕烧进画面还要求 ffmpeg 带 libass。也可以设置环境变量 DRAMAI_FFMPEG 指向 ffmpeg 的完整路径。`,
+  dontRemind: '不再提醒',
   ok: '好',
   aboutTitle: '关于 Dramai',
   aboutDetail: (v: { app: string; electron: string; chrome: string; node: string; data: string }) =>
@@ -83,6 +102,7 @@ const zhCN = {
     about: '关于 Dramai',
     homepage: '项目主页',
     reportIssue: '反馈问题',
+    ffmpegHelp: '设置 ffmpeg…',
     language: '语言',
     languageAuto: '跟随系统',
   },
@@ -132,6 +152,12 @@ const en: Strings = {
   plainSecretsTitle: 'No system encryption available',
   plainSecrets:
     'This computer has no usable system key store, so API keys are saved in a file readable only by your user account (not encrypted). On Linux, install and unlock GNOME Keyring or KWallet and restart: the keys are then encrypted automatically.',
+  updateLocalHint:
+    '這是本機編譯安裝的版本。更新方法：拉取最新程式碼，再執行一次 pnpm desktop:install（會覆蓋舊版本，不影響你的資料）。',
+  ffmpegMissingTitle: '找不到 ffmpeg',
+  ffmpegMissing: (platform) =>
+    `合成影片和匯出成片需要 ffmpeg，這台電腦上找不到。\n\n安裝後重新啟動 Dramai：\n${ffmpegInstallLines(platform, 'zh-TW')}\n\n把字幕燒進畫面還要求 ffmpeg 帶有 libass。也可以設定環境變數 DRAMAI_FFMPEG 指向 ffmpeg 的完整路徑。`,
+  dontRemind: '不再提醒',
   ok: 'OK',
   aboutTitle: 'About Dramai',
   aboutDetail: (v) =>
@@ -151,6 +177,7 @@ const en: Strings = {
     about: 'About Dramai',
     homepage: 'Project Page',
     reportIssue: 'Report an Issue',
+    ffmpegHelp: 'Set Up ffmpeg…',
     language: 'Language',
     languageAuto: 'Match System',
   },
@@ -197,6 +224,12 @@ const zhTW: Strings = {
   plainSecretsTitle: '沒有可用的系統加密',
   plainSecrets:
     '這台電腦上沒有可用的系統金鑰庫，API Key 會以僅目前使用者可讀的檔案儲存（沒有加密）。在 Linux 上安裝並解鎖 GNOME Keyring 或 KWallet 後，重新啟動應用程式會自動改為加密儲存。',
+  updateLocalHint:
+    'This is a locally built install. To update: pull the latest code and run pnpm desktop:install again (it replaces the old copy and leaves your data alone).',
+  ffmpegMissingTitle: 'ffmpeg was not found',
+  ffmpegMissing: (platform) =>
+    `Dramai needs ffmpeg to compose videos and export the final cut. It was not found on this computer.\n\nInstall it, then restart Dramai:\n${ffmpegInstallLines(platform, 'en')}\n\nBurning subtitles into the picture also needs an ffmpeg build with libass. You can also set the DRAMAI_FFMPEG environment variable to the full path of ffmpeg.`,
+  dontRemind: "Don't remind me",
   ok: '好',
   aboutTitle: '關於 Dramai',
   aboutDetail: (v) =>
@@ -216,6 +249,7 @@ const zhTW: Strings = {
     about: '關於 Dramai',
     homepage: '專案首頁',
     reportIssue: '回報問題',
+    ffmpegHelp: '設定 ffmpeg…',
     language: '語言',
     languageAuto: '跟隨系統',
   },

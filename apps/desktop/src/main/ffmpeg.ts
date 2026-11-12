@@ -1,37 +1,4 @@
-import { accessSync, constants } from 'node:fs'
 import { delimiter, join } from 'node:path'
-
-export interface BundledFfmpeg {
-  ffmpegPath: string
-  ffprobePath?: string
-}
-
-const exe = (name: string, platform: NodeJS.Platform) =>
-  platform === 'win32' ? `${name}.exe` : name
-
-function executable(path: string): boolean {
-  try {
-    accessSync(path, constants.X_OK)
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * 应用资源目录里随包的 ffmpeg（`<resources>/ffmpeg/ffmpeg[.exe]`，同目录可有 ffprobe）。
- * 没有随包（默认）就返回 undefined，服务自己按 DRAMAI_FFMPEG → PATH 找系统的。
- */
-export function resolveBundledFfmpeg(
-  resourcesDir: string,
-  platform: NodeJS.Platform = process.platform,
-  isExecutable: (path: string) => boolean = executable,
-): BundledFfmpeg | undefined {
-  const ffmpegPath = join(resourcesDir, 'ffmpeg', exe('ffmpeg', platform))
-  if (!isExecutable(ffmpegPath)) return undefined
-  const ffprobePath = join(resourcesDir, 'ffmpeg', exe('ffprobe', platform))
-  return { ffmpegPath, ...(isExecutable(ffprobePath) ? { ffprobePath } : {}) }
-}
 
 /**
  * 从访达 / 开始菜单启动的应用拿不到用户 shell 里的 PATH（Homebrew 装的 ffmpeg 在 /opt/homebrew/bin，不在默认 PATH 里）。

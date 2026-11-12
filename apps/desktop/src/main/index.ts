@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
@@ -18,10 +18,9 @@ import type { Session } from 'electron'
 import pkg from '../../package.json' with { type: 'json' }
 import { BRIDGE_CHANNELS } from '../shared/bridge.ts'
 import type { DramaiDesktopInfo } from '../shared/bridge.ts'
-import type { ServerStartOptions } from '../shared/protocol.ts'
 import { originOf, withAuthHeader } from './auth.ts'
 import { ConfigStore } from './config.ts'
-import { resolveBundledFfmpeg, withToolDirs } from './ffmpeg.ts'
+import { withToolDirs } from './ffmpeg.ts'
 import { createFileLogger } from './logger.ts'
 import { buildMenuTemplate } from './menu.ts'
 import { canOpenExternally, isAppUrl, isTrustedSender } from './navigation.ts'
@@ -37,6 +36,7 @@ import { isLangPreference, resolveLang, strings } from './strings.ts'
 import type { Lang, LangPreference } from './strings.ts'
 import { generateToken } from './token.ts'
 import { checkForUpdate, repoSlug } from './updates.ts'
+import { readDistribution } from './distribution.ts'
 
 // —— 进程内的几个常量 ——
 const distDir = fileURLToPath(new URL('.', import.meta.url))
@@ -44,6 +44,14 @@ const devUrl = process.env.DRAMAI_DESKTOP_DEV_URL // 开发形态：窗口加载
 const isDev = Boolean(devUrl)
 const repo = repoSlug(pkg.repository.url) ?? 'hyyyyyyz/dramai'
 const PARTITION = 'persist:dramai'
+const WINDOW_ICON = join(distDir, 'icons', 'window.png')
+const APP_ID = 'io.github.hyyyyyyz.dramai'
+/** source = run from the repo; local = built and installed on this machine; package = a downloaded installer. */
+const distribution = app.isPackaged
+  ? readDistribution(() => readFileSync(join(app.getAppPath(), 'package.json'), 'utf8'))
+  : 'source'
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID) // taskbar grouping and notifications
+if (process.platform === 'linux') app.setDesktopName('dramai.desktop') // matches the launcher entry, so the icon shows
 
 // 应用名决定 userData 位置；开发形态单独一个，不碰正式安装的数据。
 app.setName(isDev ? 'Dramai Dev' : 'Dramai')
@@ -148,6 +156,8 @@ function createWindow(target: string): BrowserWindow {
     show: false,
     title: s().appName,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#0b0b0f' : '#ffffff',
+    // Window / taskbar icon on Windows and Linux (macOS takes the Dock icon from the app bundle).
+    ...(process.platform !== 'darwin' && existsSync(WINDOW_ICON) ? { icon: WINDOW_ICON } : {}),
     webPreferences: {
       preload: join(distDir, 'preload.cjs'),
       session: session.fromPartition(PARTITION),
@@ -202,12 +212,6 @@ function focusWindow(): void {
 }
 
 // —— 服务 ——
-function ffmpegOptions(): Pick<ServerStartOptions, 'ffmpegPath' | 'ffprobePath'> {
-  const bundled = resolveBundledFfmpeg(process.resourcesPath)
-  if (bundled) log('info', `using bundled ffmpeg: ${bundled.ffmpegPath}`)
-  return bundled ?? {}
-}
-
 async function startServer(): Promise<void> {
   const devPort = Number(process.env.DRAMAI_DESKTOP_SERVER_PORT) || undefined
   const port = devPort ?? (await chooseListenPort(config.get().port))
@@ -218,7 +222,6 @@ async function startServer(): Promise<void> {
     token: state.token,
     staticDir: isDev ? undefined : join(distDir, 'web'),
     version: app.getVersion(),
-    ...ffmpegOptions(),
     demoNotice,
   })
   state.serverUrl = ready.url
@@ -313,7 +316,9 @@ async function runUpdateCheck(manual: boolean): Promise<void> {
       type: 'info',
       title: s().updateAvailableTitle,
       message: s().updateAvailableTitle,
-      detail: s().updateAvailable(app.getVersion(), result.release.version),
+      detail:
+        s().updateAvailable(app.getVersion(), result.release.version) +
+        (distribution === 'package' ? '' : `\n\n${s().updateLocalHint}`),
       buttons: [s().openReleasePage, s().later, s().skipVersion],
       defaultId: 0,
       cancelId: 1,
@@ -337,6 +342,42 @@ function scheduleUpdateCheck(): void {
   const last = config.get().lastUpdateCheck ?? 0
   if (Date.now() - last < 6 * 60 * 60 * 1000) return // 对 GitHub 的匿名接口客气一点
   setTimeout(() => void runUpdateCheck(false), 8_000).unref()
+}
+
+// —— ffmpeg: use the one installed on this machine; say how to get it when it is missing ——
+async function ffmpegFound(): Promise<boolean | undefined> {
+  if (!state.serverUrl) return undefined
+  try {
+    const res = await fetch(`${state.serverUrl}/api/system`, {
+      headers: { Authorization: `Bearer ${state.token}` },
+      signal: AbortSignal.timeout(3_000),
+    })
+    const body = (await res.json()) as { ffmpeg?: { found?: boolean } }
+    return body.ffmpeg?.found
+  } catch {
+    return undefined
+  }
+}
+
+async function showFfmpegHelp(automatic: boolean): Promise<void> {
+  const parent = state.win && !state.win.isDestroyed() ? state.win : undefined
+  const options: Electron.MessageBoxOptions = {
+    type: 'warning',
+    title: s().ffmpegMissingTitle,
+    message: s().ffmpegMissingTitle,
+    detail: s().ffmpegMissing(process.platform),
+    buttons: automatic ? [s().ok, s().dontRemind] : [s().ok],
+    defaultId: 0,
+  }
+  const r = parent
+    ? await dialog.showMessageBox(parent, options)
+    : await dialog.showMessageBox(options)
+  if (automatic && r.response === 1) config.update({ ffmpegNoticeDismissed: true })
+}
+
+async function maybeWarnAboutFfmpeg(): Promise<void> {
+  if (config.get().ffmpegNoticeDismissed) return
+  if ((await ffmpegFound()) === false) await showFfmpegHelp(true)
 }
 
 // —— About / 菜单 ——
@@ -379,6 +420,7 @@ function installMenu(): void {
           changeDataDir: () => void chooseDataDirAndRestart(),
           showDataDir: () => void shell.openPath(state.dataDir),
           openLogs: () => void shell.openPath(app.getPath('logs')),
+          ffmpegHelp: () => void showFfmpegHelp(false),
           openExternal: (url) => void shell.openExternal(url),
           setLanguage: setLanguagePreference,
         },
@@ -593,6 +635,7 @@ async function main(): Promise<void> {
   await seedDemoIfRequested()
   createWindow(devUrl ?? state.serverUrl!)
   scheduleUpdateCheck()
+  void maybeWarnAboutFfmpeg()
 }
 
 async function onServerCrashed(): Promise<void> {

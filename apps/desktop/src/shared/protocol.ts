@@ -19,9 +19,6 @@ export interface ServerStartOptions {
   /** 前端构建产物目录；开发形态（窗口加载 Vite）时可以不给。 */
   staticDir?: string
   version: string
-  /** 显式的 ffmpeg / ffprobe 路径（内置二进制）；不给就让服务按环境变量和 PATH 找。 */
-  ffmpegPath?: string
-  ffprobePath?: string
   /** 演示模式的提示语（只让界面显示横幅，服务行为不变）。 */
   demoNotice?: { zh: string; en: string }
 }

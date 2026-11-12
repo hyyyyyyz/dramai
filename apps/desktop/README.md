@@ -1,206 +1,161 @@
 # @dramai/desktop
 
-Dramai 桌面应用：一个 Electron 壳，里面跑的就是 `@dramai/server`（同一个本地服务），窗口加载同一份前端（`@dramai/workspace`）。
+The Dramai desktop app: an Electron shell around the same local server (`@dramai/server`) and the same frontend (`@dramai/workspace`) that the WebUI uses.
 
-两种形态：
+## Three ways to get it
 
-| 形态             | 命令                             | 给谁                                     |
-| ---------------- | -------------------------------- | ---------------------------------------- |
-| 从源码运行       | `pnpm desktop:dev`               | 开发者、想跑最新代码的人；前端改动热更新 |
-| 打包（带版本号） | `pnpm desktop:dist` → `release/` | 普通用户；CI 在打 `v*` tag 时构建并上传  |
+| Form                      | Command                                                       | For                                                                        |
+| ------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Run from source           | `pnpm desktop:dev`                                            | Developers; frontend hot reload                                            |
+| Build and install locally | `pnpm desktop:install` (`desktop:build`, `desktop:uninstall`) | Anyone with the repo and Node + pnpm; no download warnings, no certificate |
+| Installer from a release  | `pnpm desktop:dist` (CI runs it on a version tag)             | Everyone else; unsigned, see "Opening an unsigned installer"               |
 
-## 架构
-
-```
-┌──────────────────────── Electron 主进程 ─────────────────────────┐
-│ 窗口 / 菜单 / 原生对话框 / 通知 / 单实例 / 更新检查               │
-│ 保险箱 SecretVault（safeStorage 加密 API Key，落盘 secrets.json） │
-│ 令牌（每次启动随机生成，只在内存里）                              │
-└──────┬───────────────────────────────┬───────────────────────────┘
-       │ utilityProcess 消息通道        │ 会话层给“应用来源”的请求补令牌
-       │ (start / stop / secret.*)     │
-┌──────▼───────────────┐        ┌──────▼──────────────────────────┐
-│ 服务进程              │ HTTP   │ 渲染进程（沙箱，无 Node）        │
-│ @dramai/server        │◄──────►│ http://127.0.0.1:<端口>/ 前端    │
-│ node:sqlite · ffmpeg  │ + SSE  │ window.dramaiDesktop（小桥接）   │
-└───────────────────────┘        └─────────────────────────────────┘
-```
-
-**为什么服务在 utilityProcess 里，不在主进程里**：`node:sqlite` 是同步调用，文档解析（mammoth）、大文件上传都吃 CPU，放在主进程会让菜单、窗口、系统对话框一起卡住；服务崩溃时也只丢这个进程，主进程能弹窗并重启它，而不是整个应用消失。ffmpeg 是服务进程的子进程。代价是密钥要跨进程：`safeStorage` 只能在主进程用，所以服务里的 `SecretStore` 是个转发器，每次读写都通过消息交给主进程的保险箱（明文只在两个进程的内存里短暂出现）。
-
-**窗口怎么通过鉴权**：令牌不出现在任何地址里，页面脚本也读不到它。主进程在窗口所属的会话里拦截发往“应用自己那个来源”（`http://127.0.0.1:<端口>`）的请求，补上 `Authorization: Bearer <令牌>`；发往别的来源的请求不带。外部浏览器、别的本地程序不知道令牌，拿不到数据；Host 头校验、同源校验仍由服务端执行。（计划 4.2 写的是“由 preload 注入”，这里改成主进程补头：preload 注入意味着令牌进了页面的 JS 环境，一个 XSS 就能读走。）
-
-**端口**：随机，由服务自己绑定（没有“先探测、后绑定”的竞争）；但上次用过的端口空闲就继续用它——页面的来源（含端口）不变，`localStorage` 里的语言、主题等偏好才能跨启动保留。被占用就换一个随机的。
-
-**数据在哪**（优先级从高到低）：环境变量 `DRAMAI_DATA_DIR` > 菜单“文件 → 更改数据目录…”选的 > 默认位置：
-
-| 系统    | 默认数据目录                                | 日志                     |
-| ------- | ------------------------------------------- | ------------------------ |
-| macOS   | `~/Library/Application Support/Dramai/data` | `~/Library/Logs/Dramai/` |
-| Windows | `%APPDATA%\Dramai\data`                     | `%APPDATA%\Dramai\logs\` |
-| Linux   | `~/.config/Dramai/data`                     | `~/.config/Dramai/logs/` |
-
-开发形态用 `Dramai Dev`（同级目录），不碰正式安装的数据。更改数据目录**不会移动已有数据**：选空目录是从头开始，选原来的数据目录就继续用。卸载（Windows NSIS）不删数据。
-
-**API Key**：`<数据目录>/secrets.json`，值用系统加密设施（macOS 钥匙串 / Windows DPAPI / Linux libsecret 或 kwallet，通过 Electron `safeStorage` 的**异步**接口；同步接口在 Electron 45 起弃用、46 移除）加密后落盘，文件头标 `electron-safe-storage`。**没有系统加密的机器**（典型：没装也没解锁密码管理器的 Linux，Electron 会退到写死密码的 `basic_text`，那只是混淆，不算加密）：退回明文文件 + 0600 权限（和 WebUI 一样），首次启动弹窗告诉用户；之后系统加密可用了会自动把明文升级成密文。解不开的单个密钥（钥匙串被重置、数据目录从别的电脑拷来）按“未设置”处理，让用户重新填，不会让应用起不来。
-
-## 运行
+Requirements for the first two: Node 22.13+ (24 recommended), pnpm 9, and `pnpm install` run once at the repo root. ffmpeg is not bundled in any form; see [ffmpeg](#ffmpeg).
 
 ```bash
 pnpm install
-pnpm desktop:dev                 # 窗口加载 Vite（热更新）；改主进程 / 服务源码会自动重新打包并重启应用
-pnpm desktop:dev --demo --fresh  # 演示模式：同时起模拟服务商并建好服务商配置，不需要任何 Key、不花钱
+pnpm desktop:dev                 # run from source (add --demo --fresh for mock providers: no API keys, no cost)
+pnpm desktop:build               # compile the app for this machine into apps/desktop/release/ (does not install)
+pnpm desktop:install             # build + install for the current user
+pnpm desktop:uninstall           # remove the app, keep your data (add --purge-data to delete data too)
+pnpm desktop:dist                # installers for this system into apps/desktop/release/
 ```
 
-`pnpm desktop:dev` 做的事：监听构建主进程 / 预加载 / 服务进程（esbuild）→ 起前端开发服务器（`/api` 代理到应用内的服务）→ 起 Electron。服务进程用的是和正式包**同一份打包产物**（从源码构建），所以开发形态跑的就是真实的进程模型。演示模式的数据在 `~/.dramai-desktop-demo`，和正式数据分开；演示代码只存在于开发构建里，不进安装包。
+All of `build`, `install` and `dist` run the **same generation step** (build the frontend, bundle the app, `electron-builder`); `build`/`install` stop at the unpacked app, `dist` also produces installers. The only difference in the resulting app is a `dramai.distribution` field (`local` or `package`) in its `package.json`, which the update notice uses.
 
-## 打包
+## Local build and install
 
-```bash
-pnpm desktop:dist                 # 当前平台、本机架构；产物在 apps/desktop/release/
-pnpm desktop:dist --arch x64      # macOS 上可以交叉打 Intel 版（arm64 机器出 x64 包）
-pnpm desktop:dist --dir           # 只生成未打包的应用目录（冒烟检查用）
-```
+Everything is installed for the current user, so **no administrator rights are needed** (the one exception is a Linux hardening setting, below).
 
-做了什么：构建前端 → esbuild 把主进程、预加载、服务进程各打成**单个文件**（应用包里没有 `node_modules`）→ 拷入 `packages/core/data`（提示词和模型数据）和前端构建产物（含自托管字体）→ electron-builder 出安装包。
+| System  | Installed to                                                                                                                                  | Appears in                                     |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| macOS   | `/Applications/Dramai.app` (or `~/Applications` if `/Applications` is not writable by you)                                                    | Launchpad, Spotlight, Finder                   |
+| Windows | `%LOCALAPPDATA%\Programs\Dramai` + Start menu shortcut + an entry in Settings > Apps                                                          | Start menu, search, Settings > Apps            |
+| Linux   | `~/.local/share/dramai`, symlink `~/.local/bin/dramai`, `~/.local/share/applications/dramai.desktop`, icons in `~/.local/share/icons/hicolor` | Application menu, `dramai` on the command line |
 
-产物名 `dramai-<版本>-<系统>-<架构>.<扩展名>`：
+- **Upgrade**: pull the new code and run `pnpm desktop:install` again. The old copy is replaced (and restored if the copy fails); your data is not touched. The installer refuses to replace a running app: quit Dramai first.
+- **Uninstall**: `pnpm desktop:uninstall` removes the app, launcher entries and icons and **keeps your projects, settings and API keys**. `--purge-data` also deletes them: it lists every folder it will delete (including a custom data folder chosen in the app) and asks you to type `delete`; non-interactive runs must add `--yes`. On macOS it also deletes the "Dramai Safe Storage" keychain entry that protected the API keys.
+- **Why no certificate is needed**: Gatekeeper (macOS), SmartScreen (Windows) and similar checks apply to files that arrived from the network (they carry a quarantine / "mark of the web" flag). An app generated on your own machine has no such flag.
+  - **macOS** (verified on Apple silicon): an arm64 executable must have at least an _ad-hoc_ signature to run at all. That needs no certificate, but something has to create it, so the build does (`scripts/ad-hoc-sign.mjs`). The installed app opens from Launchpad / Finder without any prompt.
+  - **Windows** and **Linux**: no signature is required to run a locally created program; this is according to the platforms' documentation and has **not** been tested here (see "What was verified").
+- **Linux sandbox note**: Chromium's sandbox needs unprivileged user namespaces. Ubuntu 24.04+ (AppArmor) and some hardened kernels block them; if Dramai does not start there, the installer prints the one command to run with `sudo` (set the setuid bit on `chrome-sandbox`). Nothing else needs root.
 
-| 平台              | 产物                                                                            |
-| ----------------- | ------------------------------------------------------------------------------- |
-| macOS arm64 / x64 | `dramai-X.Y.Z-mac-arm64.dmg` / `.zip`、`dramai-X.Y.Z-mac-x64.dmg` / `.zip`      |
-| Windows x64       | `dramai-X.Y.Z-win-x64.exe`（NSIS 安装包）、`dramai-X.Y.Z-win-x64.zip`（免安装） |
-| Linux x64（可选） | `dramai-X.Y.Z-linux-x64.AppImage`                                               |
+## Installers (`pnpm desktop:dist`)
 
-版本号取 `apps/desktop/package.json` 的 `version`（全仓统一一个版本，由版本工具一起改），About 里显示的是 `app.getVersion()`，同一个值。
+Run once per system on that system (no wine, no extra arguments); output in `apps/desktop/release/`, named `dramai-<version>-<os>-<arch>.<ext>`:
 
-### 给发布工作流（`infra`）
+| System  | Files                                                                                                                   |
+| ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| macOS   | `dramai-X.Y.Z-mac-arm64.dmg`, `.zip`; `--arch x64` also builds `…-mac-x64.dmg`, `.zip` (cross-built on an arm64 runner) |
+| Windows | `dramai-X.Y.Z-win-x64.exe` (NSIS installer, per-user), `dramai-X.Y.Z-win-x64.zip` (portable)                            |
+| Linux   | `dramai-X.Y.Z-linux-x64.AppImage`, `dramai-X.Y.Z-linux-x64.tar.gz`                                                      |
 
-每个平台在对应的 runner 上各跑一次，**不需要额外参数、不需要 wine**：
+The version is the `version` of `apps/desktop/package.json` (one repo-wide version) and is what About shows. The command also builds the frontend and runs `electron-builder --publish never`: it never uploads anything. Downloaded Electron binaries are cached (~100 MB per platform and arch). Checksums, the release and the upload belong to the release workflow.
 
-```bash
-pnpm install --frozen-lockfile
-pnpm desktop:dist                       # macos-14 (arm64)、windows-latest (x64)、ubuntu-latest (x64)
-pnpm desktop:dist --arch x64            # macOS Intel 包：在 macos-14 (arm64) 上交叉打，不需要 Intel runner
-# 上传：apps/desktop/release/dramai-*.{dmg,zip,exe,AppImage}  （*.blockmap 不需要）
-```
+Nothing is signed. The configuration does not block adding signing later: set `mac.identity` / `win.signtoolOptions` in `electron-builder.config.mjs` (and drop `scripts/ad-hoc-sign.mjs`).
 
-- 命令内部已经包含前端构建和 `electron-builder --publish never`，不会往任何地方发布。
-- 首次运行会下载 Electron（约 100 MB，缓存在 `~/.cache/electron` 或系统缓存目录），CI 里可缓存。
-- 退出码非零即失败；产物清单在最后打印。
-- 校验和、创建 Release、上传由工作流负责。
+### Opening an unsigned installer
 
-### 签名和公证（环境变量驱动，没有就干净地跳过）
+_English_
 
-| 目的                  | 环境变量                                                                                                                                        |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| macOS 签名            | `CSC_LINK`（Developer ID Application 证书 .p12，base64 或路径）+ `CSC_KEY_PASSWORD`                                                             |
-| macOS 公证（推荐）    | `APPLE_API_KEY`（.p8 路径）+ `APPLE_API_KEY_ID` + `APPLE_API_ISSUER`                                                                            |
-| macOS 公证（备选）    | `APPLE_ID` + `APPLE_APP_SPECIFIC_PASSWORD` + `APPLE_TEAM_ID`                                                                                    |
-| Windows 签名（证书）  | `WIN_CSC_LINK`（.pfx，base64 或路径）+ `WIN_CSC_KEY_PASSWORD`                                                                                   |
-| Windows 签名（Azure） | `AZURE_TRUSTED_SIGNING_ENDPOINT` / `_ACCOUNT` / `_PROFILE` / `_PUBLISHER`，认证用 `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` |
-| 随包 ffmpeg           | `DRAMAI_FFMPEG_DIR=<放着 ffmpeg(.exe)、ffprobe(.exe) 和许可证文件的目录>`                                                                       |
+- **macOS**: a downloaded `.dmg` / `.zip` is quarantined, so the first launch is blocked with "Dramai cannot be opened because Apple cannot check it for malicious software". Open **System Settings > Privacy & Security**, scroll to **Security**, click **Open Anyway** next to Dramai and confirm with your password. (On macOS 15 and later, right-click > Open no longer bypasses this.) Or remove the flag in Terminal: `xattr -dr com.apple.quarantine /Applications/Dramai.app`. If macOS says the app is "damaged", that command fixes it too.
+- **Windows**: SmartScreen shows "Windows protected your PC" with publisher "Unknown". Click **More info**, then **Run anyway**. The same applies to the portable `.zip` after you extract it.
+- **Linux**: `chmod +x dramai-*.AppImage`, then run it (AppImages need FUSE 2; on Ubuntu 22.04+ install `libfuse2`, or use the `.tar.gz`). See the sandbox note above for Ubuntu 24.04+.
+- You can avoid all of this by building locally (`pnpm desktop:install`).
 
-- 没有 `CSC_LINK`/`CSC_NAME` 时：不签名，**也不会去钥匙串里“自动发现”一个碰巧存在的证书**（`CSC_IDENTITY_AUTO_DISCOVERY=false`），再由 `afterSign` 钩子做 ad-hoc 签名（Apple 芯片上可执行文件至少要有一个签名才能运行；翻转 Electron fuses 后原签名会失效，所以最后重签）。
-- 有证书时：启用 hardened runtime 和 `build/entitlements.mac.plist`；有公证凭据时再公证。
-- 没有任何变量时，三个平台的构建都照常成功，只是产物未签名。开启签名只需要在工作流里加 secrets，**不用改任何文件**。
+_中文_
 
-### 未签名版本用户会看到什么
-
-**macOS（15 及以后）**：从浏览器下载的 dmg / zip 带隔离属性，双击打开会提示“无法打开“Dramai”，因为 Apple 无法验证其不含恶意软件”。解决：
-
-1. 先双击一次（会被拦），然后打开 **系统设置 → 隐私与安全性**，滚到“安全性”，点 **仍要打开**，输入密码确认。（macOS 15 起右键 → 打开 不再能绕过。）
-2. 或者在终端去掉隔离属性：`xattr -dr com.apple.quarantine /Applications/Dramai.app`
-3. 如果提示的是“已损坏，无法打开”，也是同一条命令。
-
-**Windows**：运行安装包时 SmartScreen 显示“Windows 已保护你的电脑”，发布者“未知”。点 **更多信息 → 仍要运行**。免安装的 zip 解压后同理。（只有代码签名，且信誉积累后，这个提示才会消失；EV / Azure Trusted Signing 证书可以更快获得信誉。）
-
-**Linux**：`chmod +x dramai-*.AppImage` 后运行。
-
-## 更新
-
-启动后约 8 秒（且距上次检查超过 6 小时）问 GitHub Releases（`GET /repos/hyyyyyyz/dramai/releases`，匿名，不带任何个人信息，UA 只有 `dramai-desktop/<版本>`），有更新的版本就弹窗，带**发布页链接**：“打开发布页 / 稍后 / 跳过此版本”。用正式版的人只看正式版，用预发布版（`v0.5.0-beta.1`）的人也看预发布；草稿忽略；只接受指回本仓库发布页的链接。菜单“帮助 → 检查更新…”手动检查，“启动时检查更新”可关。
-
-**只通知、不自动下载安装**：macOS 的自动更新（Squirrel.Mac）要求应用已签名并公证，第一版没有。要开启自动更新，需要：
-
-1. 有 Apple Developer Program 账号，做完上面的 macOS 签名 + 公证；Windows 建议同时签名（NSIS 更新在未签名时也能工作，但 SmartScreen 每次都拦）。
-2. `apps/desktop` 加依赖 `electron-updater`，`electron-builder.config.mjs` 里把 `publish` 改成 `[{ provider: 'github' }]`（会生成并上传 `latest*.yml`；mac 的 zip 必须保留，它就是更新包），发布工作流上传这些 yml。
-3. 主进程里用 `autoUpdater` 替换 `runUpdateCheck`（`src/main/updates.ts` 的 semver 逻辑可继续用于通知文案）。
-4. 注意：macOS 上 `safeStorage` 的钥匙串条目绑定在应用签名上，ad-hoc 签名每次构建都不一样，**更新后系统会再问一次钥匙串权限**；用固定的 Developer ID 签名就不会。
+- **macOS**：下载的 `.dmg` / `.zip` 带隔离标记，首次打开会提示"无法打开 Dramai，因为 Apple 无法检查其是否包含恶意软件"。打开 **系统设置 > 隐私与安全性**，滚动到 **安全性**，点 Dramai 旁边的 **仍要打开** 并输入密码。（macOS 15 起右键 > 打开 不再能绕过。）或在终端运行：`xattr -dr com.apple.quarantine /Applications/Dramai.app`。提示"已损坏"时同样用这条命令。
+- **Windows**：SmartScreen 会显示"Windows 已保护你的电脑"，发布者为"未知"。点 **更多信息**，再点 **仍要运行**。免安装的 `.zip` 解压后同理。
+- **Linux**：`chmod +x dramai-*.AppImage` 后运行（AppImage 需要 FUSE 2，Ubuntu 22.04+ 请安装 `libfuse2`，或改用 `.tar.gz`）。
+- 想避开这些提示：用本地编译安装（`pnpm desktop:install`）。
+- 所有形式都需要自己安装 ffmpeg，见下。
 
 ## ffmpeg
 
-服务通过 `createServer({ ffmpeg: { ffmpegPath } })` 接受显式路径。桌面端的解析顺序：
+Not bundled in any form. The app uses the ffmpeg installed on the machine: `DRAMAI_FFMPEG` (full path) if set, otherwise the one on `PATH`. Apps started from Finder / the Start menu do not inherit your shell's `PATH` (Homebrew's `/opt/homebrew/bin` is not in it), so the app appends the usual install folders (macOS: `/opt/homebrew/bin`, `/usr/local/bin`, `/opt/local/bin`; Windows: Chocolatey, Scoop and WinGet link folders) to the server's `PATH`.
 
-1. **随包的**：`<应用资源>/ffmpeg/ffmpeg(.exe)`（同目录有 `ffprobe` 也会用）——打包时设 `DRAMAI_FFMPEG_DIR` 把一个目录拷到这里；**仓库里不提交二进制**，没设就不随包。
-2. 环境变量 `DRAMAI_FFMPEG`。
-3. 系统 PATH。从访达 / 开始菜单启动的应用拿不到用户 shell 的 PATH（Homebrew 的 `/opt/homebrew/bin` 不在默认 PATH 里），所以桌面端会把常见安装位置（macOS：`/opt/homebrew/bin`、`/usr/local/bin`、`/opt/local/bin`；Windows：Chocolatey、Scoop、WinGet 的链接目录）补到服务进程的 PATH 末尾。
+If ffmpeg is missing the app says so at launch (once; "Don't remind me" is remembered) and under Help > Set Up ffmpeg…, with the command for the system: `brew install ffmpeg` (macOS), `winget install Gyan.FFmpeg` (Windows), `apt` / `dnf` / `pacman install ffmpeg` (Linux). The server needs H.264 (`libx264`; `h264_videotoolbox` is the macOS fallback) and AAC; burning subtitles into the picture also needs the `subtitles` filter (libass), which some default builds lack.
 
-服务要求的能力：H.264 编码（`libx264`，macOS 上可退到 `h264_videotoolbox`）、AAC；字幕烧录还要 `subtitles` 滤镜（libass）。没有 `libx264` 的 Windows 构建会被服务判为不可用——服务目前没有 `h264_mf` / `nvenc` / `qsv` / `amf` 的回退，选 LGPL 路线需要 `core-server` 加。
+If bundling is ever wanted: (1) a GPL static build shipped as a _separate executable_ next to the app (libx264 + libass, identical behaviour everywhere; needs the GPL text and a source offer in the notices, adds roughly 80–150 MB per platform, unmeasured); (2) an LGPL build plus the platforms' own H.264 encoders (`h264_videotoolbox`, `h264_mf` / nvenc / qsv / amf; lighter obligations, but the server has no encoder fallback besides VideoToolbox today); (3) download on first run (small installer, but needs hosting, hash checks and an offline story).
 
-**方案对比（需要你来决定许可取舍）**
+## Updates
 
-| 方案                                         | 许可                                                                                                                                                            | 体积                                               | 功能                                                                                                                                     | 评价                                                                     |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| A. 随包 GPL 静态构建，作为**独立可执行文件** | ffmpeg 为 GPL。应用只是**调用**它的外部程序（聚合，不链接），应用本身保持 Apache-2.0；要随包附 GPL 许可全文、版权声明和“如何获取对应源码”的说明（或书面承诺）。 | 每个平台增加约 80–150 MB（以实际下载的为准，未量） | libx264 + libass + AAC 齐全，两个平台行为一致，字幕烧录可用                                                                              | **推荐**：用户装完即可走完整流程，不用自己装 ffmpeg                      |
-| B. 随包 LGPL 构建 + 系统自带的 H.264 编码器  | LGPL（动态/独立可执行均可，义务比 GPL 轻）                                                                                                                      | 更小                                               | macOS 用 `h264_videotoolbox`；Windows 用 `h264_mf` 或厂商硬编（nvenc / qsv / amf）；没有 libx264，画质 / 码控不如 x264，部分机器没有硬编 | 许可最干净，但需要 `core-server` 加编码器回退，且 Windows 上稳定性要实测 |
-| C. 首次运行时下载                            | 应用不分发 ffmpeg；下载的是第三方构建                                                                                                                           | 安装包小                                           | 需要联网、需要托管点、要校验哈希、要处理失败与重试                                                                                       | 工程量大，离线用不了；除非安装包体积是硬约束，否则不划算                 |
-| D. 依赖用户系统里装的（现状）                | 无                                                                                                                                                              | 0                                                  | 取决于用户装的构建；Homebrew 默认的 ffmpeg 常带 libx264 但**不带 libass**                                                                | 对普通用户门槛高；适合作为第一版的“先发出去”选项                         |
+At launch (about 8 s in, at most every 6 h) the app asks the GitHub Releases API whether a newer version exists (anonymous request, no personal data, `User-Agent: dramai-desktop/<version>`) and, if so, shows a dialog with a link to the release page and "Later" / "Skip this version". Stable users only see stable releases; pre-release users (`v0.5.0-beta.1`) also see pre-releases; drafts and links that do not point at this repository are ignored. The text depends on how the app was installed: **installer** → "download the new version from the release page"; **local build or source run** → "pull the latest code and run `pnpm desktop:install` again". Help > Check for Updates… checks on demand; "Check for Updates on Launch" can be switched off. There is no automatic updating: on macOS it requires a signed and notarized app.
 
-**建议**：第一版（未签名）先走 D（已支持，界面会显示 ffmpeg 状态），同时把 A 的流水线准备好——发布工作流下载各平台的 GPL 静态构建（Windows：BtbN 的 `win64-gpl`；macOS arm64 / x64：确认带 libx264 + libass 的静态构建来源），放进 `DRAMAI_FFMPEG_DIR`，并随包附 `ffmpeg/LICENSE` 与来源说明；macOS 上随包的 ffmpeg 要和应用一起用同一个证书签名（`codesign --options runtime`）才能通过公证。具体用哪个下载源、是否带 libass，**必须下载后跑 `ffmpeg -buildconf` / `-encoders` / `-filters` 实测**，我没有在这台机器上验证第三方构建。
+## Icons and the app name
 
-## 安全
+Icons are generated from the artwork in `packages/ui/src/brand/` by the build; no derived icon is committed.
 
-- `contextIsolation: true`、`sandbox: true`、`nodeIntegration: false`、`webSecurity: true`；预加载只暴露一个冻结的小对象，不暴露 `ipcRenderer` 或任何 Electron 对象。
-- 所有 IPC 在主进程里校验发送者（必须是应用自己的页面）和参数（路径、字符串长度）。
-- 导航只允许应用自己的来源（比较解析后的 origin，不比字符串前缀）；`window.open` 一律拒绝，http(s) / mailto 交给系统浏览器，其他协议丢弃；`<webview>` 禁止。
-- 权限请求默认拒绝，只放行应用页面的 `fullscreen`（视频全屏）和 `clipboard-sanitized-write`（复制）。拼写检查关闭（Windows / Linux 上它要联网下载词典）。
-- Electron fuses：`runAsNode` 关、`NODE_OPTIONS` 关、`--inspect` 关、`onlyLoadAppFromAsar` 开、asar 完整性校验开、`file://` 额外权限关。
-- 原生菜单和对话框有 English / 简体中文 / 繁體中文 三套文案：默认跟随系统（`zh-TW` / `zh-HK` / `zh-Hant*` → 繁体，其他 `zh*` → 简体，其余 → English），可在“视图 → 语言”或通过桥接的 `setLanguage` 改，选择保存在 `desktop.json`。
-- 页面本身带的 CSP 由服务端的静态托管下发。
+| Where                                                 | How                                                                                                                                                            |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| macOS installed app (Finder, Launchpad, Dock)         | `electron-builder` turns `app-icon-1024.png` (the macOS artwork) into the `.icns`                                                                              |
+| Windows installed app (Start menu, taskbar, Explorer) | `electron-builder` embeds `app-icon-square-1024.png` into `Dramai.exe` as `.ico`; the Start menu shortcut takes its icon from the exe                          |
+| Linux (menu, window)                                  | the local installer writes 16–512 px PNGs from `app-icon-square-1024.png` into the `hicolor` theme; the window icon is `dist/icons/window.png`                 |
+| Running from source, macOS                            | `scripts/lib/dev-app.mjs` makes `.dev/Dramai Dev.app`, a patched copy of Electron.app with the dramai icon and the name "Dramai Dev" (Dock, Cmd-Tab, menu bar) |
+| Running from source, Windows / Linux                  | the window / taskbar icon is set from the app (`dist/icons/window.png`) and the app user model id; the process still appears as `electron` in task managers    |
 
-## 前端可以调用什么（`window.dramaiDesktop`）
+Scaling uses `scripts/lib/icons.mjs` (an area-average resampler on `pngjs`, identical on every OS).
 
-只在桌面壳里存在；页面用 `window.dramaiDesktop !== undefined` 判断自己是不是桌面端（`GET /api/system` 的 `desktop: true` 也一样）。类型见 [`src/shared/bridge.ts`](src/shared/bridge.ts)。
+## How it works
+
+```
+Electron main process: window, menu, dialogs, notifications, single instance, update notice,
+                       vault for API keys (safeStorage), the per-launch token (in memory only)
+   │ utilityProcess channel (start / stop / secret.*)       │ session layer adds the token to requests for the app origin
+@dramai/server (own process)  ◄──── HTTP + SSE on 127.0.0.1:<port> ────►  renderer (sandboxed, no Node)
+node:sqlite · ffmpeg child process                                          the frontend + window.dramaiDesktop (tiny bridge)
+```
+
+- **Server in a utility process, not the main process**: `node:sqlite` is synchronous, document parsing and large uploads are CPU heavy; in the main process they would freeze menus and dialogs. A server crash only loses that process (the app offers to restart it). Secrets cross the process boundary because `safeStorage` is main-process only: the server's `SecretStore` forwards every read/write to the main process.
+- **Window authentication**: the token never appears in a URL and page scripts cannot read it. The main process adds `Authorization: Bearer <token>` to requests for the app's own origin in the window's session; other origins get nothing. (The plan said "injected by preload"; that would put the token in the page's JS world, where one XSS could read it.) Other local programs and browsers do not know the token; the server still enforces the Host and same-origin checks.
+- **Port**: random, bound by the server itself (no probe-then-bind race), but the previous port is reused when free so the page origin, and therefore `localStorage` (language, theme), survives restarts.
+- **Data**: `DRAMAI_DATA_DIR` > the folder chosen in File > Change Data Folder… > the default below. Changing the folder does not move existing data. Development uses `Dramai Dev` next to it. Uninstalling never deletes data unless asked.
+
+  | System  | Default data folder                         | Logs                     |
+  | ------- | ------------------------------------------- | ------------------------ |
+  | macOS   | `~/Library/Application Support/Dramai/data` | `~/Library/Logs/Dramai/` |
+  | Windows | `%APPDATA%\Dramai\data`                     | `%APPDATA%\Dramai\logs\` |
+  | Linux   | `~/.config/Dramai/data`                     | `~/.config/Dramai/logs/` |
+
+- **API keys**: `<data folder>/secrets.json`, encrypted with the OS facility (macOS Keychain, Windows DPAPI, Linux libsecret / kwallet) through `safeStorage`'s async API (the sync API is deprecated in Electron 45 and removed in 46). Where no system key store exists (typically Linux without a running keyring; Electron then falls back to a hard-coded password, which is obfuscation, not encryption) keys are kept in a 0600 file like the WebUI does, and the app tells the user once. Keys become encrypted automatically once a key store is available. A single key that can no longer be decrypted (keychain reset, data folder copied from another computer) is treated as unset so the user can enter it again; it never prevents startup.
+- **Security**: `contextIsolation`, `sandbox`, no Node integration, `webSecurity`; the preload exposes one frozen object; every IPC call validates the sender (must be the app page) and its arguments; navigation is limited to the app origin (parsed origin comparison), `window.open` is refused and http(s)/mailto links go to the system browser; permissions are denied except `fullscreen` and `clipboard-sanitized-write` for the app page; spell-check is off (it downloads dictionaries on Windows/Linux); fuses: `runAsNode` off, `NODE_OPTIONS` off, `--inspect` off, `onlyLoadAppFromAsar` + asar integrity on, extra `file://` privileges off.
+- **Language**: native menus and dialogs come in English, 简体中文 and 繁體中文, follow the system by default, and can be changed under View > Language or with `setLanguage` from the page (kept in `desktop.json`).
+
+## Frontend bridge (`window.dramaiDesktop`)
+
+Only present in the desktop app; `GET /api/system` also reports `desktop: true`. Types: [`src/shared/bridge.ts`](src/shared/bridge.ts).
 
 ```ts
 interface DramaiDesktopBridge {
   getInfo(): Promise<{
-    version: string
+    version
     platform: 'darwin' | 'win32' | 'linux'
-    arch: string
-    dataDir: string
+    arch
+    dataDir
     secretStorage: 'os' | 'plain'
-    language: Lang
-    languagePreference: 'auto' | Lang
-  }> // Lang = 'en' | 'zh-CN' | 'zh-TW'
+    language: 'en' | 'zh-CN' | 'zh-TW'
+    languagePreference: 'auto' | 'en' | 'zh-CN' | 'zh-TW'
+  }>
   selectFolder(options?: { title?: string; defaultPath?: string }): Promise<string | null>
-  revealProjectFile(target: { projectId: string; path?: string }): Promise<boolean> // 在访达 / 资源管理器里显示
-  notify(notification: { title: string; body?: string }): Promise<boolean> // 窗口在前台时不弹，返回 false
-  setLanguage(language: 'auto' | 'en' | 'zh-CN' | 'zh-TW'): Promise<boolean> // 让原生菜单 / 对话框跟着换语言
+  revealProjectFile(target: { projectId: string; path?: string }): Promise<boolean> // Finder / Explorer / file manager
+  notify(notification: { title: string; body?: string }): Promise<boolean> // not shown while the window is focused
+  setLanguage(language: 'auto' | 'en' | 'zh-CN' | 'zh-TW'): Promise<boolean> // keeps native menus/dialogs in sync
 }
 ```
 
-前端需要接的地方（`workspace-fe`）：
+What the frontend should call: "Show in folder" on projects / shot cards / finished exports → `revealProjectFile({ projectId, path })` (path relative to the project folder, as in `fileUrl`); `notify` when a long task succeeds or needs attention; `selectFolder` next to directory inputs (export target, Jianying drafts folder); the Settings language switch (English / 简体中文 / 繁體中文 / match system) should also call `setLanguage`; Settings can show a notice when `getInfo().secretStorage === 'plain'`.
 
-1. **在访达中显示**：项目页 / 镜头卡 / 导出完成后加“在文件夹中显示”，调 `revealProjectFile({ projectId, path })`；`path` 是项目文件夹内的相对路径（和 `fileUrl(projectId, path)` 同一个），不给就打开项目文件夹。不在桌面端时不显示这个入口（WebUI 下没有）。
-2. **任务完成通知**：任务面板收到 `job.updated` 且状态变成 `succeeded`（或需要用户处理）的长任务（成片合成、整集视频批量）时调 `notify({ title, body })`；窗口在前台时主进程自己不弹。
-3. **选择文件夹**：导出到指定目录、剪映草稿目录等需要目录路径的输入框旁边放“选择…”按钮，调 `selectFolder()`。
-4. **界面语言**（用户要求：设置里可以切换 English / 简体中文 / 繁體中文）：设置页加“语言”选项，三种语言 + “跟随系统”；用户切换时除了切换网页界面，还要调 `setLanguage(...)`，让原生菜单和对话框一起变。桌面端自己的菜单“视图 → 语言”改的是同一个值（页面启动时用 `getInfo().languagePreference` 同步一次即可）。网页界面和服务端的内置数据（风格预设、服务商预设、演示提示语）目前只有中英两种，**繁体中文需要前端补一套文案，`core-server` 的 `Localized` / `locale` 也要加 `zh-TW`**（`GET /api/settings` 的 `locale`、请求头 `X-Dramai-Locale`）。
-5. **设置页显示密钥保存方式**：`getInfo().secretStorage === 'plain'` 时提示“没有系统加密，API Key 以文件权限保护”。
-
-## 验证脚本
+## Checks
 
 ```bash
-node scripts/smoke.mjs                       # 源码形态冒烟（需要先 pnpm --filter @dramai/desktop build）
-node scripts/smoke.mjs --app <可执行文件>     # 打包形态冒烟，如 release/mac-arm64/Dramai.app/Contents/MacOS/Dramai
-node scripts/smoke.mjs --full [--app …]      # 再加：模拟服务商走短流程、密钥加密落盘、重启后端口和密钥仍在、单实例
+node scripts/smoke.mjs                         # run-from-source smoke (needs `pnpm --filter @dramai/desktop build`)
+node scripts/smoke.mjs --app <executable>      # against a built / installed app; add --full for the short flow
+node scripts/selftest.mjs                      # after `pnpm desktop:build`: sandboxed install -> smoke -> uninstall -> purge, unattended
 ```
 
-冒烟检查通过 Chromium 的 `--remote-debugging-port` 驱动应用（应用本身没有为测试留任何后门）：等服务健康 → 首屏渲染 → 验证安全边界（无令牌 401、错误令牌 401、伪造 Host 403、页面里没有 cookie、预加载只暴露约定的四个方法、渲染进程没有 Node）→ 正常退出（服务关闭、数据目录锁释放）。
+The smoke check drives the app through Chromium's `--remote-debugging-port` (the app has no test back door): server healthy, first screen rendered, security boundaries (no token / wrong token → 401, forged Host → 403, no cookies, preload exposes only the agreed methods, no Node in the renderer), clean exit with the data-dir lock released. `--full` adds the mock-provider flow (create project, upload, plan episodes), encrypted key storage, restart persistence and the single-instance check. `selftest.mjs` needs a display on Linux (`xvfb-run -a`) and `--arg=--no-sandbox` on runners that block user namespaces.
 
-## 已知限制
+## What was verified (macOS arm64, Apple silicon)
 
-- 第一版未签名（见上）。
-- 没有托盘（计划里提到，这一版没做）；关闭最后一个窗口在 macOS 上保留应用（任务继续跑），在 Windows / Linux 上退出应用。
-- 退出时有运行中的任务会先确认；确认后不等它们结束：已提交给服务商的任务由下次启动的恢复逻辑继续查询，其余标记“结果不明”（不会重复提交，避免重复计费）。
+Run from source (Dock shows the dramai icon, app registered as "Dramai Dev"); `desktop:install` to `/Applications` and opened through LaunchServices (as Launchpad does) with the short flow passing; reinstall over a running app is refused, over a stopped one replaces it; `desktop:uninstall` removes it and keeps data; `--purge-data` confirmations; `selftest.mjs`; the installer (`.dmg`) installed to a scratch folder and run. **Not run**: Windows, Linux, macOS x64 (built only), Launchpad itself (Spotlight/LaunchServices registration was checked), a machine without an OS key store (unit-tested only), the native error dialogs (logged and unit-tested, not clicked through).
