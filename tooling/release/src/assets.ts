@@ -1,39 +1,61 @@
-// 桌面端构建产物的命名约定：dramai-<版本>-<系统>-<架构>.<扩展名>
-// 例：dramai-0.5.0-mac-arm64.dmg、dramai-0.5.0-beta.1-win-x64.exe
-// 这里负责从 electron-builder 的输出目录里挑出符合约定的安装包。
+// Naming convention of the desktop installers: dramai-<version>-<os>-<arch>.<extension>
+//   dramai-0.5.0-mac-arm64.dmg, dramai-0.5.0-beta.1-win-x64.exe, dramai-0.5.0-linux-x64.AppImage
+// `<os>` is mac | win | linux and `<arch>` is arm64 | x64, exactly as electron-builder's
+// `dramai-${version}-${os}-${arch}.${ext}` produces them.
+//
+// This file is the single place that says which installers every system must produce; docs/RELEASING.md
+// has the same table. A release is only as good as this check: a missing or misnamed installer fails the
+// build instead of silently producing a Release without it.
 import { copyFileSync, mkdirSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 export type PlatformFamily = 'mac' | 'win' | 'linux'
 export type Arch = 'arm64' | 'x64'
 
-/** 约定里“系统”一段的写法没有定死，这里接受常见别名，桌面端定下来之后可以收紧。 */
-const OS_TOKENS: Record<PlatformFamily, string[]> = {
-  mac: ['mac', 'macos', 'darwin'],
-  win: ['win', 'windows'],
-  linux: ['linux'],
+/** The installer kinds (file extensions) each system must produce, in the order they are reported. */
+export const REQUIRED_KINDS: Record<PlatformFamily, readonly string[]> = {
+  mac: ['dmg', 'zip'],
+  win: ['exe', 'zip'],
+  linux: ['AppImage', 'tar.gz'],
 }
 
-const EXTENSIONS = ['dmg', 'zip', 'exe', 'msi', 'AppImage', 'deb', 'rpm', 'tar.gz']
+/** Extensions that mark a file as an installer. A file with one of these that is not expected is an error. */
+const INSTALLER_EXTENSIONS = [
+  ...new Set([...Object.values(REQUIRED_KINDS).flat(), 'msi', 'deb', 'rpm', 'pkg']),
+]
 
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+/** The exact file names a system's build must produce. */
+export function expectedInstallers(version: string, family: PlatformFamily, arch: Arch): string[] {
+  return REQUIRED_KINDS[family].map((ext) => `dramai-${version}-${family}-${arch}.${ext}`)
 }
 
-export function installerPattern(version: string, family: PlatformFamily, arch: Arch): RegExp {
-  const os = OS_TOKENS[family].map(escapeRegExp).join('|')
-  const ext = EXTENSIONS.map(escapeRegExp).join('|')
-  return new RegExp(`^dramai-${escapeRegExp(version)}-(?:${os})-${arch}\\.(?:${ext})$`)
+/** A problem that makes the build unusable for a release. `problems` has one line per issue. */
+export class CollectError extends Error {
+  readonly problems: string[]
+  constructor(problems: string[]) {
+    super(problems.join('\n'))
+    this.name = 'CollectError'
+    this.problems = problems
+  }
 }
 
 export interface CollectResult {
-  /** 符合约定、已复制到 out 的文件名 */
+  /** Installers that match the convention and were copied to `out`. */
   collected: string[]
-  /** 以 dramai- 开头但不符合约定的文件（不会上传，调用方应该提示） */
+  /** Other `dramai-*` files that are not installers and not known side files (not uploaded; worth a warning). */
   ignored: string[]
 }
 
-/** 把 dir 里符合约定的安装包复制到 out；一个都没有时抛错。 */
+function extensionOf(name: string): string | undefined {
+  return INSTALLER_EXTENSIONS.find((ext) => name.endsWith(`.${ext}`))
+}
+
+/**
+ * Check that `dir` holds exactly the installers this system must produce and copy them to `out`.
+ * Throws CollectError when an expected installer is missing, or when a file looks like an installer
+ * but is not named as expected (for example `…-linux-x86_64.AppImage`).
+ * `.blockmap` files, `latest*.yml`, `builder-debug.yml` and folders are never uploaded and never an error.
+ */
 export function collectAssets(options: {
   dir: string
   out: string
@@ -42,24 +64,38 @@ export function collectAssets(options: {
   arch: Arch
 }): CollectResult {
   const { dir, out, version, family, arch } = options
-  const pattern = installerPattern(version, family, arch)
-  const collected: string[] = []
+  const expected = expectedInstallers(version, family, arch)
+  const present = new Set<string>()
+  const problems: string[] = []
   const ignored: string[] = []
+
   for (const name of readdirSync(dir).sort()) {
     if (!name.startsWith('dramai-') || !statSync(join(dir, name)).isFile()) continue
-    if (pattern.test(name)) collected.push(name)
-    // electron-builder's differential-update maps: expected next to the installers, never uploaded, no warning
-    else if (!name.endsWith('.blockmap')) ignored.push(name)
-  }
-  if (collected.length === 0) {
-    throw new Error(
-      `No installer named dramai-${version}-<${OS_TOKENS[family].join('|')}>-${arch}.<${EXTENSIONS.join('|')}> found in ${dir}` +
-        (ignored.length > 0
-          ? ` (saw: ${ignored.join(', ')})`
-          : ' (the directory has no dramai-* files)'),
+    if (name.endsWith('.blockmap')) continue
+    if (expected.includes(name)) {
+      present.add(name)
+      continue
+    }
+    const ext = extensionOf(name)
+    if (ext === undefined) {
+      ignored.push(name)
+      continue
+    }
+    const wanted = expected.find((e) => e.endsWith(`.${ext}`))
+    problems.push(
+      wanted
+        ? `Found ${name}, which looks like an installer but is not named as expected; expected ${wanted}`
+        : `Found ${name}, which is not an installer this system should produce (expected only ${expected.join(', ')})`,
     )
   }
+  for (const name of expected) {
+    if (!present.has(name)) {
+      problems.push(`Missing ${name} in ${dir}`)
+    }
+  }
+  if (problems.length > 0) throw new CollectError(problems)
+
   mkdirSync(out, { recursive: true })
-  for (const name of collected) copyFileSync(join(dir, name), join(out, name))
-  return { collected, ignored }
+  for (const name of expected) copyFileSync(join(dir, name), join(out, name))
+  return { collected: [...expected], ignored }
 }

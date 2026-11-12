@@ -93,10 +93,12 @@ describe('cli', () => {
     expect(run(['notes', '1.0.0']).code).toBe(3)
   })
 
-  it('collect copies the installers for one platform and warns about stray files', () => {
+  it('collect copies both installers for one platform and warns about stray non-installer files', () => {
     mkdirSync(join(root, 'release'))
     writeFileSync(join(root, 'release/dramai-0.5.0-beta.1-win-x64.exe'), 'x')
-    writeFileSync(join(root, 'release/dramai-setup.exe'), 'x')
+    writeFileSync(join(root, 'release/dramai-0.5.0-beta.1-win-x64.zip'), 'z')
+    writeFileSync(join(root, 'release/dramai-0.5.0-beta.1-win-x64.exe.blockmap'), 'b')
+    writeFileSync(join(root, 'release/dramai-readme.txt'), 'x')
     const r = run([
       'collect',
       '--dir',
@@ -112,8 +114,33 @@ describe('cli', () => {
     ])
     expect(r.code).toBe(0)
     expect(r.out).toContain('asset: dramai-0.5.0-beta.1-win-x64.exe')
-    expect(r.out).toContain('::warning::Ignoring dramai-setup.exe')
+    expect(r.out).toContain('asset: dramai-0.5.0-beta.1-win-x64.zip')
+    expect(r.out).toContain('::warning::Ignoring dramai-readme.txt')
+    expect(r.out).not.toContain('blockmap')
     expect(readFileSync(join(root, 'staging/dramai-0.5.0-beta.1-win-x64.exe'), 'utf8')).toBe('x')
+  })
+
+  it('collect fails, with one ::error:: per problem, when an installer is misnamed or missing', () => {
+    mkdirSync(join(root, 'release'))
+    writeFileSync(join(root, 'release/dramai-0.5.0-beta.1-linux-x86_64.AppImage'), 'x')
+    writeFileSync(join(root, 'release/dramai-0.5.0-beta.1-linux-x64.tar.gz'), 'x')
+    const r = run([
+      'collect',
+      '--dir',
+      'release',
+      '--out',
+      'staging',
+      '--version',
+      '0.5.0-beta.1',
+      '--family',
+      'linux',
+      '--arch',
+      'x64',
+    ])
+    expect(r.code).toBe(1)
+    expect(r.err).toContain('::error::Found dramai-0.5.0-beta.1-linux-x86_64.AppImage')
+    expect(r.err).toContain('expected dramai-0.5.0-beta.1-linux-x64.AppImage')
+    expect(r.err).toContain('::error::Missing dramai-0.5.0-beta.1-linux-x64.AppImage')
   })
 
   it('collect fails when the platform produced nothing usable', () => {
@@ -132,7 +159,8 @@ describe('cli', () => {
       'arm64',
     ])
     expect(r.code).toBe(1)
-    expect(r.err).toContain('::error::No installer named')
+    expect(r.err).toContain('::error::Missing dramai-0.5.0-beta.1-mac-arm64.dmg')
+    expect(r.err).toContain('::error::Missing dramai-0.5.0-beta.1-mac-arm64.zip')
   })
 
   describe('bump', () => {

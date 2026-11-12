@@ -13,7 +13,7 @@
 //                                                  提取 CHANGELOG 里 0.5.0 的小节
 //   node tooling/release/src/cli.ts collect --dir apps/desktop/release --out staging \
 //        --version 0.5.0 --family mac --arch arm64
-//                                                  挑出符合 dramai-<版本>-<系统>-<架构>.<扩展名> 的安装包
+//                                                  核对并取出该系统应有的安装包（缺任何一个或命名不对都失败）
 //
 // 公共选项：--dry-run（只预览）、--root <dir>（默认当前目录）。
 // 在 GitHub Actions 里（设置了 GITHUB_OUTPUT）`check` 还会输出 version / tag / prerelease。
@@ -22,7 +22,7 @@ import { appendFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { checkVersions, isPrerelease, normalizeVersion, setVersion } from './versions.ts'
 import { readChangelogSection } from './notes.ts'
-import { collectAssets, type Arch, type PlatformFamily } from './assets.ts'
+import { collectAssets, CollectError, type Arch, type PlatformFamily } from './assets.ts'
 import {
   BUMP_KINDS,
   bumpVersion,
@@ -277,18 +277,23 @@ function main(argv: string[]): number {
         console.error(`Unsupported --family "${family}" or --arch "${arch}"`)
         return 2
       }
-      const { collected, ignored } = collectAssets({
-        dir: resolve(root, dir),
-        out: resolve(root, out),
-        version: normalizeVersion(version),
-        family: family as PlatformFamily,
-        arch: arch as Arch,
-      })
+      let result
+      try {
+        result = collectAssets({
+          dir: resolve(root, dir),
+          out: resolve(root, out),
+          version: normalizeVersion(version),
+          family: family as PlatformFamily,
+          arch: arch as Arch,
+        })
+      } catch (error) {
+        if (error instanceof CollectError) return fail(error.problems)
+        throw error
+      }
+      const { collected, ignored } = result
       for (const name of collected) console.log(`asset: ${name}`)
       for (const name of ignored) {
-        console.log(
-          `::warning::Ignoring ${name}: it does not follow dramai-<version>-<os>-<arch>.<ext> and will not be uploaded`,
-        )
+        console.log(`::warning::Ignoring ${name}: it is not an installer and will not be uploaded`)
       }
       return 0
     }

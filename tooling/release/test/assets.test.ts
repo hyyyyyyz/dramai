@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { collectAssets, installerPattern } from '../src/assets.ts'
+import { CollectError, REQUIRED_KINDS, collectAssets, expectedInstallers } from '../src/assets.ts'
 
 let dir: string
 let out: string
@@ -22,94 +22,134 @@ function touch(...names: string[]): void {
   for (const n of names) writeFileSync(join(dir, n), 'x')
 }
 
-describe('installerPattern', () => {
-  it('matches the naming convention for each platform family', () => {
-    expect(installerPattern('0.5.0', 'mac', 'arm64').test('dramai-0.5.0-mac-arm64.dmg')).toBe(true)
-    expect(installerPattern('0.5.0', 'mac', 'x64').test('dramai-0.5.0-mac-x64.zip')).toBe(true)
-    expect(installerPattern('0.5.0', 'win', 'x64').test('dramai-0.5.0-win-x64.exe')).toBe(true)
-    expect(installerPattern('0.5.0', 'linux', 'x64').test('dramai-0.5.0-linux-x64.AppImage')).toBe(
-      true,
-    )
-    expect(
-      installerPattern('0.5.0-beta.1', 'win', 'x64').test('dramai-0.5.0-beta.1-windows-x64.exe'),
-    ).toBe(true)
-  })
+function problemsOf(fn: () => unknown): string[] {
+  try {
+    fn()
+  } catch (error) {
+    expect(error).toBeInstanceOf(CollectError)
+    return (error as CollectError).problems
+  }
+  throw new Error('expected collectAssets to throw')
+}
 
-  it('does not accept the wrong version, arch, os or a look-alike dot', () => {
-    expect(installerPattern('0.5.0', 'mac', 'arm64').test('dramai-0.5.1-mac-arm64.dmg')).toBe(false)
-    expect(installerPattern('0.5.0', 'mac', 'arm64').test('dramai-0.5.0-mac-x64.dmg')).toBe(false)
-    expect(installerPattern('0.5.0', 'mac', 'arm64').test('dramai-0.5.0-win-arm64.dmg')).toBe(false)
-    expect(installerPattern('0.5.0', 'mac', 'arm64').test('dramai-0x5y0-mac-arm64.dmg')).toBe(false)
-    expect(
-      installerPattern('0.5.0', 'mac', 'arm64').test('dramai-0.5.0-beta.1-mac-arm64.dmg'),
-    ).toBe(false)
-    expect(
-      installerPattern('0.5.0', 'mac', 'arm64').test('dramai-0.5.0-mac-arm64.dmg.blockmap'),
-    ).toBe(false)
+describe('expectedInstallers (the single definition of what each system must produce)', () => {
+  it('lists two installer kinds per system, named dramai-<version>-<os>-<arch>.<ext>', () => {
+    expect(REQUIRED_KINDS).toEqual({
+      mac: ['dmg', 'zip'],
+      win: ['exe', 'zip'],
+      linux: ['AppImage', 'tar.gz'],
+    })
+    expect(expectedInstallers('0.5.0', 'mac', 'arm64')).toEqual([
+      'dramai-0.5.0-mac-arm64.dmg',
+      'dramai-0.5.0-mac-arm64.zip',
+    ])
+    expect(expectedInstallers('0.5.0-beta.1', 'win', 'x64')).toEqual([
+      'dramai-0.5.0-beta.1-win-x64.exe',
+      'dramai-0.5.0-beta.1-win-x64.zip',
+    ])
+    expect(expectedInstallers('0.5.0', 'linux', 'x64')).toEqual([
+      'dramai-0.5.0-linux-x64.AppImage',
+      'dramai-0.5.0-linux-x64.tar.gz',
+    ])
   })
 })
 
-describe('collectAssets', () => {
-  it('copies conforming installers and reports the rest', () => {
+describe('collectAssets: everything is there', () => {
+  const cases = [
+    ['mac', 'arm64'],
+    ['mac', 'x64'],
+    ['win', 'x64'],
+    ['linux', 'x64'],
+  ] as const
+
+  it.each(cases)('%s-%s: collects both installers and ignores side files', (family, arch) => {
+    const files = expectedInstallers('0.5.0', family, arch)
     touch(
-      'dramai-0.5.0-mac-arm64.dmg',
-      'dramai-0.5.0-mac-arm64.zip',
-      'dramai-0.5.0-mac-arm64.dmg.blockmap',
-      'dramai-0.5.0-mac-x64.dmg', // 另一个架构的产物不属于这次
-      'latest-mac.yml',
+      ...files,
+      ...files.map((f) => `${f}.blockmap`),
       'builder-debug.yml',
+      'latest.yml',
+      'latest-mac.yml',
     )
-    mkdirSync(join(dir, 'dramai-0.5.0-mac-arm64.dir')) // 目录忽略
-    const r = collectAssets({ dir, out, version: '0.5.0', family: 'mac', arch: 'arm64' })
-    expect(r.collected).toEqual(['dramai-0.5.0-mac-arm64.dmg', 'dramai-0.5.0-mac-arm64.zip'])
-    // .blockmap files are not uploaded either, but they are expected and do not produce a warning
-    expect(r.ignored).toEqual(['dramai-0.5.0-mac-x64.dmg'])
-    expect(readdirSync(out).sort()).toEqual(r.collected)
+    mkdirSync(join(dir, 'win-unpacked'))
+    mkdirSync(join(dir, 'dramai-0.5.0-mac-arm64.dir'))
+    const r = collectAssets({ dir, out, version: '0.5.0', family, arch })
+    expect(r.collected).toEqual(files)
+    expect(r.ignored).toEqual([])
+    expect(readdirSync(out).sort()).toEqual([...files].sort())
   })
 
-  it('fails when nothing matches and says what it saw', () => {
-    touch('dramai-0.4.1-mac-arm64.dmg')
-    expect(() =>
+  it('reports other dramai-* files that are not installers, without failing', () => {
+    touch(...expectedInstallers('0.5.0', 'win', 'x64'), 'dramai-notes.txt')
+    const r = collectAssets({ dir, out, version: '0.5.0', family: 'win', arch: 'x64' })
+    expect(r.ignored).toEqual(['dramai-notes.txt'])
+  })
+})
+
+describe('collectAssets: an installer is missing', () => {
+  it('fails and names the full expected file name of each missing kind', () => {
+    touch('dramai-0.5.0-beta.1-linux-x64.tar.gz')
+    const problems = problemsOf(() =>
+      collectAssets({ dir, out, version: '0.5.0-beta.1', family: 'linux', arch: 'x64' }),
+    )
+    expect(problems).toEqual([`Missing dramai-0.5.0-beta.1-linux-x64.AppImage in ${dir}`])
+  })
+
+  it('names every missing file, and copies nothing', () => {
+    touch('dramai-0.5.0-mac-arm64.dmg.blockmap', 'latest-mac.yml')
+    const problems = problemsOf(() =>
       collectAssets({ dir, out, version: '0.5.0', family: 'mac', arch: 'arm64' }),
-    ).toThrow(
-      /No installer named dramai-0\.5\.0-<mac\|macos\|darwin>-arm64.*saw: dramai-0\.4\.1-mac-arm64\.dmg/,
     )
+    expect(problems).toEqual([
+      `Missing dramai-0.5.0-mac-arm64.dmg in ${dir}`,
+      `Missing dramai-0.5.0-mac-arm64.zip in ${dir}`,
+    ])
+    expect(() => readdirSync(out)).toThrow()
   })
 
-  it('fails on an empty or unrelated directory', () => {
+  it('fails when the directory has no dramai-* files at all', () => {
     touch('latest.yml')
-    expect(() => collectAssets({ dir, out, version: '0.5.0', family: 'win', arch: 'x64' })).toThrow(
-      /no dramai-\* files/,
-    )
+    expect(
+      problemsOf(() => collectAssets({ dir, out, version: '0.5.0', family: 'win', arch: 'x64' })),
+    ).toHaveLength(2)
   })
 
-  it('collects exactly the files the desktop build produces on each system', () => {
-    const cases = [
-      ['mac', 'arm64', ['dramai-0.5.0-mac-arm64.dmg', 'dramai-0.5.0-mac-arm64.zip']],
-      ['mac', 'x64', ['dramai-0.5.0-mac-x64.dmg', 'dramai-0.5.0-mac-x64.zip']],
-      ['win', 'x64', ['dramai-0.5.0-win-x64.exe', 'dramai-0.5.0-win-x64.zip']],
-      ['linux', 'x64', ['dramai-0.5.0-linux-x64.AppImage', 'dramai-0.5.0-linux-x64.tar.gz']],
-    ] as const
-    for (const [family, arch, files] of cases) {
-      rmSync(dir, { recursive: true, force: true })
-      mkdirSync(dir)
-      touch(
-        ...files,
-        ...files.map((f) => `${f}.blockmap`),
-        'builder-debug.yml',
-        'latest.yml',
-        'latest-mac.yml',
-      )
-      mkdirSync(join(dir, 'win-unpacked'))
-      const r = collectAssets({
-        dir,
-        out: join(dir, '..', `out-${family}-${arch}`),
-        version: '0.5.0',
-        family,
-        arch,
-      })
-      expect(r.collected, `${family}-${arch}`).toEqual([...files].sort())
-      expect(r.ignored).toEqual([])
-    }
+  it('fails when the build directory does not exist', () => {
+    expect(() =>
+      collectAssets({ dir: join(dir, 'nope'), out, version: '0.5.0', family: 'win', arch: 'x64' }),
+    ).toThrow(/ENOENT/)
+  })
+})
+
+describe('collectAssets: an installer is misnamed', () => {
+  it('fails on the real file name seen in the dry run (x86_64 instead of x64), with actual and expected names', () => {
+    touch('dramai-0.5.0-beta.1-linux-x86_64.AppImage', 'dramai-0.5.0-beta.1-linux-x64.tar.gz')
+    const problems = problemsOf(() =>
+      collectAssets({ dir, out, version: '0.5.0-beta.1', family: 'linux', arch: 'x64' }),
+    )
+    expect(problems).toContain(
+      'Found dramai-0.5.0-beta.1-linux-x86_64.AppImage, which looks like an installer but is not named as expected; expected dramai-0.5.0-beta.1-linux-x64.AppImage',
+    )
+    expect(problems).toContain(`Missing dramai-0.5.0-beta.1-linux-x64.AppImage in ${dir}`)
+    expect(problems).toHaveLength(2)
+  })
+
+  it('fails on a wrong version, a wrong os word and a file from another architecture', () => {
+    touch('dramai-0.4.1-mac-arm64.dmg', 'dramai-0.5.0-macos-arm64.zip', 'dramai-0.5.0-mac-x64.dmg')
+    const problems = problemsOf(() =>
+      collectAssets({ dir, out, version: '0.5.0', family: 'mac', arch: 'arm64' }),
+    )
+    expect(problems.filter((p) => p.startsWith('Found'))).toHaveLength(3)
+    expect(problems.filter((p) => p.startsWith('Missing'))).toHaveLength(2)
+  })
+
+  it('fails on an installer kind this system should not produce', () => {
+    touch(...expectedInstallers('0.5.0', 'linux', 'x64'), 'dramai-0.5.0-linux-x64.deb')
+    const problems = problemsOf(() =>
+      collectAssets({ dir, out, version: '0.5.0', family: 'linux', arch: 'x64' }),
+    )
+    expect(problems).toEqual([
+      'Found dramai-0.5.0-linux-x64.deb, which is not an installer this system should produce (expected only dramai-0.5.0-linux-x64.AppImage, dramai-0.5.0-linux-x64.tar.gz)',
+    ])
   })
 })
