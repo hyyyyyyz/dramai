@@ -751,10 +751,11 @@ describe('review leftovers', () => {
     )
   })
 
-  it('Traditional Chinese uses 文字 and 帳 everywhere, not the Mainland 文本 and 賬', () => {
+  it('Traditional Chinese uses 文字, 帳 and 儲值 everywhere, not the Mainland 文本, 賬 and 充值', () => {
     const text = JSON.stringify(zhTW)
-    for (const wrong of ['文本', '賬']) expect(text, wrong).not.toContain(wrong)
+    for (const wrong of ['文本', '賬', '充值']) expect(text, wrong).not.toContain(wrong)
     expect(text).toContain('文字')
     expect(text).toContain('帳')
+    expect(text).toContain('儲值')
   })
 })

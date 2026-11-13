@@ -77,7 +77,6 @@ export default {
       },
       current: 'Current',
       cutFrom: 'cut rendered from this one',
-      restoredFrom: 'rolled back to revision {{n}}',
       restoredTo: 'Rolled back to revision {{n}}',
       initial: 'Initial timeline',
       nativeAudio:

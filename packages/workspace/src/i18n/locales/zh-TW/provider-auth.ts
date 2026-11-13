@@ -228,7 +228,7 @@ export default {
     },
     BALANCE_INSUFFICIENT: {
       title: '服務商帳號欠費，或者資源包用完了',
-      body: '到服務商的控制台充值或購買資源包，然後再重試這個任務',
+      body: '到服務商的控制台儲值或購買資源包，然後再重試這個任務',
     },
     TASK_EXPIRED: {
       title: '服務商那邊的任務已經過期',

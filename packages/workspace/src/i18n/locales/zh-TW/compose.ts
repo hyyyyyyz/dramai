@@ -69,7 +69,6 @@ export default {
       author: { creator: '你', agent: '智慧體', external: '外部工具', system: '系統（自動）' },
       current: '當前',
       cutFrom: '成片按這一版渲染',
-      restoredFrom: '回滾自修訂 {{n}}',
       restoredTo: '回滾到修訂 {{n}}',
       initial: '初始時間線',
       nativeAudio: '有的片段的模型關不掉自帶的聲音，這些片段的原聲預設靜音，可以調高',

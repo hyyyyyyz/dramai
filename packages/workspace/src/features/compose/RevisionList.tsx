@@ -53,9 +53,6 @@ export function RevisionList({
                 {[
                   authorOf(r),
                   fmt.ago(r.createdAt),
-                  r.restoredFrom
-                    ? t('compose.revisions.restoredFrom', { n: r.restoredFrom })
-                    : undefined,
                   cutRevision === r.number ? t('compose.revisions.cutFrom') : undefined,
                 ]
                   .filter(Boolean)

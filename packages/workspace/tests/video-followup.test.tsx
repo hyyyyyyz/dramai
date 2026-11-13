@@ -253,7 +253,9 @@ describe('system revisions are described in the interface language', () => {
       ]),
     )
     expect(screen.getByText('初始时间线')).toBeInTheDocument()
-    expect(screen.getByText('回滚到修订 1')).toBeInTheDocument()
+    // said once: the title carries it, the note line does not repeat it
+    expect(screen.getAllByText(/回滚到修订 1/)).toHaveLength(1)
+    expect(screen.queryByText(/回滚自修订/)).toBeNull()
     const agent = screen.getByText('agent 调整了顺序').closest('li')!
     expect(agent).toHaveTextContent('智能体')
   })
@@ -280,6 +282,7 @@ describe('system revisions are described in the interface language', () => {
       )
       expect(screen.getByText(text)).toBeInTheDocument()
       if (locale === 'en') expect(screen.getByText('Initial timeline')).toBeInTheDocument()
+      expect(screen.queryByText(/restored from|回滾自/i)).toBeNull()
       unmount()
     }
   })
