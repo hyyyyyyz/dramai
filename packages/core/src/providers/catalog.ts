@@ -374,6 +374,7 @@ export type CapabilityIssueCode =
   | 'RESOLUTION_UNSUPPORTED'
   | 'FIRST_FRAME_UNSUPPORTED'
   | 'LAST_FRAME_UNSUPPORTED'
+  | 'FRAME_WITH_REFS_UNSUPPORTED'
 
 export interface CapabilityIssue {
   code: CapabilityIssueCode
@@ -392,6 +393,21 @@ export interface CapabilityNeeds {
   resolution?: string
   firstFrame?: boolean
   lastFrame?: boolean
+  /** 视频：同一次请求里既发首帧又发参考图。 */
+  frameWithRefs?: boolean
+}
+
+/**
+ * 视频开启参考图时，镜头图怎么处理：
+ * - `with_references`：首帧和参考图同发（可灵；画像的 `firstFrameWithRefs` 不是 `unsupported`）；
+ * - `as_reference`：官方把首帧与参考图定为互斥的任务类型（火山 / 万相；缺省也按这个）——镜头图降为第 1 张参考图，
+ *   放弃严格首帧。
+ */
+export type VideoFrameWithRefs = 'with_references' | 'as_reference'
+export function frameWithRefsMode(cap: ModelCapability): VideoFrameWithRefs {
+  return (cap.firstFrameWithRefs ?? 'unsupported') === 'unsupported'
+    ? 'as_reference'
+    : 'with_references'
 }
 
 /** 参考图张数上限：不支持 = 0；未声明 = undefined（不限制/不知道）。 */
@@ -449,6 +465,15 @@ export function checkCapability(
       'firstFrame',
       '不支持首帧',
       '的首帧能力没有验证过',
+    )
+  }
+  if (needs.frameWithRefs) {
+    add(
+      'FRAME_WITH_REFS_UNSUPPORTED',
+      cap.firstFrameWithRefs ?? 'unsupported',
+      'firstFrameWithRefs',
+      '不支持首帧和参考图在同一次请求里同用',
+      '的首帧与参考图同用没有验证过',
     )
   }
   if (needs.lastFrame) {

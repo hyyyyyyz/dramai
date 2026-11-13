@@ -5,11 +5,22 @@ import type { ProjectProjection } from '../generation/projection.ts'
 import type { Job } from '../jobs/types.ts'
 import { InFlightConflictError } from '../jobs/queue.ts'
 import type { JobQueue, NewJob } from '../jobs/queue.ts'
-import { checkCapability, estimateCost, maxRefImagesOf } from '../providers/catalog.ts'
+import {
+  checkCapability,
+  estimateCost,
+  frameWithRefsMode,
+  maxRefImagesOf,
+} from '../providers/catalog.ts'
 import type { CostEstimate, ModelRegistry } from '../providers/catalog.ts'
 import { deriveVoiceOwner } from '../domain/voice.ts'
 import { isDurationAllowed, snapDuration } from '../providers/duration.ts'
-import type { GenerationMode, ProviderConfig, ProviderKind } from '../providers/types.ts'
+import type {
+  GenerationMode,
+  ProviderConfig,
+  ProviderKind,
+  Support,
+  VideoInputMode,
+} from '../providers/types.ts'
 import { digestOf } from '../util/canonical.ts'
 
 /**
@@ -46,6 +57,10 @@ export type ReasonCode =
   | 'ASPECT_UNSUPPORTED'
   | 'RESOLUTION_UNSUPPORTED'
   | 'LAST_FRAME_UNSUPPORTED'
+  | 'FRAME_WITH_REFS_UNSUPPORTED'
+  | 'FIRST_FRAME_REPLACED_BY_REFERENCE'
+  | 'VIDEO_REFS_EMPTY'
+  | 'AUDIO_NOT_DISABLEABLE'
   | 'FIRST_FRAME_UNSUPPORTED'
   | 'DURATION_UNSUPPORTED'
   | 'DURATION_SNAPPED'
@@ -77,6 +92,11 @@ export interface AdmissionTarget {
   confirmResubmit?: boolean
   /** 用户本次确认“能力未验证也照常生成”。 */
   confirmUnverified?: boolean
+  /**
+   * 视频：开启参考图（把镜头的角色 / 场景 / 道具设定图作为参考素材一起发出）。缺省 false。
+   * 开启后的效果因模型而异，见 `TargetVerdict.video`。
+   */
+  videoRefs?: boolean
   /** 角色设定图的版式（见 `chooseSheetLayout`）；逐角度版式要出 3 张图，预估费用按 3 张算。 */
   sheetLayout?: 'multi_view' | 'per_angle' | 'single'
 }
@@ -92,6 +112,28 @@ export interface AdmissionContext {
 
 export type VerdictStatus = 'accepted' | 'blocked' | 'needs_confirmation' | 'blocked_by_batch'
 
+/**
+ * 视频目标的"参考图计划"，给界面说明取舍用（只有 `shot_video` 有）。
+ *
+ * - `frame`：这次实际怎么处理镜头图——`strict_first_frame` 严格首帧（没开参考图）；
+ *   `as_reference` 镜头图降为第 1 张参考图、**放弃严格首帧**；`with_references` 首帧和参考图同发；
+ * - `ifRefsOn`：**没开**参考图时也给出"如果开启会怎样"，界面据此在开关旁边说明：
+ *   `frame_as_reference`（会放弃严格首帧）/ `frame_with_references`（首帧保留）/ `not_available`（这个模型不接参考图）；
+ * - `firstFrameWithRefs` / `refImages`：画像里这两项的三态（supported / unsupported / unverified）。
+ */
+export interface VideoPlan {
+  mode: VideoInputMode
+  refsRequested: boolean
+  frame: 'strict_first_frame' | 'as_reference' | 'with_references'
+  ifRefsOn: 'frame_as_reference' | 'frame_with_references' | 'not_available'
+  /** 实际发出的参考图张数（含被降级为参考图的镜头图）。 */
+  referenceCount: number
+  /** 因超出模型上限被舍弃的参考图张数。 */
+  droppedReferences: number
+  firstFrameWithRefs: Support
+  refImages: Support
+}
+
 export interface TargetVerdict {
   targetId: string
   status: VerdictStatus
@@ -103,6 +145,7 @@ export interface TargetVerdict {
   blockedBy?: string[]
   inputs?: ResolvedInputs
   estimate?: CostEstimate
+  video?: VideoPlan
 }
 
 const KIND_FOR_TARGET: Record<GenerationTarget['kind'], ProviderKind> = {
@@ -118,7 +161,7 @@ function modeFor(target: GenerationTarget, inputs: ResolvedInputs): GenerationMo
     case 'shot_image':
       return inputs.references.length > 0 ? 'i2i' : 't2i'
     case 'shot_video':
-      return 'i2v'
+      return inputs.references.length > 0 ? 'omni_ref' : 'i2v'
     case 'shot_audio':
       return 'tts'
   }
@@ -145,9 +188,25 @@ export async function evaluateTarget(
   }
 
   const lookup = ctx.models.lookup(provider)
-  const inputs = resolveInputs(ctx.projection, item.target, {
-    maxRefImages: maxRefImagesOf(lookup.capability) || undefined,
-  })
+  // 视频开启参考图：参考素材一起解析。官方把首帧与参考图定为互斥的模型，镜头图要占一个参考图名额。
+  const cap = lookup.capability
+  const wantVideoRefs = item.target.kind === 'shot_video' && item.videoRefs === true
+  const frameMode = frameWithRefsMode(cap)
+  const refLimit = maxRefImagesOf(cap)
+  const inputs = resolveInputs(
+    ctx.projection,
+    item.target,
+    wantVideoRefs
+      ? {
+          withReferences: true,
+          maxRefImages:
+            refLimit === undefined || refLimit === 0
+              ? undefined
+              : Math.max(0, refLimit - (frameMode === 'as_reference' ? 1 : 0)),
+        }
+      : { maxRefImages: refLimit || undefined },
+  )
+  const usesVideoRefs = wantVideoRefs && inputs.references.length > 0
 
   for (const gap of inputs.gaps) {
     if (gap.severity === 'block') {
@@ -183,8 +242,17 @@ export async function evaluateTarget(
   const needsRefs = inputs.references.filter((r) => r.role !== 'style').length
   const capIssues = checkCapability(lookup, provider.model, {
     mode: modeFor(item.target, inputs),
-    referenceImages: item.target.kind === 'shot_video' ? 0 : needsRefs,
-    firstFrame: item.target.kind === 'shot_video',
+    referenceImages:
+      item.target.kind === 'shot_video'
+        ? usesVideoRefs
+          ? inputs.references.length + (frameMode === 'as_reference' ? 1 : 0)
+          : 0
+        : needsRefs,
+    // 镜头图降为参考图时不再是"首帧"，也就不需要首帧能力
+    firstFrame:
+      item.target.kind === 'shot_video' && !(usesVideoRefs && frameMode === 'as_reference'),
+    frameWithRefs:
+      item.target.kind === 'shot_video' && usesVideoRefs && frameMode === 'with_references',
     aspectRatio: item.target.kind === 'shot_audio' ? undefined : inputs.aspectRatio,
     resolution: item.resolution,
     durationSec: item.target.kind === 'shot_video' ? inputs.durationSec : undefined,
@@ -249,6 +317,19 @@ export async function evaluateTarget(
           message: '项目还没有设置旁白音色，将使用服务商默认音色',
         })
       }
+      // 这个镜头不用视频模型的原生人声，但模型没办法关掉它（如可灵 4.0）：视频里会带一条原声，
+      // 合成阶段会把它静音（只对生成时没有要求原生人声的视频版本）。
+      if (
+        item.target.kind === 'shot_video' &&
+        owner !== 'native' &&
+        owner !== 'conflict' &&
+        lookup.capability.audioToggle === 'unsupported'
+      ) {
+        warnings.push({
+          code: 'AUDIO_NOT_DISABLEABLE',
+          message: `${provider.model} 无法关闭自带的原生音频，生成的视频里会有一条原声；这个镜头不用它，成片合成时会把它静音`,
+        })
+      }
     }
   }
 
@@ -271,6 +352,43 @@ export async function evaluateTarget(
           message: '上一次任务已有上游任务号：请先“恢复原任务”；坚持重新生成可能再次计费，需要确认',
         })
       }
+    }
+  }
+
+  // 视频的"参考图计划"：怎么处理镜头图、开启参考图会怎样——给界面说取舍用。
+  let video: VideoPlan | undefined
+  if (item.target.kind === 'shot_video') {
+    const refsOk = cap.refImages.support !== 'unsupported'
+    const asReference = frameMode === 'as_reference'
+    if (wantVideoRefs && refsOk && inputs.references.length === 0) {
+      warnings.push({
+        code: 'VIDEO_REFS_EMPTY',
+        message: '这个镜头没有可用的角色 / 场景 / 道具设定图，参考图没有开启，按首帧生成',
+      })
+    }
+    if (usesVideoRefs && asReference && refsOk) {
+      warnings.push({
+        code: 'FIRST_FRAME_REPLACED_BY_REFERENCE',
+        message: `开启参考图后，${provider.model} 会放弃严格首帧：镜头图只作为第 1 张参考图，开场画面靠提示词描述`,
+      })
+    }
+    video = {
+      mode: usesVideoRefs ? 'omni_ref' : 'i2v',
+      refsRequested: wantVideoRefs,
+      frame: !usesVideoRefs
+        ? 'strict_first_frame'
+        : asReference
+          ? 'as_reference'
+          : 'with_references',
+      ifRefsOn: !refsOk
+        ? 'not_available'
+        : asReference
+          ? 'frame_as_reference'
+          : 'frame_with_references',
+      referenceCount: usesVideoRefs ? inputs.references.length + (asReference ? 1 : 0) : 0,
+      droppedReferences: usesVideoRefs ? inputs.trimmed.length : 0,
+      firstFrameWithRefs: cap.firstFrameWithRefs ?? 'unsupported',
+      refImages: cap.refImages.support,
     }
   }
 
@@ -303,7 +421,16 @@ export async function evaluateTarget(
       message: `这次生成依赖没验证过的能力，需要确认后才会开始：${pending.map((u) => u.message).join('；')}`,
     })
   }
-  return { targetId: id, status, reasons, warnings, unverified, inputs, estimate }
+  return {
+    targetId: id,
+    status,
+    reasons,
+    warnings,
+    unverified,
+    inputs,
+    estimate,
+    ...(video ? { video } : {}),
+  }
 }
 
 export interface BatchAdmission {
