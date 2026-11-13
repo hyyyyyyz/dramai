@@ -7,7 +7,7 @@ export const KINDS: readonly ProviderKind[] = ['llm', 'image', 'video', 'tts']
 
 /** 每类服务能选的 API 协议。 */
 export const PROTOCOLS_BY_KIND: Record<ProviderKind, readonly ProtocolId[]> = {
-  llm: ['openai-chat'],
+  llm: ['openai-chat', 'openai-responses'],
   image: ['openai-images', 'gemini-image'],
   video: ['aliyun-video', 'volcengine-video', 'kling-video', 'generic-video'],
   tts: ['openai-tts'],

@@ -136,6 +136,7 @@ export default {
     'kling-video': '可灵',
     'generic-video': '通用视频接口',
     'openai-tts': 'OpenAI 兼容（语音）',
+    'openai-responses': 'OpenAI Responses（文本）',
   },
   providers: {
     intro:

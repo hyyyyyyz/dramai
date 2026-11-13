@@ -49,6 +49,17 @@ export default {
   IMAGE_TOO_LARGE: 'The image is larger than 20 MB',
   UNKNOWN_VERSION: 'That version doesn’t exist',
 
+  PROVIDER_REQUEST_FAILED:
+    'The request to the provider failed. Check the base URL, your network and the provider’s status, then try again',
+  LOGIN_NOT_SUPPORTED:
+    'This provider doesn’t use account sign-in, so there is nothing to sign in to',
+  LOGIN_UNAVAILABLE_REMOTE:
+    'You are using this from another machine, and the sign-in callback can’t reach it. Do it on the computer that runs dramai',
+  KEY_NOT_APPLICABLE:
+    'A provider that uses account sign-in has no API key; there is nothing to set or clear',
+  AUTH_NOT_ALLOWED:
+    'This protocol doesn’t support the chosen sign-in method (account sign-in covers text only and its address is fixed)',
+  MODEL_LIST_UNSUPPORTED: 'This provider has no model list. Type the model name yourself',
   NO_LLM_PROVIDER: 'No language-model provider is selected. Set one up in Settings first',
   FFMPEG_MISSING: 'ffmpeg wasn’t found. Please install it',
   FFMPEG_INCOMPATIBLE: 'This ffmpeg lacks capabilities needed for composing',

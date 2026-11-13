@@ -143,6 +143,7 @@ export default {
     'kling-video': 'Kling',
     'generic-video': 'Generic video API',
     'openai-tts': 'OpenAI-compatible (speech)',
+    'openai-responses': 'OpenAI Responses (text)',
   },
   providers: {
     intro:
