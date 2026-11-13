@@ -5,6 +5,7 @@ import { genericVideo } from './generic-video.ts'
 import { klingContents } from './kling-contents.ts'
 import { klingVideo } from './kling-video.ts'
 import { dashscopeImage } from './dashscope-image.ts'
+import { dashscopeVideo } from './dashscope-video.ts'
 import { klingImage } from './kling-image.ts'
 import { openaiImages } from './openai-images.ts'
 import { siliconflowImages } from './siliconflow-images.ts'
@@ -17,6 +18,7 @@ export {
   aliyunVideo,
   arkVideo,
   dashscopeImage,
+  dashscopeVideo,
   klingContents,
   klingImage,
   siliconflowImages,
@@ -45,6 +47,7 @@ const MEDIA_PROTOCOLS: Partial<Record<ProtocolId, MediaProtocol<any>>> = {
   'volcengine-video': volcengineVideo,
   'ark-video': arkVideo,
   'kling-contents': klingContents,
+  'dashscope-video': dashscopeVideo,
   'kling-video': klingVideo,
   'generic-video': genericVideo,
   'openai-tts': openaiTts,
