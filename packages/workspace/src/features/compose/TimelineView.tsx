@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Captions, Clapperboard, Music, Mic } from 'lucide-react'
+import { Captions, Clapperboard, Music, Mic, VolumeX } from 'lucide-react'
 import type { TimelineContent } from '@dramai/api'
 import { iconPropsSm, cn } from '@dramai/ui/v2'
 import {
@@ -65,6 +65,9 @@ export function TimelineView({
   const width = Math.max(240, totalSec * PX_PER_SEC)
   const step = rulerStep(totalSec)
   const ticks = Array.from({ length: Math.floor(totalSec / step) + 1 }, (_, i) => i * step)
+  // A clip with a video whose own audio is at 0 shows it, so a silent clip isn't mistaken for a fault. New clips start
+  // at 0 when the video model cannot turn its own audio off; the user can raise it in the inspector.
+  const muted = (p: Placement['clips'][number]) => !p.missingVideo && p.sourceVolume === 0
   const staleClips = new Set(
     issues.filter((i) => i.code === 'CLIP_VIDEO_STALE' && i.clipId).map((i) => i.clipId!),
   )
@@ -118,10 +121,12 @@ export function TimelineView({
                   key={p.clipId}
                   type="button"
                   aria-pressed={sel}
-                  aria-label={t('compose.timeline.clipLabel', {
-                    clip: clipName(content, p.clipId),
-                    sec: usToSec(p.endUs - p.startUs).toFixed(1),
-                  })}
+                  aria-label={
+                    t('compose.timeline.clipLabel', {
+                      clip: clipName(content, p.clipId),
+                      sec: usToSec(p.endUs - p.startUs).toFixed(1),
+                    }) + (muted(p) ? `，${t('compose.timeline.muted')}` : '')
+                  }
                   onClick={() => onSelect(p.clipId)}
                   className={cn(
                     'absolute top-1 bottom-1 overflow-hidden rounded-sm border bg-sunken bg-cover bg-center text-left text-xs text-white',
@@ -143,6 +148,13 @@ export function TimelineView({
                     {clipName(content, p.clipId)}
                     {p.missingVideo && ` · ${t('compose.timeline.noVideo')}`}
                     {staleClips.has(p.clipId) && ` · ${t('storyboard.state.stale')}`}
+                    {muted(p) && (
+                      <>
+                        {' · '}
+                        <VolumeX {...iconPropsSm} className="inline" aria-hidden />{' '}
+                        {t('compose.timeline.muted')}
+                      </>
+                    )}
                   </span>
                 </button>
               )

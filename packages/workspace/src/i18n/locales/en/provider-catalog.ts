@@ -10,6 +10,7 @@ export default {
     localNote:
       'This runs on your own machine: start it here first (and load a model), then come back and test the connection. dramai doesn’t start it for you',
     needsInput: 'Needs a little information from you when adding',
+    limits: 'Known limitations ({{count}})',
     fill: {
       title: 'Add “{{name}}”',
       back: 'Back',
@@ -29,6 +30,9 @@ export default {
     fixToSave: 'Something in the advanced settings needs fixing before you can save',
     onlyHeaders:
       'This protocol only reads extra headers; the extra body, output length field and JSON output mode don’t apply to it',
+    onlyHeadersMedia: 'This protocol only reads extra headers',
+    introMedia:
+      'You usually don’t need this. Only fill it in if the provider asks for extra request headers',
     headersAndStyle:
       'This protocol reads the extra headers and the image style; the extra body, output length field and JSON output mode don’t apply to it',
     imageStyle: {
@@ -43,6 +47,8 @@ export default {
     headers: {
       label: 'Extra request headers',
       hint: 'Sent with every request, for example the anthropic-workspace-id header Anthropic asks for with a key that isn’t limited to one workspace.',
+      hintMedia:
+        'Sent with every request, for example a tenant, project or gateway identifier the provider asks for.',
       protectedList:
         'These names are managed by dramai and can’t be overridden (case-insensitive): {{names}}.',
       mediaNote:

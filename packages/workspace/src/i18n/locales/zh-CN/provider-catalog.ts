@@ -10,6 +10,7 @@ export default {
     localNote:
       '这是本机运行的服务：先在这台电脑上启动它（并加载好模型），再回来测试连接。dramai 不会替你启动',
     needsInput: '添加时需要你填一点信息',
+    limits: '已知限制（{{count}} 条）',
     fill: {
       title: '添加「{{name}}」',
       back: '返回',
@@ -26,6 +27,8 @@ export default {
     listSeparator: '、',
     fixToSave: '高级设置里有需要改的地方，改好才能保存',
     onlyHeaders: '这个协议只读额外请求头；额外请求体、输出长度字段和 JSON 输出方式对它不适用',
+    onlyHeadersMedia: '这个协议只读额外请求头',
+    introMedia: '一般不用动。只有服务商要求带额外的请求头时，才需要在这里填',
     headersAndStyle:
       '这个协议读额外请求头和生图风格；额外请求体、输出长度字段和 JSON 输出方式对它不适用',
     imageStyle: {
@@ -40,6 +43,7 @@ export default {
     headers: {
       label: '额外请求头',
       hint: '每次请求都会带上这些请求头，比如 Anthropic 对没有限定到单个工作区的 Key 要求的 anthropic-workspace-id。',
+      hintMedia: '每次请求都会带上这些请求头，比如服务商要求的租户、项目或网关标识。',
       protectedList: '这些名字由 dramai 管理，不能覆盖（不分大小写）：{{names}}。',
       mediaNote:
         '图片、视频、语音服务商：提交和查询进度的请求会带上，下载成品文件的请求不带（成品地址常在别的主机上）。',

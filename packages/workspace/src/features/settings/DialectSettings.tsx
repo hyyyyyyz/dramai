@@ -50,13 +50,15 @@ export function DialectSettings({
         {t('providerDialect.title')}
       </summary>
       <div className="flex flex-col gap-4 border-t border-border p-3">
-        <Hint>{t('providerDialect.intro')}</Hint>
+        <Hint>{t(support.media ? 'providerDialect.introMedia' : 'providerDialect.intro')}</Hint>
         {!support.extraBody && (
           <Hint>
             {t(
               support.imageStyle
                 ? 'providerDialect.headersAndStyle'
-                : 'providerDialect.onlyHeaders',
+                : support.media
+                  ? 'providerDialect.onlyHeadersMedia'
+                  : 'providerDialect.onlyHeaders',
             )}
           </Hint>
         )}
@@ -66,13 +68,15 @@ export function DialectSettings({
             label={t('providerDialect.extraBody.label')}
             hint={
               <>
-                {t('providerDialect.extraBody.hint')}{' '}
-                {t(
-                  support.protectedBody.length === 1
-                    ? 'providerDialect.extraBody.protectedOne'
-                    : 'providerDialect.extraBody.protectedMany',
-                  { fields: support.protectedBody.join(t('providerDialect.listSeparator')) },
-                )}
+                <span className="block">{t('providerDialect.extraBody.hint')}</span>
+                <span className="block">
+                  {t(
+                    support.protectedBody.length === 1
+                      ? 'providerDialect.extraBody.protectedOne'
+                      : 'providerDialect.extraBody.protectedMany',
+                    { fields: support.protectedBody.join(t('providerDialect.listSeparator')) },
+                  )}
+                </span>
               </>
             }
             error={body.ok ? undefined : t(`providerDialect.extraBody.${body.kind}`)}
@@ -132,7 +136,8 @@ export function DialectSettings({
             label={t('providerDialect.imageStyle.label')}
             hint={
               <>
-                {t('providerDialect.imageStyle.hint')} {t('providerDialect.imageStyle.when')}
+                <span className="block">{t('providerDialect.imageStyle.hint')}</span>
+                <span className="block">{t('providerDialect.imageStyle.when')}</span>
               </>
             }
           >
@@ -156,11 +161,21 @@ export function DialectSettings({
           <div className="flex flex-col gap-2">
             <div className="text-sm font-medium">{t('providerDialect.headers.label')}</div>
             <Hint>
-              {t('providerDialect.headers.hint')}{' '}
-              {t('providerDialect.headers.protectedList', {
-                names: PROTECTED_HEADER_NAMES.join(', '),
-              })}
-              {support.media && <> {t('providerDialect.headers.mediaNote')}</>}
+              <span className="block">
+                {t(
+                  support.media
+                    ? 'providerDialect.headers.hintMedia'
+                    : 'providerDialect.headers.hint',
+                )}
+              </span>
+              <span className="block">
+                {t('providerDialect.headers.protectedList', {
+                  names: PROTECTED_HEADER_NAMES.join(', '),
+                })}
+              </span>
+              {support.media && (
+                <span className="block">{t('providerDialect.headers.mediaNote')}</span>
+              )}
             </Hint>
             {draft.headers.map((h, i) => (
               <div key={i} className="flex flex-wrap items-start gap-2">

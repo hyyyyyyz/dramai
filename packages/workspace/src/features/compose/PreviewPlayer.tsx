@@ -143,6 +143,12 @@ export function PreviewPlayer({
     return () => window.clearInterval(id)
   }, [playing, clips, placement, seek, srcOf, startNarration, pause, total])
 
+  // The volume set in the inspector applies to the clip that is playing right now, not only from the next clip on
+  useEffect(() => {
+    const c = clips[state.current.index]
+    if (c && video.current) video.current.volume = Math.min(1, Math.max(0, c.volume))
+  }, [clips])
+
   useEffect(
     () => () => {
       video.current?.pause()

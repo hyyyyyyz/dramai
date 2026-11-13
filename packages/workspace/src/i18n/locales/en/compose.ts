@@ -22,6 +22,7 @@ export default {
       bgm: 'Music',
       clipLabel: 'Clip {{clip}}, {{sec}} s',
       noVideo: 'no video',
+      muted: 'own audio muted',
       narrationOf: '{{clip}} narration',
       cut: 'cut short',
       noVoice: '{{clip}} has no voice',

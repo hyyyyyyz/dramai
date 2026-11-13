@@ -227,6 +227,34 @@ export default {
       title: 'The provider had an error',
       body: 'This is on the provider’s side, not your settings. Try again in a moment',
     },
+    VIDEO_FACE_REJECTED: {
+      title: 'This model doesn’t accept images with real human faces',
+      body: 'The provider rejected an input image, most likely because it contains a real human face. Choose another model, or turn off “Use character sheets as references” and try with images that have no real faces',
+    },
+    CONTENT_REJECTED: {
+      title: 'The provider’s content check blocked it',
+      body: 'The input image or prompt didn’t pass the check. Change the prompt or the image and try again; retrying as it is usually gives the same result',
+    },
+    BALANCE_INSUFFICIENT: {
+      title: 'The provider account is in arrears, or its resource package is used up',
+      body: 'Top up or buy a resource package in the provider’s console, then retry this task',
+    },
+    TASK_EXPIRED: {
+      title: 'The task has expired at the provider',
+      body: 'The provider only keeps a task for a while and the result can’t be fetched any more. Regenerate this shot',
+    },
+    TASK_CANCELLED: {
+      title: 'The task was cancelled at the provider',
+      body: 'Just regenerate this shot',
+    },
+    TASK_UNKNOWN: {
+      title: 'The provider doesn’t know this task any more',
+      body: 'The task id is no longer valid (it passed the retention period). Regenerate this shot',
+    },
+    FIRST_FRAME_REQUIRED: {
+      title: 'This video model needs the shot image as its first frame, and this shot has none yet',
+      body: 'Generate the shot image first, then the video',
+    },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: 'The base URL isn’t allowed, so no sign-in token was sent',
       body: 'The base URL for account sign-in is fixed. Delete this provider in Settings and add it again from the preset',

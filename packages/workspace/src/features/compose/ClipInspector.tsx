@@ -119,6 +119,11 @@ export function ClipInspector({
         <Field
           label={t('compose.inspector.volume')}
           error={volOk ? undefined : t('compose.inspector.volumeInvalid')}
+          hint={
+            clip.sourceVolume === 0 && placed?.videoVersionId && volOk
+              ? t('video.mutedClip')
+              : undefined
+          }
         >
           <Input
             mono

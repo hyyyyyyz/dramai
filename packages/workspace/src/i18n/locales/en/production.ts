@@ -94,6 +94,16 @@ export default {
       'An optional input is missing (for example a costume has no sheet), so only its text description is used',
     REFS_TRIMMED:
       'There are more reference images than the model allows; the extra ones won’t be sent',
+    REFERENCE_NOT_SUPPORTED_VIDEO:
+      'This video model doesn’t accept reference images, so “Use character sheets as references” can’t be on. Turn the switch off to use the first frame, or choose a video model that supports references',
+    FRAME_WITH_REFS_UNSUPPORTED:
+      'This model hasn’t been verified to take a first frame and reference images together. The first frame is kept and the references are sent alongside, as a trial, and you need to confirm',
+    FIRST_FRAME_REPLACED_BY_REFERENCE:
+      'With references on, this model gives up the strict first frame: the shot image is only reference no. 1',
+    VIDEO_REFS_EMPTY:
+      'References are on, but this shot has no usable character sheets, so it is generated from the first frame',
+    AUDIO_NOT_DISABLEABLE:
+      'This shot doesn’t use native voice, but this model can’t turn its own audio off: the clip starts muted on the timeline and the volume can be raised there',
   },
   storyboard: {
     sub: 'Storyboard · {{scenes}} scenes · {{shots}} shots · {{duration}} total',
@@ -322,6 +332,7 @@ export default {
         mode: 'The provider hasn’t verified this way of generating ({{key}})',
         refImages: 'The provider hasn’t verified its reference-image limit',
         frames: 'The provider hasn’t verified first and last frames',
+        framesWithRefs: 'The provider hasn’t verified using a first frame and references together',
         duration: 'The provider hasn’t verified its duration steps',
         resolution: 'The provider hasn’t verified resolutions',
         aspect: 'The provider hasn’t verified aspect ratios',
@@ -555,5 +566,48 @@ export default {
       shots: 'shots {{list}}',
       open: 'Open the storyboard of episode {{n}}',
     },
+  },
+  video: {
+    refs: {
+      toggle: 'Use character sheets as references',
+      what: 'When on, the character, scene and prop sheets a shot refers to are sent to the video model as reference images along with the shot image, so people and places stay consistent. Off by default. The cost is that some models have to give up the strict first frame; see the note below before you turn it on.',
+      ifOn: {
+        frame_as_reference:
+          'With references on, this model gives up the strict first frame: the shot image is only reference no. 1',
+        frame_with_references:
+          'The first frame is kept and the references are sent alongside (this combination is unverified and needs your confirmation)',
+        not_available:
+          'This model doesn’t accept reference images, so this can’t be turned on. Choose a video model that supports references and try again',
+      },
+      shot: {
+        as_reference: 'Strict first frame given up: the shot image is reference no. 1',
+        strict_with_refs: 'Strict first frame kept, references sent alongside',
+        strict_no_refs: 'No usable sheets, so it is generated from the strict first frame',
+        count: '{{count}} reference images in all',
+        dropped: 'Over the model’s limit: {{count}} left out',
+        blocked: 'This model doesn’t accept reference images, so this can’t be on',
+      },
+      stale:
+        'A video made with references is not marked outdated when a character sheet changes later. After changing a sheet, regenerate those shots by hand',
+      used: 'Made with references: {{names}}',
+      usedShort: 'made with references',
+      usedFrame: {
+        as_reference: 'the shot image is reference no. 1, there is no strict first frame',
+        with_references: 'strict first frame kept, references sent alongside',
+      },
+      trimmed: '{{count}} more were over the limit and not sent',
+      staleVersion:
+        'This video was made with character references. If a sheet changes later, it is not marked outdated automatically; regenerate it by hand if you need to',
+      role: {
+        start_frame: 'Shot image',
+        character: 'Character',
+        prop: 'Prop',
+        location: 'Location',
+        costume: 'Costume',
+        style: 'Style',
+      },
+    },
+    mutedClip:
+      'This clip’s own audio is muted right now (volume 0). Some video models can’t turn their own audio off, and clips from them start muted on the timeline; raise the volume if you want it',
   },
 }

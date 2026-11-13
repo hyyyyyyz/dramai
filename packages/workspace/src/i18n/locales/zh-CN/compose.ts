@@ -20,6 +20,7 @@ export default {
       bgm: '配乐',
       clipLabel: '片段 {{clip}}，{{sec}} 秒',
       noVideo: '缺视频',
+      muted: '原声静音',
       narrationOf: '{{clip}} 旁白',
       cut: '已截断',
       noVoice: '{{clip}} 缺配音',

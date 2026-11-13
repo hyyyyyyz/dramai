@@ -1,3 +1,4 @@
+import { safeHttpUrl } from '@/lib/safe-url'
 import { useTranslation } from 'react-i18next'
 import type { ProviderConfigDto } from '@dramai/api'
 import { Chip, Hint } from '@dramai/ui/v2'
@@ -49,7 +50,7 @@ export function VerificationNote({
       {t('providerAuth.verification.note')} · {t('providerAuth.verification.source')}:{' '}
       {v.link ? (
         <a
-          href={v.source}
+          href={safeHttpUrl(v.source)}
           target="_blank"
           rel="noopener noreferrer"
           className="text-accent-text underline underline-offset-2"

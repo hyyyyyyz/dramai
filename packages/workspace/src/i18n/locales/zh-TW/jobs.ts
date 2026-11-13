@@ -12,7 +12,7 @@ export default {
     triggerAttention: '{{n}} 需處理',
     tabs: { all: '全部', running: '進行中', queued: '排隊', attention: '需處理' },
     groups: { attention: '需處理', running: '進行中', queued: '排隊', recent: '最近完成' },
-    lane: { text: '文本', image: '影像', video: '影片', audio: '音訊', render: '渲染' },
+    lane: { text: '文字', image: '影像', video: '影片', audio: '音訊', render: '渲染' },
     op: {
       episodes_plan: '規劃分集',
       episode_breakdown: '拆分鏡頭',
@@ -41,7 +41,7 @@ export default {
       delivery_failed: '生成已經完成，但取回結果時出了問題。上游任務還在，可以恢復',
       submission_unknown:
         '提交結果待確認：重啟或斷線前沒有拿到上游任務號，無法知道是否已提交、是否已計費',
-      recovery_failed: '服務重啟後，無法按原來的配置恢復這個任務',
+      recovery_failed: '服務重啟後，無法按原來的設定恢復這個任務',
       invalid_input: '輸入有問題（比如檔案讀不到），沒有發起付費呼叫',
       internal: '內部出錯了，沒有更多資訊',
     },

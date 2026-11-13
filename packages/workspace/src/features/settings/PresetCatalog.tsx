@@ -149,7 +149,12 @@ export function PresetCatalog({
               error={problemOf('model') ? t('providerCatalog.fill.model_missing') : undefined}
               required
             >
-              <Input mono value={model} onChange={(e) => setModel(e.target.value)} />
+              <Input
+                data-autofocus={(picked.baseUrlPlaceholders ?? []).length === 0 ? true : undefined}
+                mono
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              />
             </Field>
           )}
           <VerificationNote verification={picked.verification} />
@@ -234,6 +239,18 @@ export function PresetCatalog({
                       </span>
                     )}
                   </button>
+                  {(p.knownLimitations?.length ?? 0) > 0 && (
+                    <details className="px-2 pb-3 text-xs text-muted-foreground">
+                      <summary className="cursor-pointer">
+                        {t('providerCatalog.limits', { count: p.knownLimitations!.length })}
+                      </summary>
+                      <ul className="mt-1 list-disc pl-4">
+                        {p.knownLimitations!.map((l) => (
+                          <li key={l}>{l}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
                 </li>
               ))}
             </ul>

@@ -10,6 +10,7 @@ export default {
     localNote:
       '這是本機執行的服務：先在這臺電腦上啟動它（並載入好模型），再回來測試連線。dramai 不會替你啟動',
     needsInput: '新增時需要你填一點資訊',
+    limits: '已知限制（{{count}} 條）',
     fill: {
       title: '新增「{{name}}」',
       back: '回傳',
@@ -26,6 +27,8 @@ export default {
     listSeparator: '、',
     fixToSave: '進階設定裡有需要改的地方，改好才能儲存',
     onlyHeaders: '這個協議只讀額外請求頭；額外請求體、輸出長度欄位和 JSON 輸出方式對它不適用',
+    onlyHeadersMedia: '這個協議只讀額外請求頭',
+    introMedia: '一般不用動。只有服務商要求帶額外的請求頭時，才需要在這裡填',
     headersAndStyle:
       '這個協議讀額外請求頭和生圖風格；額外請求體、輸出長度欄位和 JSON 輸出方式對它不適用',
     imageStyle: {
@@ -40,6 +43,7 @@ export default {
     headers: {
       label: '額外請求頭',
       hint: '每次請求都會帶上這些請求頭，比如 Anthropic 對沒有限定到單個工作區的 Key 要求的 anthropic-workspace-id。',
+      hintMedia: '每次請求都會帶上這些請求頭，比如服務商要求的租戶、專案或閘道器標識。',
       protectedList: '這些名字由 dramai 管理，不能覆蓋（不分大小寫）：{{names}}。',
       mediaNote:
         '圖片、影片、語音服務商：提交和查詢進度的請求會帶上，下載成品檔案的請求不帶（成品地址常在別的主機上）。',

@@ -26,6 +26,9 @@ const KIND_OF: Record<ProtocolId, ProviderKind> = {
   'volcengine-video': 'video',
   'kling-video': 'video',
   'generic-video': 'video',
+  'ark-video': 'video',
+  'kling-contents': 'video',
+  'dashscope-video': 'video',
   'openai-tts': 'tts',
 }
 
@@ -40,7 +43,15 @@ export const PROTOCOLS_BY_KIND: Record<ProviderKind, readonly ProtocolId[]> = {
     'siliconflow-images',
     'kling-image',
   ],
-  video: ['aliyun-video', 'volcengine-video', 'kling-video', 'generic-video'],
+  video: [
+    'aliyun-video',
+    'volcengine-video',
+    'kling-video',
+    'generic-video',
+    'ark-video',
+    'kling-contents',
+    'dashscope-video',
+  ],
   tts: ['openai-tts'],
 }
 

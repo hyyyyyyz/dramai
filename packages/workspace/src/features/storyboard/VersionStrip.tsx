@@ -5,7 +5,7 @@ import type { MediaSlot } from '@dramai/api'
 import { Button, cn } from '@dramai/ui/v2'
 import { useApi } from '@/data/use-api'
 import { useFormat } from '@/i18n/format'
-import { versionNumber } from './version-model'
+import { usedReferenceNames, versionNumber } from './version-model'
 
 /**
  * 画面和视频各自的当前版本与历史：一排缩略图，当前用朱砂描边，旧版有“设为当前”。
@@ -33,6 +33,9 @@ export function VersionStrip({
   const imgNo = versionNumber(imageSlot, imageSlot.currentVersionId)
   const vidNo = versionNumber(videoSlot, videoSlot.currentVersionId)
   const total = imageSlot.versions.length + videoSlot.versions.length
+  const currentVideo = videoSlot.versions.find((v) => v.id === videoSlot.currentVersionId)
+  const withRefs = videoSlot.versions.filter((v) => v.usedReferences)
+  const roleLabel = (r: string) => t(`video.refs.role.${r}` as 'video.refs.role.character')
 
   return (
     <div className="flex flex-col gap-2">
@@ -51,6 +54,9 @@ export function VersionStrip({
             <> {t('storyboard.versions.of', { count: videoSlot.versions.length })}</>
           )}
         </span>
+        {currentVideo?.usedReferences && (
+          <span data-testid="video-refs-used">{t('video.refs.usedShort')}</span>
+        )}
         {total > 1 && (
           <button
             type="button"
@@ -130,6 +136,30 @@ export function VersionStrip({
                 </ul>
               </div>
             ),
+          )}
+          {withRefs.length > 0 && (
+            <div className="flex flex-col gap-1 text-xs" data-testid="video-refs-versions">
+              <ul className="flex flex-col gap-1 text-muted-foreground">
+                {withRefs.map((v) => {
+                  const used = v.usedReferences!
+                  return (
+                    <li key={v.id}>
+                      <span className="font-mono">v{videoSlot.versions.indexOf(v) + 1}</span>{' '}
+                      {t('video.refs.used', {
+                        names: usedReferenceNames(used, roleLabel).join(
+                          t('storyboard.batch.listSep'),
+                        ),
+                      })}{' '}
+                      ({t(`video.refs.usedFrame.${used.frame}`)})
+                      {used.trimmed > 0 && (
+                        <> · {t('video.refs.trimmed', { count: used.trimmed })}</>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+              <p className="text-subtle">{t('video.refs.staleVersion')}</p>
+            </div>
           )}
           <p className="text-xs text-subtle">{t('storyboard.versions.note')}</p>
         </div>

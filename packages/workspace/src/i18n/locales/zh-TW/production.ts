@@ -50,7 +50,7 @@ export default {
     PROVIDER_DISABLED: '當前選中的服務商被停用了',
     PROVIDER_KIND_MISMATCH: '當前選中的服務商型別不對',
     NO_PROVIDER: '還沒有選中這一類服務商，請先到設定裡新增並選中一個',
-    PROVIDER_NOT_FOUND: '指定的服務商配置不存在，請重新選擇',
+    PROVIDER_NOT_FOUND: '指定的服務商設定不存在，請重新選擇',
     MODE_UNSUPPORTED: '當前模型不支援這種生成方式',
     REFERENCE_NOT_SUPPORTED:
       '當前模型不支援參考圖，但這個鏡頭需要參考圖來保持角色一致。不會悄悄降級成純文生圖',
@@ -76,6 +76,15 @@ export default {
     DURATION_SNAPPED: '鏡頭時長不在模型支援的檔位上，會按最接近的檔位生成',
     OPTIONAL_INPUT_OMITTED: '有一個可選的輸入缺失（比如服裝沒有設定圖），只會用它的文字描述',
     REFS_TRIMMED: '參考圖超過了模型的上限，多出的幾張不會帶上',
+    REFERENCE_NOT_SUPPORTED_VIDEO:
+      '當前影片模型不支援參考圖，不能開啟“用角色設定圖作參考”。關掉這個開關改用首幀，或者換一個支援參考圖的影片模型',
+    FRAME_WITH_REFS_UNSUPPORTED:
+      '這個模型沒驗證過首幀和參考圖能不能同時用：會保留首幀、另外發參考圖，試一次，需要你確認',
+    FIRST_FRAME_REPLACED_BY_REFERENCE:
+      '開啟參考圖後，這個模型放棄嚴格的首幀：鏡頭圖只作為第 1 張參考圖',
+    VIDEO_REFS_EMPTY: '開了參考圖，但這個鏡頭沒有可用的設定圖，會按首幀生成',
+    AUDIO_NOT_DISABLEABLE:
+      '這個鏡頭不用原生人聲，但這個模型關不掉自帶的聲音：加入時間線時預設靜音，可以在時間線上調高',
   },
   storyboard: {
     sub: '分鏡 · {{scenes}} 場 · {{shots}} 個鏡頭 · 共 {{duration}}',
@@ -89,7 +98,7 @@ export default {
     },
     breakdown: {
       running: '大模型正在拆分鏡頭…',
-      queued: '已排隊，等前面的文本任務',
+      queued: '已排隊，等前面的文字任務',
       waiting: '已提交，等待第一段文字…',
       queuedHint: '輪到它之後，拆分的文字會在這裡一邊生成一邊顯示',
       streamLabel: '大模型正在生成的分鏡',
@@ -282,6 +291,7 @@ export default {
         mode: '服務商沒有驗證過這種生成方式（{{key}}）',
         refImages: '服務商沒有驗證過參考圖的上限',
         frames: '服務商沒有驗證過首尾幀',
+        framesWithRefs: '服務商沒有驗證過首幀和參考圖能不能同時用',
         duration: '服務商沒有驗證過時長檔位',
         resolution: '服務商沒有驗證過解析度',
         aspect: '服務商沒有驗證過畫幅',
@@ -297,7 +307,7 @@ export default {
       costUnknown: '無法估算',
       costOther: '另有 {{list}}（沒有折算）',
       unpriced: '{{count}} 項查不到單價，沒有計入',
-      costNote: '估算，不是賬單。價格以服務商當前頁面為準',
+      costNote: '估算，不是帳單。價格以服務商當前頁面為準',
       warningsTitle: '不會攔下，但值得知道',
       partialTitle: '有的沒有加入佇列',
       partialBody: '{{ok}} 項已加入佇列，{{bad}} 項沒有成功：狀態在任務面板和鏡頭卡上',
@@ -485,5 +495,45 @@ export default {
       shots: '鏡頭 {{list}}',
       open: '開啟第 {{n}} 集分鏡',
     },
+  },
+  video: {
+    refs: {
+      toggle: '用角色設定圖作參考',
+      what: '開啟後，鏡頭引用的角色、場景、道具設定圖會作為參考圖和鏡頭一起交給影片模型，人物和場景更一致。預設關。代價是有的模型要放棄嚴格的首幀，開啟前請看下面的說明。',
+      ifOn: {
+        frame_as_reference: '開啟後，這個模型會放棄嚴格的首幀：鏡頭圖只作為第 1 張參考圖',
+        frame_with_references: '首幀保留，參考圖另發（這個組合沒驗證過，需要你確認）',
+        not_available: '這個模型不支援參考圖，不能開啟。換一個支援參考圖的影片模型再試',
+      },
+      shot: {
+        as_reference: '放棄嚴格首幀：鏡頭圖作為第 1 張參考圖',
+        strict_with_refs: '保持嚴格首幀，並另發參考圖',
+        strict_no_refs: '沒有可用的設定圖，按嚴格首幀生成',
+        count: '共 {{count}} 張參考圖',
+        dropped: '超過模型的上限，捨棄了 {{count}} 張',
+        blocked: '這個模型不支援參考圖，不能開啟',
+      },
+      stale:
+        '用參考圖生成的影片，之後換了角色設定圖，不會被自動標成“已過期”。換了設定圖後，請手動重新生成這些鏡頭',
+      used: '用了參考圖：{{names}}',
+      usedShort: '用了參考圖',
+      usedFrame: {
+        as_reference: '鏡頭圖作為第 1 張參考圖，沒有嚴格首幀',
+        with_references: '保持嚴格首幀，參考圖另發',
+      },
+      trimmed: '另有 {{count}} 張超過上限，沒有帶上',
+      staleVersion:
+        '這個影片用了角色參考圖。之後換了設定圖，它不會被自動標成“已過期”，需要的話請手動重新生成',
+      role: {
+        start_frame: '鏡頭圖',
+        character: '角色',
+        prop: '道具',
+        location: '場景',
+        costume: '服裝',
+        style: '風格',
+      },
+    },
+    mutedClip:
+      '這個片段的原聲現在是靜音的（音量 0）。有的影片模型關不掉自帶的聲音，這樣的片段加入時間線時預設靜音；想要原聲，把音量調高就行',
   },
 }

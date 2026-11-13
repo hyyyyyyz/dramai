@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Asset, GenerateItem } from '@dramai/api'
+import type { Asset, GenerateItem, Verdict } from '@dramai/api'
 import { Button, Checkbox, Frame, Notice, Pill, Skeleton, useToast } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { useApi } from '@/data/use-api'
@@ -19,6 +19,8 @@ import { costHeadline } from './cost'
 import { batchTargetId, type BatchCandidate, type BatchKind } from './batch-model'
 import { visibleReasons } from './reasons'
 import { useReasonText } from './use-reason-text'
+import { VideoRefsControl } from './VideoRefsControl'
+import { VIDEO_PLAN_WARNINGS, frameOutcome } from './video-refs-model'
 import { useFormat } from '@/i18n/format'
 
 /**
@@ -49,17 +51,23 @@ export function BatchConfirmDialog({
   const { t } = useTranslation()
   const fmt = useFormat()
   const { toast } = useToast()
-  const reasonText = useReasonText(assets)
+  const reasonText = useReasonText(assets, { video: kind === 'shot_video' })
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(candidates.map((c) => c.shotId)),
   )
   const [confirmUnverified, setConfirmUnverified] = useState(false)
+  // reference images for video: off unless the user turns it on
+  const [videoRefs, setVideoRefs] = useState(false)
 
   const chosen = useMemo(
     () => candidates.filter((c) => selected.has(c.shotId)),
     [candidates, selected],
   )
-  const items: GenerateItem[] = useMemo(() => chosen.map((c) => ({ target: c.target })), [chosen])
+  const refsOn = kind === 'shot_video' && videoRefs
+  const items: GenerateItem[] = useMemo(
+    () => chosen.map((c) => ({ target: c.target, ...(refsOn ? { videoRefs: true } : {}) })),
+    [chosen, refsOn],
+  )
   const pre = usePreflight(projectId, items, { confirmUnverified })
   const submit = useCall('generate.submit', {
     invalidate: [qk.jobs, ['episode'], qk.preflight, qk.artifacts, qk.episodes(projectId)],
@@ -83,10 +91,12 @@ export function BatchConfirmDialog({
     pre.data?.results.flatMap((v) => v.unverified.filter((u) => !u.confirmed)) ?? []
   const anyUnverified =
     (pre.data?.results.some((v) => v.unverified.length > 0) ?? false) || confirmUnverified
+  // what a video shot does with its shot image and references is shown next to the shot, not in the general list
   const warnings = [
     ...new Map(
       (pre.data?.results ?? [])
         .flatMap((v) => v.warnings)
+        .filter((w) => !(kind === 'shot_video' && VIDEO_PLAN_WARNINGS.includes(w.code)))
         .map((w) => [`${w.code}:${w.assetId ?? ''}`, w] as const),
     ).values(),
   ]
@@ -192,6 +202,14 @@ export function BatchConfirmDialog({
         )}
         {pre.isError && <ErrorNotice error={pre.error} />}
 
+        {kind === 'shot_video' && pre.data && (
+          <VideoRefsControl
+            on={videoRefs}
+            onChange={setVideoRefs}
+            plans={chosen.map((c) => verdictOf(c.shotId)?.video)}
+          />
+        )}
+
         <ul className="flex flex-col" aria-label={t('storyboard.batch.list')}>
           {[...candidates]
             .sort((a, b) => rank(verdictOf(a.shotId)?.status) - rank(verdictOf(b.shotId)?.status))
@@ -216,6 +234,9 @@ export function BatchConfirmDialog({
                   <div className="min-w-0 text-sm">
                     <h3 className="font-sans text-base font-medium">{c.label}</h3>
                     {c.note && <p className="text-sm text-muted-foreground">{c.note}</p>}
+                    {checked && refsOn && v?.video && (
+                      <VideoPlanLine video={v.video} blocked={v.status === 'blocked'} />
+                    )}
                     {checked && v?.status === 'blocked' && (
                       <ul className="mt-1 flex flex-col gap-1 text-muted-foreground">
                         {visibleReasons(v.reasons).map((r, i) => (
@@ -343,12 +364,49 @@ function Cap({ label, children }: { label: string; children: React.ReactNode }) 
 /** 未验证项的键（如 `mode:i2v`、`refImages`、`duration`）归成几类，文案按类写。 */
 function unverifiedGroup(
   key: string,
-): 'mode' | 'refImages' | 'frames' | 'duration' | 'resolution' | 'aspect' | 'other' {
+):
+  | 'mode'
+  | 'refImages'
+  | 'frames'
+  | 'framesWithRefs'
+  | 'duration'
+  | 'resolution'
+  | 'aspect'
+  | 'other' {
   if (key.startsWith('mode:')) return 'mode'
   if (key === 'refImages') return 'refImages'
   if (key === 'firstFrame' || key === 'lastFrame') return 'frames'
+  if (key === 'firstFrameWithRefs') return 'framesWithRefs'
   if (key === 'duration') return 'duration'
   if (key === 'resolution') return 'resolution'
   if (key === 'aspectRatio' || key === 'aspect') return 'aspect'
   return 'other'
+}
+
+/** One shot's reference-image plan: what happens to its shot image, how many references, how many were left out. */
+function VideoPlanLine({
+  video,
+  blocked,
+}: {
+  video: NonNullable<Verdict['video']>
+  blocked: boolean
+}) {
+  const { t } = useTranslation()
+  if (video.ifRefsOn === 'not_available' || (blocked && video.refImages === 'unsupported'))
+    return (
+      <p className="mt-1 text-danger" data-testid="video-plan">
+        {t('video.refs.shot.blocked')}
+      </p>
+    )
+  return (
+    <p className="mt-1 text-muted-foreground" data-testid="video-plan">
+      {t(`video.refs.shot.${frameOutcome(video)}`)}
+      {video.referenceCount > 0 && (
+        <> · {t('video.refs.shot.count', { count: video.referenceCount })}</>
+      )}
+      {video.droppedReferences > 0 && (
+        <> · {t('video.refs.shot.dropped', { count: video.droppedReferences })}</>
+      )}
+    </p>
+  )
 }

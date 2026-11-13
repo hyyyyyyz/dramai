@@ -42,6 +42,10 @@ export const REASON_CODES = [
   'DURATION_SNAPPED',
   'OPTIONAL_INPUT_OMITTED',
   'REFS_TRIMMED',
+  'FRAME_WITH_REFS_UNSUPPORTED',
+  'FIRST_FRAME_REPLACED_BY_REFERENCE',
+  'VIDEO_REFS_EMPTY',
+  'AUDIO_NOT_DISABLEABLE',
 ] as const
 export type ReasonCode = (typeof REASON_CODES)[number]
 export const isReasonCode = (code: string): code is ReasonCode =>

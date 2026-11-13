@@ -27,7 +27,7 @@ export default {
     },
     subs: {
       title: '字幕 SRT / VTT',
-      basis: '由旁白文本和時間線即時生成，永遠是當前這一版',
+      basis: '由旁白文字和時間線即時生成，永遠是當前這一版',
       basisEmpty: '時間線是空的，還沒有字幕可導',
     },
     narration: {

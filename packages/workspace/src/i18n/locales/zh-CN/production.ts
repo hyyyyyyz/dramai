@@ -76,6 +76,15 @@ export default {
     DURATION_SNAPPED: '镜头时长不在模型支持的档位上，会按最接近的档位生成',
     OPTIONAL_INPUT_OMITTED: '有一个可选的输入缺失（比如服装没有设定图），只会用它的文字描述',
     REFS_TRIMMED: '参考图超过了模型的上限，多出的几张不会带上',
+    REFERENCE_NOT_SUPPORTED_VIDEO:
+      '当前视频模型不支持参考图，不能开启“用角色设定图作参考”。关掉这个开关改用首帧，或者换一个支持参考图的视频模型',
+    FRAME_WITH_REFS_UNSUPPORTED:
+      '这个模型没验证过首帧和参考图能不能同时用：会保留首帧、另外发参考图，试一次，需要你确认',
+    FIRST_FRAME_REPLACED_BY_REFERENCE:
+      '开启参考图后，这个模型放弃严格的首帧：镜头图只作为第 1 张参考图',
+    VIDEO_REFS_EMPTY: '开了参考图，但这个镜头没有可用的设定图，会按首帧生成',
+    AUDIO_NOT_DISABLEABLE:
+      '这个镜头不用原生人声，但这个模型关不掉自带的声音：加入时间线时默认静音，可以在时间线上调高',
   },
   storyboard: {
     sub: '分镜 · {{scenes}} 场 · {{shots}} 个镜头 · 共 {{duration}}',
@@ -282,6 +291,7 @@ export default {
         mode: '服务商没有验证过这种生成方式（{{key}}）',
         refImages: '服务商没有验证过参考图的上限',
         frames: '服务商没有验证过首尾帧',
+        framesWithRefs: '服务商没有验证过首帧和参考图能不能同时用',
         duration: '服务商没有验证过时长档位',
         resolution: '服务商没有验证过分辨率',
         aspect: '服务商没有验证过画幅',
@@ -485,5 +495,45 @@ export default {
       shots: '镜头 {{list}}',
       open: '打开第 {{n}} 集分镜',
     },
+  },
+  video: {
+    refs: {
+      toggle: '用角色设定图作参考',
+      what: '开启后，镜头引用的角色、场景、道具设定图会作为参考图和镜头一起交给视频模型，人物和场景更一致。默认关。代价是有的模型要放弃严格的首帧，开启前请看下面的说明。',
+      ifOn: {
+        frame_as_reference: '开启后，这个模型会放弃严格的首帧：镜头图只作为第 1 张参考图',
+        frame_with_references: '首帧保留，参考图另发（这个组合没验证过，需要你确认）',
+        not_available: '这个模型不支持参考图，不能开启。换一个支持参考图的视频模型再试',
+      },
+      shot: {
+        as_reference: '放弃严格首帧：镜头图作为第 1 张参考图',
+        strict_with_refs: '保持严格首帧，并另发参考图',
+        strict_no_refs: '没有可用的设定图，按严格首帧生成',
+        count: '共 {{count}} 张参考图',
+        dropped: '超过模型的上限，舍弃了 {{count}} 张',
+        blocked: '这个模型不支持参考图，不能开启',
+      },
+      stale:
+        '用参考图生成的视频，之后换了角色设定图，不会被自动标成“已过期”。换了设定图后，请手动重新生成这些镜头',
+      used: '用了参考图：{{names}}',
+      usedShort: '用了参考图',
+      usedFrame: {
+        as_reference: '镜头图作为第 1 张参考图，没有严格首帧',
+        with_references: '保持严格首帧，参考图另发',
+      },
+      trimmed: '另有 {{count}} 张超过上限，没有带上',
+      staleVersion:
+        '这个视频用了角色参考图。之后换了设定图，它不会被自动标成“已过期”，需要的话请手动重新生成',
+      role: {
+        start_frame: '镜头图',
+        character: '角色',
+        prop: '道具',
+        location: '场景',
+        costume: '服装',
+        style: '风格',
+      },
+    },
+    mutedClip:
+      '这个片段的原声现在是静音的（音量 0）。有的视频模型关不掉自带的声音，这样的片段加入时间线时默认静音；想要原声，把音量调高就行',
   },
 }

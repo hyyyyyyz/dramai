@@ -1,3 +1,4 @@
+import { safeHttpUrl } from '@/lib/safe-url'
 import type { LoginStatusDto, ProviderConfigDto } from '@dramai/api'
 
 export type Auth = ProviderConfigDto['auth']
@@ -43,7 +44,7 @@ export function verificationView(
 ): VerificationView {
   if (v?.status === 'tested') return { kind: 'tested', date: v.testedAt }
   if (v?.status === 'documented')
-    return { kind: 'documented', source: v.source, link: /^https?:\/\//i.test(v.source) }
+    return { kind: 'documented', source: v.source, link: safeHttpUrl(v.source) !== undefined }
   return legacyVerifiedAt ? { kind: 'tested', date: legacyVerifiedAt } : undefined
 }
 
@@ -138,6 +139,14 @@ export const PROVIDER_ERROR_CODES = [
   'HTTP_NOT_FOUND',
   'HTTP_RATE_LIMIT',
   'HTTP_SERVER',
+  // video providers (Kling, Volcengine Ark / BytePlus, Alibaba Model Studio): the task's own codes
+  'VIDEO_FACE_REJECTED',
+  'CONTENT_REJECTED',
+  'BALANCE_INSUFFICIENT',
+  'TASK_EXPIRED',
+  'TASK_CANCELLED',
+  'TASK_UNKNOWN',
+  'FIRST_FRAME_REQUIRED',
 ] as const
 export type ProviderErrorCode = (typeof PROVIDER_ERROR_CODES)[number]
 
@@ -154,11 +163,37 @@ function httpClassOf(code: string): ProviderErrorCode | undefined {
   return undefined
 }
 
+/**
+ * Codes the video providers send as they are: Kling's business codes arrive as `KLING_<code>`, Ark and Model Studio
+ * send their own names (some with a dot, which cannot be a translation key, so they are explained under a plain key).
+ */
+function videoCodeOf(code: string): ProviderErrorCode | undefined {
+  switch (code) {
+    case 'KLING_1101':
+    case 'KLING_1102':
+    case 'Arrearage':
+      return 'BALANCE_INSUFFICIENT'
+    case 'KLING_1103':
+    case 'InvalidApiKey':
+      return 'HTTP_AUTH'
+    case 'KLING_1301':
+    case 'DataInspectionFailed':
+      return 'CONTENT_REJECTED'
+    case 'KLING_1302':
+    case 'KLING_1303':
+      return 'HTTP_RATE_LIMIT'
+    default:
+      if (code.startsWith('InputImageSensitiveContentDetected')) return 'VIDEO_FACE_REJECTED'
+      if (code.startsWith('Throttling')) return 'HTTP_RATE_LIMIT'
+      return undefined
+  }
+}
+
 /** The explained form of an error code, or nothing when the generic failure text should stay. */
 export function providerErrorOf(code: string | undefined): ProviderErrorCode | undefined {
   if (code === undefined) return undefined
   if ((PROVIDER_ERROR_CODES as readonly string[]).includes(code)) return code as ProviderErrorCode
-  return httpClassOf(code)
+  return httpClassOf(code) ?? videoCodeOf(code)
 }
 export const isProviderErrorCode = (code: string | undefined): code is ProviderErrorCode =>
   providerErrorOf(code) === code && code !== undefined
@@ -196,6 +231,13 @@ export const PROVIDER_ERROR_ACTION: Record<ProviderErrorCode, 'manage' | 'settin
   HTTP_NOT_FOUND: 'settings',
   HTTP_RATE_LIMIT: undefined,
   HTTP_SERVER: undefined,
+  VIDEO_FACE_REJECTED: undefined,
+  CONTENT_REJECTED: undefined,
+  BALANCE_INSUFFICIENT: undefined,
+  TASK_EXPIRED: undefined,
+  TASK_CANCELLED: undefined,
+  TASK_UNKNOWN: undefined,
+  FIRST_FRAME_REQUIRED: undefined,
 }
 
 /**
