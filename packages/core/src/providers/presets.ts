@@ -1,4 +1,5 @@
 import type { Locale, TranslatedLocale } from '../i18n.ts'
+import { IMAGE_PRESETS } from './presets-image.ts'
 import { TEXT_PRESETS } from './presets-text.ts'
 import type {
   ProviderAuth,
@@ -48,6 +49,7 @@ export const PROVIDER_VENDORS: readonly ProviderVendor[] = [
   { id: 'zhipu', name: '智谱 AI', i18n: { 'zh-Hant': '智譜 AI', en: 'Zhipu AI' } },
   { id: 'moonshot', name: 'Moonshot AI（Kimi）' },
   { id: 'minimax', name: 'MiniMax' },
+  { id: 'kling', name: '可灵', i18n: { 'zh-Hant': '可靈', en: 'Kling AI' } },
   { id: 'siliconflow', name: '硅基流动', i18n: { 'zh-Hant': '矽基流動', en: 'SiliconFlow' } },
   { id: 'openrouter', name: 'OpenRouter' },
   { id: '302ai', name: '302.AI' },
@@ -272,8 +274,12 @@ const CORE_PRESETS: readonly ProviderPreset[] = [
   },
 ]
 
-/** 全部预设：v0.4 实测的四个、OpenAI 账号登录，以及第一批文本服务商（按官方文档接入、未实测）。 */
-export const PROVIDER_PRESETS: readonly ProviderPreset[] = [...CORE_PRESETS, ...TEXT_PRESETS]
+/** 全部预设：v0.4 实测的四个、OpenAI 账号登录，以及按官方文档接入、未实测的文本和生图服务商。 */
+export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
+  ...CORE_PRESETS,
+  ...TEXT_PRESETS,
+  ...IMAGE_PRESETS,
+]
 
 export const PROVIDER_KIND_LABEL: Record<ProviderKind, string> = {
   llm: 'LLM 文本生成',

@@ -181,4 +181,42 @@ describe('text presets through the API', () => {
     )
     expect(seen.at(-1)!.url).toBe('https://generativelanguage.googleapis.com/v1beta/models')
   })
+
+  it('the image presets (documented, not tested) are listed with vendor, region and protocol, and a Google one never gets a Bearer header', async () => {
+    const { h, seen } = await boot()
+    const items = (await h.client.call('presets.list')).items
+    const images = items.filter((p) => p.kind === 'image' && p.verification.status === 'documented')
+    expect(images.map((p) => p.protocol).sort()).toEqual([
+      'dashscope-image',
+      'dashscope-image',
+      'gemini-image',
+      'kling-image',
+      'openai-images',
+      'openai-images',
+      'siliconflow-images',
+      'volcengine-images',
+    ])
+    expect(images.find((p) => p.id === 'volcengine-seedream')).toMatchObject({
+      vendor: { id: 'volcengine' },
+      region: 'cn',
+      auth: { type: 'api_key' },
+    })
+    expect(images.find((p) => p.id === 'kling-image')!.vendor).toEqual({
+      id: 'kling',
+      label: '可灵',
+    })
+    expect(items.filter((p) => p.verification.status === 'tested')).toHaveLength(4) // the 302.AI ones are unchanged
+    // connection test of the direct Gemini image provider: x-goog-api-key only
+    const gem = await preset(h, 'gemini-image-direct', 'AIza-image-1234567890')
+    await h.client.call('providers.test', { params: { providerId: gem.id } })
+    const call = seen.at(-1)!
+    expect(call.url).toBe('https://generativelanguage.googleapis.com/v1beta/models')
+    expect(call.headers['x-goog-api-key']).toBe('AIza-image-1234567890')
+    expect(call.headers.Authorization).toBeUndefined()
+    // a provider without a list endpoint says "cannot verify"
+    const kling = await preset(h, 'kling-image', 'kling-key-1234567890')
+    expect(
+      await h.client.call('providers.test', { params: { providerId: kling.id } }),
+    ).toMatchObject({ outcome: 'unverifiable' })
+  })
 })

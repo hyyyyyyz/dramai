@@ -8,11 +8,16 @@ import {
   PROVIDER_VENDORS,
 } from '../src/providers/presets.ts'
 
-const documented = PROVIDER_PRESETS.filter((p) => p.verification.status === 'documented')
+const documented = PROVIDER_PRESETS.filter(
+  (p) => p.verification.status === 'documented' && p.kind === 'llm',
+)
 
 describe('text provider presets (first batch): documented, not tested', () => {
   it('every new text preset is "documented" with an official https source, and none claims a test date', () => {
     expect(documented.length).toBeGreaterThanOrEqual(15)
+    expect(
+      PROVIDER_PRESETS.filter((p) => p.verification.status === 'documented').length,
+    ).toBeGreaterThanOrEqual(23)
     for (const p of documented) {
       expect(p.verification.status === 'documented' && p.verification.source, p.id).toMatch(
         /^https:\/\//,

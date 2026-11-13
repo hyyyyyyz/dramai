@@ -1,5 +1,6 @@
 import { sendRequest } from './executor.ts'
 import { modelListRequest } from './model-list.ts'
+import { isGoogleHost } from './protocols/gemini-image.ts'
 import type { ExecutorDeps } from './executor.ts'
 import { asRecord, authHeaders, joinUrl } from './http.ts'
 import type { ProviderConfig } from './types.ts'
@@ -26,6 +27,10 @@ export async function testProvider(
     case 'volcengine-video':
     case 'kling-video':
     case 'generic-video':
+    case 'kling-image':
+    case 'dashscope-image':
+    case 'volcengine-images':
+    case 'siliconflow-images':
       return {
         outcome: 'unverifiable',
         reason: '该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来实测。',
@@ -33,7 +38,8 @@ export async function testProvider(
     case 'gemini-image': {
       const headers: Record<string, string> = {}
       if (apiKey) {
-        headers.Authorization = `Bearer ${apiKey}`
+        // 官方地址只认 x-goog-api-key（Bearer 的 API Key 会被拒）；聚合平台两个都发
+        if (!isGoogleHost(config.baseUrl)) headers.Authorization = `Bearer ${apiKey}`
         headers['x-goog-api-key'] = apiKey
       }
       return probeList(joinUrl(config.baseUrl, '/v1beta/models'), headers, config.model, deps)

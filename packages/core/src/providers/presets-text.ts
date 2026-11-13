@@ -11,8 +11,10 @@ import type { ProviderPreset } from './presets.ts'
 
 type Texts = Record<TranslatedLocale, { label: string; notes: string; knownLimitations: string[] }>
 
-interface Def {
+export interface Def {
   id: string
+  /** 缺省 llm。 */
+  kind?: ProviderPreset['kind']
   vendor: string
   region?: ProviderPreset['region']
   protocol: ProviderPreset['protocol']
@@ -36,7 +38,7 @@ const UNTESTED_ZH = '按官方文档接入，未实测。'
 const UNTESTED_HANT = '依官方文件接入，尚未實測。'
 const UNTESTED_EN = 'Connected from the official documentation, not tested end to end.'
 
-function def(d: Def): ProviderPreset {
+export function def(d: Def): ProviderPreset {
   const texts: Texts = {
     en: { label: d.en.label, notes: `${d.en.notes} ${UNTESTED_EN}`, knownLimitations: d.en.limits },
     'zh-Hant': {
@@ -50,7 +52,7 @@ function def(d: Def): ProviderPreset {
     label: d.zh.label,
     vendor: d.vendor,
     ...(d.region ? { region: d.region } : {}),
-    kind: 'llm',
+    kind: d.kind ?? 'llm',
     protocol: d.protocol,
     baseUrl: d.baseUrl,
     ...(d.baseUrlPlaceholders ? { baseUrlPlaceholders: d.baseUrlPlaceholders } : {}),
