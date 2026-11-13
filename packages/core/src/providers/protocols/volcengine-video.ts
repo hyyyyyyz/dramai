@@ -1,4 +1,13 @@
-import { asRecord, joinPrompt, joinUrl, jsonHeaders, jsonPost, str, toDataUrl } from '../http.ts'
+import {
+  asRecord,
+  bodyError,
+  joinPrompt,
+  joinUrl,
+  jsonHeaders,
+  jsonPost,
+  str,
+  toDataUrl,
+} from '../http.ts'
 import type { MediaProtocol, OutputRef, VideoGenInput } from '../types.ts'
 
 /**
@@ -71,6 +80,10 @@ export const volcengineVideo: MediaProtocol<VideoGenInput> = {
   parsePollResponse(raw) {
     const json = asRecord(raw.json)
     const status = (str(json?.status) ?? '').toLowerCase()
+    if (!status) {
+      const err = bodyError(raw.json)
+      if (err) return { status: 'failed', message: err }
+    }
     if (status === 'succeeded' || status === 'success') {
       const content = asRecord(json?.content)
       const url = str(content?.video_url) ?? str(content?.videoUrl)

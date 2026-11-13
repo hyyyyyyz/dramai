@@ -1,4 +1,4 @@
-import { asRecord, bytesToBase64, joinUrl, jsonHeaders, jsonPost, str } from '../http.ts'
+import { asRecord, bodyError, bytesToBase64, joinUrl, jsonHeaders, jsonPost, str } from '../http.ts'
 import type { ImageGenInput, MediaProtocol, OutputRef } from '../types.ts'
 
 /**
@@ -66,6 +66,11 @@ export const klingImage: MediaProtocol<ImageGenInput> = {
   parsePollResponse(raw) {
     const data = asRecord(asRecord(raw.json)?.data)
     const status = (str(data?.task_status) ?? 'unknown').toLowerCase()
+    // `{ code: 非 0, message }` 且没有任务状态 = 业务错误（鉴权失败 / 任务不存在…），不是"排队中"
+    if (!str(data?.task_status)) {
+      const err = bodyError(raw.json)
+      if (err) return { status: 'failed', message: err }
+    }
     if (status === 'succeed' || status === 'succeeded') {
       const result = asRecord(data?.task_result)
       const list = [result?.images, result?.series_images].find((x) => Array.isArray(x)) as

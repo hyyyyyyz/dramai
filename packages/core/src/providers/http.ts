@@ -75,3 +75,32 @@ export function errorMessageOf(json: unknown, fallback: string): string {
 }
 
 export type { AuthContext }
+
+/**
+ * 轮询响应里**明确的业务错误**（没有任务状态时用）：`{ code: 非 0 / 非空字符串, message }`、`{ output: { code, message } }`
+ * 或 `{ error }`。读不出就返回 undefined（调用方才可以按"状态未知，继续等"处理）。
+ *
+ * 为什么要有它：状态未知一律当"排队中"会把鉴权失败、任务不存在这类错误响应变成"一直在排队"，
+ * 要等到轮询超时（约 10 分钟）才报错，用户看到的是"超时"而不是真正的原因。
+ */
+export function bodyError(json: unknown): string | undefined {
+  const obj = asRecord(json)
+  if (!obj) return undefined
+  const fromCode = (o: Record<string, unknown> | undefined): string | undefined => {
+    if (!o) return undefined
+    const code = o.code
+    const bad =
+      (typeof code === 'number' && code !== 0) ||
+      (typeof code === 'string' && code !== '' && code !== '0' && !/^(success|ok)$/i.test(code))
+    if (!bad) return undefined
+    return str(o.message) ?? str(o.msg) ?? `上游返回错误码 ${String(code)}`
+  }
+  const err = obj.error
+  const fromError =
+    typeof err === 'string' && err
+      ? err
+      : asRecord(err)
+        ? (str(asRecord(err)?.message) ?? '上游返回错误')
+        : undefined
+  return fromCode(obj) ?? fromCode(asRecord(obj.output)) ?? fromError
+}
