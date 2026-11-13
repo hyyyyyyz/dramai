@@ -369,3 +369,26 @@ describe('address validation covers every way to write an address (only on write
     ).rejects.toMatchObject({ code: 'AUTH_NOT_ALLOWED' })
   })
 })
+
+describe('dialect: the image style is stored and returned', () => {
+  it('providers.update accepts imageStyle and rejects an unknown value', async () => {
+    const { h } = await boot()
+    const p = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'openai-gpt-image', apiKey: 'sk-image-1234567890' },
+    })
+    const updated = await h.client.call('providers.update', {
+      params: { providerId: p.id },
+      body: { dialect: { imageStyle: 'compat' } },
+    })
+    expect(updated.dialect).toEqual({ imageStyle: 'compat' })
+    expect(
+      (await h.client.call('providers.get', { params: { providerId: p.id } })).dialect,
+    ).toEqual({ imageStyle: 'compat' })
+    await expect(
+      h.client.call('providers.update', {
+        params: { providerId: p.id },
+        body: { dialect: { imageStyle: 'banana' as never } },
+      }),
+    ).rejects.toThrow(/imageStyle/) // the typed client refuses it before sending
+  })
+})

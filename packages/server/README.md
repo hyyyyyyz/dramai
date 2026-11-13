@@ -336,3 +336,11 @@ core 的业务错误是 `DomainError`（`code` + `kind`：not_found / conflict /
 | GET    | `/api/events`                                    | `events` (非 JSON)                       |
 
 multipart 上传的文件字段统一叫 `file`（`assets.uploadSheet` 可选 `variantName`；`projects.setStyleReference` 可选 `label`；`import.legacy` 可选 `projectIds`、`allowDuplicate`）。
+
+## Review fixes for the image/text provider batch (English)
+
+- **Extra headers** (`dialect.extraHeaders`) now apply to every provider kind: text protocols merge them in their request builders, the executor merges them into the submit and poll requests of every media protocol (image, video, speech), and the connection test and model list send them too. Result downloads never get them (the result host is usually another host). The protected list (case-insensitive): `Authorization`, `Proxy-Authorization`, `Cookie`, `X-Api-Key`, `X-Goog-Api-Key`, `X-Key`, `Api-Key`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Host`, `Anthropic-Version`.
+- **Minimum image size**: `ModelCapability.minPixels`, applied in `resolveOutputSize` (keeps the ratio and the step, stays under the ceilings; a floor above the ceiling is an error). The Seedream in-protocol scale-up remains only as the fallback for models without a profile.
+- **Image style** (`dialect.imageStyle`: `auto` | `openai` | `compat` | `minimax`) for the `openai-images` protocol; `auto` strips vendor prefixes (`openai/gpt-image-1`) and decides from the last path segment.
+- **Polling**: a response with no task state but an explicit error (`{ code: non-zero, message }`, `{ output: { code, message } }`, `{ error }`) fails the task at once instead of waiting for the poll timeout.
+- **Base URL** rules are checked on `providers.create`, `providers.fromPreset` and on `providers.update` when the address changes (never when stored rows are read): http(s) only, no query string or fragment, no placeholder (also percent-encoded), plain http only to this machine or the local network, never to link-local addresses (`169.254.0.0/16`, `fe80::/10`).
