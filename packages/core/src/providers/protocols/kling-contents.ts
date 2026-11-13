@@ -151,8 +151,13 @@ export const klingContents: MediaProtocol<VideoGenInput> = {
 
   parsePollResponse(raw) {
     const json = asRecord(raw.json)
+    // 官方：`data` 是数组（按任务号批量查询）。对象形态（单个任务）也认；有 data 却两种都不是 = 响应读不懂，
+    // 按解析失败处理（执行器会重试几次，连续失败才放弃），不要当成"还在排队"一直等到超时。
     const data = json?.data
-    const task = asRecord(Array.isArray(data) ? data[0] : undefined)
+    if (data !== undefined && !Array.isArray(data) && !asRecord(data)) {
+      throw new Error('Kling 轮询响应的 data 既不是数组也不是对象')
+    }
+    const task = asRecord(Array.isArray(data) ? data[0] : data)
     const status = (str(task?.status) ?? '').toLowerCase()
     if (!status) {
       const err = bodyError(raw.json)

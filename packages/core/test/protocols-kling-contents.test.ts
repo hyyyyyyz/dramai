@@ -330,3 +330,57 @@ describe('kling-contents: through the executor with a fake fetch', () => {
     }
   })
 })
+
+describe('review fix 4: the shape of data in the poll response', () => {
+  it('an object works like a one-element array', () => {
+    const t = {
+      id: '1',
+      status: 'succeeded',
+      outputs: [{ type: 'video', url: 'https://v/1.mp4', duration: '5' }],
+    }
+    expect(klingContents.parsePollResponse!(raw({ code: 0, data: t }))).toEqual(
+      klingContents.parsePollResponse!(raw({ code: 0, data: [t] })),
+    )
+    expect(
+      klingContents.parsePollResponse!(raw({ code: 0, data: { status: 'processing' } })),
+    ).toEqual({ status: 'processing' })
+    expect(
+      klingContents.parsePollResponse!(
+        raw({ code: 0, data: { status: 'failed', message: 'blocked' } }),
+      ),
+    ).toEqual({
+      status: 'failed',
+      message: 'blocked',
+    })
+  })
+
+  it('anything else that is present is a parse failure (thrown), not "still queued"', () => {
+    for (const data of ['oops', 5, null, true])
+      expect(
+        () => klingContents.parsePollResponse!(raw({ code: 0, data })),
+        JSON.stringify(data),
+      ).toThrow()
+    // absent or empty keeps waiting, as before
+    expect(klingContents.parsePollResponse!(raw({ code: 0 }))).toEqual({ status: 'queued' })
+    expect(klingContents.parsePollResponse!(raw({ code: 0, data: [] }))).toEqual({
+      status: 'queued',
+    })
+  })
+
+  it('through the executor: a few unreadable polls are retried, an endless run of them ends as POLL_FAILED', async () => {
+    let n = 0
+    const fetch = async (url: string) => {
+      if (url.includes('/text-to-video/'))
+        return new Response(JSON.stringify({ code: 0, data: { id: 'T' } }))
+      n++
+      return new Response(JSON.stringify({ code: 0, data: 'garbage' }))
+    }
+    try {
+      await runGeneration(klingContents, auth(), base, { fetch, sleep: async () => {} })
+      throw new Error('should fail')
+    } catch (e) {
+      expect((e as ProviderError).code).toBe('POLL_FAILED')
+    }
+    expect(n).toBe(5)
+  })
+})
