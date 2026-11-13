@@ -466,6 +466,23 @@ describe('issues found when reading the timeline (blocking / warning / info)', (
     expect(hasBlockingIssues(issues)).toBe(false)
   })
 
+  it('NARRATION_OVER_DIALOGUE reads the clip volume that really applies: a clip defaulted to silence is not "loud sound"', () => {
+    const f = facts({
+      a: { video: 2, audio: 9, narrationText: 'x' },
+      b: { video: 2, narrationText: undefined },
+    })
+    const quiet = read(
+      [clip('c1', 'a', { carriesNarration: true }), clip('c2', 'b', { sourceVolume: 0 })],
+      f,
+    )
+    expect(codes(quiet, 'warning')).not.toContain('NARRATION_OVER_DIALOGUE')
+    const loud = read(
+      [clip('c1', 'a', { carriesNarration: true }), clip('c2', 'b', { sourceVolume: 1 })],
+      f,
+    )
+    expect(codes(loud, 'warning')).toContain('NARRATION_OVER_DIALOGUE')
+  })
+
   it('flags stale clip videos, a stale cut, an ignored trim and ignored transitions as non-blocking', () => {
     const f = facts({ a: { video: 3 }, b: { video: 3 } })
     const issues = read(

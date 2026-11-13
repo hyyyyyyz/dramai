@@ -29,11 +29,18 @@ export function headRevision(doc: TimelineDocument): TimelineRevision {
 /** 默认的片段原声音量：台词 / 无人声镜 1.0；画外音镜 0.3（给旁白让路）。 */
 export const VOICEOVER_SOURCE_VOLUME = 0.3
 
-/** 按镜头顺序生成初始内容：一个镜头一个片段，全部硬切，旁白由配音镜头的片段承载。 */
-export function buildInitialContent(
-  shots: ReadonlyArray<Pick<Shot, 'id' | 'dialogue' | 'narration'>>,
+/**
+ * 按镜头顺序生成初始内容：一个镜头一个片段，全部硬切，旁白由配音镜头的片段承载。
+ *
+ * `sourceVolumeOverride`：某个镜头的片段原声默认音量不走上面的规则时返回数值（返回 undefined = 照旧）。
+ * 用来处理"模型关不掉自带音频、而这个镜头又没有使用原生人声"——见 `nativeAudioDefaultVolume`。这只是**新片段的默认值**，
+ * 用户可以在时间线上调；已经存在的片段不会被改。
+ */
+export function buildInitialContent<S extends Pick<Shot, 'id' | 'dialogue' | 'narration'>>(
+  shots: ReadonlyArray<S>,
   delivery: NarrationDelivery,
   startNumber = 1,
+  sourceVolumeOverride?: (shot: S) => number | undefined,
 ): { content: RevisionContent; nextClipNumber: number } {
   let n = startNumber
   const clips: TimelineClip[] = shots.map((s) => {
@@ -41,7 +48,9 @@ export function buildInitialContent(
     return {
       id: `c${n++}`,
       shotId: s.id,
-      sourceVolume: owner === 'tts' || owner === 'post' ? VOICEOVER_SOURCE_VOLUME : 1,
+      sourceVolume:
+        sourceVolumeOverride?.(s) ??
+        (owner === 'tts' || owner === 'post' ? VOICEOVER_SOURCE_VOLUME : 1),
       holdUs: 0,
       carriesNarration: owner === 'tts' && hasNarration(s),
     }

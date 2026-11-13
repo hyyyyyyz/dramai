@@ -113,7 +113,7 @@ export const VIDEO_PRESETS: readonly ProviderPreset[] = [
       notes:
         '可灵新接口（Kling 4.0 / 4.0 Flash）：文生视频、首帧、首尾帧、多张参考图，首帧可以和参考图同时用。Flash 更便宜，但只有 720p、最长 20 秒。',
       limits: [
-        '无法关闭原生音频（官方 Omni 的音频选项只有 native / original）：不需要人声的镜头，成片合成时会把视频自带的声音静音。',
+        '无法关闭原生音频（官方 Omni 的音频选项只有 native / original）：不需要人声的镜头，视频里仍会带一条原声；加入时间线时这段原声的音量默认是 0，可以在时间线上调高。',
         '结果地址是防盗链地址，保留 30 天，生成成功后会立即下载保存；并发按账号和型号计，超过上限返回 1303。',
         '新接口的 base64 是否带 data: 前缀文档没写，这里先发不带前缀的；首帧与参考图同发的效果没有验证。',
         '国内站只核对了鉴权页的域名（api-beijing.klingai.com），各接口路径与国际站相同是推断；价格按资源包“单位”计，这里没有估价。',
@@ -125,7 +125,7 @@ export const VIDEO_PRESETS: readonly ProviderPreset[] = [
       notes:
         '可靈新介面（Kling 4.0 / 4.0 Flash）：文字生影片、首影格、首尾影格、多張參考圖，首影格可以和參考圖同時使用。Flash 更便宜，但只有 720p、最長 20 秒。',
       limits: [
-        '無法關閉原生音訊（官方 Omni 的音訊選項只有 native / original）：不需要人聲的鏡頭，成片合成時會把影片自帶的聲音靜音。',
+        '無法關閉原生音訊（官方 Omni 的音訊選項只有 native / original）：不需要人聲的鏡頭，影片裡仍會帶一條原聲；加入時間線時這段原聲的音量預設是 0，可以在時間線上調高。',
         '結果網址是防盜連網址，保留 30 天，產生成功後會立即下載儲存；並行數依帳號和型號計算，超過上限回傳 1303。',
         '新介面的 base64 是否帶 data: 前綴文件沒寫，這裡先傳不帶前綴的；首影格與參考圖同時傳送的效果尚未驗證。',
         '中國站只核對了驗證頁的網域（api-beijing.klingai.com），各介面路徑與國際站相同是推斷；價格依資源包「單位」計算，這裡沒有估價。',
@@ -137,7 +137,7 @@ export const VIDEO_PRESETS: readonly ProviderPreset[] = [
       notes:
         'The new Kling interface (Kling 4.0 / 4.0 Flash): text to video, first frame, first and last frame, several reference images; the first frame can be used together with reference images. Flash is cheaper but only offers 720p and up to 20 seconds.',
       limits: [
-        'Native audio cannot be switched off (the official Omni audio options are only native / original): for shots that should not carry model voice, the sound the video comes with is muted when the cut is composed.',
+        'Native audio cannot be switched off (the official Omni audio options are only native / original): for shots that should not carry model voice the video still comes with a sound track; its volume defaults to 0 when the clip is added to the timeline and can be raised there.',
         'Result URLs are hotlink-protected and kept for 30 days; the video is downloaded and saved as soon as it succeeds. Concurrency is counted per account and model; above the limit the API returns 1303.',
         'The new docs do not say whether base64 should carry a data: prefix, so it is sent without one for now; first frame plus reference images in one request is unverified.',
         'Only the host on the authentication page was checked for the China site (api-beijing.klingai.com); that the endpoint paths equal the international ones is an inference. Prices are per resource-pack unit; no estimate is shown here.',
@@ -159,7 +159,7 @@ export const VIDEO_PRESETS: readonly ProviderPreset[] = [
       notes:
         '可灵新接口（Kling 4.0 / 4.0 Flash）：文生视频、首帧、首尾帧、多张参考图，首帧可以和参考图同时用。Flash 更便宜，但只有 720p、最长 20 秒。',
       limits: [
-        '无法关闭原生音频（官方 Omni 的音频选项只有 native / original）：不需要人声的镜头，成片合成时会把视频自带的声音静音。',
+        '无法关闭原生音频（官方 Omni 的音频选项只有 native / original）：不需要人声的镜头，视频里仍会带一条原声；加入时间线时这段原声的音量默认是 0，可以在时间线上调高。',
         '结果地址是防盗链地址，保留 30 天，生成成功后会立即下载保存；并发按账号和型号计，超过上限返回 1303。',
         '新接口的 base64 是否带 data: 前缀文档没写，这里先发不带前缀的；首帧与参考图同发的效果没有验证。',
         '国内站与国际站的账号 / Key 是否互通文档没写，按不互通处理；价格按资源包“单位”计，这里没有估价。',
@@ -171,7 +171,7 @@ export const VIDEO_PRESETS: readonly ProviderPreset[] = [
       notes:
         '可靈新介面（Kling 4.0 / 4.0 Flash）：文字生影片、首影格、首尾影格、多張參考圖，首影格可以和參考圖同時使用。Flash 更便宜，但只有 720p、最長 20 秒。',
       limits: [
-        '無法關閉原生音訊（官方 Omni 的音訊選項只有 native / original）：不需要人聲的鏡頭，成片合成時會把影片自帶的聲音靜音。',
+        '無法關閉原生音訊（官方 Omni 的音訊選項只有 native / original）：不需要人聲的鏡頭，影片裡仍會帶一條原聲；加入時間線時這段原聲的音量預設是 0，可以在時間線上調高。',
         '結果網址是防盜連網址，保留 30 天，產生成功後會立即下載儲存；並行數依帳號和型號計算，超過上限回傳 1303。',
         '新介面的 base64 是否帶 data: 前綴文件沒寫，這裡先傳不帶前綴的；首影格與參考圖同時傳送的效果尚未驗證。',
         '中國站與國際站的帳號 / Key 是否互通文件沒寫，按不互通處理；價格依資源包「單位」計算，這裡沒有估價。',
@@ -183,7 +183,7 @@ export const VIDEO_PRESETS: readonly ProviderPreset[] = [
       notes:
         'The new Kling interface (Kling 4.0 / 4.0 Flash): text to video, first frame, first and last frame, several reference images; the first frame can be used together with reference images. Flash is cheaper but only offers 720p and up to 20 seconds.',
       limits: [
-        'Native audio cannot be switched off (the official Omni audio options are only native / original): for shots that should not carry model voice, the sound the video comes with is muted when the cut is composed.',
+        'Native audio cannot be switched off (the official Omni audio options are only native / original): for shots that should not carry model voice the video still comes with a sound track; its volume defaults to 0 when the clip is added to the timeline and can be raised there.',
         'Result URLs are hotlink-protected and kept for 30 days; the video is downloaded and saved as soon as it succeeds. Concurrency is counted per account and model; above the limit the API returns 1303.',
         'The new docs do not say whether base64 should carry a data: prefix, so it is sent without one for now; first frame plus reference images in one request is unverified.',
         'The docs do not say whether accounts and keys are shared between the China and international sites, so they are treated as separate; prices are per resource-pack unit and no estimate is shown here.',

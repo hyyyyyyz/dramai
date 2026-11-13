@@ -323,7 +323,7 @@ export async function evaluateTarget(
         })
       }
       // 这个镜头不用视频模型的原生人声，但模型没办法关掉它（如可灵 4.0）：视频里会带一条原声，
-      // 合成阶段会把它静音（只对生成时没有要求原生人声的视频版本）。
+      // 加入时间线时这段原声的默认音量是 0（用户可以在时间线上调高）。
       if (
         item.target.kind === 'shot_video' &&
         owner !== 'native' &&
@@ -332,7 +332,7 @@ export async function evaluateTarget(
       ) {
         warnings.push({
           code: 'AUDIO_NOT_DISABLEABLE',
-          message: `${provider.model} 无法关闭自带的原生音频，生成的视频里会有一条原声；这个镜头不用它，成片合成时会把它静音`,
+          message: `${provider.model} 无法关闭自带的原生音频，生成的视频里会带一条原声；这个镜头不用它，加入时间线时默认静音，可以在时间线上调整`,
         })
       }
     }
