@@ -37,44 +37,25 @@ export default {
     manage: 'Manage usage',
   },
   providerLogin: {
-    continue: 'Continue with ChatGPT',
-    title: 'Use your ChatGPT plan',
-    intro:
-      'Sign in with your ChatGPT account and eligible text requests use your own ChatGPT plan, with no API key. This is between you and OpenAI; dramai charges nothing',
-    textOnly:
-      'Text only (planning episodes, breaking into shots, writing prompts). Images, video and voice-over still need their own API keys',
-    needsPlan: 'Needs a ChatGPT subscription and is limited by that plan’s usage',
+    again: 'Sign in again',
+    newAccount: 'Use another account',
+    signOut: 'Sign out',
+    cancel: 'Cancel sign-in',
+    lastAccount: 'Last signed in as {{account}}',
     unavailable: {
       remote_access:
         'You are using this from another machine, and the sign-in callback can’t reach it, so signing in isn’t possible here. Do it on the computer that runs dramai',
     },
-    signedAs: 'Signed in: {{account}}',
-    expiresAt:
-      'The access token expires around {{time}} (it refreshes by itself; for reference only)',
-    lastAccount: 'Last signed in as {{account}}',
-    again: 'Sign in again',
-    newAccount: 'Use another account',
-    signOut: 'Sign out',
-    signingOut: 'Signing out…',
-    cancel: 'Cancel sign-in',
     pending: {
       title: 'Finish in your browser',
       body: 'The authorization page was opened in a new window. Come back here when you are done and this continues by itself. You can wait until {{time}}',
       reopen: 'No new window? Open the authorization page again',
-      starting: 'Starting sign-in…',
       progress: 'Waiting for authorization',
-    },
-    noPlanUsage: {
-      title: 'Signed in, but not usable yet',
-      body: 'This sign-in did not grant access to ChatGPT plan usage, so requests can’t be made. Sign in again and approve it',
-      action: 'Sign in again and approve',
     },
     needsRelogin: {
       title: 'Your sign-in expired and needs to be done again',
       body: 'The saved credentials can’t be used any more (revoked, or refreshing failed). Sign in again; nothing else changes',
     },
-    refreshRejected:
-      'The server rejected one token refresh without saying why. Your credentials are still saved and you can keep going; if something fails later, try signing in again',
     errors: {
       denied:
         'You declined the sign-in on the authorization page. You can try again if you want to use it',
@@ -90,25 +71,122 @@ export default {
       hint: 'Once signed in, the models you can use are listed; you can also type one',
       loading: 'Loading the model list…',
       failed: 'Couldn’t load the model list. Type the model name yourself',
+      fetch: 'Get model list',
+      refetch: 'Reload',
+      unsupported: 'This provider has no model list. Type the model name yourself',
+      fetchHint:
+        'Fetch the models you can use from the provider and pick one; you can also type it',
     },
-    loggedOut: {
-      confirmed: 'Signed out, and OpenAI’s authorization was revoked too',
-      unconfirmed:
-        'The local sign-in was cleared, but we couldn’t confirm that OpenAI revoked it. You can disconnect this app in ChatGPT settings',
-      nothing: 'Signed out (there was no authorization to revoke)',
-    },
-    welcome: {
-      title: 'You’re using your ChatGPT plan.',
-      body: 'Eligible usage in this app uses your ChatGPT plan. Manage usage in your ChatGPT settings.',
-      gotIt: 'Got it.',
-      note: 'Eligible requests use your ChatGPT plan; you can manage usage in ChatGPT settings',
+    channels: {
+      'openai-chatgpt': {
+        continue: 'Continue with ChatGPT',
+        title: 'Use your ChatGPT plan',
+        intro:
+          'Sign in with your ChatGPT account and eligible text requests use your own ChatGPT plan, with no API key. This is between you and OpenAI; dramai charges nothing',
+        textOnly:
+          'Text only (planning episodes, breaking into shots, writing prompts). Images, video and voice-over still need their own API keys',
+        needsPlan: 'Needs a ChatGPT subscription and is limited by that plan’s usage',
+        signedAs: 'Signed in: {{account}}',
+        expiresAt:
+          'The access token expires around {{time}} (it refreshes by itself; for reference only)',
+        noPlanUsage: {
+          title: 'Signed in, but not usable yet',
+          body: 'This sign-in did not grant access to ChatGPT plan usage, so requests can’t be made. Sign in again and approve it',
+          action: 'Sign in again and approve',
+        },
+        refreshRejected:
+          'The server rejected one token refresh without saying why. Your credentials are still saved and you can keep going; if something fails later, try signing in again',
+        loggedOut: {
+          confirmed: 'Signed out, and OpenAI’s authorization was revoked too',
+          unconfirmed:
+            'The local sign-in was cleared, but we couldn’t confirm that OpenAI revoked it. You can disconnect this app in ChatGPT settings',
+          nothing: 'Signed out (there was no authorization to revoke)',
+        },
+        welcome: {
+          title: 'You’re using your ChatGPT plan.',
+          body: 'Eligible usage in this app uses your ChatGPT plan. Manage usage in your ChatGPT settings.',
+          gotIt: 'Got it.',
+        },
+      },
+      openrouter: {
+        continue: 'Sign in with OpenRouter',
+        title: 'Sign in with your OpenRouter account',
+        intro:
+          'After you sign in, OpenRouter gives dramai an API key of your own, and from then on it works exactly like a key you pasted. Usage and cost are billed to your OpenRouter account; dramai charges nothing',
+        signedIn: 'Signed in with an OpenRouter account',
+        keyNote: 'This key came from signing in: {{mask}}',
+        manage: 'Manage this key',
+        relogin: 'Sign in again (get a new key)',
+        reloginNote:
+          'Signing in again gets a new key. The old one stays valid on OpenRouter until you delete it on the management page',
+        pendingHint:
+          'If you already declined on the authorization page, OpenRouter doesn’t tell us, and this keeps waiting until it times out. Click “Cancel sign-in”',
+        loggedOut: {
+          unconfirmed:
+            'The key was removed from this computer, but OpenRouter has no way to revoke it. To make the key stop working, delete it on its management page',
+          nothing: 'Signed out',
+          manage: 'Delete this key on OpenRouter',
+        },
+      },
     },
   },
   providerErrors: {
     openSettings: 'Open provider settings',
+    EMPTY_OUTPUT_TRUNCATED: {
+      title: 'The output was cut off by the length limit and has no text',
+      body: 'The model most likely spent the whole allowance on thinking. In this provider’s advanced settings turn thinking off (extra request body) or raise the output length, then retry',
+    },
+    STREAM_INTERRUPTED: {
+      title: 'The connection dropped part-way through',
+      body: 'The end-of-response signal never arrived, so the result is incomplete. Just retry the task',
+    },
+    overloaded_error: {
+      title: 'The provider is overloaded right now',
+      body: 'This is temporary congestion on their side, not a problem with your settings. Retry in a little while',
+    },
+    rate_limit_error: {
+      title: 'Too many requests: the provider is rate limiting',
+      body: 'Wait a moment and retry; if it keeps happening, check the usage limits on this provider account',
+    },
+    authentication_error: {
+      title: 'The provider didn’t accept this key',
+      body: 'Check that the API key is right and still valid, save it again in Settings, then retry',
+    },
+    invalid_request_error: {
+      title: 'The provider says this request isn’t valid',
+      body: 'Most likely the model name, the output length or the extra request body is wrong. Check this provider’s settings; the details are in the task’s technical info',
+    },
+    GEMINI_SAFETY: {
+      title: 'Blocked by Gemini’s safety policy',
+      body: 'What was generated tripped a safety filter. Change this passage or the prompt and try again; the same content usually gives the same result',
+    },
+    GEMINI_PROMPT_SAFETY: {
+      title: 'The prompt was blocked by Gemini’s safety policy',
+      body: 'The input tripped a safety filter, so nothing was generated. Change the text or the prompt and try again',
+    },
+    GEMINI_RECITATION: {
+      title: 'Blocked by Gemini: too close to existing work',
+      body: 'Word it differently, or use a shorter quote of the source text, and try again',
+    },
+    GEMINI_IMAGE_URL_UNSUPPORTED: {
+      title: 'Gemini only accepts the image data itself as input',
+      body: 'This shouldn’t happen. Please report this task together with this message',
+    },
+    INVALID_ARGUMENT: {
+      title: 'The provider says a parameter of this request is wrong',
+      body: 'Check the model name and this provider’s settings; the details are in the task’s technical info',
+    },
+    RESOURCE_EXHAUSTED: {
+      title: 'A usage or rate limit at the provider was reached',
+      body: 'Wait a moment and retry, or check the quota in the provider’s console',
+    },
+    PERMISSION_DENIED: {
+      title: 'The provider refused this request',
+      body: 'Most likely the key lacks permission, or the model isn’t open to your account yet. Check the key and the model, then try again',
+    },
     LOGIN_REQUIRED: {
-      title: 'Sign in to your OpenAI account again',
-      body: 'This provider uses ChatGPT account sign-in, and the sign-in has expired or was never finished. Sign in again in Settings, then retry this task',
+      title: 'Sign in to the provider account again',
+      body: 'This provider uses account sign-in, and the sign-in has expired or was never finished. Sign in again in Settings, then retry this task',
     },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: 'The base URL isn’t allowed, so no sign-in token was sent',

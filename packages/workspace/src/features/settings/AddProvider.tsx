@@ -2,24 +2,15 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import type { ProviderConfigDto } from '@dramai/api'
-import {
-  Button,
-  Field,
-  Hint,
-  Input,
-  Menu,
-  SegmentedControl,
-  Select,
-  iconProps,
-} from '@dramai/ui/v2'
+import { Button, Field, Hint, Input, SegmentedControl, Select, iconProps } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
-import { useCall, usePresets } from '@/data/queries'
+import { useCall } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
-import { PROTOCOLS_BY_KIND, type ProtocolId, type ProviderKind } from './protocols'
-import { sortPresets } from './provider-model'
+import { PROTOCOLS_BY_KIND, protocolLabel, type ProtocolId, type ProviderKind } from './protocols'
+import { PresetCatalog } from './PresetCatalog'
 
-/** 添加服务商：从预设挑一个（预设自带地址、型号和已知限制），或者自己填。 */
+/** Add a provider: open the catalog (presets grouped by vendor, with search), or fill in a custom one. */
 export function AddProvider({
   kind,
   onAdded,
@@ -28,37 +19,26 @@ export function AddProvider({
   onAdded: (p: ProviderConfigDto) => void
 }) {
   const { t } = useTranslation()
-  const presets = usePresets()
-  const fromPreset = useCall('providers.fromPreset', { invalidate: [qk.providers] })
+  const [catalog, setCatalog] = useState(false)
   const [custom, setCustom] = useState(false)
-  // tested presets first; documented-only ones are never the first thing offered
-  const list = sortPresets((presets.data?.items ?? []).filter((p) => p.kind === kind))
 
   return (
     <>
-      <Menu
-        placement="bottom-start"
-        aria-label={t('providers.add.label')}
-        trigger={
-          <Button size="sm" variant="ghost" loading={fromPreset.isPending}>
-            <Plus {...iconProps} aria-hidden />
-            {t('providers.add.label')}
-          </Button>
-        }
-        items={[
-          ...list.map((p) => ({
-            key: p.id,
-            label:
-              p.verification.status === 'documented'
-                ? `${p.label} · ${t('providerAuth.preset.documented')}`
-                : p.label,
-            onSelect: () => fromPreset.mutate({ body: { presetId: p.id } }, { onSuccess: onAdded }),
-          })),
-          ...(list.length > 0 ? (['separator'] as const) : []),
-          { key: 'custom', label: t('providers.add.custom'), onSelect: () => setCustom(true) },
-        ]}
-      />
-      {fromPreset.isError && <ErrorNotice error={fromPreset.error} className="mt-2" />}
+      <Button size="sm" variant="ghost" onClick={() => setCatalog(true)}>
+        <Plus {...iconProps} aria-hidden />
+        {t('providers.add.label')}
+      </Button>
+      {catalog && (
+        <PresetCatalog
+          kind={kind}
+          onClose={() => setCatalog(false)}
+          onCustom={() => {
+            setCatalog(false)
+            setCustom(true)
+          }}
+          onAdded={onAdded}
+        />
+      )}
       {custom && (
         <CustomProviderDialog kind={kind} onClose={() => setCustom(false)} onAdded={onAdded} />
       )}
@@ -136,7 +116,7 @@ function CustomProviderDialog({
           >
             {protocols.map((p) => (
               <option key={p} value={p}>
-                {t(`protocol.${p}`)}
+                {protocolLabel(t, p)}
               </option>
             ))}
           </Select>

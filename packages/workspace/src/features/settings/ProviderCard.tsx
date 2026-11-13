@@ -20,15 +20,18 @@ import {
 } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
+import { errorInfo } from '@/data/errors'
 import { useCall, useProviderCapability, useProviderModels } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { CapabilityGrid, PriceTable } from './CapabilityGrid'
 import { capabilitySummary } from './capability-summary'
+import { DialectSettings } from './DialectSettings'
+import { dialectChanged, dialectOf, draftOf, parseExtraBody } from './dialect-model'
 import { LoginPanel } from './LoginPanel'
 import { AuthChip, VerificationChip, VerificationNote } from './ProviderBadges'
 import { authState, canTest } from './provider-model'
 import { TestResult } from './TestConnection'
-import { PROTOCOLS_BY_KIND, type ProtocolId } from './protocols'
+import { LISTS_MODELS, PROTOCOLS_BY_KIND, protocolLabel, type ProtocolId } from './protocols'
 
 function hostOf(url: string): string {
   try {
@@ -69,7 +72,7 @@ export function ProviderCard({
         <div className="min-w-0 flex-1">
           <div className="truncate font-medium">{provider.label}</div>
           <div className="truncate text-xs text-muted-foreground">
-            {hostOf(provider.baseUrl)} · {provider.model} · {t(`protocol.${provider.protocol}`)}
+            {hostOf(provider.baseUrl)} · {provider.model} · {protocolLabel(t, provider.protocol)}
           </div>
           {!open && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -126,6 +129,8 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
   const [protocol, setProtocol] = useState<ProtocolId>(provider.protocol)
   const [baseUrl, setBaseUrl] = useState(provider.baseUrl)
   const [model, setModel] = useState(provider.model)
+  const [dialect, setDialect] = useState(() => draftOf(provider.dialect))
+  const showDialect = provider.kind === 'llm'
   const login = provider.auth.type === 'account_login'
   const state = authState(provider)
   const [replacing, setReplacing] = useState(!provider.hasKey)
@@ -136,8 +141,14 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
     label !== provider.label ||
     protocol !== provider.protocol ||
     baseUrl !== provider.baseUrl ||
-    model !== provider.model
-  const valid = label.trim() !== '' && baseUrl.trim() !== '' && model.trim() !== ''
+    model !== provider.model ||
+    (showDialect && dialectChanged(dialect, provider.dialect))
+  // JSON that does not parse can never be saved
+  const valid =
+    label.trim() !== '' &&
+    baseUrl.trim() !== '' &&
+    model.trim() !== '' &&
+    (!showDialect || parseExtraBody(dialect.extraBody).ok)
   const protocols = PROTOCOLS_BY_KIND[provider.kind]
 
   const save = async () => {
@@ -145,7 +156,15 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
       test.reset()
       await update.mutateAsync({
         params: { providerId: provider.id },
-        body: { label: label.trim(), protocol, baseUrl: baseUrl.trim(), model: model.trim() },
+        body: {
+          label: label.trim(),
+          protocol,
+          baseUrl: baseUrl.trim(),
+          model: model.trim(),
+          ...(showDialect && dialectChanged(dialect, provider.dialect)
+            ? { dialect: dialectOf(dialect) ?? {} }
+            : {}),
+        },
       })
     } catch {
       /* 显示在下面 */
@@ -180,7 +199,7 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
           >
             {protocols.map((p) => (
               <option key={p} value={p}>
-                {t(`protocol.${p}`)}
+                {protocolLabel(t, p)}
               </option>
             ))}
           </Select>
@@ -264,6 +283,7 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
         )}
       </div>
 
+      {showDialect && <DialectSettings draft={dialect} onChange={setDialect} />}
       <VerificationNote verification={provider.verification} />
       {cap.isPending && <Skeleton className="h-24" />}
       {cap.isError && <ErrorNotice error={cap.error} />}
@@ -373,7 +393,11 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
   )
 }
 
-/** The model: typed in, or (signed in with an account) chosen from what that account can use. */
+/**
+ * The model: typed in, or chosen from the provider's own list. Signed in with an account, the list is fetched
+ * by itself; for a key or no-auth text provider that can list models (OpenAI-style, Anthropic, Gemini) there is a
+ * button, so nothing is requested from the provider until the user asks.
+ */
 function ModelField({
   provider,
   value,
@@ -384,21 +408,43 @@ function ModelField({
   onChange: (v: string) => void
 }) {
   const { t } = useTranslation()
-  const signedIn = provider.auth.type === 'account_login' && provider.login?.state === 'signed_in'
-  const models = useProviderModels(provider.id, signedIn)
+  const isLogin = provider.auth.type === 'account_login'
+  const signedIn = isLogin && provider.login?.state === 'signed_in'
+  const canList =
+    LISTS_MODELS.has(provider.protocol) &&
+    (signedIn || (!isLogin && (provider.auth.type === 'none' || provider.hasKey)))
+  const [asked, setAsked] = useState(false)
+  const models = useProviderModels(provider.id, canList && (signedIn || asked))
   const items = models.data?.items
-  if (signedIn && items && items.length > 0) {
+  const unsupported = models.isError && errorInfo(models.error).code === 'MODEL_LIST_UNSUPPORTED'
+
+  if (canList && items && items.length > 0) {
     const ids = items.map((m) => m.id)
     return (
       <Field className="col-span-full" label={t('providerLogin.models.label')}>
-        <Select value={value} onChange={(e) => onChange(e.target.value)}>
-          {!ids.includes(value) && <option value={value}>{value}</option>}
-          {items.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label === m.id ? m.id : `${m.label} (${m.id})`}
-            </option>
-          ))}
-        </Select>
+        <div className="flex gap-2">
+          <Select
+            className="min-w-0 flex-1"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          >
+            {!ids.includes(value) && <option value={value}>{value}</option>}
+            {items.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label === m.id ? m.id : `${m.label} (${m.id})`}
+              </option>
+            ))}
+          </Select>
+          {!signedIn && (
+            <Button
+              variant="ghost"
+              loading={models.isFetching}
+              onClick={() => void models.refetch()}
+            >
+              {t('providerLogin.models.refetch')}
+            </Button>
+          )}
+        </div>
       </Field>
     )
   }
@@ -408,12 +454,34 @@ function ModelField({
       : models.isError
         ? t('providerLogin.models.failed')
         : undefined
-    : provider.auth.type === 'account_login'
+    : isLogin
       ? t('providerLogin.models.hint')
-      : undefined
+      : unsupported
+        ? t('providerLogin.models.unsupported')
+        : models.isError
+          ? t('providerLogin.models.failed')
+          : canList
+            ? t('providerLogin.models.fetchHint')
+            : undefined
   return (
     <Field className="col-span-full" label="Model" hint={hint}>
-      <Input mono value={value} onChange={(e) => onChange(e.target.value)} />
+      <div className="flex gap-2">
+        <Input
+          mono
+          className="min-w-0 flex-1"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        {canList && !signedIn && !unsupported && (
+          <Button
+            variant="ghost"
+            loading={asked && models.isFetching}
+            onClick={() => setAsked(true)}
+          >
+            {t('providerLogin.models.fetch')}
+          </Button>
+        )}
+      </div>
     </Field>
   )
 }

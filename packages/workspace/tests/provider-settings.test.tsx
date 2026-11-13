@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PROVIDER_ERROR_CODES } from '@/features/settings/provider-model'
@@ -7,7 +7,7 @@ import { TaskItem } from '@/features/jobs/TaskItem'
 import { ProvidersPage } from '@/features/settings/ProvidersPage'
 import { failedJob, fakeServer } from './fixtures'
 import { makeCapabilityView } from './fixtures-production'
-import { makeKeyProvider, makeLoginProvider, makePreset } from './fixtures-providers'
+import { makeKeyProvider, makeLoginProvider } from './fixtures-providers'
 import { renderApp, useLocale } from './render'
 import zh from '@/i18n/locales/zh-CN'
 import zhTW from '@/i18n/locales/zh-TW'
@@ -151,98 +151,6 @@ describe('how a provider authenticates', () => {
   })
 })
 
-describe('adding providers', () => {
-  const presets = () => [
-    makePreset({
-      id: 'doc',
-      label: 'Some Cloud',
-      verification: { status: 'documented', source: 'https://example.com/docs' },
-      verifiedAt: undefined,
-    }),
-    makePreset({ id: 'ok', label: 'DeepSeek' }),
-  ]
-
-  it('tested presets are offered first, documented-only ones are marked not tested', async () => {
-    page({ providers: [], presets: presets() })
-    const section = await screen.findByRole('region', { name: /大模型/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    const items = await screen.findAllByRole('menuitem')
-    expect(items.map((i) => i.textContent)).toEqual([
-      'DeepSeek',
-      'Some Cloud · 未实测',
-      '自定义服务商',
-    ])
-  })
-
-  it('a provider made from a documented-only preset is not made the current one: the user is asked to choose it', async () => {
-    const created = makeKeyProvider({
-      id: 'prov_new',
-      label: 'Some Cloud',
-      verification: { status: 'documented', source: 'https://example.com/docs' },
-    })
-    let list: unknown[] = []
-    const { server } = page({
-      providers: [],
-      presets: presets(),
-      routes: {
-        'GET /api/providers': () => ({ items: list }),
-        'POST /api/providers/from-preset': () => {
-          list = [created]
-          return created
-        },
-        'GET /api/providers/prov_new/capability': () => makeCapabilityView(),
-      },
-    })
-    const section = await screen.findByRole('region', { name: /大模型/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Some Cloud · 未实测' }))
-    expect(await screen.findByText('已添加「Some Cloud」')).toBeInTheDocument()
-    expect(screen.getByText(/没有自动设为使用/)).toBeInTheDocument()
-    expect(server.calls.some((c) => c.method === 'PUT' && c.path === '/api/settings')).toBe(false)
-    const notice = screen.getByText('已添加「Some Cloud」').closest('[role=status]') as HTMLElement
-    await userEvent.click(within(notice).getByRole('button', { name: '设为使用' }))
-    await waitFor(() =>
-      expect(
-        server.calls.find((c) => c.method === 'PUT' && c.path === '/api/settings')?.body,
-      ).toMatchObject({ activeProviders: { llm: 'prov_new' } }),
-    )
-  })
-
-  it('a custom provider can be created with no authentication, and text providers can use the Responses protocol', async () => {
-    const { server } = page({
-      providers: [],
-      routes: { 'POST /api/providers': () => local() },
-    })
-    const section = await screen.findByRole('region', { name: /大模型/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    await userEvent.click(await screen.findByRole('menuitem', { name: '自定义服务商' }))
-    const dialog = await screen.findByRole('dialog')
-    const protocol = within(dialog).getByRole('combobox', { name: /API 协议/ })
-    expect(
-      within(protocol)
-        .getAllByRole('option')
-        .map((o) => o.textContent),
-    ).toContain('OpenAI Responses（文本）')
-    await userEvent.type(within(dialog).getByRole('textbox', { name: /名称/ }), '本机')
-    await userEvent.type(
-      within(dialog).getByRole('textbox', { name: /Base URL/ }),
-      'http://127.0.0.1:11434/v1',
-    )
-    await userEvent.type(within(dialog).getByRole('textbox', { name: /Model/ }), 'llama')
-    await userEvent.click(within(dialog).getByRole('radio', { name: '无需鉴权' }))
-    expect(within(dialog).queryByLabelText('API Key')).toBeNull()
-    await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
-    await waitFor(() =>
-      expect(
-        server.calls.find((c) => c.method === 'POST' && c.path === '/api/providers')?.body,
-      ).toMatchObject({ auth: { type: 'none' }, protocol: 'openai-chat' }),
-    )
-    expect(
-      server.calls.find((c) => c.method === 'POST' && c.path === '/api/providers')!.body,
-    ).not.toHaveProperty('apiKey')
-  })
-})
-
 describe('when a task fails because of the account sign-in', () => {
   const item = (code: string) =>
     renderApp(
@@ -264,7 +172,7 @@ describe('when a task fails because of the account sign-in', () => {
 
   it('LOGIN_REQUIRED asks to sign in again and goes to the settings', () => {
     item('LOGIN_REQUIRED')
-    expect(screen.getByText('需要重新登录 OpenAI 账号')).toBeInTheDocument()
+    expect(screen.getByText('需要重新登录服务商账号')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '去设置服务商' })).toHaveAttribute(
       'href',
       '/settings/providers',

@@ -7,7 +7,9 @@ export function useUsingChatGptPlan(): boolean {
   const id = settings.data?.activeProviders.llm
   const p = providers.data?.items.find((x) => x.id === id)
   return (
+    // the ChatGPT wording is OpenAI's; it must not appear for another sign-in channel (OpenRouter)
     p?.auth.type === 'account_login' &&
+    p.auth.channel === 'openai-chatgpt' &&
     p.login?.state === 'signed_in' &&
     p.login.planUsage !== false
   )

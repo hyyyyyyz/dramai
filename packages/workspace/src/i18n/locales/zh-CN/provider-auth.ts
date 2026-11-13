@@ -35,43 +35,25 @@ export default {
     manage: '管理用量',
   },
   providerLogin: {
-    continue: 'Continue with ChatGPT',
-    title: '使用你的 ChatGPT 套餐',
-    intro:
-      '用 ChatGPT 账号登录后，符合条件的文本请求会用你自己的 ChatGPT 套餐，不需要 API Key。这和 dramai 无关，dramai 不收费',
-    textOnly:
-      '只覆盖文本（规划分集、拆分镜头、写提示词）。生成图片、视频和配音仍然要用各自的 API Key',
-    needsPlan: '需要 ChatGPT 订阅，并受套餐用量上限限制',
+    again: '重新登录',
+    newAccount: '换账号',
+    signOut: '登出',
+    cancel: '取消登录',
+    lastAccount: '上次登录的账号：{{account}}',
     unavailable: {
       remote_access:
         '现在是从别的机器访问的，登录授权的回调到不了这里，所以不能登录。请在运行 dramai 的那台电脑上操作',
     },
-    signedAs: '已登录：{{account}}',
-    expiresAt: '访问令牌约在 {{time}} 到期（会自动刷新，仅供参考）',
-    lastAccount: '上次登录的账号：{{account}}',
-    again: '重新登录',
-    newAccount: '换账号',
-    signOut: '登出',
-    signingOut: '正在登出…',
-    cancel: '取消登录',
     pending: {
       title: '请在浏览器里完成授权',
       body: '已经在新窗口里打开了授权页。完成后回到这里，会自动继续。{{time}} 前都可以等',
       reopen: '没有看到新窗口？重新打开授权页',
-      starting: '正在发起登录…',
       progress: '等待授权',
-    },
-    noPlanUsage: {
-      title: '已登录，但还不能用',
-      body: '这次登录没有授予使用 ChatGPT 用量的范围，所以不能调用。请重新登录并同意授权',
-      action: '重新登录并同意授权',
     },
     needsRelogin: {
       title: '登录已失效，需要重新登录',
       body: '保存的登录凭据已经不能用了（被撤销，或刷新失败）。重新登录就好，不影响其他设置',
     },
-    refreshRejected:
-      '服务端拒绝了一次令牌刷新，原因没有说明。登录凭据还在，可以先继续用；如果之后出问题，再试试重新登录',
     errors: {
       denied: '你在授权页拒绝了登录。想用的话，可以再试一次',
       timeout: '登录超时了（授权要在 10 分钟内完成）。再试一次',
@@ -85,25 +67,120 @@ export default {
       hint: '登录后才能列出你能用的模型；也可以手动填写',
       loading: '正在取模型清单…',
       failed: '取不到模型清单，请手动填写模型名',
+      fetch: '获取模型列表',
+      refetch: '重新获取',
+      unsupported: '这个服务商没有模型列表，请手动填写模型名',
+      fetchHint: '从服务商取你能用的模型来选；也可以直接填写',
     },
-    loggedOut: {
-      confirmed: '已登出，OpenAI 端的授权也已撤销',
-      unconfirmed:
-        '本地的登录已清除，但没能确认 OpenAI 端已撤销。可以到 ChatGPT 设置里断开这个应用',
-      nothing: '已登出（本来就没有需要撤销的授权）',
-    },
-    welcome: {
-      title: '你正在使用你的 ChatGPT 套餐',
-      body: '这个应用里符合条件的用量会使用你的 ChatGPT 套餐。可以在 ChatGPT 设置中管理用量。',
-      gotIt: '知道了',
-      note: '符合条件的请求会用你的 ChatGPT 套餐；用量可以在 ChatGPT 设置里管理',
+    channels: {
+      'openai-chatgpt': {
+        continue: 'Continue with ChatGPT',
+        title: '使用你的 ChatGPT 套餐',
+        intro:
+          '用 ChatGPT 账号登录后，符合条件的文本请求会用你自己的 ChatGPT 套餐，不需要 API Key。这和 dramai 无关，dramai 不收费',
+        textOnly:
+          '只覆盖文本（规划分集、拆分镜头、写提示词）。生成图片、视频和配音仍然要用各自的 API Key',
+        needsPlan: '需要 ChatGPT 订阅，并受套餐用量上限限制',
+        signedAs: '已登录：{{account}}',
+        expiresAt: '访问令牌约在 {{time}} 到期（会自动刷新，仅供参考）',
+        noPlanUsage: {
+          title: '已登录，但还不能用',
+          body: '这次登录没有授予使用 ChatGPT 用量的范围，所以不能调用。请重新登录并同意授权',
+          action: '重新登录并同意授权',
+        },
+        refreshRejected:
+          '服务端拒绝了一次令牌刷新，原因没有说明。登录凭据还在，可以先继续用；如果之后出问题，再试试重新登录',
+        loggedOut: {
+          confirmed: '已登出，OpenAI 端的授权也已撤销',
+          unconfirmed:
+            '本地的登录已清除，但没能确认 OpenAI 端已撤销。可以到 ChatGPT 设置里断开这个应用',
+          nothing: '已登出（本来就没有需要撤销的授权）',
+        },
+        welcome: {
+          title: '你正在使用你的 ChatGPT 套餐',
+          body: '这个应用里符合条件的用量会使用你的 ChatGPT 套餐。可以在 ChatGPT 设置中管理用量。',
+          gotIt: '知道了',
+        },
+      },
+      openrouter: {
+        continue: '用 OpenRouter 账号登录',
+        title: '用 OpenRouter 账号登录',
+        intro:
+          '登录后，OpenRouter 会给 dramai 一把属于你自己的 API Key，之后的使用和填 Key 完全一样。用量和费用记在你的 OpenRouter 账号上，dramai 不收费',
+        signedIn: '已用 OpenRouter 账号登录',
+        keyNote: '这把 Key 是登录得到的：{{mask}}',
+        manage: '管理这把 Key',
+        relogin: '重新登录（换一把新 Key）',
+        reloginNote:
+          '再登录一次会得到一把新 Key。旧的那把在 OpenRouter 上仍然有效，要让它失效，请自己到管理页删除',
+        pendingHint:
+          '如果你已经在浏览器里拒绝了授权，OpenRouter 不会通知这里，登录会一直等到超时。请点“取消登录”',
+        loggedOut: {
+          unconfirmed:
+            '本机的 Key 已清除，但 OpenRouter 没有提供撤销接口。要让这把 Key 失效，请到管理页删除它',
+          nothing: '已登出',
+          manage: '去管理页删除这把 Key',
+        },
+      },
     },
   },
   providerErrors: {
     openSettings: '去设置服务商',
+    EMPTY_OUTPUT_TRUNCATED: {
+      title: '输出被长度限制截断，没有拿到正文',
+      body: '多半是模型把额度都用在了思考上。到这个服务商的高级设置里关掉思考（额外请求体），或者调大输出长度，再重试',
+    },
+    STREAM_INTERRUPTED: {
+      title: '生成到一半，连接断了',
+      body: '没有收到结束的信号，结果不完整。可以直接重试这个任务',
+    },
+    overloaded_error: {
+      title: '服务商现在太忙了',
+      body: '这是服务商那边的临时拥堵，不是你的设置有问题。过一会儿再重试这个任务',
+    },
+    rate_limit_error: {
+      title: '请求太频繁，被服务商限流了',
+      body: '等一会儿再重试；如果经常这样，检查这个服务商账号的用量限额',
+    },
+    authentication_error: {
+      title: '服务商没有接受这个 Key',
+      body: '请检查 API Key 是否正确、是否还有效，在设置里重新保存后再重试',
+    },
+    invalid_request_error: {
+      title: '服务商认为这次请求不合法',
+      body: '多半是模型名、输出长度或额外请求体不对。检查这个服务商的设置；详情在任务的技术信息里',
+    },
+    GEMINI_SAFETY: {
+      title: '被 Gemini 的安全策略拦下了',
+      body: '这次生成的内容触发了安全过滤。改一下这段原文或提示词再试，重试同样的内容通常结果相同',
+    },
+    GEMINI_PROMPT_SAFETY: {
+      title: '提示词被 Gemini 的安全策略拦下了',
+      body: '输入的内容触发了安全过滤，没有开始生成。改一下原文或提示词再试',
+    },
+    GEMINI_RECITATION: {
+      title: '被 Gemini 拦下：内容和已有作品过于相似',
+      body: '换一种写法，或者缩短引用的原文再试',
+    },
+    GEMINI_IMAGE_URL_UNSUPPORTED: {
+      title: 'Gemini 的图片输入只接受图片数据本身',
+      body: '这不应该发生。请把这个任务和这条提示一起反馈给我们',
+    },
+    INVALID_ARGUMENT: {
+      title: '服务商认为这次请求的参数不对',
+      body: '检查模型名和这个服务商的设置；详情在任务的技术信息里',
+    },
+    RESOURCE_EXHAUSTED: {
+      title: '用量或频率到了服务商的上限',
+      body: '等一会儿再重试，或者到服务商的控制台查看配额',
+    },
+    PERMISSION_DENIED: {
+      title: '服务商拒绝了这次请求',
+      body: '多半是 Key 没有权限，或者这个模型还没对你的账号开放。检查 Key 和模型后再试',
+    },
     LOGIN_REQUIRED: {
-      title: '需要重新登录 OpenAI 账号',
-      body: '这个服务商用 ChatGPT 账号登录，而登录已经失效或还没完成。到设置里重新登录后，再重试这个任务',
+      title: '需要重新登录服务商账号',
+      body: '这个服务商用账号登录，而登录已经失效或还没完成。到设置里重新登录后，再重试这个任务',
     },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: '接口地址不合规，登录令牌没有发出',

@@ -2,42 +2,36 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ExternalLink } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { ProviderConfigDto } from '@dramai/api'
+import type { LoginStatusDto, ProviderConfigDto } from '@dramai/api'
 import { Button, Hint, Notice, Progress, iconProps } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall, useProviderLogin } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { useFormat } from '@/i18n/format'
-import {
-  MANAGE_USAGE_URL,
-  WELCOME_FLAG,
-  loginErrorKind,
-  loginView,
-  type LoginErrorKind,
-} from './provider-model'
+import { CHANNELS, type Revoked } from './login-channels'
+import { loginErrorKind, loginView, type LoginErrorKind } from './provider-model'
 
-type Revoked = 'confirmed' | 'unconfirmed' | 'nothing_to_revoke'
-
-const wasWelcomed = () => {
+const wasWelcomed = (flag: string) => {
   try {
-    return localStorage.getItem(WELCOME_FLAG) === '1'
+    return localStorage.getItem(flag) === '1'
   } catch {
     return false
   }
 }
-const markWelcomed = () => {
+const markWelcomed = (flag: string) => {
   try {
-    localStorage.setItem(WELCOME_FLAG, '1')
+    localStorage.setItem(flag, '1')
   } catch {
     /* storage unavailable: the note may show again, nothing breaks */
   }
 }
 
 /**
- * Account sign-in for a provider (OpenAI "Continue with ChatGPT"): start, wait in the browser (cancellable), signed in,
- * failures, sign in again / another account, sign out. Statuses never contain tokens. Polling runs only while
- * a sign-in is pending and stops with the component (see useProviderLogin).
+ * Account sign-in for a provider: start, wait in the browser (cancellable), signed in, failures, sign in again,
+ * sign out. The flow is the same for every channel; what differs (wording, what "signed in" shows, what signing out
+ * means, brand rules) lives in `CHANNELS`. Statuses never contain tokens. Polling runs only while a sign-in is
+ * pending and stops with the component (see useProviderLogin).
  */
 export function LoginPanel({
   provider,
@@ -52,19 +46,26 @@ export function LoginPanel({
   const qc = useQueryClient()
   const login = useProviderLogin(provider, pollMs)
   const status = login.data
+  const spec =
+    CHANNELS[
+      status?.channel ??
+        (provider.auth.type === 'account_login' ? provider.auth.channel : 'openai-chatgpt')
+    ]
   const [url, setUrl] = useState<string>()
-  const [revoked, setRevoked] = useState<Revoked>()
+  const [loggedOutNote, setLoggedOutNote] = useState<{ revoked: Revoked; status: LoginStatusDto }>()
   const [welcome, setWelcome] = useState(false)
+  // OpenRouter only shows the management link while signed in; keep it for the sign-out message
+  const [lastManageUrl, setLastManageUrl] = useState<string>()
+  if (status?.manageUrl && status.manageUrl !== lastManageUrl) setLastManageUrl(status.manageUrl)
 
-  const setStatus = (s: NonNullable<typeof status>) =>
-    qc.setQueryData(qk.providerLogin(provider.id), s)
+  const setStatus = (s: LoginStatusDto) => qc.setQueryData(qk.providerLogin(provider.id), s)
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.providers })
   }
   const start = useCall('providers.login.start', {
     onSuccess: (r) => {
       setUrl(r.authorizationUrl)
-      setRevoked(undefined)
+      setLoggedOutNote(undefined)
       window.open(r.authorizationUrl, '_blank', 'noopener,noreferrer')
       void qc.invalidateQueries({ queryKey: qk.providerLogin(provider.id) })
     },
@@ -79,20 +80,28 @@ export function LoginPanel({
   const logout = useCall('providers.login.logout', {
     onSuccess: (r) => {
       setUrl(undefined)
-      setRevoked(r.revoked)
+      setLoggedOutNote({
+        revoked: r.revoked,
+        status: { ...r.status, manageUrl: r.status.manageUrl ?? lastManageUrl },
+      })
       setStatus(r.status)
       refresh()
     },
   })
 
-  // A sign-in that was pending has ended. State is adjusted while rendering (no effect needed); the first time a
-  // sign-in with plan usage completes, say once what it means (OpenAI's guidelines).
+  // A sign-in that was pending has ended. State is adjusted while rendering (no effect needed); when the channel has
+  // a one-time welcome note, show it the first time a usable sign-in completes.
   const [prevState, setPrevState] = useState(status?.state)
   if (status?.state !== prevState) {
     setPrevState(status?.state)
     if (prevState === 'pending') {
       setUrl(undefined)
-      if (status?.state === 'signed_in' && status.planUsage !== false && !wasWelcomed())
+      if (
+        status?.state === 'signed_in' &&
+        status.planUsage !== false &&
+        spec.welcome &&
+        !wasWelcomed(spec.welcome.flag)
+      )
         setWelcome(true)
     }
   }
@@ -107,7 +116,7 @@ export function LoginPanel({
     void qc.invalidateQueries({ queryKey: qk.providers })
   }, [stateNow, qc])
   const closeWelcome = () => {
-    markWelcomed()
+    if (spec.welcome) markWelcomed(spec.welcome.flag)
     setWelcome(false)
   }
 
@@ -117,6 +126,8 @@ export function LoginPanel({
   const time = (iso?: string) =>
     iso ? new Date(iso).toLocaleTimeString(fmt.locale, { hour: '2-digit', minute: '2-digit' }) : ''
   const account = status.account?.label
+  const startNew = (body: { account?: 'same' | 'new' }) =>
+    start.mutate({ params: { providerId: provider.id }, body })
 
   const continueButtons = (opts: { again?: boolean; label?: string } = {}) => (
     <div className="flex flex-wrap items-center gap-2">
@@ -124,17 +135,15 @@ export function LoginPanel({
         variant="primary"
         loading={startPending}
         disabled={startPending}
-        onClick={() => start.mutate({ params: { providerId: provider.id }, body: {} })}
+        onClick={() => startNew({})}
       >
-        {opts.label ?? t('providerLogin.continue')}
+        {opts.label ?? spec.continueLabel(t as never)}
       </Button>
       {opts.again && account && (
         <Button
           variant="secondary"
           disabled={startPending}
-          onClick={() =>
-            start.mutate({ params: { providerId: provider.id }, body: { account: 'new' } })
-          }
+          onClick={() => startNew({ account: 'new' })}
         >
           {t('providerLogin.newAccount')}
         </Button>
@@ -145,15 +154,20 @@ export function LoginPanel({
   const errorKind: LoginErrorKind | undefined = status.lastError
     ? loginErrorKind(status.lastError.code)
     : undefined
+  const relogin = spec.relogin(t as never, status)
+  const loggedOut =
+    loggedOutNote && view !== 'signed_in'
+      ? spec.loggedOut(t as never, loggedOutNote.revoked, loggedOutNote.status)
+      : undefined
 
   return (
-    <div className="flex flex-col gap-3" data-testid="login-panel" data-view={view}>
-      <div className="flex flex-col gap-1.5">
-        <div className="text-sm font-medium">{t('providerLogin.title')}</div>
-        <p className="text-sm text-muted-foreground">{t('providerLogin.intro')}</p>
-        <p className="text-sm text-muted-foreground">{t('providerLogin.textOnly')}</p>
-        <Hint>{t('providerLogin.needsPlan')}</Hint>
-      </div>
+    <div
+      className="flex flex-col gap-3"
+      data-testid="login-panel"
+      data-view={view}
+      data-channel={status.channel}
+    >
+      {spec.intro(t as never)}
 
       {view === 'unavailable' && (
         <Notice tone="info">
@@ -204,10 +218,11 @@ export function LoginPanel({
           <p className="text-sm text-muted-foreground">
             {t('providerLogin.pending.body', { time: time(status.pending?.expiresAt) })}
           </p>
+          {spec.pending?.hint && <Notice tone="info">{spec.pending.hint(t as never)}</Notice>}
           <Progress aria-label={t('providerLogin.pending.progress')} indeterminate />
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant="secondary"
+              variant={spec.pending?.cancelIsPrimary ? 'primary' : 'secondary'}
               loading={cancel.isPending}
               onClick={() => cancel.mutate({ params: { providerId: provider.id } })}
             >
@@ -230,45 +245,17 @@ export function LoginPanel({
 
       {(view === 'signed_in' || view === 'no_plan_usage') && (
         <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-medium">{t('providerLogin.signedAs', { account })}</span>
-            {view === 'signed_in' && (
-              <span className="inline-flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-                <span>{t('planUsage.using')}</span>
-                <a
-                  href={MANAGE_USAGE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-accent-text underline underline-offset-2"
-                >
-                  {t('planUsage.manage')}
-                  <ExternalLink {...iconProps} size={12} aria-hidden />
-                </a>
-              </span>
-            )}
-          </div>
-          {status.expiresAt && (
-            <Hint>{t('providerLogin.expiresAt', { time: time(status.expiresAt) })}</Hint>
-          )}
-          {status.lastError?.code === 'refresh_rejected' && (
-            <Notice tone="info">{t('providerLogin.refreshRejected')}</Notice>
-          )}
-          {view === 'no_plan_usage' && (
-            <Notice tone="warn" title={t('providerLogin.noPlanUsage.title')}>
-              {t('providerLogin.noPlanUsage.body')}
-            </Notice>
-          )}
+          {spec.signedIn(t as never, status, view, time)}
           <div className="flex flex-wrap items-center gap-2">
             {view === 'no_plan_usage' &&
-              continueButtons({ label: t('providerLogin.noPlanUsage.action') })}
+              spec.unusableLabel &&
+              continueButtons({ label: spec.unusableLabel(t as never) })}
             <Button
               variant="secondary"
               disabled={startPending}
-              onClick={() =>
-                start.mutate({ params: { providerId: provider.id }, body: { account: 'new' } })
-              }
+              onClick={() => startNew({ account: 'new' })}
             >
-              {t('providerLogin.newAccount')}
+              {relogin.label}
             </Button>
             <Button
               variant="ghost"
@@ -278,12 +265,24 @@ export function LoginPanel({
               {t('providerLogin.signOut')}
             </Button>
           </div>
+          {relogin.note && <Hint>{relogin.note}</Hint>}
         </div>
       )}
 
-      {revoked && view !== 'signed_in' && (
-        <Notice tone={revoked === 'unconfirmed' ? 'warn' : 'info'} role="status">
-          {t(`providerLogin.loggedOut.${revoked === 'nothing_to_revoke' ? 'nothing' : revoked}`)}
+      {loggedOut && (
+        <Notice tone={loggedOut.tone} role="status">
+          <div>{loggedOut.text}</div>
+          {loggedOut.link && (
+            <a
+              href={loggedOut.link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-flex items-center gap-1 underline underline-offset-2"
+            >
+              {loggedOut.link.label}
+              <ExternalLink {...iconProps} size={12} aria-hidden />
+            </a>
+          )}
         </Notice>
       )}
 
@@ -291,20 +290,22 @@ export function LoginPanel({
       {cancel.isError && <ErrorNotice error={cancel.error} />}
       {logout.isError && <ErrorNotice error={logout.error} />}
 
-      <Modal
-        open={welcome}
-        onClose={closeWelcome}
-        size="sm"
-        title={t('providerLogin.welcome.title')}
-        closeLabel={t('common.close')}
-        footer={
-          <Button variant="primary" data-autofocus onClick={closeWelcome}>
-            {t('providerLogin.welcome.gotIt')}
-          </Button>
-        }
-      >
-        <p>{t('providerLogin.welcome.body')}</p>
-      </Modal>
+      {spec.welcome && (
+        <Modal
+          open={welcome}
+          onClose={closeWelcome}
+          size="sm"
+          title={spec.welcome.title(t as never)}
+          closeLabel={t('common.close')}
+          footer={
+            <Button variant="primary" data-autofocus onClick={closeWelcome}>
+              {spec.welcome.gotIt(t as never)}
+            </Button>
+          }
+        >
+          <p>{spec.welcome.body(t as never)}</p>
+        </Modal>
+      )}
     </div>
   )
 }

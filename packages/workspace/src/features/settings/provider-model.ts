@@ -117,6 +117,20 @@ export const PROVIDER_ERROR_CODES = [
   'subscription_sharing_invalid_user',
   'chatpass_v2_scope_not_authorized',
   'chatpass_v2_invalid_authorization_context',
+  // text providers (Anthropic, Gemini, and any streaming text provider)
+  'EMPTY_OUTPUT_TRUNCATED',
+  'STREAM_INTERRUPTED',
+  'overloaded_error',
+  'rate_limit_error',
+  'authentication_error',
+  'invalid_request_error',
+  'GEMINI_SAFETY',
+  'GEMINI_PROMPT_SAFETY',
+  'GEMINI_RECITATION',
+  'GEMINI_IMAGE_URL_UNSUPPORTED',
+  'INVALID_ARGUMENT',
+  'RESOURCE_EXHAUSTED',
+  'PERMISSION_DENIED',
 ] as const
 export type ProviderErrorCode = (typeof PROVIDER_ERROR_CODES)[number]
 export const isProviderErrorCode = (code: string | undefined): code is ProviderErrorCode =>
@@ -134,6 +148,19 @@ export const PROVIDER_ERROR_ACTION: Record<ProviderErrorCode, 'manage' | 'settin
   subscription_sharing_invalid_user: 'settings',
   chatpass_v2_scope_not_authorized: 'settings',
   chatpass_v2_invalid_authorization_context: 'settings',
+  EMPTY_OUTPUT_TRUNCATED: 'settings',
+  STREAM_INTERRUPTED: undefined,
+  overloaded_error: undefined,
+  rate_limit_error: undefined,
+  authentication_error: 'settings',
+  invalid_request_error: undefined,
+  GEMINI_SAFETY: undefined,
+  GEMINI_PROMPT_SAFETY: undefined,
+  GEMINI_RECITATION: undefined,
+  GEMINI_IMAGE_URL_UNSUPPORTED: undefined,
+  INVALID_ARGUMENT: undefined,
+  RESOURCE_EXHAUSTED: undefined,
+  PERMISSION_DENIED: 'settings',
 }
 
 /**

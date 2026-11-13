@@ -137,6 +137,8 @@ export default {
     'generic-video': '通用视频接口',
     'openai-tts': 'OpenAI 兼容（语音）',
     'openai-responses': 'OpenAI Responses（文本）',
+    'anthropic-messages': 'Anthropic Messages（文本）',
+    'gemini-chat': 'Gemini generateContent（文本）',
   },
   providers: {
     intro:
