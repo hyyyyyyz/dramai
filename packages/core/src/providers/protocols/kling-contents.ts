@@ -157,6 +157,10 @@ export const klingContents: MediaProtocol<VideoGenInput> = {
     if (data !== undefined && !Array.isArray(data) && !asRecord(data)) {
       throw new Error('Kling 轮询响应的 data 既不是数组也不是对象')
     }
+    // 数组的第一项不是对象（如 [null]、['x']）同样是读不懂：解析失败，不当成“还在排队”
+    if (Array.isArray(data) && data.length > 0 && !asRecord(data[0])) {
+      throw new Error('Kling 轮询响应的 data[0] 不是对象')
+    }
     const task = asRecord(Array.isArray(data) ? data[0] : data)
     const status = (str(task?.status) ?? '').toLowerCase()
     if (!status) {

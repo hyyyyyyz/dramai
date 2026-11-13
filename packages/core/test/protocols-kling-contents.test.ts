@@ -384,3 +384,37 @@ describe('review fix 4: the shape of data in the poll response', () => {
     expect(n).toBe(5)
   })
 })
+
+describe('follow-up 4: an array whose first item is not an object', () => {
+  it('is a parse failure, like a data that is neither array nor object', () => {
+    for (const data of [[null], ['x'], [5], [[]], [true]])
+      expect(
+        () => klingContents.parsePollResponse!(raw({ code: 0, data })),
+        JSON.stringify(data),
+      ).toThrow()
+    // an empty array and a real first item are unchanged
+    expect(klingContents.parsePollResponse!(raw({ code: 0, data: [] }))).toEqual({
+      status: 'queued',
+    })
+    expect(
+      klingContents.parsePollResponse!(raw({ code: 0, data: [{ status: 'processing' }] })),
+    ).toEqual({ status: 'processing' })
+  })
+
+  it('through the executor it ends as POLL_FAILED instead of waiting for the poll timeout', async () => {
+    let polls = 0
+    const fetch = async (url: string) => {
+      if (url.includes('/text-to-video/'))
+        return new Response(JSON.stringify({ code: 0, data: { id: 'T' } }))
+      polls++
+      return new Response(JSON.stringify({ code: 0, data: [null] }))
+    }
+    try {
+      await runGeneration(klingContents, auth(), base, { fetch, sleep: async () => {} })
+      throw new Error('should fail')
+    } catch (e) {
+      expect((e as ProviderError).code).toBe('POLL_FAILED')
+    }
+    expect(polls).toBe(5)
+  })
+})
