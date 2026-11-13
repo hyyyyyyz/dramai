@@ -234,6 +234,8 @@ export const routes = {
     response: z.object({
       status: S.loginStatus,
       revoked: z.enum(['confirmed', 'unconfirmed', 'nothing_to_revoke']),
+      /** 通道没有撤销接口时（OpenRouter），用户去这里作废这份授权。 */
+      manageUrl: z.string().optional(),
     }),
   }),
   'providers.models': route('GET', '/api/providers/:providerId/models', {

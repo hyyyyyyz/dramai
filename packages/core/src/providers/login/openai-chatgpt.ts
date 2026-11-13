@@ -1,10 +1,16 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import type { SecretStore } from '../../ports/index.ts'
 import { assertLoginEndpoint, LoginRequiredError } from '../auth.ts'
-import type { LoginChannel } from '../auth.ts'
 import { ProviderError } from '../errors.ts'
 import type { ProviderConfig } from '../types.ts'
 import { parseJwt, verifyJwtSignature } from './jwt.ts'
+import type {
+  ListenerFactory,
+  LoginErrorCode,
+  LoginService,
+  LoginStatus,
+  LoopbackListener,
+} from './types.ts'
 import type { Jwk } from './jwt.ts'
 
 /**
@@ -40,25 +46,7 @@ export const OPENAI_LOGIN = {
   preferredPort: 1455,
 } as const
 
-export type OpenAiLoginErrorCode =
-  | 'user_denied'
-  | 'authorization_error'
-  | 'state_mismatch'
-  | 'no_code'
-  | 'registration_incomplete'
-  | 'client_mismatch'
-  | 'invalid_grant'
-  | 'exchange_failed'
-  | 'bad_signature'
-  | 'issuer_mismatch'
-  | 'audience_mismatch'
-  | 'expired'
-  | 'nonce_mismatch'
-  | 'bad_id_token'
-  | 'account_mismatch'
-  | 'timeout'
-  | 'cancelled'
-  | 'refresh_rejected'
+export type OpenAiLoginErrorCode = LoginErrorCode
 
 export class OpenAiLoginError extends Error {
   readonly code: OpenAiLoginErrorCode
@@ -92,33 +80,6 @@ export interface LoginRecord {
   earliestRefreshAt?: number
   savedAt: string
 }
-
-export type LoginState = 'signed_out' | 'pending' | 'signed_in' | 'needs_relogin'
-
-/** 对外的登录状态：**没有任何令牌**。 */
-export interface LoginStatus {
-  channel: 'openai-chatgpt'
-  state: LoginState
-  /** 账号的显示标识（邮箱）。 */
-  account?: { label: string }
-  /** 访问令牌的到期时间（ISO）。 */
-  expiresAt?: string
-  /** 授予了 ChatGPT 用量；false = 已登录但不能调用。 */
-  planUsage?: boolean
-  pending?: { expiresAt: string }
-  lastError?: { code: OpenAiLoginErrorCode; message: string; at: string }
-}
-
-export interface LoopbackListener {
-  /** 例如 `http://127.0.0.1:1455/auth/callback`。 */
-  redirectUri: string
-  close(): void
-}
-
-/** 起一个只在 127.0.0.1 上监听的回调接收器。收到回调时调用 `onCallback`，把结果展示给浏览器。 */
-export type ListenerFactory = (
-  onCallback: (params: URLSearchParams) => Promise<{ ok: boolean; error?: OpenAiLoginErrorCode }>,
-) => Promise<LoopbackListener>
 
 type FetchLike = (url: string, init?: RequestInit) => Promise<Response>
 
@@ -176,7 +137,7 @@ const TERMINAL_REFRESH_ERRORS = new Set([
   'refresh_token_reused',
 ])
 
-export class OpenAiLogin implements LoginChannel {
+export class OpenAiLogin implements LoginService {
   readonly id = 'openai-chatgpt' as const
   private readonly d: Required<Pick<OpenAiLoginDeps, 'secrets' | 'listen'>> & OpenAiLoginDeps
   private readonly pending = new Map<string, PendingLogin>()

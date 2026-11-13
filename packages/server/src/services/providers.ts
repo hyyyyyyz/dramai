@@ -13,7 +13,8 @@ import {
 import type {
   Clock,
   CredentialResolver,
-  OpenAiLogin,
+  LoginChannelId,
+  LoginService,
   ExecutorDeps,
   IdGenerator,
   Locale,
@@ -39,7 +40,7 @@ export interface ProviderServiceDeps {
   clock: Clock
   executor?: ExecutorDeps
   /** 账号登录（OpenAI）。 */
-  login?: OpenAiLogin
+  logins?: Partial<Record<LoginChannelId, LoginService>>
   /** 统一取凭据（含登录令牌的自动刷新）。 */
   credentials?: CredentialResolver
 }
@@ -195,9 +196,10 @@ export class ProviderService {
 
   async delete(id: string): Promise<void> {
     const cfg = await this.require(id)
-    // 账号登录：先撤销刷新令牌（尽力而为），再删凭据
-    if (effectiveAuth(cfg).type === 'account_login') {
-      await this.d.login?.logout(cfg.id, cfg.secretRef).catch(() => {})
+    // 账号登录：先登出（有撤销接口的通道会撤销令牌，尽力而为），再删凭据
+    const auth = effectiveAuth(cfg)
+    if (auth.type === 'account_login') {
+      await this.d.logins?.[auth.channel]?.logout(cfg.id, cfg.secretRef).catch(() => {})
     }
     if (cfg.secretRef) await this.d.secrets.delete(cfg.secretRef)
     await this.d.store.providers.delete(id)
@@ -255,19 +257,20 @@ export class ProviderService {
 
   // === 账号登录 ===
 
-  private requireLogin(cfg: ProviderConfig): OpenAiLogin {
-    if (effectiveAuth(cfg).type !== 'account_login' || !this.d.login) {
-      throw conflict('LOGIN_NOT_SUPPORTED', '这个服务商不是账号登录方式')
-    }
-    return this.d.login
+  private requireLogin(cfg: ProviderConfig): LoginService {
+    const auth = effectiveAuth(cfg)
+    const service = auth.type === 'account_login' ? this.d.logins?.[auth.channel] : undefined
+    if (!service) throw conflict('LOGIN_NOT_SUPPORTED', '这个服务商不是账号登录方式')
+    return service
   }
 
   async loginStatus(cfg: ProviderConfig, origin: LoginRequestOrigin = {}): Promise<LoginStatusDto> {
     const availability = loginAvailability(origin)
-    if (!this.d.login) {
-      return { channel: 'openai-chatgpt', state: 'signed_out', availability }
-    }
-    return { ...(await this.d.login.status(cfg.id, cfg.secretRef)), availability }
+    const auth = effectiveAuth(cfg)
+    const channel: LoginChannelId = auth.type === 'account_login' ? auth.channel : 'openai-chatgpt'
+    const service = this.d.logins?.[channel]
+    if (!service) return { channel, state: 'signed_out', availability }
+    return { ...(await service.status(cfg.id, cfg.secretRef)), availability }
   }
 
   async loginStart(id: string, options: { account?: 'same' | 'new' }, origin: LoginRequestOrigin) {
@@ -288,8 +291,12 @@ export class ProviderService {
 
   async logout(id: string, origin: LoginRequestOrigin = {}) {
     const cfg = await this.require(id)
-    const { revoked } = await this.requireLogin(cfg).logout(cfg.id, cfg.secretRef)
-    return { status: await this.loginStatus(cfg, origin), revoked }
+    const { revoked, manageUrl } = await this.requireLogin(cfg).logout(cfg.id, cfg.secretRef)
+    return {
+      status: await this.loginStatus(cfg, origin),
+      revoked,
+      ...(manageUrl ? { manageUrl } : {}),
+    }
   }
 
   /**

@@ -745,6 +745,12 @@ export const loginStatus = z.object({
   account: z.object({ label: z.string() }).optional(),
   expiresAt: z.string().optional(),
   planUsage: z.boolean().optional(),
+  /** 登录换回的凭据：`access_token`（会刷新）或 `api_key`（登录得到的一把用户自己的 Key，不刷新）。`mask` 是掩码。 */
+  credential: z
+    .object({ kind: z.enum(['access_token', 'api_key']), mask: z.string().optional() })
+    .optional(),
+  /** 在厂商那里管理 / 作废这份授权的页面（OpenRouter 没有撤销接口，用户靠它）。 */
+  manageUrl: z.string().optional(),
   pending: z.object({ expiresAt: z.string() }).optional(),
   lastError: z.object({ code: loginErrorCode, message: z.string(), at: z.string() }).optional(),
   /** 当前的访问方式下能不能发起登录（回调只到得了服务所在机器的 127.0.0.1）。 */

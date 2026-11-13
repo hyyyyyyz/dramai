@@ -7,10 +7,8 @@ import {
 } from '../src/providers/auth.ts'
 import { ProviderError } from '../src/providers/errors.ts'
 import { OPENAI_LOGIN, OpenAiLogin } from '../src/providers/login/openai-chatgpt.ts'
-import type {
-  ListenerFactory,
-  OpenAiLoginErrorCode,
-} from '../src/providers/login/openai-chatgpt.ts'
+import type { OpenAiLoginErrorCode } from '../src/providers/login/openai-chatgpt.ts'
+import type { ListenerFactory } from '../src/providers/login/types.ts'
 import type { ProviderConfig } from '../src/providers/types.ts'
 
 // --- test doubles: a made-up OpenAI (keys generated here), a loopback listener, a secret store ---
