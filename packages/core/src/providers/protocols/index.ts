@@ -9,10 +9,12 @@ import { openaiImages } from './openai-images.ts'
 import { siliconflowImages } from './siliconflow-images.ts'
 import { volcengineImages } from './volcengine-images.ts'
 import { openaiTts } from './openai-tts.ts'
+import { arkVideo } from './ark-video.ts'
 import { volcengineVideo } from './volcengine-video.ts'
 
 export {
   aliyunVideo,
+  arkVideo,
   dashscopeImage,
   klingImage,
   siliconflowImages,
@@ -24,6 +26,7 @@ export {
   openaiTts,
   volcengineVideo,
 }
+export * from './content-array.ts'
 export * from './openai-chat.ts'
 export { openAiImageStyle, parseImagesData } from './openai-images.ts'
 export { seedreamMinPixels } from './volcengine-images.ts'
@@ -38,6 +41,7 @@ const MEDIA_PROTOCOLS: Partial<Record<ProtocolId, MediaProtocol<any>>> = {
   'gemini-image': geminiImage,
   'aliyun-video': aliyunVideo,
   'volcengine-video': volcengineVideo,
+  'ark-video': arkVideo,
   'kling-video': klingVideo,
   'generic-video': genericVideo,
   'openai-tts': openaiTts,

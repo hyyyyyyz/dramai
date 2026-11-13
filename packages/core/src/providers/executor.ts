@@ -361,7 +361,9 @@ async function pollUntilDone<I>(
       await options.onPoll?.(parsed, attempt)
       if (parsed.status === 'completed') return parsed
       if (parsed.status === 'failed') {
-        throw new ProviderError('upstream_failed', parsed.message, { code: 'UPSTREAM_FAILED' })
+        throw new ProviderError('upstream_failed', parsed.message, {
+          code: parsed.code ?? 'UPSTREAM_FAILED',
+        })
       }
     } catch (caught) {
       // 轮询时的网络错误/超时是暂时性的：任务已经在上游了，继续轮询。

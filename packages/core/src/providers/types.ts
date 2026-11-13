@@ -206,7 +206,7 @@ export type GenerateParse =
 export type PollParse =
   | { status: 'queued' | 'processing'; progress?: number; message?: string }
   | { status: 'completed'; outputs: OutputRef[]; durationSec?: number }
-  | { status: 'failed'; message: string }
+  | { status: 'failed'; message: string; code?: string }
 
 export interface MediaProtocol<Input> {
   id: ProtocolId
