@@ -681,12 +681,12 @@ describe('OpenRouter sign-in', () => {
       pending: { expiresAt: new Date(Date.now() + 600_000).toISOString() },
     })
     await screen.findByText('请在浏览器里完成授权')
-    await new Promise((r) => setTimeout(r, 150))
+    // it keeps asking while it waits (wait for the polls instead of a fixed pause: a loaded machine polls less often)
+    const polls = () =>
+      server.calls.filter((c) => c.method === 'GET' && c.path.endsWith('/login')).length
+    await waitFor(() => expect(polls()).toBeGreaterThan(2), { timeout: 5000 })
     expect(screen.getByText('请在浏览器里完成授权')).toBeInTheDocument() // still waiting, never a "denied" message
     expect(screen.queryByText(/拒绝了登录/)).toBeNull()
-    expect(
-      server.calls.filter((c) => c.method === 'GET' && c.path.endsWith('/login')).length,
-    ).toBeGreaterThan(2)
   })
 
   it('signed in: a key obtained by signing in, its mask and a link to manage it; no account, expiry or plan', async () => {
