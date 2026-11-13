@@ -685,6 +685,7 @@ export const protocolId = z.enum([
   'kling-video',
   'generic-video',
   'openai-tts',
+  'openai-responses',
 ])
 export const support = z.enum(['supported', 'unsupported', 'unverified'])
 

@@ -11,8 +11,12 @@ import type {
 } from '../ports/index.ts'
 import type { ExecutorDeps } from '../providers/executor.ts'
 import type { ChatMessage } from '../providers/protocols/openai-chat.ts'
+import { createCredentialResolver, effectiveAuth } from '../providers/auth.ts'
+import { ProviderError } from '../providers/errors.ts'
+import type { CredentialResolver } from '../providers/auth.ts'
 import type { AuthContext, ProviderConfig } from '../providers/types.ts'
-import { streamChat } from '../providers/llm.ts'
+import { streamText } from '../providers/llm.ts'
+import type { LlmCallDeps } from '../providers/llm.ts'
 import { parseJsonLoose } from '../util/json-loose.ts'
 import type { z } from 'zod'
 
@@ -50,6 +54,8 @@ export interface PipelineDeps {
   store: Store
   files: FileStore
   secrets: SecretStore
+  /** 统一取凭据（含账号登录的自动刷新）；缺省只处理 API Key / 无需鉴权。 */
+  credentials?: CredentialResolver
   clock: Clock
   ids: IdGenerator
   events?: EventSink
@@ -61,27 +67,48 @@ export interface PipelineDeps {
   media?: MediaTools
 }
 
-/** 取服务商鉴权：Key 只在这里从 SecretStore 读出，作为调用参数交给适配器。 */
+/**
+ * 取服务商鉴权：凭据只在这里从 SecretStore 读出（登录方式下由登录通道刷新），作为调用参数交给适配器。
+ * 登录凭据不可用时抛 `LoginRequiredError`（"需要重新登录"），不是普通的网络错误。
+ */
 export async function authFor(
-  deps: Pick<PipelineDeps, 'secrets'>,
+  deps: Pick<PipelineDeps, 'secrets' | 'credentials'>,
   config: ProviderConfig,
 ): Promise<AuthContext> {
-  const apiKey = config.secretRef ? await deps.secrets.get(config.secretRef) : undefined
-  return { baseUrl: config.baseUrl, model: config.model, apiKey }
+  if (effectiveAuth(config).type === 'account_login' && config.protocol !== 'openai-responses') {
+    throw new ProviderError(
+      'capability',
+      '账号登录目前只覆盖文本（openai-responses），不能用于图片、视频或语音服务商',
+      { code: 'LOGIN_TEXT_ONLY' },
+    )
+  }
+  const resolver = deps.credentials ?? createCredentialResolver({ secrets: deps.secrets })
+  const cred = await resolver.resolve(config)
+  return {
+    baseUrl: config.baseUrl,
+    model: config.model,
+    apiKey: cred.bearer,
+    method: cred.method,
+    channel: cred.channel,
+  }
 }
 
 /** 用一个 LLM 服务商配置造 LlmClient（流式收齐）。 */
 export function createProviderLlm(
-  deps: Pick<PipelineDeps, 'secrets' | 'executor'>,
+  deps: Pick<PipelineDeps, 'secrets' | 'credentials' | 'executor'> & {
+    /** 协议层丢弃了这个鉴权方式不支持的参数时的记录回调。 */
+    onDropped?: LlmCallDeps['onDropped']
+  },
   config: ProviderConfig,
 ): LlmClient {
   return {
     async complete(req) {
       const auth = await authFor(deps, config)
-      const stream = streamChat(
+      const stream = streamText(
+        config.protocol,
         auth,
         { messages: req.messages, jsonMode: req.jsonMode, temperature: req.temperature },
-        { ...deps.executor, signal: req.signal },
+        { ...deps.executor, signal: req.signal, onDropped: deps.onDropped },
       )
       while (true) {
         const next = await stream.next()

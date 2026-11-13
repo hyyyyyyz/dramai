@@ -1,5 +1,6 @@
 export * from './types.ts'
 export * from './errors.ts'
+export * from './auth.ts'
 export * from './duration.ts'
 export * from './executor.ts'
 export * from './llm.ts'
