@@ -1,4 +1,4 @@
-import { deepMerge } from '../../util/merge.ts'
+import { deepMerge, mergeHeaders } from '../../util/merge.ts'
 import { ProviderError } from '../errors.ts'
 import { asRecord, joinUrl, jsonPost, str } from '../http.ts'
 import type { AuthContext, HttpRequestSpec } from '../types.ts'
@@ -100,7 +100,7 @@ export function buildMessagesRequest(
     spec: jsonPost(
       url,
       deepMerge(body, auth.dialect?.extraBody, PROTECTED),
-      anthropicHeaders(auth.apiKey),
+      mergeHeaders(anthropicHeaders(auth.apiKey), auth.dialect?.extraHeaders),
     ),
     dropped,
   }

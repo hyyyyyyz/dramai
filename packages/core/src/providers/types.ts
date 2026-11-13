@@ -24,6 +24,10 @@ export type ProtocolId =
   | 'openai-responses'
   | 'anthropic-messages'
   | 'gemini-chat'
+  | 'volcengine-images'
+  | 'dashscope-image'
+  | 'siliconflow-images'
+  | 'kling-image'
 
 /**
  * 同步返回结果的协议：请求发出后直接拿到成品，根本没有上游任务号可查。
@@ -37,6 +41,9 @@ export const SYNC_PROTOCOLS: readonly ProtocolId[] = [
   'openai-responses',
   'anthropic-messages',
   'gemini-chat',
+  'volcengine-images',
+  'dashscope-image',
+  'siliconflow-images',
 ]
 
 /** 账号登录通道。现在只有 OpenAI 一种；加通道 = 在这里加一项，并在 CredentialResolver 里注册。 */
@@ -74,6 +81,11 @@ export interface ProviderDialect {
    * 解析重试；给不支持 `json_object` 的服务商用）。
    */
   jsonMode?: 'json_object' | 'prompt_only'
+  /**
+   * 额外请求头（例如 Anthropic 对没有限定到单个工作区的 API Key 要求的 `anthropic-workspace-id`）。
+   * 不能覆盖鉴权头、内容类型头和协议的版本头。
+   */
+  extraHeaders?: Record<string, string>
 }
 
 /**
@@ -179,6 +191,8 @@ export interface MediaProtocol<Input> {
   media: 'image' | 'video' | 'audio'
   /** 默认 json。 */
   responseType?: 'json' | 'binary'
+  /** 单次提交请求的超时（毫秒）；比执行器默认的 120 秒长的协议（同步大图）在这里声明。 */
+  requestTimeoutMs?(auth: AuthContext): number | undefined
   buildGenerateRequest(auth: AuthContext, input: Input): HttpRequestSpec
   parseGenerateResponse(raw: RawResponse): GenerateParse
   buildPollRequest?(auth: AuthContext, taskId: string): HttpRequestSpec

@@ -17,10 +17,22 @@ import type { ImageGenInput, MediaProtocol, OutputRef } from '../types.ts'
  *           generationConfig:{ responseModalities:["IMAGE"], imageConfig:{aspectRatio} } }
  *
  * 适用：Google AI Studio 直连 / Vertex / 302.AI 透传 / 部分聚合平台。
- * 302.AI 上 base URL 应为 `https://api.302.ai`（**不带 /v1**）。同时发 Authorization 与
- * x-goog-api-key 两个头以覆盖更多兼容场景。
+ * 302.AI 上 base URL 应为 `https://api.302.ai`（**不带 /v1**），同时发 Authorization 与 x-goog-api-key 两个头；
+ * Google 官方直连（`https://generativelanguage.googleapis.com`）只发 `x-goog-api-key`。
+ *
+ * **官方文档现状**：当天的生图指南页只写了 Interactions API，generateContent 官方称"legacy 但完全支持"，
+ * 图片请求的字段名（`inline_data`、`imageConfig.aspectRatio`）在当前页面没有确认——直连预设因此标未验证。
  * 画幅经 `imageConfig.aspectRatio` 显式传出（不传时服务商会给默认比例）。
  */
+/** 官方地址（generativelanguage.googleapis.com）。 */
+export function isGoogleHost(baseUrl: string): boolean {
+  try {
+    return new URL(baseUrl).hostname === 'generativelanguage.googleapis.com'
+  } catch {
+    return false
+  }
+}
+
 export const geminiImage: MediaProtocol<ImageGenInput> = {
   id: 'gemini-image',
   media: 'image',
@@ -36,7 +48,9 @@ export const geminiImage: MediaProtocol<ImageGenInput> = {
     if (input.aspectRatio) generationConfig.imageConfig = { aspectRatio: input.aspectRatio }
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (auth.apiKey) {
-      headers.Authorization = `Bearer ${auth.apiKey}`
+      // Google 官方地址只认 `x-goog-api-key`（官方示例唯一的方式）：API Key 放进 Authorization: Bearer 会被当成
+      // OAuth 令牌而被拒。聚合平台（302.AI 等）两个头都发，覆盖更多兼容场景。
+      if (!isGoogleHost(auth.baseUrl)) headers.Authorization = `Bearer ${auth.apiKey}`
       headers['x-goog-api-key'] = auth.apiKey
     }
     return jsonPost(

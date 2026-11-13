@@ -226,7 +226,7 @@ async function submit<I>(
   try {
     raw = await sendRequest(spec, deps, {
       signal: options.signal,
-      timeoutMs: options.requestTimeoutMs,
+      timeoutMs: options.requestTimeoutMs ?? protocol.requestTimeoutMs?.(auth),
       binary: protocol.responseType === 'binary',
     })
   } catch (err) {

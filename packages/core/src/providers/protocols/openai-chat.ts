@@ -1,4 +1,4 @@
-import { deepMerge } from '../../util/merge.ts'
+import { deepMerge, mergeHeaders } from '../../util/merge.ts'
 import { asRecord, joinUrl, jsonHeaders, jsonPost } from '../http.ts'
 import type { HttpRequestSpec, AuthContext } from '../types.ts'
 
@@ -62,7 +62,7 @@ export function buildChatRequest(auth: AuthContext, input: ChatInput): HttpReque
   return jsonPost(
     joinUrl(auth.baseUrl, '/chat/completions'),
     deepMerge(body, dialect?.extraBody, CHAT_PROTECTED),
-    jsonHeaders(auth.apiKey),
+    mergeHeaders(jsonHeaders(auth.apiKey), dialect?.extraHeaders),
   )
 }
 

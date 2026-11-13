@@ -35,6 +35,10 @@ const protocol = z.enum([
   'openai-responses',
   'anthropic-messages',
   'gemini-chat',
+  'volcengine-images',
+  'dashscope-image',
+  'siliconflow-images',
+  'kling-image',
 ])
 
 const support = z.enum(['supported', 'unsupported', 'unverified'])
@@ -125,6 +129,10 @@ export function defaultCapability(protocolId: ProtocolId): ModelCapability {
   switch (protocolId) {
     case 'openai-images':
     case 'gemini-image':
+    case 'volcengine-images':
+    case 'dashscope-image':
+    case 'siliconflow-images':
+    case 'kling-image':
       return { ...base, media: 'image', modes: { t2i: 'supported' } }
     case 'openai-tts':
       return { ...base, media: 'audio', modes: { tts: 'supported' } }

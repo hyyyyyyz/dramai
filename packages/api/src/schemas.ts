@@ -688,6 +688,10 @@ export const protocolId = z.enum([
   'openai-responses',
   'anthropic-messages',
   'gemini-chat',
+  'volcengine-images',
+  'dashscope-image',
+  'siliconflow-images',
+  'kling-image',
 ])
 export const support = z.enum(['supported', 'unsupported', 'unverified'])
 
@@ -709,6 +713,8 @@ export const providerDialect = z.object({
   extraBody: z.record(z.string(), z.unknown()).optional(),
   maxTokensField: z.enum(['max_tokens', 'max_completion_tokens']).optional(),
   jsonMode: z.enum(['json_object', 'prompt_only']).optional(),
+  /** 额外请求头（如 Anthropic 的 anthropic-workspace-id）；不能覆盖鉴权头和内容类型头。 */
+  extraHeaders: z.record(z.string(), z.string()).optional(),
 })
 export type ProviderDialectDto = z.infer<typeof providerDialect>
 
