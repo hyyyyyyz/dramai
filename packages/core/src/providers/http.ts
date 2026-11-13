@@ -82,9 +82,29 @@ export function errorMessageOf(json: unknown, fallback: string): string {
 
 export type { AuthContext }
 
+/** `code` 是成功码：数字 0 和所有 2xx；字符串 `""`、`"0"`、`"2xx"`、`"success"`、`"ok"`（大小写、首尾空白不敏感）。 */
+function isSuccessCode(code: unknown): boolean {
+  if (typeof code === 'number') return code === 0 || (code >= 200 && code < 300)
+  if (typeof code === 'string') {
+    const c = code.trim()
+    return c === '' || c === '0' || /^2\d\d$/.test(c) || /^(success|ok)$/i.test(c)
+  }
+  return true
+}
+
+/** `code` 字段是否带着实际内容（数字，或非空字符串）；`null`、`undefined`、布尔、对象都不算。 */
+function hasCode(code: unknown): boolean {
+  return typeof code === 'number' || (typeof code === 'string' && code.trim() !== '')
+}
+
 /**
- * 轮询响应里**明确的业务错误**（没有任务状态时用）：`{ code: 非 0 / 非空字符串, message }`、`{ output: { code, message } }`
- * 或 `{ error }`。读不出就返回 undefined（调用方才可以按"状态未知，继续等"处理）。
+ * 轮询响应里**明确的业务错误**（没有任务状态时用）：`{ code: 非成功码, message }`、`{ output: { code, message } }`
+ * 或 `{ error: 非空字符串 | 有内容的对象 }`。读不出就返回 undefined（调用方才可以按"状态未知，继续等"处理）。
+ *
+ * 判定要保守，只在能确认是错误时才算错误：
+ * - 成功码（0、所有 2xx、`"success"`、`"ok"` 等，见 `isSuccessCode`）不算错误，`{ code: 200, data: {...} }` 这类
+ *   成功封装里状态在嵌套对象时，仍按"状态未知，继续等"处理；
+ * - `error` 是空字符串或空对象不算错误；对象要有 `message` / `msg`，或非成功码的 `code` 才算。
  *
  * 为什么要有它：状态未知一律当"排队中"会把鉴权失败、任务不存在这类错误响应变成"一直在排队"，
  * 要等到轮询超时（约 10 分钟）才报错，用户看到的是"超时"而不是真正的原因。
@@ -93,22 +113,18 @@ export function bodyError(json: unknown): string | undefined {
   const obj = asRecord(json)
   if (!obj) return undefined
   const fromCode = (o: Record<string, unknown> | undefined): string | undefined => {
-    if (!o) return undefined
-    const code = o.code
-    const bad =
-      (typeof code === 'number' && code !== 0) ||
-      (typeof code === 'string' && code !== '' && code !== '0' && !/^(success|ok)$/i.test(code))
-    if (!bad) return undefined
-    return str(o.message) ?? str(o.msg) ?? `上游返回错误码 ${String(code)}`
+    if (!o || isSuccessCode(o.code)) return undefined
+    return str(o.message) ?? str(o.msg) ?? `上游返回错误码 ${String(o.code)}`
   }
-  const err = obj.error
-  const fromError =
-    typeof err === 'string' && err
-      ? err
-      : asRecord(err)
-        ? (str(asRecord(err)?.message) ?? '上游返回错误')
-        : undefined
-  return fromCode(obj) ?? fromCode(asRecord(obj.output)) ?? fromError
+  const fromErrorField = (err: unknown): string | undefined => {
+    if (typeof err === 'string') return err.trim() ? err : undefined
+    const e = asRecord(err)
+    if (!e) return undefined
+    const message = str(e.message) ?? str(e.msg)
+    if (message) return message
+    return hasCode(e.code) && !isSuccessCode(e.code) ? '上游返回错误' : undefined
+  }
+  return fromCode(obj) ?? fromCode(asRecord(obj.output)) ?? fromErrorField(obj.error)
 }
 
 /**

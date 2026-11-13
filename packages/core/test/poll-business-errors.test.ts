@@ -92,6 +92,106 @@ describe('polling: a business error is a failure, not "still queued"', () => {
     })
   })
 
+  // 每个用到 bodyError 的协议：成功码 + 无状态 = 排队；非成功码 + 错误信息 = 失败并带信息。
+  const PROTOCOLS: Array<[string, MediaProtocol<never>, unknown, unknown, string]> = [
+    [
+      'kling-image',
+      klingImage,
+      { code: 0, message: 'ok' },
+      { code: 1203, message: 'gone' },
+      'gone',
+    ],
+    [
+      'kling-video',
+      klingVideo,
+      { code: 0, message: 'ok' },
+      { code: 1203, message: 'gone' },
+      'gone',
+    ],
+    [
+      'aliyun-video',
+      aliyunVideo,
+      { code: 'success', message: 'ok' },
+      { code: 'InvalidApiKey', message: 'bad key' },
+      'bad key',
+    ],
+    [
+      'volcengine-video',
+      volcengineVideo,
+      { error: {} },
+      { error: { code: 'AuthenticationError', message: 'bad key' } },
+      'bad key',
+    ],
+    ['generic-video', genericVideo, { code: 0 }, { code: 500, message: 'boom' }, 'boom'],
+  ]
+  it.each(PROTOCOLS)(
+    '%s: success code without state waits, other code fails',
+    (_n, p, ok, bad, msg) => {
+      expect(p.parsePollResponse!(raw(ok))).toEqual({ status: 'queued' })
+      expect(p.parsePollResponse!(raw(bad))).toEqual({ status: 'failed', message: msg })
+    },
+  )
+
+  // 审查发现的回归：这些响应在 b06d198 是排队，不能变成失败。
+  it('code 200 success envelopes and empty error objects stay queued', () => {
+    // generic-video 只读顶层状态：状态在嵌套的 data 里时不新增解析，结果与 b06d198 一致（排队）
+    expect(
+      genericVideo.parsePollResponse!(raw({ code: 200, data: { status: 'running' } })),
+    ).toEqual({ status: 'queued' })
+    expect(klingVideo.parsePollResponse!(raw({ code: 200, data: {} }))).toEqual({
+      status: 'queued',
+    })
+    expect(aliyunVideo.parsePollResponse!(raw({ code: 200, message: 'ok' }))).toEqual({
+      status: 'queued',
+    })
+    expect(volcengineVideo.parsePollResponse!(raw({ error: {} }))).toEqual({ status: 'queued' })
+  })
+
+  it('bodyError: success codes are never errors', () => {
+    for (const code of [
+      0,
+      200,
+      201,
+      204,
+      299,
+      '0',
+      '200',
+      '204',
+      'success',
+      'SUCCESS',
+      'Ok',
+      'ok',
+      ' ok ',
+      '',
+    ]) {
+      expect(bodyError({ code, message: 'm' }), String(code)).toBeUndefined()
+      expect(
+        bodyError({ output: { code, message: 'm' } }),
+        `output ${String(code)}`,
+      ).toBeUndefined()
+    }
+    // 3xx / 4xx / 5xx and named codes are errors
+    for (const code of [1, 199, 300, 401, 500, '401', '1001', 'InvalidApiKey', 'fail']) {
+      expect(bodyError({ code, message: 'm' }), String(code)).toBe('m')
+    }
+    expect(bodyError({ code: 401, msg: 'unauthorized' })).toBe('unauthorized')
+  })
+
+  it('bodyError: an empty error is not an error', () => {
+    expect(bodyError({ error: {} })).toBeUndefined()
+    expect(bodyError({ error: '' })).toBeUndefined()
+    expect(bodyError({ error: '  ' })).toBeUndefined()
+    expect(bodyError({ error: null })).toBeUndefined()
+    expect(bodyError({ error: { message: '' } })).toBeUndefined()
+    expect(bodyError({ error: { code: 0 } })).toBeUndefined()
+    expect(bodyError({ error: { code: 200 } })).toBeUndefined()
+    // with content it still fails
+    expect(bodyError({ error: 'quota exceeded' })).toBe('quota exceeded')
+    expect(bodyError({ error: { message: 'm' } })).toBe('m')
+    expect(bodyError({ error: { msg: 'm2' } })).toBe('m2')
+    expect(bodyError({ error: { code: 'Throttled' } })).toBe('上游返回错误')
+  })
+
   it('bodyError reads only explicit errors', () => {
     expect(bodyError(undefined)).toBeUndefined()
     expect(bodyError({ code: 0 })).toBeUndefined()
