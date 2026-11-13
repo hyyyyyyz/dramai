@@ -3,17 +3,20 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button, Field, Hint, IconButton, Input, Select, Textarea, iconProps } from '@dramai/ui/v2'
 import {
+  IMAGE_STYLES,
+  PROTECTED_HEADER_NAMES,
   draftValid,
   headerProblems,
   parseExtraBody,
   type DialectDraft,
   type DialectSupport,
+  type ImageStyle,
   type JsonMode,
   type MaxTokensField,
 } from './dialect-model'
 
 /**
- * Advanced settings of a text provider: how its API differs from OpenAI's. Collapsed by default, and only the options
+ * Advanced settings of a provider: how its API differs from the usual one (text), the image style (OpenAI-style image APIs) and the extra request headers (every protocol). Collapsed by default, and only the options
  * the provider's protocol really reads are shown. It opens by itself while something in it is wrong, so the reason
  * the Save button is grey is never hidden inside a closed panel.
  */
@@ -48,7 +51,15 @@ export function DialectSettings({
       </summary>
       <div className="flex flex-col gap-4 border-t border-border p-3">
         <Hint>{t('providerDialect.intro')}</Hint>
-        {!support.extraBody && <Hint>{t('providerDialect.onlyHeaders')}</Hint>}
+        {!support.extraBody && (
+          <Hint>
+            {t(
+              support.imageStyle
+                ? 'providerDialect.headersAndStyle'
+                : 'providerDialect.onlyHeaders',
+            )}
+          </Hint>
+        )}
 
         {support.extraBody && (
           <Field
@@ -116,10 +127,41 @@ export function DialectSettings({
           </div>
         )}
 
+        {support.imageStyle && (
+          <Field
+            label={t('providerDialect.imageStyle.label')}
+            hint={
+              <>
+                {t('providerDialect.imageStyle.hint')} {t('providerDialect.imageStyle.when')}
+              </>
+            }
+          >
+            <Select
+              value={draft.imageStyle}
+              onChange={(e) =>
+                onChange({ ...draft, imageStyle: e.target.value as ImageStyle | '' })
+              }
+            >
+              <option value="">{t('providerDialect.imageStyle.auto')}</option>
+              {IMAGE_STYLES.map((v) => (
+                <option key={v} value={v}>
+                  {t(`providerDialect.imageStyle.${v}`)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
+
         {support.extraHeaders && (
           <div className="flex flex-col gap-2">
             <div className="text-sm font-medium">{t('providerDialect.headers.label')}</div>
-            <Hint>{t('providerDialect.headers.hint')}</Hint>
+            <Hint>
+              {t('providerDialect.headers.hint')}{' '}
+              {t('providerDialect.headers.protectedList', {
+                names: PROTECTED_HEADER_NAMES.join(', '),
+              })}
+              {support.media && <> {t('providerDialect.headers.mediaNote')}</>}
+            </Hint>
             {draft.headers.map((h, i) => (
               <div key={i} className="flex flex-wrap items-start gap-2">
                 <Field

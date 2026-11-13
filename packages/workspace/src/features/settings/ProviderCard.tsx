@@ -23,6 +23,7 @@ import { qk } from '@/data/keys'
 import { errorInfo } from '@/data/errors'
 import { useCall, useProviderCapability, useProviderModels } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
+import { addressSendable, baseUrlCodeOf, useBaseUrlMessage } from './base-url'
 import { CapabilityGrid, PriceTable } from './CapabilityGrid'
 import { capabilitySummary } from './capability-summary'
 import { DialectSettings } from './DialectSettings'
@@ -147,7 +148,9 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
     model !== provider.model ||
     dialectDirty
   // JSON that does not parse can never be saved
-  const valid = label.trim() !== '' && baseUrl.trim() !== '' && model.trim() !== '' && dialectOk
+  const valid =
+    label.trim() !== '' && (login || addressSendable(baseUrl)) && model.trim() !== '' && dialectOk
+  const addressMessage = useBaseUrlMessage(baseUrl, update.error)
   const protocols = PROTOCOLS_BY_KIND[provider.kind]
   // why "test connection" is unavailable; shown as visible text, not only as a tooltip
   const channel = loginChannelOf(provider)
@@ -169,7 +172,7 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
           protocol,
           baseUrl: baseUrl.trim(),
           model: model.trim(),
-          ...(dialectDirty && support ? { dialect: dialectOf(dialect, support) ?? {} } : {}),
+          ...(dialectDirty ? { dialect: dialectOf(dialect, support) ?? {} } : {}),
         },
       })
     } catch {
@@ -214,12 +217,16 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
           className="col-span-full"
           label="Base URL"
           hint={login ? t('providerAuth.loginFixed') : undefined}
+          error={addressMessage}
         >
           <Input
             mono
             value={baseUrl}
             readOnly={login}
-            onChange={(e) => setBaseUrl(e.target.value)}
+            onChange={(e) => {
+              setBaseUrl(e.target.value)
+              update.reset()
+            }}
           />
         </Field>
         <ModelField provider={provider} value={model} onChange={setModel} />
@@ -289,8 +296,8 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
         )}
       </div>
 
-      {support && <DialectSettings draft={dialect} support={support} onChange={setDialect} />}
-      {support && !dialectOk && (
+      <DialectSettings draft={dialect} support={support} onChange={setDialect} />
+      {!dialectOk && (
         <p className="text-sm text-danger" role="alert">
           {t('providerDialect.fixToSave')}
         </p>
@@ -335,7 +342,7 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
         </Hint>
       )}
 
-      {update.isError && <ErrorNotice error={update.error} />}
+      {update.isError && !baseUrlCodeOf(update.error) && <ErrorNotice error={update.error} />}
       {test.isError && <ErrorNotice error={test.error} />}
       {test.data && <TestResult result={test.data} />}
 

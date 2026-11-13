@@ -19,7 +19,12 @@ import {
   parseExtraBody,
 } from '@/features/settings/dialect-model'
 import { LoginPanel } from '@/features/settings/LoginPanel'
-import { ALL_PROTOCOLS, PROTOCOLS_BY_KIND, protocolLabel } from '@/features/settings/protocols'
+import {
+  ALL_PROTOCOLS,
+  PROTOCOLS_BY_KIND,
+  kindOfProtocol,
+  protocolLabel,
+} from '@/features/settings/protocols'
 import { ProvidersPage } from '@/features/settings/ProvidersPage'
 import { PlanUsageNote } from '@/features/common/PlanUsageNote'
 import en from '@/i18n/locales/en'
@@ -179,7 +184,13 @@ describe('dialect model', () => {
     expect(dialectOf({ ...draft, extraBody: '{' }, chat)).toBeUndefined()
     expect(
       dialectOf(
-        { extraBody: '', maxTokensField: 'max_completion_tokens', jsonMode: '', headers: [] },
+        {
+          extraBody: '',
+          maxTokensField: 'max_completion_tokens',
+          jsonMode: '',
+          imageStyle: '',
+          headers: [],
+        },
         chat,
       ),
     ).toEqual({ maxTokensField: 'max_completion_tokens' })
@@ -210,7 +221,19 @@ describe('dialect model', () => {
       jsonMode: false,
       extraHeaders: true,
     })
-    expect(dialectSupport('openai-images')).toBeUndefined()
+    // every other protocol, image, video and speech alike, reads the extra headers only (images also the style)
+    for (const p of ALL_PROTOCOLS.filter((p) => kindOfProtocol(p) !== 'llm')) {
+      const s = dialectSupport(p)
+      expect([p, s.extraHeaders, s.extraBody, s.maxTokensField, s.jsonMode, s.media]).toEqual([
+        p,
+        true,
+        false,
+        false,
+        false,
+        true,
+      ])
+      expect([p, s.imageStyle]).toEqual([p, p === 'openai-images'])
+    }
   })
 
   it('only sends what the protocol reads, and a leftover from another protocol is not a change', () => {
@@ -244,7 +267,13 @@ describe('dialect model', () => {
     const chat = dialectSupport('openai-chat')!
     expect(
       dialectOf(
-        { extraBody: '', maxTokensField: '', jsonMode: '', headers: [{ name: 'x-a', value: '1' }] },
+        {
+          extraBody: '',
+          maxTokensField: '',
+          jsonMode: '',
+          imageStyle: '',
+          headers: [{ name: 'x-a', value: '1' }],
+        },
         chat,
       ),
     ).toEqual({ extraHeaders: { 'x-a': '1' } })
@@ -254,6 +283,7 @@ describe('dialect model', () => {
           extraBody: '',
           maxTokensField: '',
           jsonMode: '',
+          imageStyle: '',
           headers: [{ name: 'Authorization', value: '1' }],
         },
         chat,
@@ -442,11 +472,11 @@ describe('advanced settings (dialect)', () => {
   const save = (server: ReturnType<typeof page>['server']) =>
     server.calls.find((c) => c.method === 'PATCH')?.body
 
-  it('is collapsed by default and only for text providers', async () => {
+  it('is collapsed by default, for every kind of provider', async () => {
     page({
       providers: [
         makeKeyProvider(),
-        makeKeyProvider({ id: 'prov_img', label: 'Img', kind: 'image', protocol: 'openai-images' }),
+        makeKeyProvider({ id: 'prov_img', label: 'Img', kind: 'image', protocol: 'kling-image' }),
       ],
       routes: { 'GET /api/providers/prov_img/capability': () => makeCapabilityView() },
     })
@@ -455,7 +485,7 @@ describe('advanced settings (dialect)', () => {
     expect(details.open).toBe(false)
     const img = await screen.findByRole('article', { name: 'Img' })
     await userEvent.click(within(img).getByRole('button', { name: /展开/ }))
-    expect(within(img).queryByText('高级设置')).toBeNull()
+    expect(within(img).getByText('高级设置')).toBeInTheDocument()
   })
 
   it('explains what extra body is for, and invalid JSON can never be saved', async () => {

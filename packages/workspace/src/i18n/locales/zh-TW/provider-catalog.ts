@@ -26,9 +26,23 @@ export default {
     listSeparator: '、',
     fixToSave: '進階設定裡有需要改的地方，改好才能儲存',
     onlyHeaders: '這個協議只讀額外請求頭；額外請求體、輸出長度欄位和 JSON 輸出方式對它不適用',
+    headersAndStyle:
+      '這個協議讀額外請求頭和生圖風格；額外請求體、輸出長度欄位和 JSON 輸出方式對它不適用',
+    imageStyle: {
+      label: '生圖風格',
+      hint: '請求怎麼寫。“自動”會按模型名判斷（帶前綴的名字也認得，比如 openai/gpt-image-1；gpt-image-*、chatgpt-image-* 用 OpenAI 官方寫法，MiniMax 的型號用 MiniMax 寫法，其餘用相容寫法）。',
+      when: '經轉發站使用 gpt-image-* 時，轉發站未必支援帶參考圖用的 multipart /images/edits 介面，這時選“相容”。型號名認不出來、判斷錯了，也在這裡手動選。',
+      auto: '自動（按模型名）',
+      openai: 'OpenAI 官方',
+      compat: '相容（經轉發站時用）',
+      minimax: 'MiniMax',
+    },
     headers: {
       label: '額外請求頭',
-      hint: '每次請求都會帶上這些請求頭，比如 Anthropic 對沒有限定到單個工作區的 Key 要求的 anthropic-workspace-id。Authorization、x-api-key、x-goog-api-key、x-key、api-key、Content-Type 和 anthropic-version 由 dramai 管理，不能覆蓋',
+      hint: '每次請求都會帶上這些請求頭，比如 Anthropic 對沒有限定到單個工作區的 Key 要求的 anthropic-workspace-id。',
+      protectedList: '這些名字由 dramai 管理，不能覆蓋（不分大小寫）：{{names}}。',
+      mediaNote:
+        '圖片、影片、語音服務商：提交和查詢進度的請求會帶上，下載成品檔案的請求不帶（成品地址常在別的主機上）。',
       name: '名稱',
       value: '值',
       add: '加一個請求頭',
@@ -59,6 +73,12 @@ export default {
       auto: '預設（按協議）',
       json_object: '服務商的 JSON 模式（json_object）',
       prompt_only: '僅靠提示詞',
+    },
+  },
+  baseUrl: {
+    error: {
+      noQueryOrFragment: '介面地址不要帶 ? 或 # 後面的部分，路徑會自動拼在後面',
+      placeholders: '地址裡還有沒替換的佔位符：{{names}}。把它們換成你自己的值',
     },
   },
 }

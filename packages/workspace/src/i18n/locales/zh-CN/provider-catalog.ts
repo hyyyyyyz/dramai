@@ -26,9 +26,23 @@ export default {
     listSeparator: '、',
     fixToSave: '高级设置里有需要改的地方，改好才能保存',
     onlyHeaders: '这个协议只读额外请求头；额外请求体、输出长度字段和 JSON 输出方式对它不适用',
+    headersAndStyle:
+      '这个协议读额外请求头和生图风格；额外请求体、输出长度字段和 JSON 输出方式对它不适用',
+    imageStyle: {
+      label: '生图风格',
+      hint: '请求怎么写。“自动”会按模型名判断（带前缀的名字也认得，比如 openai/gpt-image-1；gpt-image-*、chatgpt-image-* 用 OpenAI 官方写法，MiniMax 的型号用 MiniMax 写法，其余用兼容写法）。',
+      when: '经转发站使用 gpt-image-* 时，转发站未必支持带参考图用的 multipart /images/edits 接口，这时选“兼容”。型号名认不出来、判断错了，也在这里手动选。',
+      auto: '自动（按模型名）',
+      openai: 'OpenAI 官方',
+      compat: '兼容（经转发站时用）',
+      minimax: 'MiniMax',
+    },
     headers: {
       label: '额外请求头',
-      hint: '每次请求都会带上这些请求头，比如 Anthropic 对没有限定到单个工作区的 Key 要求的 anthropic-workspace-id。Authorization、x-api-key、x-goog-api-key、x-key、api-key、Content-Type 和 anthropic-version 由 dramai 管理，不能覆盖',
+      hint: '每次请求都会带上这些请求头，比如 Anthropic 对没有限定到单个工作区的 Key 要求的 anthropic-workspace-id。',
+      protectedList: '这些名字由 dramai 管理，不能覆盖（不分大小写）：{{names}}。',
+      mediaNote:
+        '图片、视频、语音服务商：提交和查询进度的请求会带上，下载成品文件的请求不带（成品地址常在别的主机上）。',
       name: '名称',
       value: '值',
       add: '加一个请求头',
@@ -59,6 +73,12 @@ export default {
       auto: '默认（按协议）',
       json_object: '服务商的 JSON 模式（json_object）',
       prompt_only: '仅靠提示词',
+    },
+  },
+  baseUrl: {
+    error: {
+      noQueryOrFragment: '接口地址不要带 ? 或 # 后面的部分，路径会自动拼在后面',
+      placeholders: '地址里还有没替换的占位符：{{names}}。把它们换成你自己的值',
     },
   },
 }

@@ -7,6 +7,7 @@ import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
+import { addressSendable, baseUrlCodeOf, useBaseUrlMessage } from './base-url'
 import { PROTOCOLS_BY_KIND, protocolLabel, type ProtocolId, type ProviderKind } from './protocols'
 import { PresetCatalog } from './PresetCatalog'
 
@@ -64,7 +65,8 @@ function CustomProviderDialog({
   const [model, setModel] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [auth, setAuth] = useState<'api_key' | 'none'>('api_key')
-  const valid = label.trim() && baseUrl.trim() && model.trim()
+  const valid = label.trim() && addressSendable(baseUrl) && model.trim()
+  const addressMessage = useBaseUrlMessage(baseUrl, create.error)
   const submit = async () => {
     if (!valid) return
     try {
@@ -121,11 +123,14 @@ function CustomProviderDialog({
             ))}
           </Select>
         </Field>
-        <Field label="Base URL" required>
+        <Field label="Base URL" required error={addressMessage}>
           <Input
             mono
             value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
+            onChange={(e) => {
+              setBaseUrl(e.target.value)
+              create.reset()
+            }}
             placeholder="https://api.example.com/v1"
           />
         </Field>
@@ -157,7 +162,8 @@ function CustomProviderDialog({
         ) : (
           <Hint>{t('providerAuth.custom.noneHint')}</Hint>
         )}
-        {create.isError && <ErrorNotice error={create.error} />}
+        {/* an address problem is shown on the address input instead */}
+        {create.isError && !baseUrlCodeOf(create.error) && <ErrorNotice error={create.error} />}
       </div>
     </Modal>
   )

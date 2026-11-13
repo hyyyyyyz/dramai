@@ -1,61 +1,64 @@
 import type { ProviderDialectDto } from '@dramai/api'
-import type { ProtocolId } from './protocols'
+import { kindOfProtocol, type ProtocolId } from './protocols'
 
 export type MaxTokensField = NonNullable<ProviderDialectDto['maxTokensField']>
 export type JsonMode = NonNullable<ProviderDialectDto['jsonMode']>
 
 /**
  * Which dialect options a protocol's request builder actually reads (packages/core/src/providers/protocols/*):
- * - openai-chat: extra body (not model, messages, stream), output length field, JSON mode, extra headers;
- * - anthropic-messages: extra body (not model, messages, stream) and extra headers;
- * - gemini-chat: extra body (not contents) and extra headers;
- * - openai-responses: extra headers only.
- * Other protocols read none of them, so they get no advanced settings.
+ * - openai-chat: extra body (not model, messages, stream), output length field, JSON mode;
+ * - anthropic-messages: extra body (not model, messages, stream);
+ * - gemini-chat: extra body (not contents);
+ * - openai-images: the image style;
+ * - every protocol, text and media alike: extra request headers. The server merges them in one place for submit and
+ *   poll requests (and for test connection and model lists); the request that downloads a finished file never carries
+ *   them, because the result is often on another host.
  */
 export interface DialectSupport {
   extraBody: boolean
   maxTokensField: boolean
   jsonMode: boolean
+  imageStyle: boolean
   extraHeaders: boolean
+  /** True for image, video and speech protocols: headers go with submit and poll, not with the download. */
+  media: boolean
   /** Body fields the extra body can never override. */
   protectedBody: readonly string[]
 }
 
 const CHAT_BODY = ['model', 'messages', 'stream'] as const
 
+const HEADERS_ONLY: DialectSupport = {
+  extraBody: false,
+  maxTokensField: false,
+  jsonMode: false,
+  imageStyle: false,
+  extraHeaders: true,
+  media: false,
+  protectedBody: [],
+}
+
 const SUPPORT: Partial<Record<ProtocolId, DialectSupport>> = {
   'openai-chat': {
+    ...HEADERS_ONLY,
     extraBody: true,
     maxTokensField: true,
     jsonMode: true,
-    extraHeaders: true,
     protectedBody: CHAT_BODY,
   },
-  'anthropic-messages': {
-    extraBody: true,
-    maxTokensField: false,
-    jsonMode: false,
-    extraHeaders: true,
-    protectedBody: CHAT_BODY,
-  },
-  'gemini-chat': {
-    extraBody: true,
-    maxTokensField: false,
-    jsonMode: false,
-    extraHeaders: true,
-    protectedBody: ['contents'],
-  },
-  'openai-responses': {
-    extraBody: false,
-    maxTokensField: false,
-    jsonMode: false,
-    extraHeaders: true,
-    protectedBody: [],
-  },
+  'anthropic-messages': { ...HEADERS_ONLY, extraBody: true, protectedBody: CHAT_BODY },
+  'gemini-chat': { ...HEADERS_ONLY, extraBody: true, protectedBody: ['contents'] },
+  'openai-responses': HEADERS_ONLY,
+  'openai-images': { ...HEADERS_ONLY, imageStyle: true, media: true },
 }
 
-export const dialectSupport = (protocol: ProtocolId): DialectSupport | undefined =>
-  SUPPORT[protocol]
+/** Every protocol has advanced settings: at least the extra request headers. */
+export const dialectSupport = (protocol: ProtocolId): DialectSupport =>
+  SUPPORT[protocol] ?? { ...HEADERS_ONLY, media: kindOfProtocol(protocol) !== 'llm' }
+
+export type ImageStyle = NonNullable<ProviderDialectDto['imageStyle']>
+/** The styles a person can pick; "auto" is the empty choice (nothing is saved). */
+export const IMAGE_STYLES = ['openai', 'compat', 'minimax'] as const
 
 export type ExtraBodyParse =
   | { ok: true; value: Record<string, unknown> | undefined }
@@ -86,16 +89,29 @@ export interface HeaderRow {
   value: string
 }
 
-/** Header names the server manages and silently ignores overrides of (case-insensitive). */
-export const PROTECTED_HEADERS = new Set([
+/**
+ * Header names the server manages and silently ignores overrides of (case-insensitive). This is a copy of
+ * `PROTECTED_HEADERS` in packages/core/src/util/merge.ts (the workspace cannot import the server's package);
+ * a test compares the two so they cannot drift apart unnoticed.
+ */
+export const PROTECTED_HEADERS: ReadonlySet<string> = new Set([
   'authorization',
+  'proxy-authorization',
+  'cookie',
   'x-api-key',
   'x-goog-api-key',
   'x-key',
   'api-key',
   'content-type',
+  'content-length',
+  'transfer-encoding',
+  'connection',
+  'host',
   'anthropic-version',
 ])
+
+/** The protected names as shown to the user. */
+export const PROTECTED_HEADER_NAMES: readonly string[] = [...PROTECTED_HEADERS]
 
 export type HeaderProblem = {
   index: number
@@ -124,6 +140,8 @@ export interface DialectDraft {
   extraBody: string
   maxTokensField: MaxTokensField | ''
   jsonMode: JsonMode | ''
+  /** '' = automatic (nothing saved). */
+  imageStyle: ImageStyle | ''
   headers: HeaderRow[]
 }
 
@@ -131,12 +149,12 @@ export const draftOf = (d?: ProviderDialectDto): DialectDraft => ({
   extraBody: formatExtraBody(d),
   maxTokensField: d?.maxTokensField ?? '',
   jsonMode: d?.jsonMode ?? '',
+  imageStyle: d?.imageStyle && d.imageStyle !== 'auto' ? d.imageStyle : '',
   headers: Object.entries(d?.extraHeaders ?? {}).map(([name, value]) => ({ name, value })),
 })
 
 /** Can this draft be saved? JSON and header rows that are wrong block saving (only for what the protocol reads). */
-export function draftValid(draft: DialectDraft, support: DialectSupport | undefined): boolean {
-  if (!support) return true
+export function draftValid(draft: DialectDraft, support: DialectSupport): boolean {
   if (support.extraBody && !parseExtraBody(draft.extraBody).ok) return false
   if (support.extraHeaders && headerProblems(draft.headers).length > 0) return false
   return true
@@ -148,9 +166,9 @@ export function draftValid(draft: DialectDraft, support: DialectSupport | undefi
  */
 export function dialectOf(
   draft: DialectDraft,
-  support: DialectSupport | undefined,
+  support: DialectSupport,
 ): ProviderDialectDto | undefined {
-  if (!support || !draftValid(draft, support)) return undefined
+  if (!draftValid(draft, support)) return undefined
   const body = support.extraBody ? parseExtraBody(draft.extraBody) : undefined
   const headers = support.extraHeaders
     ? Object.fromEntries(
@@ -163,6 +181,7 @@ export function dialectOf(
       ? { maxTokensField: draft.maxTokensField }
       : {}),
     ...(support.jsonMode && draft.jsonMode ? { jsonMode: draft.jsonMode } : {}),
+    ...(support.imageStyle && draft.imageStyle ? { imageStyle: draft.imageStyle } : {}),
     ...(Object.keys(headers).length > 0 ? { extraHeaders: headers } : {}),
   }
 }
@@ -175,6 +194,9 @@ function relevant(d: ProviderDialectDto | undefined, s: DialectSupport): Provide
       : {}),
     ...(s.maxTokensField && d?.maxTokensField ? { maxTokensField: d.maxTokensField } : {}),
     ...(s.jsonMode && d?.jsonMode ? { jsonMode: d.jsonMode } : {}),
+    ...(s.imageStyle && d?.imageStyle && d.imageStyle !== 'auto'
+      ? { imageStyle: d.imageStyle }
+      : {}),
     ...(s.extraHeaders && d?.extraHeaders && Object.keys(d.extraHeaders).length
       ? { extraHeaders: d.extraHeaders }
       : {}),
@@ -185,9 +207,8 @@ function relevant(d: ProviderDialectDto | undefined, s: DialectSupport): Provide
 export function dialectChanged(
   draft: DialectDraft,
   saved: ProviderDialectDto | undefined,
-  support: DialectSupport | undefined,
+  support: DialectSupport,
 ): boolean {
-  if (!support) return false
   const now = dialectOf(draft, support)
   if (!now) return true // unparsable input is a change (it is shown as an error and blocks saving)
   return JSON.stringify(sorted(now)) !== JSON.stringify(sorted(relevant(saved, support)))

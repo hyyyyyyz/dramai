@@ -130,7 +130,18 @@ export function CapabilityGrid({ capability: c }: { capability: Capability }) {
       </Cap>,
     )
   }
-  void fmt
+  // The lowest total number of pixels the model accepts (only shown when known). A smaller size is scaled up by
+  // dramai before the request, so the user understands why an output can be larger than the size they chose.
+  if (c.minPixels !== undefined) {
+    rows.push(
+      <Cap key="minPixels" label={t('capability.minPixels')}>
+        <CapabilityValue support="supported">
+          {t('capability.pixels', { n: fmt.number(c.minPixels) })}
+        </CapabilityValue>
+        <span className="block text-xs text-subtle">{t('capability.minPixelsHint')}</span>
+      </Cap>,
+    )
+  }
   return <div className="grid grid-cols-2 gap-2 max-[640px]:grid-cols-1">{rows}</div>
 }
 

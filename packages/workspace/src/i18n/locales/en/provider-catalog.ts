@@ -29,9 +29,24 @@ export default {
     fixToSave: 'Something in the advanced settings needs fixing before you can save',
     onlyHeaders:
       'This protocol only reads extra headers; the extra body, output length field and JSON output mode don’t apply to it',
+    headersAndStyle:
+      'This protocol reads the extra headers and the image style; the extra body, output length field and JSON output mode don’t apply to it',
+    imageStyle: {
+      label: 'Image style',
+      hint: 'How the request is written. “Automatic” decides by the model name (a prefixed name such as openai/gpt-image-1 is recognised too: gpt-image-* and chatgpt-image-* use OpenAI’s own style, MiniMax models use MiniMax’s, everything else the compatible one).',
+      when: 'When you use gpt-image-* through a relay, the relay may not support the multipart /images/edits endpoint that reference images need; choose “Compatible” then. Choose by hand too when the model name isn’t recognised and the guess is wrong.',
+      auto: 'Automatic (by model name)',
+      openai: 'OpenAI’s own',
+      compat: 'Compatible (through a relay)',
+      minimax: 'MiniMax',
+    },
     headers: {
       label: 'Extra request headers',
-      hint: 'Sent with every request, for example the anthropic-workspace-id header Anthropic asks for with a key that isn’t limited to one workspace. Authorization, x-api-key, x-goog-api-key, x-key, api-key, Content-Type and anthropic-version are managed by dramai and can’t be overridden',
+      hint: 'Sent with every request, for example the anthropic-workspace-id header Anthropic asks for with a key that isn’t limited to one workspace.',
+      protectedList:
+        'These names are managed by dramai and can’t be overridden (case-insensitive): {{names}}.',
+      mediaNote:
+        'For image, video and speech providers they go with the submit and progress requests, not with the download of the finished file (the result is often on another host).',
       name: 'Name',
       value: 'Value',
       add: 'Add a header',
@@ -63,6 +78,14 @@ export default {
       auto: 'Default (by protocol)',
       json_object: 'The provider’s JSON mode (json_object)',
       prompt_only: 'Prompt only',
+    },
+  },
+  baseUrl: {
+    error: {
+      noQueryOrFragment:
+        'Leave out everything from ? or # onwards in the address; the path is added after it automatically',
+      placeholders:
+        'The address still has placeholders that haven’t been replaced: {{names}}. Replace them with your own values',
     },
   },
 }

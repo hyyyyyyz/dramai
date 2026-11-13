@@ -263,6 +263,10 @@ export default {
     resolutions: 'Resolution',
     resolutionNone: 'Not selectable',
     aspectRatios: 'Aspect ratios',
+    minPixels: 'Minimum pixels',
+    minPixelsHint:
+      'A size below this many pixels is scaled up proportionally before the request is sent',
+    pixels: '{{n}} pixels',
     unit: {
       per_image: 'Per image',
       per_second: 'Per second',

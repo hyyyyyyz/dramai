@@ -52,8 +52,9 @@ export default {
   MODEL_LIST_UNSUPPORTED: '這個服務商沒有模型清單，請手動填寫模型名稱',
   BASE_URL_PLACEHOLDER_UNFILLED: '位址裡還有沒替換的佔位符，把它們都填上再新增',
   BASE_URL_INVALID:
-    '介面位址不合法：要是 http 或 https 網址，不能帶使用者名稱密碼或空白（Key 請填在 API Key 裡）',
-  BASE_URL_INSECURE: '公網位址請用 https（本機或區域網路的服務可以用 http）',
+    '介面位址不合法：要是 http 或 https 網址，不能帶 ? 或 # 後面的部分，不能帶使用者名稱密碼或空白（Key 請填在 API Key 裡）',
+  BASE_URL_INSECURE:
+    '公網位址請用 https（本機或區域網路的服務可以用 http；169.254.x.x 這類連結本地（link-local）位址不能用 http）',
   BASE_URL_NOT_OVERRIDABLE: '帳號登入的介面位址是固定的，不能修改',
   NO_LLM_PROVIDER: '還沒有選中可用的大模型服務商，請先到設定裡配置',
   FFMPEG_MISSING: '沒有找到 ffmpeg，請先安裝',
