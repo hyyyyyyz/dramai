@@ -1,0 +1,44 @@
+---
+import type { Content } from '../content/types.ts'
+import { rich } from '../lib/rich.ts'
+
+interface Props {
+  c: Content
+}
+const { c } = Astro.props
+const e = c.editions
+---
+
+<section class="sec panel" id="editions" aria-labelledby="editions-title">
+  <div class="c">
+    <div class="sec-head">
+      <h2 id="editions-title">{e.title}</h2>
+      <p>{e.lead}</p>
+    </div>
+
+    <table class="cmp">
+      <thead>
+        <tr>
+          <td></td>
+          <th scope="col">
+            <span class="cmp-name">{e.desktop.name}</span>
+            <span class="cmp-blurb">{e.desktop.blurb}</span>
+          </th>
+          <th scope="col">
+            <span class="cmp-name">{e.webui.name}</span>
+            <span class="cmp-blurb">{e.webui.blurb}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {e.rows.map((r) => (
+          <tr>
+            <th scope="row">{r.label}</th>
+            <td data-label={e.desktop.name} set:html={rich(r.desktop)} />
+            <td data-label={e.webui.name} set:html={rich(r.webui)} />
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>

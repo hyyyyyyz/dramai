@@ -1,0 +1,57 @@
+---
+import type { Content, Locale } from '../content/types.ts'
+import Icon from './Icon.astro'
+import Shot from './Shot.astro'
+
+interface Props {
+  c: Content
+  locale: Locale
+}
+const { c, locale } = Astro.props
+const h = c.hero
+---
+
+<section class="hero">
+  <div class="c">
+    <div class="hero-top">
+      <h1>
+        {h.title.map((line) => (
+          <span>{line} </span>
+        ))}
+      </h1>
+      <div>
+        <p class="lead">{h.lead}</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="#desktop">
+            <Icon name="monitor" />
+            {h.primary}
+          </a>
+          <a class="btn btn-secondary" href="#webui">
+            <Icon name="terminal" />
+            {h.secondary}
+          </a>
+        </div>
+        <p class="hero-status">
+          <span class="tag">{h.statusPrefix}</span>
+          <span>
+            {h.status} <a href="#status">{h.statusLink}</a>
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <figure class="hero-shot">
+      <div class="crop">
+        <div class="frame">
+          <Shot
+            locale={locale}
+            shot="storyboard"
+            alt={h.shotAlt}
+            sizes="(min-width: 1168px) 1072px, calc(100vw - 32px)"
+          />
+        </div>
+      </div>
+      <figcaption class="fig-note">{h.shotCaption}</figcaption>
+    </figure>
+  </div>
+</section>

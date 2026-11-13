@@ -1,0 +1,73 @@
+---
+import type { Content, Locale } from '../content/types.ts'
+import { url } from '../content/site.ts'
+
+interface Props {
+  c: Content
+  locale: Locale
+}
+const { c, locale } = Astro.props
+const f = c.footer
+const home = url(locale === 'zh' ? '' : 'en/')
+---
+
+<footer class="foot">
+  <div class="c">
+    <div class="cols">
+      <div>
+        <a class="brand" href={home} aria-label={c.header.homeLabel}>
+          <svg class="wm" aria-hidden="true" focusable="false" width="113" height="28">
+            <use href="#i-wordmark" />
+          </svg>
+        </a>
+        <p>{f.tagline}</p>
+      </div>
+      <div>
+        <h2>{f.project}</h2>
+        <ul>
+          {f.links.project.map((l) => (
+            <li>
+              <a href={l.href}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h2>{f.participate}</h2>
+        <ul>
+          {f.links.participate.map((l) => (
+            <li>
+              <a href={l.href}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h2>{f.language}</h2>
+        <ul>
+          <li>
+            <a
+              href={url('')}
+              hreflang="zh-CN"
+              lang="zh-CN"
+              aria-current={locale === 'zh' ? 'page' : undefined}
+            >
+              简体中文
+            </a>
+          </li>
+          <li>
+            <a
+              href={url('en/')}
+              hreflang="en"
+              lang="en"
+              aria-current={locale === 'en' ? 'page' : undefined}
+            >
+              English
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <p class="legal">{f.legal}</p>
+  </div>
+</footer>
