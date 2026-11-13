@@ -187,6 +187,8 @@ function snapshot(s: State): State {
     'shots',
     'assets',
     'candidates',
+    'materials',
+    'timelines',
     'jobs',
   ] as const) {
     ;(t[k].rows as Map<string, unknown>) = new Map([...s[k].rows].map(([id, v]) => [id, clone(v)]))

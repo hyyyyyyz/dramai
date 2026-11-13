@@ -41,7 +41,7 @@ import { snapDuration } from '../providers/duration.ts'
 import { getMediaProtocol } from '../providers/protocols/index.ts'
 import { frameRequiredProblem } from '../providers/video-input.ts'
 import { describeVideoReferences } from '../generation/video-refs.ts'
-import { applyNativeAudioDefaultOnFirstVideo, providerConfigMap } from './native-audio.ts'
+import { applyNativeAudioDefaultAfterSave } from './native-audio.ts'
 import type {
   BinaryImage,
   ImageGenInput,
@@ -877,8 +877,9 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   const record = buildArtifact(deps, projection, expectation, stored, facts)
   stored.version.basisDigest = record?.basisDigest
   let adopted = true
-  let timelineTouched: { episodeId: string } | undefined
-  const configs = await providerConfigMap(deps)
+  let shotBefore: Shot | undefined
+  // 保存视频的事务里只做保存视频必须做的事：登记产物、写入新版本。已经付费生成并下载完成的视频，
+  // 不能因为任何附带的便利操作（自动静音、发事件）出问题而丢掉，所以那些都放在这个事务提交之后。
   await deps.store.transaction(async (tx) => {
     const s = await tx.shots.get(shotId)
     if (!s) throw gone('镜头')
@@ -889,25 +890,20 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
       video: appendVersion(s.video, stored.version, { makeCurrent: adopted }),
       updatedAt: deps.clock.now(),
     })
-    // 这个镜头第一次拿到生成的视频：时间线上已经有它的片段的话，按同样的三个条件定下默认音量
-    // （先建时间线、后生成视频，和先生成视频、后建时间线，结果一致；用户调过的不改）
-    if (adopted) {
-      timelineTouched = await applyNativeAudioDefaultOnFirstVideo(tx, deps, {
-        shotBefore: s,
-        version: stored.version,
-        configs,
-      })
-    }
+    shotBefore = s
   })
+  // 以下都是“附带操作”：失败不影响视频任务的结果（视频已经保存，任务仍然成功）。
   if (record && adopted) {
-    deps.events?.emit({ type: 'artifact.changed', projectId: record.projectId, key: record.key })
+    try {
+      deps.events?.emit({ type: 'artifact.changed', projectId: record.projectId, key: record.key })
+    } catch {
+      // 事件只是通知界面；没发出去，界面下次刷新也能看到
+    }
   }
-  if (timelineTouched) {
-    deps.events?.emit({
-      type: 'timeline.changed',
-      projectId: project.id,
-      episodeId: timelineTouched.episodeId,
-    })
+  // 这个镜头第一次拿到生成的视频：时间线上已经有它的片段的话，按同样的三个条件定下默认音量
+  // （先建时间线、后生成视频，和先生成视频、后建时间线，结果一致；用户调过的不改）。自己一个事务，自己兜底。
+  if (adopted && shotBefore) {
+    await applyNativeAudioDefaultAfterSave(deps, { shotBefore, version: stored.version })
   }
   return {
     result: {

@@ -65,75 +65,89 @@ export const bgmPath = (bgmId: string) => `audio/bgm/${bgmId}`
 
 export { nativeAudioDefaultVolume } from './native-audio.ts'
 
-/** 取得（或按镜头顺序创建）一集的时间线。 */
+/**
+ * 取得（或按镜头顺序创建）一集的时间线。
+ *
+ * 创建是一个事务：读镜头、算每个片段的默认音量、写入时间线是原子的，和视频任务保存新版本的事务互斥。
+ * 否则一个关不掉原声的视频（可灵）刚好在“读镜头”和“写时间线”之间保存的话，这个镜头既赶不上“创建片段时按当时的视频算默认值”，
+ * 又因为那一刻还没有时间线而被“第一次拿到视频”的钩子跳过，自动静音就丢了。现在两种先后都不会漏：
+ * 时间线先建好 → 视频保存后的静音步骤看得到它；视频先保存 → 建时间线时就按这个视频算出 0。
+ */
 export async function ensureTimeline(
   deps: PipelineDeps,
   episodeId: string,
 ): Promise<TimelineDocument> {
   const episode = await deps.store.episodes.get(episodeId)
   if (!episode) throw notFoundError('episode', episodeId)
-  const existing = (await deps.store.timelines.listByProject(episode.projectId)).find(
-    (t) => t.episodeId === episodeId,
-  )
+  const find = async (store: PipelineDeps['store']) =>
+    (await store.timelines.listByProject(episode.projectId)).find((t) => t.episodeId === episodeId)
+  const existing = await find(deps.store)
   if (existing) return existing
-  const project = (await deps.store.projects.get(episode.projectId))!
-  const shots = await episodeShots(deps.store, episodeId)
   const configs = await providerConfigMap(deps)
-  const init = buildInitialContent(shots, project.narrationDelivery, 1, (s) =>
-    nativeAudioDefaultVolume(s, deps.catalog.models, configs),
-  )
-  const doc = createTimeline({
-    id: deps.ids.next('tl'),
-    projectId: project.id,
-    episodeId,
-    name: episode.title,
-    content: init.content,
-    nextClipNumber: init.nextClipNumber,
-    author: { kind: 'creator' },
-    now: deps.clock.now(),
+  return deps.store.transaction(async (tx) => {
+    const again = await find(tx) // 等锁期间别人可能已经建好了
+    if (again) return again
+    const project = (await tx.projects.get(episode.projectId))!
+    const shots = await episodeShots(tx, episodeId)
+    const init = buildInitialContent(shots, project.narrationDelivery, 1, (s) =>
+      nativeAudioDefaultVolume(s, deps.catalog.models, configs),
+    )
+    const doc = createTimeline({
+      id: deps.ids.next('tl'),
+      projectId: project.id,
+      episodeId,
+      name: episode.title,
+      content: init.content,
+      nextClipNumber: init.nextClipNumber,
+      author: { kind: 'creator' },
+      now: deps.clock.now(),
+    })
+    await tx.timelines.put(doc)
+    return doc
   })
-  await deps.store.timelines.put(doc)
-  return doc
 }
 
 /**
  * 镜头新增 / 删除 / 重排后，把时间线同步成当前的镜头顺序：已有片段保留（含截取、音量等设置），
  * 新镜头追加初始片段，已删除镜头的片段去掉。变了才追加一个修订。
+ * 和创建一样是一个事务：读镜头、算新片段的默认音量、写回是原子的（理由见 `ensureTimeline`）。
  */
 export async function syncTimelineWithShots(
   deps: PipelineDeps,
   episodeId: string,
 ): Promise<TimelineDocument> {
-  const doc = await ensureTimeline(deps, episodeId)
-  const episode = (await deps.store.episodes.get(episodeId))!
-  const project = (await deps.store.projects.get(episode.projectId))!
-  const shots = await episodeShots(deps.store, episodeId)
-  const head = headRevision(doc)
   const configs = await providerConfigMap(deps)
-  const have = new Map(head.content.clips.map((c) => [c.shotId, c]))
-  let next = doc.nextClipNumber
-  const fresh = buildInitialContent(
-    shots.filter((s) => !have.has(s.id)),
-    project.narrationDelivery,
-    next,
-    (s) => nativeAudioDefaultVolume(s, deps.catalog.models, configs),
-  )
-  const freshById = new Map(fresh.content.clips.map((c) => [c.shotId, c]))
-  next = fresh.nextClipNumber
-  const clips = shots.map((s) => have.get(s.id) ?? freshById.get(s.id)!)
-  const same =
-    clips.length === head.content.clips.length &&
-    clips.every((c, i) => c.id === head.content.clips[i].id)
-  if (same) return doc
-  const updated = appendRevision(doc, {
-    content: { ...head.content, clips },
-    summary: '同步镜头顺序',
-    author: { kind: 'creator' },
-    now: deps.clock.now(),
-    nextClipNumber: next,
+  return deps.store.transaction(async (tx) => {
+    const doc = await ensureTimeline(deps, episodeId)
+    const episode = (await tx.episodes.get(episodeId))!
+    const project = (await tx.projects.get(episode.projectId))!
+    const shots = await episodeShots(tx, episodeId)
+    const head = headRevision(doc)
+    const have = new Map(head.content.clips.map((c) => [c.shotId, c]))
+    let next = doc.nextClipNumber
+    const fresh = buildInitialContent(
+      shots.filter((s) => !have.has(s.id)),
+      project.narrationDelivery,
+      next,
+      (s) => nativeAudioDefaultVolume(s, deps.catalog.models, configs),
+    )
+    const freshById = new Map(fresh.content.clips.map((c) => [c.shotId, c]))
+    next = fresh.nextClipNumber
+    const clips = shots.map((s) => have.get(s.id) ?? freshById.get(s.id)!)
+    const same =
+      clips.length === head.content.clips.length &&
+      clips.every((c, i) => c.id === head.content.clips[i].id)
+    if (same) return doc
+    const updated = appendRevision(doc, {
+      content: { ...head.content, clips },
+      summary: '同步镜头顺序',
+      author: { kind: 'creator' },
+      now: deps.clock.now(),
+      nextClipNumber: next,
+    })
+    await tx.timelines.put(updated)
+    return updated
   })
-  await deps.store.timelines.put(updated)
-  return updated
 }
 
 const CHARS_PER_SEC = 4.5

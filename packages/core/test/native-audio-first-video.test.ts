@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { evaluateTarget } from '../src/admission/index.ts'
 import type { AdmissionContext, AdmissionTarget } from '../src/admission/index.ts'
@@ -6,7 +7,11 @@ import type { Episode, Shot } from '../src/domain/index.ts'
 import { loadProjection } from '../src/generation/projection.ts'
 import { ensureTimeline, syncTimelineWithShots } from '../src/pipeline/compose.ts'
 import { episodeShots } from '../src/pipeline/entities.ts'
-import { nativeAudioDefaultVolume, providerConfigMap } from '../src/pipeline/native-audio.ts'
+import {
+  applyNativeAudioDefaultAfterSave,
+  nativeAudioDefaultVolume,
+  providerConfigMap,
+} from '../src/pipeline/native-audio.ts'
 import { requestGeneration } from '../src/pipeline/request.ts'
 import type { ProviderConfig } from '../src/providers/types.ts'
 import { appendRevision, headRevision, updateClip } from '../src/timeline/index.ts'
@@ -336,6 +341,198 @@ describe('follow-up 2: one capability source for the warning and the default', (
       expect(await defaultFor(WAN)).toBeUndefined()
       expect(await warns(cannot)).toContain('AUDIO_NOT_DISABLEABLE')
       expect(await defaultFor(cannot)).toBe(0)
+    },
+  )
+})
+
+describe('exec 25: the automatic mute must never cost a paid-for video', () => {
+  const narrationShot = (w: { shots: Shot[] }) =>
+    w.shots.find((s) => !s.dialogue.some((d) => d.text.trim()) && s.narration)!
+
+  real(
+    'a timeline with a broken old revision: the Kling job succeeds, the version is saved, nothing half-written is left behind',
+    async () => {
+      const w = await setup()
+      const narr = narrationShot(w)
+      const doc = await ensureTimeline(w.env.deps, w.ep.id)
+      // the reviewer's reproduction: an old revision whose content is null
+      // keep the head readable for the clip lookup, break only an OLD revision
+      const head = headRevision(doc)
+      const withTwo = appendRevision(doc, {
+        content: head.content,
+        summary: 'user',
+        author: { kind: 'creator' },
+        now: 5,
+      })
+      const corrupt = {
+        ...withTwo,
+        revisions: withTwo.revisions.map((r, i) =>
+          i === 0 ? { ...r, content: null as never } : r,
+        ),
+      }
+      await w.env.deps.store.timelines.put(corrupt)
+      w.env.ports.events.events.length = 0
+
+      const jobs = await gen(w.env, KLING, [narr.id])
+      const job = jobs.filter((j) => j.operation === 'shot_video').at(-1)!
+      expect(job.status).toBe('succeeded')
+      expect(job.error).toBeUndefined()
+      expect(job.result).not.toHaveProperty('error')
+
+      const shot = (await w.env.deps.store.shots.get(narr.id))!
+      const v = currentVersion(shot.video)!
+      expect(v.source).toBe('generated')
+      expect(v.provider!.protocol).toBe('kling-contents')
+      expect(await w.env.ports.files.exists(w.env.projectId, v.file.path)).toBe(true)
+      // the artifact record was registered with the version (it is part of saving a video)
+      const arts = await w.env.deps.store.artifacts.listByProject(w.env.projectId)
+      expect(arts.some((a) => a.key === `shot_video:${narr.id}`)).toBe(true)
+
+      // no auto mute happened and nothing half-written: the stored timeline is exactly what it was
+      const after = (await w.env.deps.store.timelines.listByProject(w.env.projectId)).find(
+        (t) => t.episodeId === w.ep.id,
+      )!
+      expect(after).toEqual(corrupt)
+      expect(w.env.ports.events.ofType('timeline.changed')).toEqual([])
+      // one short notice without any content (only the error type)
+      const notes = w.env.ports.events.ofType('job.worker_error')
+      expect(notes).toHaveLength(1)
+      expect(notes[0]!.message).toContain('视频已保存')
+      expect(notes[0]!.message).not.toContain('content')
+      expect(notes[0]!.message).not.toContain('clips')
+    },
+  )
+
+  real(
+    'the provider directory failing after the video was made does not lose the video either',
+    async () => {
+      const w = await setup()
+      const narr = narrationShot(w)
+      await ensureTimeline(w.env.deps, w.ep.id)
+      const realList = w.env.deps.providers.list
+      let armed = false
+      // the job reads the directory with get() (not list()); only the post-save mute step lists them
+      w.env.deps.providers = {
+        get: w.env.deps.providers.get,
+        list: async () => {
+          if (armed) throw new Error('directory unavailable')
+          return realList()
+        },
+      }
+      armed = true
+      const jobs = await gen(w.env, KLING, [narr.id])
+      const job = jobs.filter((j) => j.operation === 'shot_video').at(-1)!
+      expect(job.status).toBe('succeeded')
+      expect(currentVersion((await w.env.deps.store.shots.get(narr.id))!.video)).toBeTruthy()
+      expect(w.env.ports.events.ofType('job.worker_error').length).toBe(1)
+    },
+  )
+
+  real(
+    'a normal run is unchanged: the mute is its own revision after the version is saved, and the event follows it',
+    async () => {
+      const w = await setup()
+      const narr = narrationShot(w)
+      const before = await ensureTimeline(w.env.deps, w.ep.id)
+      w.env.ports.events.events.length = 0
+      await gen(w.env, KLING, [narr.id])
+      const after = await ensureTimeline(w.env.deps, w.ep.id)
+      expect(after.revisions.length).toBe(before.revisions.length + 1)
+      const auto = after.revisions.at(-1)!
+      expect(auto.reason).toBe('native_audio_default')
+      expect(auto.changedClipIds!.length).toBeGreaterThan(0)
+      const types = w.env.ports.events.events.map((e) => e.type)
+      expect(types.lastIndexOf('timeline.changed')).toBeGreaterThan(
+        types.indexOf('artifact.changed'),
+      )
+      expect(w.env.ports.events.ofType('job.worker_error')).toEqual([])
+    },
+  )
+
+  real(
+    "the first-timeline race in the reviewer's order: the video lands while the timeline is being created - the mute is not lost",
+    async () => {
+      const w = await setup()
+      const narr = narrationShot(w)
+      const base = w.env.deps.store
+      // a store whose transactions exclude each other, like the SQLite store (mutex + BEGIN IMMEDIATE)
+      const als = new AsyncLocalStorage<boolean>()
+      let tail: Promise<unknown> = Promise.resolve()
+      let injected: Promise<void> | undefined
+      let armed = false
+      const store: typeof base = new Proxy(base, {
+        get(t, k) {
+          if (k === 'transaction')
+            return <T>(fn: (tx: typeof base) => Promise<T>): Promise<T> => {
+              if (als.getStore()) return base.transaction(() => fn(store))
+              const run = tail.then(() => als.run(true, () => base.transaction(() => fn(store))))
+              tail = run.catch(() => {})
+              return run
+            }
+          if (k === 'shots')
+            return new Proxy(base.shots, {
+              get(st, sk) {
+                const v = (st as never as Record<string | symbol, unknown>)[sk]
+                if (sk === 'listByProject')
+                  return async (...a: unknown[]) => {
+                    const out = await (v as (...x: unknown[]) => Promise<unknown>).apply(st, a)
+                    // "the shot rows have just been read for the new timeline": now the video is saved
+                    if (armed) {
+                      armed = false
+                      injected = als.exit(() => saveVideoNow())
+                      // the window in which the video can land before the timeline is written: it only closes if the
+                      // video's transactions have to wait for this one
+                      await new Promise((r) => setTimeout(r, 150))
+                    }
+                    return out
+                  }
+                return typeof v === 'function' ? (v as (...x: unknown[]) => unknown).bind(st) : v
+              },
+            })
+          const v = (t as never as Record<string | symbol, unknown>)[k]
+          return typeof v === 'function' ? (v as (...x: unknown[]) => unknown).bind(t) : v
+        },
+      })
+      w.env.deps.store = store
+      const version = {
+        id: 'ver-race',
+        kind: 'video' as const,
+        source: 'generated' as const,
+        createdAt: 1,
+        file: { path: 'videos/race.mp4', mime: 'video/mp4', bytes: 1, sha256: 's' },
+        withNativeAudio: false,
+        provider: {
+          providerConfigId: KLING.id,
+          protocol: KLING.protocol,
+          baseUrl: KLING.baseUrl,
+          model: KLING.model,
+        },
+      }
+      const saveVideoNow = async () => {
+        let shotBefore!: Shot
+        // what doVideoJob does: save the version, then (separately) the mute step
+        await store.transaction(async (tx) => {
+          const s = (await tx.shots.get(narr.id))!
+          shotBefore = s
+          await tx.shots.put({
+            ...s,
+            video: appendVersion(s.video, version, { makeCurrent: true }),
+          })
+        })
+        await applyNativeAudioDefaultAfterSave(w.env.deps, { shotBefore, version })
+      }
+      armed = true
+      const doc = await ensureTimeline(w.env.deps, w.ep.id)
+      await injected
+      expect(injected).toBeDefined()
+      // the timeline was created from the rows read BEFORE the video; the mute then found it and muted the clip
+      const latest = (await store.timelines.listByProject(w.env.projectId)).find(
+        (t) => t.episodeId === w.ep.id,
+      )!
+      const clip = headRevision(latest).content.clips.find((c) => c.shotId === narr.id)!
+      expect(clip.sourceVolume).toBe(0)
+      expect(latest.revisions.map((r) => r.reason)).toEqual([undefined, 'native_audio_default'])
+      expect(doc.revisions).toHaveLength(1)
     },
   )
 })

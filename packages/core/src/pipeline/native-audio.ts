@@ -82,7 +82,8 @@ export function nativeAudioDefaultVolume(
  *   不需要给片段加字段：时间线的修订历史本来就是追加式、完整保留的。
  * 改动是时间线上追加的一个修订（`author: agent`，`changedClipIds` 列出片段，摘要说明原因），用户可以在时间线上调高或回滚；
  * 和用户同时编辑时，服务端的 `baseRevision` 检查会让用户那边得到一次“修订冲突”并刷新，不会丢编辑。
- * 返回改了的片段 id（可能为空）。必须在写入新视频版本的同一个事务里调用。
+ * 返回改了的片段 id（可能为空）。它自己要在一个事务里调用（读时间线、追加修订、写回是一个整体），
+ * 但**不能**和保存视频版本放在同一个事务里：见 `applyNativeAudioDefaultAfterSave`。
  */
 export async function applyNativeAudioDefaultOnFirstVideo(
   tx: Pick<Store, 'timelines' | 'scenes' | 'projects'>,
@@ -130,4 +131,48 @@ export async function applyNativeAudioDefaultOnFirstVideo(
   })
   await tx.timelines.put(next)
   return { episodeId: doc.episodeId, clipIds: [...ids] }
+}
+
+/**
+ * 视频版本已经保存之后，再单独做自动静音。**视频已经生成并下载完成（上游已计费），无论这一步成功与否都必须保存下来**：
+ * 所以这一步不在保存视频的事务里，自己一个事务，出任何错都只发一条不含内容的提示，不抛出，视频任务仍然成功。
+ *
+ * 并发：每个镜头的任务各自在保存之后调用这里；这里的事务**在事务内读时间线、追加修订、写回**，
+ * 事务之间互斥（SQLite 存储是一把互斥锁加 BEGIN IMMEDIATE），所以多个镜头同时完成时修订编号连续、不丢不重——
+ * 靠的是“事务内重读”，不是靠调用顺序。事务内还会确认这个版本仍然是镜头当前的视频（中途被换掉了就不动）。
+ * 和第一次创建时间线（`ensureTimeline` 的建档事务）的先后顺序两种都不会漏：时间线先建，这里看得到它并改；
+ * 视频先保存，建时间线时按当时的视频直接算出 0，这里再看就已经是 0，不会再追加。
+ */
+export async function applyNativeAudioDefaultAfterSave(
+  deps: PipelineDeps,
+  input: { shotBefore: Shot; version: MediaVersion },
+): Promise<void> {
+  try {
+    const { shotBefore, version } = input
+    if (currentVersion(shotBefore.video)) return
+    const configs = await providerConfigMap(deps)
+    if (!isUnwantedUnswitchableAudio(version, deps.catalog.models, configs)) return
+    const touched = await deps.store.transaction(async (tx) => {
+      const now = await tx.shots.get(shotBefore.id)
+      if (!now || currentVersion(now.video)?.id !== version.id) return undefined
+      return applyNativeAudioDefaultOnFirstVideo(tx, deps, { shotBefore, version, configs })
+    })
+    if (touched) {
+      deps.events?.emit({
+        type: 'timeline.changed',
+        projectId: shotBefore.projectId,
+        episodeId: touched.episodeId,
+      })
+    }
+  } catch (err) {
+    // 不含任何内容：只有出错的类型名。视频已经保存；这个片段的音量保持原样，用户可以在时间线上自己调。
+    try {
+      deps.events?.emit({
+        type: 'job.worker_error',
+        message: `时间线默认静音没有完成（视频已保存）：${err instanceof Error ? err.name : 'Error'}`,
+      })
+    } catch {
+      // 连提示都发不出去也不影响视频任务
+    }
+  }
 }
