@@ -21,6 +21,33 @@ export interface ProviderSnapshot {
   model: string
 }
 
+/**
+ * 视频版本生成时用了哪些参考图（只有开启参考图的视频版本才有）。
+ *
+ * 这是**记录**，不参与"是否过期"的判断：视频的依据摘要看不到任务参数，所以用参考图生成的视频，之后换了角色设定图
+ * 不会被标成过期。把这份记录留在版本自己身上，是为了以后补上过期判断时有据可依
+ * （比较这里记下的设定图版本 / 哈希和现在的当前设定图）。
+ */
+export interface UsedReferences {
+  /**
+   * 镜头图怎么处理的：`as_reference` 降为第 1 张参考图（放弃严格首帧）；`with_references` 首帧和参考图同发。
+   */
+  frame: 'as_reference' | 'with_references'
+  /** 按发出的顺序；`frame` 为 `as_reference` 时第一项是镜头图（role `start_frame`）。 */
+  references: Array<{
+    role: 'start_frame' | 'character' | 'prop' | 'location' | 'costume' | 'style'
+    assetId?: string
+    assetName?: string
+    variantName?: string
+    /** 用的是哪个版本的设定图 / 镜头图。 */
+    versionId?: string
+    /** 文件的 sha256。 */
+    sha256?: string
+  }>
+  /** 因超出模型上限被舍弃的参考图张数。 */
+  trimmed: number
+}
+
 export interface MediaVersion {
   id: VersionId
   kind: MediaKind
@@ -34,6 +61,8 @@ export interface MediaVersion {
   facts?: MediaFacts
   /** 记录生成时是否带原声（视频）。时间线预览据此决定静音与否。 */
   withNativeAudio?: boolean
+  /** 视频：开启参考图生成时，用了哪些参考图（见 `UsedReferences`）。 */
+  usedReferences?: UsedReferences
   /** 生成依据摘要（A18）：登记产物时的 basis digest。 */
   basisDigest?: string
 }

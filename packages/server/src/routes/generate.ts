@@ -77,6 +77,7 @@ const admissionItem = (r: Resolved): AdmissionTarget => ({
   target: r.target,
   provider: r.provider!,
   resolution: r.item.resolution,
+  ...(r.item.videoRefs ? { videoRefs: true } : {}),
   sheetLayout: r.item.sheetLayout,
   confirmResubmit: r.item.confirmResubmit,
   confirmUnverified: r.item.confirmUnverified,
@@ -91,6 +92,7 @@ function toVerdict(v: TargetVerdict): Verdict {
     unverified: v.unverified,
     ...(v.blockedBy ? { blockedBy: v.blockedBy } : {}),
     ...(v.estimate ? { estimate: v.estimate } : {}),
+    ...(v.video ? { video: v.video } : {}),
   }
 }
 

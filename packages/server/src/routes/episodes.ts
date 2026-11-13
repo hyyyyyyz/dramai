@@ -260,6 +260,7 @@ export function registerEpisodeRoutes(r: RouteRegistry, ctx: ServerContext): voi
       narration: await pick(body.narration, 'tts', 'narration'),
       textModel: await pick(body.textModel, 'llm', 'textModel'),
       resolution: body.resolution,
+      ...(body.videoRefs ? { videoRefs: true } : {}),
       onlyMissing: body.onlyMissing,
       sheetLayout: body.sheetLayout,
     }

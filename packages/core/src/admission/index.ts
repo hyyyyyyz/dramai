@@ -10,6 +10,7 @@ import {
   estimateCost,
   frameWithRefsMode,
   maxRefImagesOf,
+  videoRefSlots,
 } from '../providers/catalog.ts'
 import type { CostEstimate, ModelRegistry } from '../providers/catalog.ts'
 import { deriveVoiceOwner } from '../domain/voice.ts'
@@ -197,13 +198,7 @@ export async function evaluateTarget(
     ctx.projection,
     item.target,
     wantVideoRefs
-      ? {
-          withReferences: true,
-          maxRefImages:
-            refLimit === undefined || refLimit === 0
-              ? undefined
-              : Math.max(0, refLimit - (frameMode === 'as_reference' ? 1 : 0)),
-        }
+      ? { withReferences: true, maxRefImages: videoRefSlots(cap) }
       : { maxRefImages: refLimit || undefined },
   )
   const usesVideoRefs = wantVideoRefs && inputs.references.length > 0
@@ -558,7 +553,13 @@ export function buildJobForTarget(
       baseUrl: provider.baseUrl,
       model: provider.model,
     },
-    params: { target, resolution: item.resolution, layout: item.sheetLayout },
+    params: {
+      target,
+      resolution: item.resolution,
+      layout: item.sheetLayout,
+      // 只有开启时才写，关闭时任务参数和以前逐字相同
+      ...(item.videoRefs && target.kind === 'shot_video' ? { videoRefs: true } : {}),
+    },
     paid: true,
   }
 }

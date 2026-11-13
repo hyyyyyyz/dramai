@@ -14,6 +14,7 @@ import {
   type MediaVersion,
 } from '../domain/media.ts'
 import type { Shot } from '../domain/shot.ts'
+import type { UsedReferences } from '../domain/media.ts'
 import { artifactKeyOf, blockingGaps, resolveInputs } from '../generation/inputs.ts'
 import type { GenerationTarget, ResolvedInputs, ResolvedReference } from '../generation/inputs.ts'
 import { loadProjection } from '../generation/projection.ts'
@@ -29,7 +30,12 @@ import { resolveOutputSize } from '../media/output-size.ts'
 import { readImageSize } from '../parsers/image-size.ts'
 import { compileImagePrompt, compileVideoPrompt } from '../prompts/compile.ts'
 import { renderMentionsPlain } from '../prompts/mentions.ts'
-import { checkCapability, maxRefImagesOf } from '../providers/catalog.ts'
+import {
+  checkCapability,
+  frameWithRefsMode,
+  maxRefImagesOf,
+  videoRefSlots,
+} from '../providers/catalog.ts'
 import { snapDuration } from '../providers/duration.ts'
 import { getMediaProtocol } from '../providers/protocols/index.ts'
 import type {
@@ -41,6 +47,7 @@ import type {
   ProviderKind,
   SpeechInput,
   VideoGenInput,
+  VideoReference,
 } from '../providers/types.ts'
 import { CAMERA_PHRASE_ZH } from './camera.ts'
 import { authFor } from './deps.ts'
@@ -253,6 +260,7 @@ async function storeVersion(
     config: ProviderConfig
     facts?: MediaFacts
     withNativeAudio?: boolean
+    usedReferences?: UsedReferences
     basisDigest?: string
   },
 ): Promise<Stored> {
@@ -280,6 +288,7 @@ async function storeVersion(
     },
     facts: input.facts,
     withNativeAudio: input.withNativeAudio,
+    ...(input.usedReferences ? { usedReferences: input.usedReferences } : {}),
     basisDigest: input.basisDigest,
   }
   return { version, file }
@@ -685,6 +694,19 @@ export async function runVideoJob(deps: PipelineDeps, ctx: JobContext) {
   }
 }
 
+/** 参考素材的用途（只给提示词绑定和日志用，不发给上游）。 */
+const REFERENCE_PURPOSE: Record<
+  ResolvedReference['role'],
+  NonNullable<VideoReference['purpose']>
+> = {
+  start_frame: 'frame',
+  character: 'character',
+  costume: 'character',
+  location: 'scene',
+  prop: 'prop',
+  style: 'style',
+}
+
 function pickResolution(cap: ModelCapability, requested?: string): string | undefined {
   if (requested && requested !== 'none') return requested
   const list = cap.resolutions.value?.filter((r) => r !== 'none') ?? []
@@ -697,7 +719,21 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   const lookup = deps.catalog.models.lookup(config)
   const cap = lookup.capability
   const projection = await loadProjection(deps.store, ctx.job.projectId)
-  const inputs = resolveInputs(projection, { kind: 'shot_video', shotId })
+  // 开启参考图（任务参数，默认关）：和准入用同一份解析和名额计算。关闭时这里和以前完全一样。
+  const videoRefsOn = ctx.job.params.videoRefs === true
+  if (videoRefsOn && cap.refImages.support === 'unsupported') {
+    throw new JobFailure({
+      category: 'invalid_input',
+      code: 'REFERENCE_NOT_SUPPORTED',
+      message: `${config.model} 不接受参考图，不能开启参考图生成`,
+      recoverable: false,
+    })
+  }
+  const inputs = resolveInputs(
+    projection,
+    { kind: 'shot_video', shotId },
+    videoRefsOn ? { withReferences: true, maxRefImages: videoRefSlots(cap) } : {},
+  )
   guard(inputs)
   const expectation = buildExpectations(projection).get(inputs.key)
   const shot = projection.shots.get(shotId)!
@@ -721,6 +757,13 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   }
   const withAudio = owner === 'native' && cap.nativeAudio !== 'unsupported'
 
+  const useRefs = videoRefsOn && inputs.references.length > 0
+  const frameAsReference = useRefs && frameWithRefsMode(cap) === 'as_reference'
+  // 提示词里"图N"的编号 = 这张图在发出的参考图里的位置；镜头图降为参考图时它是第 1 张，资产图从 2 起。
+  const numbered = frameAsReference
+    ? inputs.references.map((r) => ({ ...r, index: r.index + 1 }))
+    : inputs.references
+
   const plain = (t?: string) => (t ? renderMentionsPlain(t, mentionAssets) : undefined)
   const vs = shot.promptSpec?.video
   const compiled = compileVideoPrompt(
@@ -737,23 +780,45 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
           cameraMove: vs.cameraMove ?? CAMERA_PHRASE_ZH[shot.movement],
         }
       : { action: plain(inputs.prompt), cameraMove: CAMERA_PHRASE_ZH[shot.movement] },
-    { dialect },
+    useRefs ? { dialect, references: numbered, frameAsReference } : { dialect },
   )
 
   const [frame] = await prepareReferenceImages(deps, project.id, [inputs.startFrame!])
+  const refImages = useRefs ? await prepareReferenceImages(deps, project.id, inputs.references) : []
   const duration =
     cap.durations.support === 'unsupported' || !cap.durations.value
       ? Math.round(inputs.durationSec ?? 5)
       : snapDuration(inputs.durationSec ?? 5, cap.durations.value)
-  const input: VideoGenInput = {
+  const common = {
     prompt: compiled.text,
-    image: frame,
     durationSec: duration,
     allowedDurations: cap.durations.value?.values,
     aspectRatio: inputs.aspectRatio,
     resolution: pickResolution(cap, ctx.job.params.resolution as string | undefined),
     withAudio,
   }
+  const asReference = (img: BinaryImage, r?: ResolvedReference): VideoReference => ({
+    kind: 'image',
+    media: { kind: 'bytes', ...img },
+    purpose: r ? REFERENCE_PURPOSE[r.role] : 'frame',
+    ...(r?.assetName ? { label: r.assetName } : {}),
+  })
+  const input: VideoGenInput = !useRefs
+    ? { ...common, image: frame } // 默认路径：和以前完全一样
+    : frameAsReference
+      ? // 首帧与参考图互斥的模型：镜头图是第 1 张参考图，不再发首帧
+        {
+          ...common,
+          references: [
+            asReference(frame),
+            ...refImages.map((img, i) => asReference(img, inputs.references[i])),
+          ],
+        }
+      : {
+          ...common,
+          image: frame,
+          references: refImages.map((img, i) => asReference(img, inputs.references[i])),
+        }
   const protocol = getMediaProtocol(config.protocol)
   await ctx.setStage('submitting')
   const res = await runProviderJob(ctx, protocol, await authFor(deps, config), input, deps.executor)
@@ -784,6 +849,34 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
     config,
     facts,
     withNativeAudio: withAudio,
+    // 用了参考图就在版本自己身上记下"用了哪些"（只是记录：视频的依据摘要看不到它，见交接文档）
+    ...(useRefs
+      ? {
+          usedReferences: {
+            frame: frameAsReference ? ('as_reference' as const) : ('with_references' as const),
+            references: [
+              ...(frameAsReference && inputs.startFrame
+                ? [
+                    {
+                      role: 'start_frame' as const,
+                      versionId: inputs.startFrame.versionId,
+                      sha256: inputs.startFrame.file.sha256,
+                    },
+                  ]
+                : []),
+              ...inputs.references.map((r) => ({
+                role: r.role,
+                assetId: r.assetId,
+                assetName: r.assetName,
+                variantName: r.variantName,
+                versionId: r.versionId,
+                sha256: r.file.sha256,
+              })),
+            ],
+            trimmed: inputs.trimmed.length,
+          },
+        }
+      : {}),
   })
   const record = buildArtifact(deps, projection, expectation, stored, facts)
   stored.version.basisDigest = record?.basisDigest
@@ -807,6 +900,7 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
       versionId: stored.version.id,
       path: stored.file.path,
       withNativeAudio: withAudio,
+      ...(useRefs ? { references: inputs.references.length, frameAsReference } : {}),
       ...(adopted ? {} : { ignored: true }),
     },
   }

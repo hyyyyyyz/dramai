@@ -93,6 +93,8 @@ export interface EpisodePlan {
   narration?: ProviderConfig
   /** 视频分辨率档位。 */
   resolution?: string
+  /** 视频：开启参考图（默认关）。 */
+  videoRefs?: boolean
   /** 只包含还没有 current 产物的目标（默认 true）；false = 全部重做。 */
   onlyMissing?: boolean
   /** 角色设定图版式。 */
@@ -150,6 +152,7 @@ export async function episodeTargets(
         target: { kind: 'shot_video', shotId: s.id },
         provider: plan.shotVideos,
         resolution: plan.resolution,
+        ...(plan.videoRefs ? { videoRefs: true } : {}),
       })
     }
   }

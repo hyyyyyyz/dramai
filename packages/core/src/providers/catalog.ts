@@ -410,6 +410,16 @@ export function frameWithRefsMode(cap: ModelCapability): VideoFrameWithRefs {
     : 'with_references'
 }
 
+/**
+ * 视频开启参考图时，能给**资产设定图**的名额：模型的参考图上限，减去互斥模型里镜头图占的那一个。
+ * 未声明上限 / 不支持（0）= undefined（不限制；不支持的由能力检查拦下）。准入和视频任务用同一个函数。
+ */
+export function videoRefSlots(cap: ModelCapability): number | undefined {
+  const limit = maxRefImagesOf(cap)
+  if (limit === undefined || limit === 0) return undefined
+  return Math.max(0, limit - (frameWithRefsMode(cap) === 'as_reference' ? 1 : 0))
+}
+
 /** 参考图张数上限：不支持 = 0；未声明 = undefined（不限制/不知道）。 */
 export function maxRefImagesOf(cap: ModelCapability): number | undefined {
   if (cap.refImages.support === 'unsupported') return 0

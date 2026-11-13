@@ -50,6 +50,11 @@ export interface CompileContext {
   references?: ResolvedReference[]
   /** 防字地板等恒追加的句子，已按方言选好。 */
   extraFloor?: string[]
+  /**
+   * 视频：镜头图被降为第 1 张参考图（首帧与参考图互斥的模型）。编译器加一句"图1是开场画面"；
+   * 这时 `references` 里的编号从 2 起。
+   */
+  frameAsReference?: boolean
 }
 
 export type CompileWarningCode =
@@ -75,6 +80,15 @@ function bindingSentences(ctx: CompileContext): string[] {
     .map((r) =>
       template.replace('{n}', String(r.index)).replace('{name}', r.assetName ?? 'the style'),
     )
+}
+
+const FRAME_BINDING = {
+  zh: '图1是开场画面，视频从这一帧开始。',
+  en: 'Image 1 is the opening frame; the video starts from it.',
+} as const
+
+function frameSentences(ctx: CompileContext): string[] {
+  return ctx.frameAsReference ? [FRAME_BINDING[ctx.dialect.lang]] : []
 }
 
 function pushLimit(out: CompiledPrompt, text: string, dialect: PromptDialect): void {
@@ -192,6 +206,8 @@ export function compileVideoPrompt(spec: VideoPromptSpec, ctx: CompileContext): 
           f.extra,
         ],
   )
+  // 参考图的绑定句（没有参考图时什么都不加，输出和以前逐字相同）
+  sentences.push(...frameSentences(ctx), ...bindingSentences(ctx))
   sentences.push(...clean([...(ctx.dialect.suffixFloor ?? []), ...(ctx.extraFloor ?? [])]))
   out.text = sentences.join('. ').replace(/\.\s*\./g, '.')
   pushLimit(out, out.text, ctx.dialect)

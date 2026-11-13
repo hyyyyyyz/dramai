@@ -34,6 +34,21 @@ export const providerSnapshot = z.object({
   model: z.string(),
 })
 
+export const usedReferences = z.object({
+  frame: z.enum(['as_reference', 'with_references']),
+  references: z.array(
+    z.object({
+      role: z.enum(['start_frame', 'character', 'prop', 'location', 'costume', 'style']),
+      assetId: z.string().optional(),
+      assetName: z.string().optional(),
+      variantName: z.string().optional(),
+      versionId: z.string().optional(),
+      sha256: z.string().optional(),
+    }),
+  ),
+  trimmed: z.number(),
+})
+
 export const mediaVersion = z.object({
   id: z.string(),
   kind: z.enum(['image', 'video', 'audio']),
@@ -45,6 +60,8 @@ export const mediaVersion = z.object({
   provider: providerSnapshot.optional(),
   facts: mediaFacts.optional(),
   withNativeAudio: z.boolean().optional(),
+  /** 视频：开启参考图生成时用了哪些参考图（只是记录，不参与过期判断）。 */
+  usedReferences: usedReferences.optional(),
   basisDigest: z.string().optional(),
 })
 export type MediaVersion = z.infer<typeof mediaVersion>
@@ -994,6 +1011,12 @@ export const generateItem = z.object({
   /** 服务商配置 id；缺省用应用设置里该类服务当前选中的那个。 */
   providerId: z.string().optional(),
   resolution: z.string().optional(),
+  /**
+   * 视频：开启参考图（默认关）——把镜头的角色 / 场景 / 道具设定图作为参考素材一起交给视频模型。
+   * 对首帧与参考图互斥的模型（Seedance、万相 3.0），镜头图会降为第 1 张参考图，**放弃严格首帧**：
+   * 预检结果的 `video` 字段说明会发生什么（`ifRefsOn` / `frame`），界面应在开关旁让用户知道。
+   */
+  videoRefs: z.boolean().optional(),
   sheetLayout: z.enum(['multi_view', 'per_angle', 'single']).optional(),
   /** 用户确认“上次失败且带上游任务号，仍要重新生成（可能再次计费）”。 */
   confirmResubmit: z.boolean().optional(),
@@ -1016,6 +1039,21 @@ export const costEstimate = z.discriminatedUnion('priced', [
   }),
   z.object({ priced: z.literal(false), reason: z.string() }),
 ])
+/** 视频目标的参考图计划（只有 shot_video 有）：怎么处理镜头图、开启参考图会怎样。 */
+export const videoPlan = z.object({
+  mode: z.enum(['t2v', 'i2v', 'first_last', 'omni_ref']),
+  refsRequested: z.boolean(),
+  /** 这次实际怎么处理镜头图：严格首帧 / 降为第 1 张参考图（放弃严格首帧）/ 首帧和参考图同发。 */
+  frame: z.enum(['strict_first_frame', 'as_reference', 'with_references']),
+  /** 没开参考图时也给出"如果开启会怎样"，界面在开关旁边说明。 */
+  ifRefsOn: z.enum(['frame_as_reference', 'frame_with_references', 'not_available']),
+  referenceCount: z.number(),
+  droppedReferences: z.number(),
+  firstFrameWithRefs: support,
+  refImages: support,
+})
+export type VideoPlan = z.infer<typeof videoPlan>
+
 export const verdict = z.object({
   targetId: z.string(),
   status: z.enum(['accepted', 'blocked', 'needs_confirmation', 'blocked_by_batch']),
@@ -1026,6 +1064,7 @@ export const verdict = z.object({
   ),
   blockedBy: z.array(z.string()).optional(),
   estimate: costEstimate.optional(),
+  video: videoPlan.optional(),
 })
 export type Verdict = z.infer<typeof verdict>
 
@@ -1080,6 +1119,8 @@ export const episodePreflightPlan = z.object({
   narration: z.string().optional(),
   textModel: z.string().optional(),
   resolution: z.string().optional(),
+  /** 视频：开启参考图（默认关），含义见 `generateItem.videoRefs`。 */
+  videoRefs: z.boolean().optional(),
   onlyMissing: z.boolean().optional(),
   sheetLayout: z.enum(['multi_view', 'per_angle', 'single']).optional(),
   confirmUnverified: z.boolean().optional(),
