@@ -112,6 +112,11 @@ export interface ResolvedInputs {
 export interface ResolveOptions {
   /** 目标模型的参考图上限；缺省 = 不限制。 */
   maxRefImages?: number
+  /**
+   * 视频：把镜头的角色 / 场景 / 道具设定图作为参考素材一起解析（缺省不解析，视频目标的 `references` 保持为空，
+   * 和以前完全一样）。选取和取舍规则与生图共用同一份（`collectShotAssetRefs`）；风格参考图不进视频参考。
+   */
+  withReferences?: boolean
 }
 
 // 超限时的取舍优先级：说话/主要动作的人物 > 道具 > 地点 > 其余人物/服装 > 风格图。
@@ -146,7 +151,7 @@ export function resolveInputs(
     case 'shot_image':
       return resolveShotImage(projection, target.shotId, base, options)
     case 'shot_video':
-      return resolveShotVideo(projection, target.shotId, base)
+      return resolveShotVideo(projection, target.shotId, base, options)
     case 'shot_audio':
       return resolveShotAudio(projection, target.shotId, base)
   }
@@ -305,20 +310,17 @@ function resolveAssetSheet(
   return base
 }
 
-function resolveShotImage(
+/**
+ * 一个镜头要带的"角色 / 场景 / 道具设定图"：提示词里的提及（按首次出现顺序）在前，引用表里其余的按表顺序在后；
+ * 说话的人物优先。没有设定图的资产是阻断性缺口（用户原图不能顶替资产图）。
+ * 生图和视频（开启参考图时）共用这一份，所以两处选出的参考集合和取舍规则完全一致。
+ */
+function collectShotAssetRefs(
   p: ProjectProjection,
-  shotId: string,
+  shot: Shot,
+  prompt: string,
   base: Base,
-  options: ResolveOptions,
-): ResolvedInputs {
-  const shot = p.shots.get(shotId)
-  if (!shot) return notFound(base, `shot ${shotId}`)
-  base.aspectRatio = effectiveAspect(p.project, shot)
-  base.prompt = shotImagePrompt(shot)
-  if (!base.prompt.trim()) {
-    base.gaps.push({ code: 'PROMPT_EMPTY', severity: 'block', message: 'shot has no image prompt' })
-  }
-
+): Array<ResolvedReference & { priority: number }> {
   const speakers = new Set(shot.dialogue.map((d) => d.speakerAssetId).filter(Boolean) as string[])
   // 候选引用：提示词里的提及（按首次出现顺序）在前，引用表里其余的按表顺序在后。
   const wanted: Array<{ assetId: string; variantName?: string }> = []
@@ -329,7 +331,7 @@ function resolveShotImage(
     seen.add(k)
     wanted.push({ assetId, variantName })
   }
-  for (const m of extractMentions(base.prompt)) add(m.assetId, m.variantName)
+  for (const m of extractMentions(prompt)) add(m.assetId, m.variantName)
   for (const r of p.refs.get(shot.id) ?? []) add(r.assetId, r.variantName)
 
   const resolved: Array<ResolvedReference & { priority: number }> = []
@@ -369,18 +371,16 @@ function resolveShotImage(
     const priority = speakers.has(asset.id) ? 1 : TRIM_PRIORITY[role]
     resolved.push({ ...ref, priority })
   }
+  return resolved
+}
 
-  if (p.project.style.source === 'reference_image' && p.project.style.referenceFile) {
-    resolved.push({
-      role: 'style',
-      index: 0,
-      file: p.project.style.referenceFile,
-      priority: TRIM_PRIORITY.style,
-    })
-  }
-
+/** 超出模型的参考图上限时按优先级舍弃，并给出警告；返回 base（references 已按 1 起编号）。 */
+function fitReferences<T extends Base>(
+  base: T,
+  resolved: Array<ResolvedReference & { priority: number }>,
+  limit: number | undefined,
+): T {
   let kept = resolved
-  const limit = options.maxRefImages
   if (limit !== undefined && resolved.length > limit) {
     const rank = [...resolved].sort((a, b) => a.priority - b.priority)
     const keepSet = new Set(rank.slice(0, Math.max(0, limit)))
@@ -398,6 +398,34 @@ function resolveShotImage(
   return base
 }
 
+function resolveShotImage(
+  p: ProjectProjection,
+  shotId: string,
+  base: Base,
+  options: ResolveOptions,
+): ResolvedInputs {
+  const shot = p.shots.get(shotId)
+  if (!shot) return notFound(base, `shot ${shotId}`)
+  base.aspectRatio = effectiveAspect(p.project, shot)
+  base.prompt = shotImagePrompt(shot)
+  if (!base.prompt.trim()) {
+    base.gaps.push({ code: 'PROMPT_EMPTY', severity: 'block', message: 'shot has no image prompt' })
+  }
+
+  const resolved = collectShotAssetRefs(p, shot, base.prompt, base)
+
+  if (p.project.style.source === 'reference_image' && p.project.style.referenceFile) {
+    resolved.push({
+      role: 'style',
+      index: 0,
+      file: p.project.style.referenceFile,
+      priority: TRIM_PRIORITY.style,
+    })
+  }
+
+  return fitReferences(base, resolved, options.maxRefImages)
+}
+
 function stripPriority(r: ResolvedReference & { priority?: number }): ResolvedReference {
   return {
     role: r.role,
@@ -410,7 +438,12 @@ function stripPriority(r: ResolvedReference & { priority?: number }): ResolvedRe
   }
 }
 
-function resolveShotVideo(p: ProjectProjection, shotId: string, base: Base): ResolvedInputs {
+function resolveShotVideo(
+  p: ProjectProjection,
+  shotId: string,
+  base: Base,
+  options: ResolveOptions,
+): ResolvedInputs {
   const shot = p.shots.get(shotId)
   if (!shot) return notFound(base, `shot ${shotId}`)
   base.aspectRatio = effectiveAspect(p.project, shot)
@@ -428,6 +461,9 @@ function resolveShotVideo(p: ProjectProjection, shotId: string, base: Base): Res
     })
   } else {
     out.startFrame = { role: 'start_frame', index: 1, file: version.file, versionId: version.id }
+  }
+  if (options.withReferences) {
+    fitReferences(out, collectShotAssetRefs(p, shot, out.prompt, out), options.maxRefImages)
   }
   return out
 }
