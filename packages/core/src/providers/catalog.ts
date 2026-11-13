@@ -120,6 +120,27 @@ const fileSchema = z.object({
  * 只把“这个服务商配置本来要做的事”（主模式）当作支持——用户配了它就是为了这个；
  * 其余一律 `unverified`。**不会**偷偷套用别的模型的能力。
  */
+/**
+ * 只吃首帧的旧视频协议（302.AI 透传 / 旧版）：协议层面就不接参考图，构造请求时直接读 `input.image`。
+ * 自填型号走这些协议时，参考图能力按"不支持"处理（不落到"未验证"的默认值）；用户用 `capabilityOverrides`
+ * 也改不了——协议本身发不出参考图。准入和视频任务用同一个判据（`videoRefsUnsupported`）。
+ */
+export const IMAGE_ONLY_VIDEO_PROTOCOLS: readonly ProtocolId[] = [
+  'aliyun-video',
+  'volcengine-video',
+  'kling-video',
+  'generic-video',
+]
+
+/**
+ * 开启参考图对这个服务商是否根本不可能：协议只吃首帧，或画像 / 覆盖里参考图明确"不支持"。
+ * **能力判断只有这一份**：准入据此阻断（`REFERENCE_NOT_SUPPORTED`，不管这个镜头有没有解析出设定图），
+ * 视频任务入口据此兜底。
+ */
+export function videoRefsUnsupported(protocol: ProtocolId, cap: ModelCapability): boolean {
+  return IMAGE_ONLY_VIDEO_PROTOCOLS.includes(protocol) || cap.refImages.support === 'unsupported'
+}
+
 export function defaultCapability(protocolId: ProtocolId): ModelCapability {
   const unknown = { support: 'unverified' as const }
   const base = {
@@ -155,6 +176,14 @@ export function defaultCapability(protocolId: ProtocolId): ModelCapability {
         modes: { i2v: 'supported' },
         firstFrame: 'supported',
         aspectFromSource: true,
+        // 只吃首帧的旧协议：参考图 / 参考视频 / 参考音频都发不出去
+        ...(IMAGE_ONLY_VIDEO_PROTOCOLS.includes(protocolId)
+          ? {
+              refImages: { support: 'unsupported' as const, value: 0 },
+              refVideos: { support: 'unsupported' as const, value: 0 },
+              refAudios: { support: 'unsupported' as const, value: 0 },
+            }
+          : {}),
       }
   }
 }
@@ -411,13 +440,15 @@ export function frameWithRefsMode(cap: ModelCapability): VideoFrameWithRefs {
 }
 
 /**
- * 视频开启参考图时，能给**资产设定图**的名额：模型的参考图上限，减去互斥模型里镜头图占的那一个。
+ * 视频开启参考图时，能给**资产设定图**的名额：模型的参考图上限减去镜头图占的那一个（保守取值）。
  * 未声明上限 / 不支持（0）= undefined（不限制；不支持的由能力检查拦下）。准入和视频任务用同一个函数。
  */
 export function videoRefSlots(cap: ModelCapability): number | undefined {
   const limit = maxRefImagesOf(cap)
   if (limit === undefined || limit === 0) return undefined
-  return Math.max(0, limit - (frameWithRefsMode(cap) === 'as_reference' ? 1 : 0))
+  // 镜头图总占一个名额：互斥模型里它就是第 1 张参考图；首帧与参考图同发的模型（可灵）里，官方没写清
+  // 上限里算不算首帧，按保守的来——算。
+  return Math.max(0, limit - 1)
 }
 
 /** 参考图张数上限：不支持 = 0；未声明 = undefined（不限制/不知道）。 */

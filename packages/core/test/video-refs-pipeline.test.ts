@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { AdmissionTarget } from '../src/admission/index.ts'
-import { currentVersion } from '../src/domain/index.ts'
+import { currentVersion, SCHEMA_VERSIONS } from '../src/domain/index.ts'
 import type { Shot } from '../src/domain/index.ts'
 import { episodeShots } from '../src/pipeline/entities.ts'
 import { preflightTargets, requestGeneration } from '../src/pipeline/request.ts'
@@ -295,6 +295,64 @@ describe('video with reference images (task parameter videoRefs, default off)', 
       const submit = env.providers.posts('/video-synthesis').at(-1)!.body as Record<string, unknown>
       expect(Object.keys(submit).sort()).toEqual(['input', 'model', 'parameters'])
       expect(Object.keys(submit.input as object).sort()).toEqual(['img_url', 'prompt'])
+    },
+  )
+
+  real(
+    'review fix 1: a job that reaches the task entry with references on for a first-frame-only protocol fails with a stable code, before any request',
+    async () => {
+      const custom: ProviderConfig = {
+        id: 'legacy-custom',
+        label: 'My own Wan',
+        kind: 'video',
+        protocol: 'aliyun-video',
+        baseUrl: 'https://api.302ai.cn',
+        model: 'my-own-wan',
+        enabled: true,
+        secretRef: 'k-vid',
+      }
+      const prev = env.deps.providers
+      env.deps.providers = {
+        get: async (id) => (id === custom.id ? custom : prev.get(id)),
+        list: async () => [...(await prev.list()), custom],
+      }
+      const before = env.providers.posts('/video-synthesis').length
+      const now = env.deps.clock.now()
+      await env.deps.store.jobs.insert({
+        schemaVersion: SCHEMA_VERSIONS.job,
+        id: 'job_forced_refs',
+        type: 'video',
+        operation: 'shot_video',
+        projectId: env.projectId,
+        shotId: shot.id,
+        params: {
+          target: { kind: 'shot_video', shotId: shot.id },
+          resolution: '720P',
+          videoRefs: true,
+        },
+        paid: true,
+        status: 'queued',
+        attempt: 0,
+        previousProviderJobIds: [],
+        createdAt: now,
+        updatedAt: now,
+        providerSnapshot: {
+          providerConfigId: custom.id,
+          protocol: custom.protocol,
+          baseUrl: custom.baseUrl,
+          model: custom.model,
+        },
+      })
+      const jobs = await runAll(env)
+      const job = jobs.find((j) => j.id === 'job_forced_refs')!
+      expect(job.status).toBe('failed')
+      expect(job.error).toMatchObject({
+        code: 'REFERENCE_NOT_SUPPORTED',
+        category: 'invalid_input',
+        recoverable: false,
+      })
+      expect(env.providers.posts('/video-synthesis').length).toBe(before) // nothing was sent
+      env.deps.providers = prev
     },
   )
 })

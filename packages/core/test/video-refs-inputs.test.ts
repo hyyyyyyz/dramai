@@ -73,3 +73,16 @@ describe('shot_video inputs: references are opt-in', () => {
     expect(off.gaps.map((g) => g.code)).not.toContain('ASSET_SHEET_MISSING')
   })
 })
+
+describe('review fix 1: the last-resort guard for first-frame-only protocols', () => {
+  it('a frame-less input to an image-only protocol gets a stable, meaningful problem instead of a TypeError', async () => {
+    const { frameRequiredProblem } = await import('../src/providers/video-input.ts')
+    const frame = { bytes: new Uint8Array([1]), mime: 'image/png' }
+    for (const p of ['aliyun-video', 'volcengine-video', 'kling-video', 'generic-video'] as const) {
+      expect(frameRequiredProblem(p, { prompt: 'p' }), p).toContain('首帧')
+      expect(frameRequiredProblem(p, { prompt: 'p', image: frame }), p).toBeUndefined()
+    }
+    for (const p of ['ark-video', 'kling-contents', 'dashscope-video'] as const)
+      expect(frameRequiredProblem(p, { prompt: 'p' }), p).toBeUndefined() // these can do text-to-video
+  })
+})

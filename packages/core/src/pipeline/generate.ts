@@ -35,9 +35,11 @@ import {
   frameWithRefsMode,
   maxRefImagesOf,
   videoRefSlots,
+  videoRefsUnsupported,
 } from '../providers/catalog.ts'
 import { snapDuration } from '../providers/duration.ts'
 import { getMediaProtocol } from '../providers/protocols/index.ts'
+import { frameRequiredProblem } from '../providers/video-input.ts'
 import type {
   BinaryImage,
   ImageGenInput,
@@ -721,7 +723,7 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   const projection = await loadProjection(deps.store, ctx.job.projectId)
   // 开启参考图（任务参数，默认关）：和准入用同一份解析和名额计算。关闭时这里和以前完全一样。
   const videoRefsOn = ctx.job.params.videoRefs === true
-  if (videoRefsOn && cap.refImages.support === 'unsupported') {
+  if (videoRefsOn && videoRefsUnsupported(config.protocol, cap)) {
     throw new JobFailure({
       category: 'invalid_input',
       code: 'REFERENCE_NOT_SUPPORTED',
@@ -819,6 +821,15 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
           image: frame,
           references: refImages.map((img, i) => asReference(img, inputs.references[i])),
         }
+  const frameProblem = frameRequiredProblem(config.protocol, input)
+  if (frameProblem) {
+    throw new JobFailure({
+      category: 'invalid_input',
+      code: 'FIRST_FRAME_REQUIRED',
+      message: frameProblem,
+      recoverable: false,
+    })
+  }
   const protocol = getMediaProtocol(config.protocol)
   await ctx.setStage('submitting')
   const res = await runProviderJob(ctx, protocol, await authFor(deps, config), input, deps.executor)

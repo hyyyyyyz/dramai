@@ -630,7 +630,9 @@ describe('model profiles, capabilities and price table', () => {
     expect(u.profile).toBeUndefined()
     expect(u.capability).toEqual(defaultCapability('aliyun-video'))
     expect(u.capability.modes).toEqual({ i2v: 'supported' })
-    expect(u.capability.refImages.support).toBe('unverified')
+    // the four image-only legacy video protocols cannot send reference images at all (P3c review fix):
+    // that is a fact about the protocol, not something to be guessed as "unverified"
+    expect(u.capability.refImages.support).toBe('unsupported')
     expect(u.capability.durations.support).toBe('unverified')
     expect(u.capability.verifiedAt).toBeUndefined()
     const over = catalog.models.lookup({

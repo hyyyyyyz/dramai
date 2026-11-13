@@ -11,6 +11,7 @@ import {
   frameWithRefsMode,
   maxRefImagesOf,
   videoRefSlots,
+  videoRefsUnsupported,
 } from '../providers/catalog.ts'
 import type { CostEstimate, ModelRegistry } from '../providers/catalog.ts'
 import { deriveVoiceOwner } from '../domain/voice.ts'
@@ -192,16 +193,25 @@ export async function evaluateTarget(
   // 视频开启参考图：参考素材一起解析。官方把首帧与参考图定为互斥的模型，镜头图要占一个参考图名额。
   const cap = lookup.capability
   const wantVideoRefs = item.target.kind === 'shot_video' && item.videoRefs === true
+  // 用户明确开了参考图而这个服务商根本不可能（协议只吃首帧 / 画像里不支持）：不管镜头有没有设定图，一律阻断。
+  // 和视频任务入口是同一个判据（videoRefsUnsupported），所以不会出现"准入放行、任务必然失败"。
+  const refsImpossible = wantVideoRefs && videoRefsUnsupported(provider.protocol, cap)
+  if (refsImpossible) {
+    reasons.push({
+      code: 'REFERENCE_NOT_SUPPORTED',
+      message: `${provider.model} 不接参考图，不能开启参考图生成；关闭参考图改用首帧，或换一个支持参考图的视频模型`,
+    })
+  }
   const frameMode = frameWithRefsMode(cap)
   const refLimit = maxRefImagesOf(cap)
   const inputs = resolveInputs(
     ctx.projection,
     item.target,
-    wantVideoRefs
+    wantVideoRefs && !refsImpossible
       ? { withReferences: true, maxRefImages: videoRefSlots(cap) }
       : { maxRefImages: refLimit || undefined },
   )
-  const usesVideoRefs = wantVideoRefs && inputs.references.length > 0
+  const usesVideoRefs = wantVideoRefs && !refsImpossible && inputs.references.length > 0
 
   for (const gap of inputs.gaps) {
     if (gap.severity === 'block') {
@@ -353,9 +363,9 @@ export async function evaluateTarget(
   // 视频的"参考图计划"：怎么处理镜头图、开启参考图会怎样——给界面说取舍用。
   let video: VideoPlan | undefined
   if (item.target.kind === 'shot_video') {
-    const refsOk = cap.refImages.support !== 'unsupported'
+    const refsOk = !videoRefsUnsupported(provider.protocol, cap)
     const asReference = frameMode === 'as_reference'
-    if (wantVideoRefs && refsOk && inputs.references.length === 0) {
+    if (wantVideoRefs && refsOk && !refsImpossible && inputs.references.length === 0) {
       warnings.push({
         code: 'VIDEO_REFS_EMPTY',
         message: '这个镜头没有可用的角色 / 场景 / 道具设定图，参考图没有开启，按首帧生成',

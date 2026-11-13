@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { evaluateTarget } from '../src/admission/index.ts'
+import { admitBatch, evaluateTarget } from '../src/admission/index.ts'
 import type { AdmissionContext, AdmissionTarget } from '../src/admission/index.ts'
 import { loadCatalog } from '../src/data-dir.ts'
 import type { ModelRegistry } from '../src/providers/catalog.ts'
@@ -255,5 +255,125 @@ describe('frameWithRefsMode', () => {
     expect(frameWithRefsMode({ ...base, firstFrameWithRefs: undefined })).toBe('as_reference')
     expect(frameWithRefsMode({ ...base, firstFrameWithRefs: 'unverified' })).toBe('with_references')
     expect(frameWithRefsMode({ ...base, firstFrameWithRefs: 'supported' })).toBe('with_references')
+  })
+})
+
+describe('review fix 1: one judgement for "references impossible", applied before anything else', () => {
+  const LEGACY = ['aliyun-video', 'volcengine-video', 'kling-video', 'generic-video'] as const
+
+  it('a model without reference images: blocked with or without sheets - the same reason either way', async () => {
+    const withSheets = await readyWorld()
+    const without = await readyWorld()
+    await without.ports.store.shotRefs.replaceForShot(without.shot.id, [])
+    await without.ports.store.shots.put({
+      ...(await without.ports.store.shots.get(without.shot.id))!,
+      prompts: { keyFrame: 'x', video: '镜头缓慢推近' },
+    })
+    for (const w of [withSheets, without]) {
+      const v = await evaluateTarget(await ctxFor(w), target(w, OLD, { videoRefs: true }))
+      expect(v.status).toBe('blocked')
+      expect(codes(v)).toEqual(['REFERENCE_NOT_SUPPORTED'])
+      expect(v.video).toMatchObject({
+        mode: 'i2v',
+        refsRequested: true,
+        frame: 'strict_first_frame',
+        ifRefsOn: 'not_available',
+      })
+    }
+  })
+
+  it.each(LEGACY)(
+    'a custom model on %s (no profile) cannot take references: blocked, even when the user overrides the capability',
+    async (protocol) => {
+      const w = await readyWorld()
+      const custom = videoProvider({ id: `c-${protocol}`, protocol, model: 'my-own-model' })
+      const asked = await evaluateTarget(
+        await ctxFor(w),
+        target(w, custom, { videoRefs: true, confirmUnverified: true }),
+      )
+      expect(asked.status).toBe('blocked')
+      expect(codes(asked)).toEqual(['REFERENCE_NOT_SUPPORTED'])
+      // a capability override cannot make the protocol send what it cannot send
+      const overridden = videoProvider({
+        ...custom,
+        capabilityOverrides: { refImages: { support: 'supported', value: 5 } },
+      })
+      const v = await evaluateTarget(
+        await ctxFor(w),
+        target(w, overridden, { videoRefs: true, confirmUnverified: true }),
+      )
+      expect(v.status).toBe('blocked')
+      expect(codes(v)).toEqual(['REFERENCE_NOT_SUPPORTED'])
+      // switched off, the same custom model is as before
+      const off = await evaluateTarget(
+        await ctxFor(w),
+        target(w, custom, { confirmUnverified: true }),
+      )
+      expect(off.status).toBe('accepted')
+      expect(off.video).toMatchObject({ frame: 'strict_first_frame', ifRefsOn: 'not_available' })
+    },
+  )
+
+  it('a whole batch: shots with and without sheets get the same verdict, never "blocked here, passed there"', async () => {
+    const w = await readyWorld()
+    // second shot: ready, but without any registered asset
+    const bare = (await w.ports.store.shots.get(w.shot2.id))!
+    const f = await putFile(w.ports, w.project.id, 'images/s2.png', 'frame2')
+    await w.ports.store.shots.put({
+      ...bare,
+      prompts: { keyFrame: 'x', video: '镜头缓慢推近' },
+      image: slotWith('image', 's2_v1', f),
+    })
+    await w.ports.store.shotRefs.replaceForShot(w.shot2.id, [])
+    const ctx = await ctxFor(w)
+    const batch = await admitBatch(ctx, [
+      { target: { kind: 'shot_video', shotId: w.shot.id }, provider: OLD, videoRefs: true },
+      { target: { kind: 'shot_video', shotId: w.shot2.id }, provider: OLD, videoRefs: true },
+    ])
+    expect(batch.ok).toBe(false)
+    expect(batch.results.map((r) => r.status)).toEqual(['blocked', 'blocked']) // not one blocked and one "blocked_by_batch"
+    expect(batch.results.map((r) => codes(r))).toEqual([
+      ['REFERENCE_NOT_SUPPORTED'],
+      ['REFERENCE_NOT_SUPPORTED'],
+    ])
+  })
+})
+
+describe('review fix 6: the first frame takes one of the reference slots on Kling too', () => {
+  it('slots = limit - 1 for both kinds of model', async () => {
+    const { videoRefSlots } = await import('../src/providers/catalog.ts')
+    const cap = (p: string, m: string) =>
+      models.lookup({ protocol: p as never, model: m }).capability
+    expect(videoRefSlots(cap('kling-contents', 'kling-4.0'))).toBe(9)
+    expect(videoRefSlots(cap('ark-video', 'doubao-seedance-2-0-260128'))).toBe(8)
+    expect(videoRefSlots(cap('ark-video', 'doubao-seedance-2-5-260628'))).toBe(29)
+    expect(videoRefSlots(cap('dashscope-video', 'wan3.0-video'))).toBe(9)
+  })
+
+  it('a Kling model with room for 2 sends one asset reference next to the first frame, and says one was dropped', async () => {
+    const w = await readyWorld()
+    const tiny = videoProvider({
+      id: 'p-kling-tiny',
+      protocol: 'kling-contents',
+      model: 'kling-4.0',
+      capabilityOverrides: { refImages: { support: 'unverified', value: 2 } },
+    })
+    const v = await evaluateTarget(
+      await ctxFor(w),
+      target(w, tiny, { videoRefs: true, confirmUnverified: true }),
+    )
+    expect(v.inputs?.references.map((r) => r.assetName)).toEqual(['林夏'])
+    expect(v.inputs?.trimmed.map((r) => r.assetName)).toEqual(['老茶馆'])
+    expect(v.video).toMatchObject({
+      frame: 'with_references',
+      referenceCount: 1,
+      droppedReferences: 1,
+    })
+  })
+
+  it('the Kling profile says it is a conservative, unverified choice', () => {
+    const p = models.lookup({ protocol: 'kling-contents', model: 'kling-4.0' }).capability.refImages
+    expect(p.note).toContain('保守')
+    expect(p.note).toContain('未验证')
   })
 })
