@@ -50,7 +50,7 @@ When a branch or pull request gets a new commit, the older run is cancelled (nev
    the capability-error check (a warning appears in the log). On Linux libass is required.
 4. A failing `Test` job's summary lists the failing packages; the Vitest output of each is in the `Test` step. Locally `pnpm test` behaves the same way (it runs all packages, then prints `Summary: N fails, M passes`). When E2E fails, the report is an artifact (`e2e-report`) at the
    bottom of the run page.
-5. **Read the `CI passed` table, not just the colour.** It lists every job's result (`success`, `failure`, `cancelled` or `skipped`). A skipped job did not run; there are no jobs that are skipped on purpose any more, so a `skipped` row means something upstream failed.
+5. **Read the `CI passed` table, not just the colour.** It lists every job's result (`success`, `failure`, `cancelled` or `skipped`). All of the jobs always run, so a `skipped` row is unexpected: look at the run's log to see why.
 6. A failure with no code change is most often an external service (apt, Homebrew or Chocolatey
    downloads) or a runner image update; re-run once and read the log if it keeps failing. Actions are
    pinned to commit SHAs, so they cannot change under you.

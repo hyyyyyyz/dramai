@@ -17,11 +17,11 @@ landing page is deployed that workspace is gone, and it is not kept anywhere on 
 
 The workflow is `.github/workflows/deploy-site.yml` ("Deploy site to GitHub Pages"). It runs in two jobs:
 
-1. **Build and check**: `pnpm build:site` builds `apps/site` into `apps/site/dist`, then `pnpm --filter @dramai/site test`
-   runs the unit tests and the post-build checks in `apps/site/scripts/check-dist.mjs`: every internal link and anchor
-   resolves, both languages have the same sections and amount of content, nothing in the output requests a third-party
-   host, and hreflang, canonical, Open Graph and the sitemap are consistent. If any of this fails, nothing is deployed.
-   The checked output is uploaded as the Pages artifact.
+1. **Build and check**: `pnpm --filter @dramai/site test` first runs the unit tests, then `apps/site/scripts/check-dist.mjs`
+   builds the site once into `apps/site/dist` and checks that output: every internal link and anchor resolves, both
+   languages have the same sections and amount of content, nothing in the output requests a third-party host, and
+   hreflang, canonical, Open Graph and the sitemap are consistent. If any of this fails, nothing is deployed. The site is
+   built only this one time, so the output uploaded as the Pages artifact is exactly the one that was checked.
 2. **Deploy**: publishes the artifact with `actions/deploy-pages`. Only this job has `pages: write` and `id-token: write`;
    the rest of the workflow has read-only access.
 
