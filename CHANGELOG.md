@@ -19,9 +19,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   pre-flight result says so before any money is spent. A video made this way is not marked outdated when a
   character sheet changes later (known gap).
 - Video versions made with reference images record which references were used.
-- New clips on the timeline start silent when the video's model cannot switch its own audio off (Kling 4.0)
-  and the shot does not use native voice; the volume can be raised on the timeline. Existing clips and the
-  way a cut is composed are unchanged.
+- A timeline clip defaults to silent when the video's model cannot switch its own audio off (Kling 4.0) and
+  the shot does not use native voice - whether the timeline or the video came first. The volume can be raised
+  on the timeline; clips that already had a video or that you changed are left alone, and the way a cut is
+  composed is unchanged.
 
 ### Changed
 
