@@ -31,6 +31,16 @@ describe('EventBus', () => {
     if (edge.kind === 'replay') expect(edge.events.map((e) => e.seq)).toEqual([8, 9, 10])
   })
 
+  it('a core timeline.changed event reaches clients as data.changed for the timeline of that episode', () => {
+    const bus = new EventBus({ epoch: 'e4' })
+    const seen: unknown[] = []
+    bus.subscribe((e) => seen.push(e.event))
+    bus.emit({ type: 'timeline.changed', projectId: 'p1', episodeId: 'ep1' })
+    expect(seen).toEqual([
+      { type: 'data.changed', entity: 'timeline', projectId: 'p1', ids: ['ep1'], op: 'updated' },
+    ])
+  })
+
   it('coalesces text deltas, keeps order, and does not replay them', async () => {
     const bus = new EventBus({ epoch: 'e3', deltaFlushMs: 20 })
     const seen: string[] = []

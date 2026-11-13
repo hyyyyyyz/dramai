@@ -195,6 +195,8 @@ export type CoreEvent =
   | { type: 'job.worker_error'; message: string }
   | { type: 'artifact.changed'; projectId: ProjectId; key: string }
   | { type: 'project.changed'; projectId: ProjectId }
+  /** 时间线被后台自动改了一个修订（如第一份生成的视频到了，片段原声默认音量跟着定下来）。 */
+  | { type: 'timeline.changed'; projectId: ProjectId; episodeId: string }
 
 export interface EventSink {
   emit(event: CoreEvent): void

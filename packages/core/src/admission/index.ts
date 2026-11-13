@@ -6,6 +6,7 @@ import type { Job } from '../jobs/types.ts'
 import { InFlightConflictError } from '../jobs/queue.ts'
 import type { JobQueue, NewJob } from '../jobs/queue.ts'
 import {
+  audioCannotBeSwitchedOff,
   checkCapability,
   estimateCost,
   frameWithRefsMode,
@@ -329,7 +330,7 @@ export async function evaluateTarget(
         item.target.kind === 'shot_video' &&
         owner !== 'native' &&
         owner !== 'conflict' &&
-        lookup.capability.audioToggle === 'unsupported'
+        audioCannotBeSwitchedOff(lookup.capability)
       ) {
         warnings.push({
           code: 'AUDIO_NOT_DISABLEABLE',

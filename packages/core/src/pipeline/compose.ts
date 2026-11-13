@@ -7,8 +7,7 @@ import type { Episode } from '../domain/project.ts'
 import type { Shot } from '../domain/shot.ts'
 import type { TimelineDocument } from '../domain/timeline.ts'
 import { countChars } from '../parsers/chapters.ts'
-import type { ModelRegistry } from '../providers/catalog.ts'
-import type { ProtocolId } from '../providers/types.ts'
+import { nativeAudioDefaultVolume, providerConfigMap } from './native-audio.ts'
 import { loadProjection } from '../generation/projection.ts'
 import type { ProjectProjection } from '../generation/projection.ts'
 import { deriveEpisodeStatus, episodeProgress } from '../generation/progress.ts'
@@ -64,26 +63,7 @@ export class RenderBlockedError extends Error {
 
 export const bgmPath = (bgmId: string) => `audio/bgm/${bgmId}`
 
-/**
- * 新加入时间线的片段的原声默认音量（只是默认值，用户可以在时间线上调高；已存在的片段不改）：
- * 这个镜头当前的视频是生成的、生成时没有要求原生人声（`withNativeAudio === false`），而生成它的模型的画像说
- * **无法关闭原生音频**（`audioToggle === 'unsupported'`，如可灵 4.0）——这类视频里的声音不是这个镜头想要的，默认 0。
- * 其余一律 `undefined`（照旧：台词 / 无声镜头 1，旁白镜头 0.3）。
- * "模型无法关闭原生音频"读的是模型画像里的能力事实，和准入的 `AUDIO_NOT_DISABLEABLE` 警告是同一个来源，
- * 不按协议名或型号名硬编码。
- */
-export function nativeAudioDefaultVolume(
-  shot: Pick<Shot, 'video'>,
-  models: ModelRegistry,
-): number | undefined {
-  const v = currentVersion(shot.video)
-  if (!v || v.source !== 'generated' || v.withNativeAudio !== false || !v.provider) return undefined
-  const cap = models.lookup({
-    protocol: v.provider.protocol as ProtocolId,
-    model: v.provider.model,
-  }).capability
-  return cap.audioToggle === 'unsupported' ? 0 : undefined
-}
+export { nativeAudioDefaultVolume } from './native-audio.ts'
 
 /** 取得（或按镜头顺序创建）一集的时间线。 */
 export async function ensureTimeline(
@@ -98,8 +78,9 @@ export async function ensureTimeline(
   if (existing) return existing
   const project = (await deps.store.projects.get(episode.projectId))!
   const shots = await episodeShots(deps.store, episodeId)
+  const configs = await providerConfigMap(deps)
   const init = buildInitialContent(shots, project.narrationDelivery, 1, (s) =>
-    nativeAudioDefaultVolume(s, deps.catalog.models),
+    nativeAudioDefaultVolume(s, deps.catalog.models, configs),
   )
   const doc = createTimeline({
     id: deps.ids.next('tl'),
@@ -128,13 +109,14 @@ export async function syncTimelineWithShots(
   const project = (await deps.store.projects.get(episode.projectId))!
   const shots = await episodeShots(deps.store, episodeId)
   const head = headRevision(doc)
+  const configs = await providerConfigMap(deps)
   const have = new Map(head.content.clips.map((c) => [c.shotId, c]))
   let next = doc.nextClipNumber
   const fresh = buildInitialContent(
     shots.filter((s) => !have.has(s.id)),
     project.narrationDelivery,
     next,
-    (s) => nativeAudioDefaultVolume(s, deps.catalog.models),
+    (s) => nativeAudioDefaultVolume(s, deps.catalog.models, configs),
   )
   const freshById = new Map(fresh.content.clips.map((c) => [c.shotId, c]))
   next = fresh.nextClipNumber

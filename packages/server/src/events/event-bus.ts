@@ -73,6 +73,13 @@ export class EventBus implements EventSink {
       case 'artifact.changed':
         this.publish({ type: 'artifact.changed', projectId: event.projectId, key: event.key })
         break
+      case 'timeline.changed':
+        this.changed('timeline', {
+          projectId: event.projectId,
+          ids: [event.episodeId],
+          op: 'updated',
+        })
+        break
       case 'project.changed':
         this.publish({
           type: 'data.changed',

@@ -441,6 +441,14 @@ export interface CapabilityNeeds {
 }
 
 /**
+ * “这个模型无法关闭原生音频”（如可灵 4.0）。**这个事实只在这里判断**：准入的 `AUDIO_NOT_DISABLEABLE` 警告和
+ * 时间线片段的默认音量都读它，且都读同一份能力（画像加上用户的 `capabilityOverrides`），所以两处结论一致。
+ */
+export function audioCannotBeSwitchedOff(cap: ModelCapability): boolean {
+  return cap.audioToggle === 'unsupported'
+}
+
+/**
  * 视频开启参考图时，镜头图怎么处理：
  * - `with_references`：首帧和参考图同发（可灵；画像的 `firstFrameWithRefs` 不是 `unsupported`）；
  * - `as_reference`：官方把首帧与参考图定为互斥的任务类型（火山 / 万相；缺省也按这个）——镜头图降为第 1 张参考图，

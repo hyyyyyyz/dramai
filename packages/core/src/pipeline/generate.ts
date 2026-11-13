@@ -40,6 +40,7 @@ import {
 import { snapDuration } from '../providers/duration.ts'
 import { getMediaProtocol } from '../providers/protocols/index.ts'
 import { frameRequiredProblem } from '../providers/video-input.ts'
+import { applyNativeAudioDefaultOnFirstVideo, providerConfigMap } from './native-audio.ts'
 import type {
   BinaryImage,
   ImageGenInput,
@@ -892,6 +893,8 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   const record = buildArtifact(deps, projection, expectation, stored, facts)
   stored.version.basisDigest = record?.basisDigest
   let adopted = true
+  let timelineTouched: { episodeId: string } | undefined
+  const configs = await providerConfigMap(deps)
   await deps.store.transaction(async (tx) => {
     const s = await tx.shots.get(shotId)
     if (!s) throw gone('镜头')
@@ -902,9 +905,25 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
       video: appendVersion(s.video, stored.version, { makeCurrent: adopted }),
       updatedAt: deps.clock.now(),
     })
+    // 这个镜头第一次拿到生成的视频：时间线上已经有它的片段的话，按同样的三个条件定下默认音量
+    // （先建时间线、后生成视频，和先生成视频、后建时间线，结果一致；用户调过的不改）
+    if (adopted) {
+      timelineTouched = await applyNativeAudioDefaultOnFirstVideo(tx, deps, {
+        shotBefore: s,
+        version: stored.version,
+        configs,
+      })
+    }
   })
   if (record && adopted) {
     deps.events?.emit({ type: 'artifact.changed', projectId: record.projectId, key: record.key })
+  }
+  if (timelineTouched) {
+    deps.events?.emit({
+      type: 'timeline.changed',
+      projectId: project.id,
+      episodeId: timelineTouched.episodeId,
+    })
   }
   return {
     result: {
