@@ -18,7 +18,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (Seedance, Wan 3.0) the shot image becomes reference image no. 1 and the strict first frame is given up; the
   pre-flight result says so before any money is spent. A video made this way is not marked outdated when a
   character sheet changes later (known gap).
-- Video versions made with reference images record which references were used.
+- Video versions made with reference images record which references were used (each with its order, the
+  number the prompt calls "image N").
+- The pre-flight result for a video made with reference images now lists which references will go with it, in
+  order, and which were left out because the model's limit was reached. It is worked out by the same
+  function the job uses, so the list matches what the finished version records. Nothing is added when
+  references are off.
+- Timeline revisions made automatically when a shot first gets a video whose audio cannot be switched off
+  carry a machine-readable `reason` (`native_audio_default`), so clients no longer have to recognise them by
+  their summary text. Other revisions are unchanged.
 - A timeline clip defaults to silent when the video's model cannot switch its own audio off (Kling 4.0) and
   the shot does not use native voice - whether the timeline or the video came first. The volume can be raised
   on the timeline; clips that already had a video or that you changed are left alone, and the way a cut is

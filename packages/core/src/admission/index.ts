@@ -1,5 +1,8 @@
 import type { FileRef } from '../domain/common.ts'
 import { resolveInputs, targetId } from '../generation/inputs.ts'
+import { describeVideoReferences } from '../generation/video-refs.ts'
+import type { DroppedVideoReference, VideoReferenceUse } from '../generation/video-refs.ts'
+import type { UsedReferences } from '../domain/media.ts'
 import type { Gap, GenerationTarget, ResolvedInputs } from '../generation/inputs.ts'
 import type { ProjectProjection } from '../generation/projection.ts'
 import type { Job } from '../jobs/types.ts'
@@ -136,6 +139,16 @@ export interface VideoPlan {
   droppedReferences: number
   firstFrameWithRefs: Support
   refImages: Support
+  /**
+   * 开启参考图时（且没被拦下）才有：实际会带上的参考图清单，按发出的顺序（含 `order`，就是提示词里的“图 N”），
+   * 表达方式与生成后版本上的 `usedReferences.references` 完全相同——两处用同一个函数算（`describeVideoReferences`）。
+   * 镜头图降为参考图时它是第 1 项（角色 `start_frame`）；首帧与参考图同发时它不在清单里，见 `startFrame`。
+   */
+  references?: UsedReferences['references']
+  /** 因超过模型的参考图上限被舍弃的参考图（说话的人物优先保留）。 */
+  dropped?: DroppedVideoReference[]
+  /** 镜头图的用法：严格首帧，或第 1 张参考图。 */
+  startFrame?: VideoReferenceUse['startFrame']
 }
 
 export interface TargetVerdict {
@@ -396,6 +409,24 @@ export async function evaluateTarget(
       droppedReferences: usesVideoRefs ? inputs.trimmed.length : 0,
       firstFrameWithRefs: cap.firstFrameWithRefs ?? 'unsupported',
       refImages: cap.refImages.support,
+      // 开启参考图（且没被拦下）时给出清单；没开时这几个字段不出现，预检结论和以前一样
+      ...(wantVideoRefs && !refsImpossible
+        ? (() => {
+            const use = describeVideoReferences({
+              frameAsReference: asReference,
+              startFrame: inputs.startFrame,
+              references: usesVideoRefs ? inputs.references : [],
+              trimmed: usesVideoRefs ? inputs.trimmed : [],
+            })
+            return usesVideoRefs
+              ? {
+                  references: use.used.references,
+                  dropped: use.dropped,
+                  startFrame: use.startFrame,
+                }
+              : { references: [], dropped: [] }
+          })()
+        : {}),
     }
   }
 

@@ -35,6 +35,8 @@ export interface UsedReferences {
   frame: 'as_reference' | 'with_references'
   /** 按发出的顺序；`frame` 为 `as_reference` 时第一项是镜头图（role `start_frame`）。 */
   references: Array<{
+    /** 发出的顺序，从 1 起；就是提示词里的“图 N”。新版本才有（旧版本按数组顺序理解）。 */
+    order?: number
     role: 'start_frame' | 'character' | 'prop' | 'location' | 'costume' | 'style'
     assetId?: string
     assetName?: string

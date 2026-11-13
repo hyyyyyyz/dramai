@@ -180,10 +180,25 @@ describe('videoRefs through the API', () => {
     expect(on.results[0]!.warnings.map((w) => w.code)).toContain(
       'FIRST_FRAME_REPLACED_BY_REFERENCE',
     )
+    // exec 21: with references on the plan lists which ones; with the switch off those fields are absent
+    expect(on.results[0]!.video).toMatchObject({
+      references: [
+        { order: 1, role: 'start_frame' },
+        { order: 2, role: 'character', assetId: 'a1', assetName: '林夏' },
+      ],
+      dropped: [],
+      startFrame: { use: 'reference' },
+    })
+    for (const key of ['references', 'dropped', 'startFrame'])
+      expect(off.results[0]!.video, key).not.toHaveProperty(key)
   })
 
   it('submit with the switch on: the job parameter, the request body and the record on the version', async () => {
     const { h, posts } = await setup()
+    const pre = await h.client.call('generate.preflight', {
+      params: { projectId: 'p1' },
+      body: { items: [item(true)] },
+    })
     const res = await h.client.call('generate.submit', {
       params: { projectId: 'p1' },
       body: { items: [item(true)], confirmUnverified: true },
@@ -218,6 +233,9 @@ describe('videoRefs through the API', () => {
       ],
     })
     expect(v.usedReferences!.references[1]!.sha256).toMatch(/^[0-9a-f]{64}$/)
+    // exec 21: the list the preflight showed (through the same contract) is the list that was used
+    expect(pre.results[0]!.video!.references).toEqual(v.usedReferences!.references)
+    expect(v.usedReferences!.references.map((r) => r.order)).toEqual([1, 2])
   })
 
   it("submit with the switch off sends today's request: first_frame, no parameter, no record", async () => {

@@ -76,6 +76,9 @@ describe('default path (videoRefs off): nothing changes for the existing provide
       referenceCount: 0,
       ifRefsOn: 'not_available', // the tested model takes no reference images
     })
+    // exec 21: the reference list fields are absent unless references are requested
+    for (const key of ['references', 'dropped', 'startFrame'])
+      expect(v.video).not.toHaveProperty(key)
   })
 
   it('a new model without refs: image to video needs the usual confirmation of unverified items only', async () => {
@@ -138,6 +141,13 @@ describe('videoRefs on: the model decides what happens to the first frame', () =
       frame: 'with_references',
       referenceCount: 2,
       ifRefsOn: 'frame_with_references',
+      // exec 21: the frame is a real first frame here, so it is not in the reference list
+      references: [
+        { order: 1, role: 'character', assetName: '林夏' },
+        { order: 2, assetName: '老茶馆' },
+      ],
+      dropped: [],
+      startFrame: { use: 'first_frame' },
     })
   })
 

@@ -34,18 +34,21 @@ export const providerSnapshot = z.object({
   model: z.string(),
 })
 
+const referenceRole = z.enum(['start_frame', 'character', 'prop', 'location', 'costume', 'style'])
+const usedReferenceItem = z.object({
+  /** 发出的顺序，从 1 起，就是提示词里的“图 N”。较早的版本没有这个字段（按数组顺序理解）。 */
+  order: z.number().optional(),
+  role: referenceRole,
+  assetId: z.string().optional(),
+  assetName: z.string().optional(),
+  variantName: z.string().optional(),
+  versionId: z.string().optional(),
+  sha256: z.string().optional(),
+})
+
 export const usedReferences = z.object({
   frame: z.enum(['as_reference', 'with_references']),
-  references: z.array(
-    z.object({
-      role: z.enum(['start_frame', 'character', 'prop', 'location', 'costume', 'style']),
-      assetId: z.string().optional(),
-      assetName: z.string().optional(),
-      variantName: z.string().optional(),
-      versionId: z.string().optional(),
-      sha256: z.string().optional(),
-    }),
-  ),
+  references: z.array(usedReferenceItem),
   trimmed: z.number(),
 })
 
@@ -1057,6 +1060,32 @@ export const videoPlan = z.object({
   droppedReferences: z.number(),
   firstFrameWithRefs: support,
   refImages: support,
+  /**
+   * 开启参考图（且没被拦下）时才有：实际会带上的参考图，按发出的顺序，与生成后版本上的
+   * `usedReferences.references` 逐项相同（同一个函数算出）。镜头图降为参考图时它是第 1 项（角色 `start_frame`）。
+   * 没开参考图时这三个字段不出现。
+   */
+  references: z.array(usedReferenceItem).optional(),
+  /** 因超过模型的参考图上限被舍弃的参考图（说话的人物优先保留）。 */
+  dropped: z
+    .array(
+      z.object({
+        role: referenceRole,
+        assetId: z.string().optional(),
+        assetName: z.string().optional(),
+        variantName: z.string().optional(),
+        reason: z.enum(['over_limit']),
+      }),
+    )
+    .optional(),
+  /** 镜头图的用法：严格首帧（与参考图同发），或第 1 张参考图。 */
+  startFrame: z
+    .object({
+      use: z.enum(['first_frame', 'reference']),
+      versionId: z.string().optional(),
+      sha256: z.string().optional(),
+    })
+    .optional(),
 })
 export type VideoPlan = z.infer<typeof videoPlan>
 

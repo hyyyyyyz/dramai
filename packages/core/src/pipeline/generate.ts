@@ -40,6 +40,7 @@ import {
 import { snapDuration } from '../providers/duration.ts'
 import { getMediaProtocol } from '../providers/protocols/index.ts'
 import { frameRequiredProblem } from '../providers/video-input.ts'
+import { describeVideoReferences } from '../generation/video-refs.ts'
 import { applyNativeAudioDefaultOnFirstVideo, providerConfigMap } from './native-audio.ts'
 import type {
   BinaryImage,
@@ -864,29 +865,12 @@ async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
     // 用了参考图就在版本自己身上记下"用了哪些"（只是记录：视频的依据摘要看不到它，见交接文档）
     ...(useRefs
       ? {
-          usedReferences: {
-            frame: frameAsReference ? ('as_reference' as const) : ('with_references' as const),
-            references: [
-              ...(frameAsReference && inputs.startFrame
-                ? [
-                    {
-                      role: 'start_frame' as const,
-                      versionId: inputs.startFrame.versionId,
-                      sha256: inputs.startFrame.file.sha256,
-                    },
-                  ]
-                : []),
-              ...inputs.references.map((r) => ({
-                role: r.role,
-                assetId: r.assetId,
-                assetName: r.assetName,
-                variantName: r.variantName,
-                versionId: r.versionId,
-                sha256: r.file.sha256,
-              })),
-            ],
-            trimmed: inputs.trimmed.length,
-          },
+          usedReferences: describeVideoReferences({
+            frameAsReference,
+            startFrame: inputs.startFrame,
+            references: inputs.references,
+            trimmed: inputs.trimmed,
+          }).used,
         }
       : {}),
   })

@@ -299,6 +299,93 @@ describe('video with reference images (task parameter videoRefs, default off)', 
   )
 
   real(
+    'exec 21: the preflight list of references is the list the job used (same function), for every protocol that takes references',
+    async () => {
+      for (const p of [ARK, KLING, WAN3]) {
+        const pre = await preflightTargets(env.deps, env.projectId, [target(p, true)], {
+          confirmUnverified: true,
+        })
+        const plan = pre.results[0]!.video!
+        const { version } = await generate(p, true)
+        const used = version.usedReferences!
+        expect(plan.references, p.model).toEqual(used.references)
+        expect(plan.dropped!.length, p.model).toBe(used.trimmed)
+        expect(plan.referenceCount, p.model).toBe(used.references.length)
+        // order is 1, 2, 3… — the number the prompt uses for "图 N"
+        expect(
+          plan.references!.map((r) => r.order),
+          p.model,
+        ).toEqual(used.references.map((_, i) => i + 1))
+        // the names carry the variant exactly as the version record does
+        expect(
+          plan.references!.map((r) => [r.assetName, r.variantName]),
+          p.model,
+        ).toEqual(used.references.map((r) => [r.assetName, r.variantName]))
+        if (used.frame === 'as_reference') {
+          expect(plan.references![0]).toMatchObject({ role: 'start_frame', order: 1 })
+          expect(plan.startFrame).toMatchObject({ use: 'reference' })
+        } else {
+          expect(plan.references!.map((r) => r.role)).not.toContain('start_frame')
+          expect(plan.startFrame).toMatchObject({ use: 'first_frame' })
+        }
+        expect(plan.startFrame!.versionId).toBeTruthy()
+      }
+    },
+  )
+
+  real(
+    'exec 21: references that did not fit are listed as dropped (over_limit), and the used list still equals the version record',
+    async () => {
+      const tiny: ProviderConfig = {
+        ...ARK,
+        id: 'ark-tiny',
+        capabilityOverrides: { refImages: { support: 'unverified', value: 2 } },
+      }
+      const prev = env.deps.providers
+      env.deps.providers = {
+        get: async (id) => (id === tiny.id ? tiny : prev.get(id)),
+        list: async () => [...(await prev.list()), tiny],
+      }
+      try {
+        const pre = await preflightTargets(env.deps, env.projectId, [target(tiny, true)], {
+          confirmUnverified: true,
+        })
+        const plan = pre.results[0]!.video!
+        const { version } = await generate(tiny, true)
+        expect(wanted.length).toBeGreaterThan(1)
+        expect(plan.references).toEqual(version.usedReferences!.references)
+        expect(plan.references!.map((r) => r.role)).toEqual(['start_frame', expect.any(String)])
+        expect(plan.dropped).toHaveLength(wanted.length - 1)
+        expect(plan.dropped!.every((d) => d.reason === 'over_limit' && d.assetName)).toBe(true)
+        expect(plan.droppedReferences).toBe(version.usedReferences!.trimmed)
+        // every registered asset is accounted for exactly once: used or dropped
+        const names = [
+          ...plan.references!.filter((r) => r.assetName).map((r) => r.assetName),
+          ...plan.dropped!.map((d) => d.assetName),
+        ]
+        expect(names.sort()).toEqual([...wanted].sort())
+      } finally {
+        env.deps.providers = prev
+      }
+    },
+  )
+
+  real(
+    'exec 21: with references off the plan carries none of the new fields (a default-path verdict is as before)',
+    async () => {
+      for (const p of [ARK, OLD]) {
+        const pre = await preflightTargets(env.deps, env.projectId, [target(p)], {
+          confirmUnverified: true,
+        })
+        const plan = pre.results[0]!.video!
+        expect(plan, p.model).not.toHaveProperty('references')
+        expect(plan, p.model).not.toHaveProperty('dropped')
+        expect(plan, p.model).not.toHaveProperty('startFrame')
+      }
+    },
+  )
+
+  real(
     'review fix 1: a job that reaches the task entry with references on for a first-frame-only protocol fails with a stable code, before any request',
     async () => {
       const custom: ProviderConfig = {
