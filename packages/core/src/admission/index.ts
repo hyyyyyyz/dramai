@@ -16,6 +16,7 @@ import {
 import type { CostEstimate, ModelRegistry } from '../providers/catalog.ts'
 import { deriveVoiceOwner } from '../domain/voice.ts'
 import { isDurationAllowed, snapDuration } from '../providers/duration.ts'
+import { providerRegionOf } from '../providers/presets.ts'
 import type {
   GenerationMode,
   ProviderConfig,
@@ -405,6 +406,7 @@ export async function evaluateTarget(
       ? 3
       : 1
   const estimate = estimateCost(lookup.profile, {
+    region: providerRegionOf(provider),
     count: sheetCount,
     seconds: inputs.durationSec,
     resolution,

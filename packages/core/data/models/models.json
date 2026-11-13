@@ -2026,27 +2026,21 @@
           "currency": "CNY",
           "unit": "per_second",
           "amount": 0.3,
-          "dimensions": {
-            "resolution": "480P"
-          },
+          "dimensions": { "resolution": "480P", "region": "cn" },
           "note": "百炼价格页（北京地域，2026-11-13 核对）。标\"限时7折\"，所列为原价。输入视频也按秒计费，请求失败不计费。"
         },
         {
           "currency": "CNY",
           "unit": "per_second",
           "amount": 0.6,
-          "dimensions": {
-            "resolution": "720P"
-          },
+          "dimensions": { "resolution": "720P", "region": "cn" },
           "note": "百炼价格页（北京地域，2026-11-13 核对）。标\"限时7折\"，所列为原价。输入视频也按秒计费，请求失败不计费。"
         },
         {
           "currency": "CNY",
           "unit": "per_second",
           "amount": 1.2,
-          "dimensions": {
-            "resolution": "1080P"
-          },
+          "dimensions": { "resolution": "1080P", "region": "cn" },
           "note": "百炼价格页（北京地域，2026-11-13 核对）。标\"限时7折\"，所列为原价。输入视频也按秒计费，请求失败不计费。"
         }
       ],
@@ -2120,27 +2114,21 @@
           "currency": "CNY",
           "unit": "per_second",
           "amount": 0.45,
-          "dimensions": {
-            "resolution": "480P"
-          },
+          "dimensions": { "resolution": "480P", "region": "cn" },
           "note": "百炼价格页（北京地域，2026-11-13 核对）。输入视频也按秒计费，请求失败不计费。"
         },
         {
           "currency": "CNY",
           "unit": "per_second",
           "amount": 0.9,
-          "dimensions": {
-            "resolution": "720P"
-          },
+          "dimensions": { "resolution": "720P", "region": "cn" },
           "note": "百炼价格页（北京地域，2026-11-13 核对）。输入视频也按秒计费，请求失败不计费。"
         },
         {
           "currency": "CNY",
           "unit": "per_second",
           "amount": 1.8,
-          "dimensions": {
-            "resolution": "1080P"
-          },
+          "dimensions": { "resolution": "1080P", "region": "cn" },
           "note": "百炼价格页（北京地域，2026-11-13 核对）。输入视频也按秒计费，请求失败不计费。"
         }
       ],

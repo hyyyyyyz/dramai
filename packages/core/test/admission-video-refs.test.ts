@@ -377,3 +377,87 @@ describe('review fix 6: the first frame takes one of the reference slots on Klin
     expect(p.note).toContain('未验证')
   })
 })
+
+describe('review fix 3: prices belong to a site (the CNY price list is the China site)', () => {
+  const wan = (extra: object) =>
+    videoProvider({
+      id: 'p-wan-region',
+      protocol: 'dashscope-video',
+      model: 'wan3.0-video',
+      baseUrl: 'https://ws1.cn-beijing.maas.aliyuncs.com',
+      ...extra,
+    })
+  const estimateOf = async (p: ReturnType<typeof wan>) => {
+    const w = await readyWorld()
+    const v = await evaluateTarget(
+      await ctxFor(w),
+      target(w, p, { resolution: '720P', confirmUnverified: true }),
+    )
+    return v.estimate!
+  }
+
+  it('the China preset is priced per second in CNY; the international preset is not priced at all', async () => {
+    expect(await estimateOf(wan({ presetId: 'aliyun-wan3-cn' }))).toMatchObject({
+      priced: true,
+      currency: 'CNY',
+      amount: 3,
+    }) // 0.6 CNY/s x 5 s
+    const intl = await estimateOf(
+      wan({
+        presetId: 'aliyun-wan3-intl',
+        baseUrl: 'https://ws1.ap-southeast-1.maas.aliyuncs.com',
+      }),
+    )
+    expect(intl.priced).toBe(false)
+  })
+
+  it('a hand-made config is judged by its address when that is obvious, otherwise it stays unpriced', async () => {
+    expect(await estimateOf(wan({}))).toMatchObject({ priced: true, currency: 'CNY' }) // cn-beijing host
+    expect(
+      (await estimateOf(wan({ baseUrl: 'https://ws1.ap-southeast-1.maas.aliyuncs.com' }))).priced,
+    ).toBe(false)
+    const unknown = await estimateOf(wan({ baseUrl: 'https://my-proxy.example.com' }))
+    expect(unknown.priced).toBe(false)
+  })
+
+  it('profiles with no region on their prices (the tested Wan Flash, PTC) are priced everywhere as before', async () => {
+    const w = await readyWorld()
+    const v = await evaluateTarget(await ctxFor(w), {
+      target: { kind: 'shot_video', shotId: w.shot.id },
+      provider: videoProvider({ baseUrl: 'https://my-relay.example.com' }),
+      resolution: '720P',
+    })
+    expect(v.estimate).toMatchObject({ priced: true, currency: 'PTC' })
+  })
+
+  it('the other vendors that have a China and an international preset carry no prices at all (nothing to mix up)', async () => {
+    const { PROVIDER_PRESETS } = await import('../src/providers/presets.ts')
+    const priced = new Set(
+      models
+        .all()
+        .filter((m) => m.pricing.length > 0)
+        .map((m) => `${m.protocol}:${m.apiModel}`),
+    )
+    const byVendor = new Map<string, Set<string>>()
+    for (const p of PROVIDER_PRESETS) {
+      if (!p.region || p.region === 'local') continue
+      const k = `${p.vendor}/${p.kind}`
+      byVendor.set(k, (byVendor.get(k) ?? new Set()).add(p.region))
+    }
+    const both = [...byVendor].filter(([, r]) => r.has('cn') && r.has('global')).map(([k]) => k)
+    expect(both.length).toBeGreaterThan(0)
+    for (const k of both) {
+      const [vendor, kind] = k.split('/')
+      for (const p of PROVIDER_PRESETS.filter((x) => x.vendor === vendor && x.kind === kind)) {
+        const key = `${p.protocol}:${p.suggestedModel}`
+        if (!priced.has(key)) continue
+        // priced profiles shared by both regions must say which region the price is for
+        const prof = models.lookup({ protocol: p.protocol, model: p.suggestedModel }).profile!
+        expect(
+          prof.pricing.every((e) => e.dimensions?.region),
+          key,
+        ).toBe(true)
+      }
+    }
+  })
+})

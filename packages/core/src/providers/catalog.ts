@@ -250,13 +250,27 @@ export interface CostQuery {
   /** 处理的字符数（按千字计价的文本 / 配音服务）。 */
   chars?: number
   resolution?: string
+  /**
+   * 服务商所在的站点（国内 / 国际）。价目条目带 `dimensions.region` 时只在站点一致时才用——
+   * 国内站的人民币价格不能套到国际站上；站点未知（`undefined`）时带 `region` 的条目不匹配，如实报"未定价"。
+   */
+  region?: 'cn' | 'global'
 }
 
 /** 按价目表估算费用。查不到单价 = 未定价，不猜。费用只是估算，不替代官方账单。 */
 export function estimateCost(profile: ModelProfile | undefined, query: CostQuery): CostEstimate {
   if (!profile) return { priced: false, reason: '该型号没有画像，未定价' }
   if (profile.pricing.length === 0) return { priced: false, reason: '该型号未定价' }
-  const entry = pickPrice(profile.pricing, query)
+  const regional = profile.pricing.filter(
+    (e) => !e.dimensions?.region || e.dimensions.region === query.region,
+  )
+  if (regional.length === 0) {
+    return {
+      priced: false,
+      reason: `价目只适用于${profile.pricing[0]?.dimensions?.region === 'cn' ? '国内站' : '另一个站点'}，当前服务商的站点${query.region ? '不同' : '无法判断'}：未定价`,
+    }
+  }
+  const entry = pickPrice(regional, query)
   if (!entry)
     return { priced: false, reason: `没有匹配分辨率 ${query.resolution ?? '(未指定)'} 的价目` }
   let quantity: number

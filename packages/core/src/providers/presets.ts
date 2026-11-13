@@ -355,3 +355,29 @@ export function localizeProviderConfig(
     knownLimitations: sameLimits ? t.knownLimitations : config.knownLimitations,
   }
 }
+
+/**
+ * 服务商所在的站点，用来挑价目（国内站的价格不能套到国际站上）。优先看预设自己写的地区；
+ * 没有预设（用户自填）时只在地址一眼能看出来时判断，其余 `undefined`（带地区的价目就不用，如实"未定价"）。
+ */
+export function providerRegionOf(
+  config: Pick<ProviderConfig, 'presetId' | 'baseUrl'>,
+): 'cn' | 'global' | undefined {
+  const preset = config.presetId
+    ? PROVIDER_PRESETS.find((p) => p.id === config.presetId)
+    : undefined
+  if (preset?.region === 'cn' || preset?.region === 'global') return preset.region
+  let host = ''
+  try {
+    host = new URL(config.baseUrl).hostname.toLowerCase()
+  } catch {
+    return undefined
+  }
+  if (/\.maas\.aliyuncs\.com$/.test(host))
+    return /\.cn-[a-z0-9-]+\.maas\./.test(host) ? 'cn' : 'global'
+  if (host.endsWith('.volces.com')) return 'cn'
+  if (host.endsWith('.bytepluses.com')) return 'global'
+  if (host === 'api-beijing.klingai.com') return 'cn'
+  if (host === 'api-singapore.klingai.com') return 'global'
+  return undefined
+}
