@@ -192,6 +192,14 @@ export const routes = {
       presetId: z.string(),
       apiKey: z.string().min(1).optional(),
       label: z.string().optional(),
+      /**
+       * 覆盖预设的接口地址（一步建好）：预设里带 `{WorkspaceId}` 之类占位符的，必须在这里填完整地址。
+       * 校验：必须是 http / https；公网地址必须 https（明文 http 只允许本机 / 局域网）；
+       * 账号登录的预设地址是钉死的，不接受覆盖。
+       */
+      baseUrl: z.string().min(1).optional(),
+      /** 覆盖预设的建议模型名。 */
+      model: z.string().min(1).optional(),
     }),
     response: S.providerConfig,
   }),

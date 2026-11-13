@@ -60,8 +60,15 @@ async function boot() {
   return { h, seen }
 }
 
-const preset = (h: Awaited<ReturnType<typeof boot>>['h'], presetId: string, apiKey?: string) =>
-  h.client.call('providers.fromPreset', { body: { presetId, ...(apiKey ? { apiKey } : {}) } })
+const preset = (
+  h: Awaited<ReturnType<typeof boot>>['h'],
+  presetId: string,
+  apiKey?: string,
+  baseUrl?: string,
+) =>
+  h.client.call('providers.fromPreset', {
+    body: { presetId, ...(apiKey ? { apiKey } : {}), ...(baseUrl ? { baseUrl } : {}) },
+  })
 
 describe('text presets through the API', () => {
   it('presets.list carries vendor (localized), region, dialect, placeholders, auth and verification', async () => {
@@ -106,11 +113,13 @@ describe('text presets through the API', () => {
 
   it('the dialect reaches the real request: thinking switched off in the body, the length field renamed, reasoning text dropped', async () => {
     const { h, seen } = await boot()
-    const p = await preset(h, 'aliyun-bailian-cn', 'sk-qwen-1234567890')
-    await h.server.ctx.store.providers.put({
-      ...(await h.server.ctx.store.providers.get(p.id))!,
-      baseUrl: 'https://ws1.cn-beijing.maas.aliyuncs.com/compatible-mode/v1',
-    })
+    // one step: the {WorkspaceId} address is filled in at creation (without it creation is refused)
+    const p = await preset(
+      h,
+      'aliyun-bailian-cn',
+      'sk-qwen-1234567890',
+      'https://ws1.cn-beijing.maas.aliyuncs.com/compatible-mode/v1',
+    )
     await h.server.ctx.settings.patchActive('llm', p.id)
     const out = await h.server.ctx.deps.llm.complete({
       task: 't',

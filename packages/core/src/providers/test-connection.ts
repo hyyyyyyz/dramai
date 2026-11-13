@@ -1,3 +1,4 @@
+import { ProviderError } from './errors.ts'
 import { sendRequest } from './executor.ts'
 import { modelListRequest } from './model-list.ts'
 import { isGoogleHost } from './protocols/gemini-image.ts'
@@ -12,7 +13,7 @@ import type { ProviderConfig } from './types.ts'
  */
 export type TestConnectionResult =
   | { outcome: 'ok'; modelCount?: number; detectedModels?: string[]; modelListed?: boolean }
-  | { outcome: 'failed'; error: string; status?: number }
+  | { outcome: 'failed'; error: string; status?: number; code?: string }
   | { outcome: 'unverifiable'; reason: string }
 
 export async function testProvider(
@@ -20,7 +21,8 @@ export async function testProvider(
   apiKey: string | undefined,
   deps: ExecutorDeps & { signal?: AbortSignal } = {},
 ): Promise<TestConnectionResult> {
-  if (!config.baseUrl.trim()) return { outcome: 'failed', error: 'Base URL 不能为空' }
+  if (!config.baseUrl.trim())
+    return { outcome: 'failed', code: 'BASE_URL_INVALID', error: 'Base URL 不能为空' }
 
   switch (config.protocol) {
     case 'aliyun-video':
@@ -42,20 +44,33 @@ export async function testProvider(
         if (!isGoogleHost(config.baseUrl)) headers.Authorization = `Bearer ${apiKey}`
         headers['x-goog-api-key'] = apiKey
       }
-      return probeList(joinUrl(config.baseUrl, '/v1beta/models'), headers, config.model, deps)
+      return probeList(
+        config.protocol,
+        joinUrl(config.baseUrl, '/v1beta/models'),
+        headers,
+        config.model,
+        deps,
+      )
     }
     case 'anthropic-messages':
     case 'gemini-chat': {
       // 各自的鉴权头和列表地址（见 model-list.ts）
       const req = modelListRequest(config.protocol, config.baseUrl, apiKey)!
-      return probeList(req.url, req.headers, config.model, deps)
+      return probeList(config.protocol, req.url, req.headers, config.model, deps)
     }
     default:
-      return probeList(joinUrl(config.baseUrl, '/models'), authHeaders(apiKey), config.model, deps)
+      return probeList(
+        config.protocol,
+        joinUrl(config.baseUrl, '/models'),
+        authHeaders(apiKey),
+        config.model,
+        deps,
+      )
   }
 }
 
 async function probeList(
+  protocol: string,
   url: string,
   headers: Record<string, string>,
   model: string,
@@ -70,12 +85,21 @@ async function probeList(
       return {
         outcome: 'failed',
         status: raw.status,
+        // 机器可读的码，规则和任务失败时一致（同一个错误在两处得到同一个码）：
+        // Anthropic 取 `error.type`，Gemini 取 `error.status`，Responses 取 `error.code`，
+        // 其余（含 openai-chat）是 `HTTP_<状态>`
+        code: upstreamErrorCode(protocol, raw.json) ?? `HTTP_${raw.status}`,
         error: `HTTP ${raw.status}${raw.text ? ` · ${raw.text.slice(0, 180)}` : ''}`,
       }
     }
     const list = extractModelList(raw.json)
     if (list.length === 0 && raw.json === undefined) {
-      return { outcome: 'failed', status: raw.status, error: '响应不是 JSON' }
+      return {
+        outcome: 'failed',
+        status: raw.status,
+        code: 'UNREADABLE_RESPONSE',
+        error: '响应不是 JSON',
+      }
     }
     const short = (m: string) => m.replace(/^models\//, '')
     return {
@@ -85,8 +109,27 @@ async function probeList(
       modelListed: list.length === 0 ? undefined : list.some((m) => short(m) === model),
     }
   } catch (err) {
-    return { outcome: 'failed', error: err instanceof Error ? err.message : String(err) }
+    return {
+      outcome: 'failed',
+      error: err instanceof Error ? err.message : String(err),
+      ...(err instanceof ProviderError ? { code: err.code } : {}),
+    }
   }
+}
+
+/** 各协议在任务失败时从上游错误体里取的稳定码；取不到返回 undefined（调用方回落到 `HTTP_<状态>`）。 */
+export function upstreamErrorCode(protocol: string, json: unknown): string | undefined {
+  const err = asRecord(asRecord(json)?.error)
+  const field =
+    protocol === 'anthropic-messages'
+      ? 'type'
+      : protocol === 'gemini-chat'
+        ? 'status'
+        : protocol === 'openai-responses'
+          ? 'code'
+          : undefined
+  const v = field ? err?.[field] : undefined
+  return typeof v === 'string' && v ? v : undefined
 }
 
 function extractModelList(data: unknown): string[] {

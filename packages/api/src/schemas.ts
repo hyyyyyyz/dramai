@@ -851,7 +851,18 @@ export const testConnectionResult = z.discriminatedUnion('outcome', [
     detectedModels: z.array(z.string()).optional(),
     modelListed: z.boolean().optional(),
   }),
-  z.object({ outcome: z.literal('failed'), error: z.string(), status: z.number().optional() }),
+  z.object({
+    outcome: z.literal('failed'),
+    /** 给人看的说明（原样保留，向后兼容）。 */
+    error: z.string(),
+    status: z.number().optional(),
+    /**
+     * 机器可读的错误码，和任务失败时的 `error.code` 是同一套：`HTTP_401` / `HTTP_429`、`TIMEOUT`、`NETWORK`、
+     * `LOGIN_REQUIRED`、`UNREADABLE_RESPONSE`，以及上游错误体里的稳定码（Anthropic 的 `authentication_error` /
+     * `overloaded_error`，Gemini 的 `PERMISSION_DENIED` 等）。前端按它显示和任务失败时同样的解释与下一步。
+     */
+    code: z.string().optional(),
+  }),
   z.object({ outcome: z.literal('unverifiable'), reason: z.string() }),
 ])
 

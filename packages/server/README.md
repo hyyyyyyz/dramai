@@ -71,6 +71,17 @@ WebUI / 容器场景没有系统加密可用，靠文件权限和数据目录隔
 
 **Preset verification.** Every preset carries `verification`: `{ status: 'tested', testedAt }` or `{ status: 'documented', source }` (connected from official documentation, not tested). Documented presets never become the current choice automatically. The four v0.4 presets stay `tested` (2026-05-04). The OpenAI preset (`openai-responses-login`) is `documented`, text only, and its limitations say so.
 
+## Creating a provider from a preset in one step (English)
+
+`providers.fromPreset({ presetId, apiKey?, label?, baseUrl?, model? })` creates the provider with the address and model already filled in. The effective address (override or the preset's own) is validated before anything is stored, and every failure is a 400:
+
+- `BASE_URL_PLACEHOLDER_UNFILLED`: a `{placeholder}` such as `{WorkspaceId}` is still in the address (`details.placeholders`). Presets with placeholders must be created with a complete `baseUrl`.
+- `BASE_URL_INVALID`: not a URL, not `http`/`https`, user name or password in it, or whitespace.
+- `BASE_URL_INSECURE`: plain `http` is only accepted for this machine and the local network (loopback, private IPv4 ranges incl. 100.64.0.0/10, IPv6 `fc`/`fd`/`fe80`, `*.local` / `*.lan` / `*.internal`, single-label host names); everything else needs `https`.
+- `BASE_URL_NOT_OVERRIDABLE`: account-login presets pin their address; only `model` may be overridden.
+
+`providers.test` failures also carry a machine-readable `code` (the same set job failures use: Anthropic `error.type`, Gemini `error.status`, `HTTP_<status>`, `NETWORK`, `TIMEOUT`, `LOGIN_REQUIRED`, ...) next to the unchanged `error` string. `providers.login.logout` always carries `manageUrl` when there is something to invalidate (OpenRouter), because the key is gone from the status once logout has run. Preset `label` / `notes` / `knownLimitations` are localized (`en`, `zh-Hant`) both in `presets.list` and in provider configs made from presets, as long as the user has not edited the text.
+
 ## Text providers, dialect options and OpenRouter sign-in (English)
 
 **Protocols.** Text providers use one of `openai-chat`, `openai-responses`, `anthropic-messages` (`POST /v1/messages`, `x-api-key` + `Authorization`, `anthropic-version`, `max_tokens` always set, no temperature/top_p) and `gemini-chat` (`:streamGenerateContent?alt=sse`, `x-goog-api-key`; the official reference does not describe the stream format, so a plain JSON array is accepted too). All stream; all fail on interruption, error events, blocked output and an empty output cut by the length limit (`EMPTY_OUTPUT_TRUNCATED`). Model lists and connection tests are per protocol (`providers.models`; image, video and speech protocols answer `MODEL_LIST_UNSUPPORTED`).

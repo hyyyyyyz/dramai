@@ -1,5 +1,6 @@
 import type { LoginStatusDto, ProviderConfigDto } from '@dramai/api'
 import {
+  checkBaseUrl,
   configFromPreset,
   effectiveAuth,
   localizeProviderConfig,
@@ -147,19 +148,46 @@ export class ProviderService {
     return cfg
   }
 
-  async createFromPreset(presetId: string, options: { apiKey?: string; label?: string }) {
+  async createFromPreset(
+    presetId: string,
+    options: { apiKey?: string; label?: string; baseUrl?: string; model?: string },
+  ) {
     const preset = PROVIDER_PRESETS.find((p) => p.id === presetId)
     if (!preset) throw notFound('provider_preset', presetId)
-    const id = this.d.ids.next('prov')
     if (preset.auth.type === 'account_login' && options.apiKey) {
       throw badRequest('这个预设用账号登录，不需要 API Key')
     }
+    // 接口地址：账号登录的预设钉死不能改；其余的覆盖值或预设原值都要过基本校验
+    // （尤其是预设里还带 {占位符} 却没填的——建出来也只会 404，拒绝比留一份坏配置好）。
+    const override = options.baseUrl?.trim()
+    if (override && preset.auth.type === 'account_login') {
+      throw new HttpError(
+        400,
+        'BASE_URL_NOT_OVERRIDABLE',
+        '账号登录的预设接口地址是固定的，不能覆盖',
+      )
+    }
+    const baseUrl = override || preset.baseUrl
+    const checked = checkBaseUrl(baseUrl)
+    if (!checked.ok) {
+      throw new HttpError(
+        400,
+        checked.code,
+        checked.message,
+        checked.code === 'BASE_URL_PLACEHOLDER_UNFILLED'
+          ? { placeholders: checked.placeholders }
+          : undefined,
+      )
+    }
+    const id = this.d.ids.next('prov')
     const cfg = configFromPreset(preset, {
       id,
       secretRef:
         options.apiKey || preset.auth.type === 'account_login' ? secretRefFor(id) : undefined,
     })
     if (options.label) cfg.label = options.label
+    cfg.baseUrl = checked.url
+    if (options.model?.trim()) cfg.model = options.model.trim()
     if (options.apiKey) await this.d.secrets.set(secretRefFor(id), options.apiKey)
     await this.d.store.providers.put(cfg)
     await this.autoActivate(cfg)
@@ -244,7 +272,12 @@ export class ProviderService {
       const bearer = (await this.credential(cfg)).bearer
       return await testProvider(cfg, bearer, this.d.executor)
     } catch (err) {
-      return { outcome: 'failed', error: err instanceof Error ? err.message : String(err) }
+      return {
+        outcome: 'failed',
+        error: err instanceof Error ? err.message : String(err),
+        // 和任务失败时同一套码（LOGIN_REQUIRED / TIMEOUT / NETWORK / HTTP_<状态> …）
+        ...(err instanceof ProviderError ? { code: err.code } : {}),
+      }
     }
   }
 
