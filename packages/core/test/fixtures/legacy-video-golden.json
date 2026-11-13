@@ -1,0 +1,2572 @@
+{
+  "aliyun-video": {
+    "requests": {
+      "wan2.2-i2v-flash | minimal": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | camera": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p. dolly in",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | duration-3": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 3,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | duration-6-snap": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | duration-12": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 10,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | allowed-5": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | allowed-list": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 3,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | aspect-916": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | aspect-169": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/jpeg;base64,CQgHBg=="
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | aspect-11": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | res-480P": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "480P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | res-720p": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720p",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | res-1080P": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "1080P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | audio-on": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | audio-off": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | last-frame": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | everything": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "开场。. slow push",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720p",
+              "duration": 10,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.2-i2v-flash | empty-prompt": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.2-i2v-flash",
+            "input": {
+              "prompt": "",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | minimal": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | camera": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p. dolly in",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | duration-3": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 3,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | duration-6-snap": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | duration-12": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 10,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | allowed-5": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | allowed-list": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 3,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | aspect-916": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | aspect-169": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/jpeg;base64,CQgHBg=="
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | aspect-11": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | res-480P": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "480P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | res-720p": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720p",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | res-1080P": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "1080P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | audio-on": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | audio-off": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | last-frame": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "p",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | everything": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "开场。. slow push",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720p",
+              "duration": 10,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      },
+      "wan2.5-i2v-preview | empty-prompt": {
+        "method": "POST",
+        "url": "https://api.example.com/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret",
+          "X-DashScope-Async": "enable"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "wan2.5-i2v-preview",
+            "input": {
+              "prompt": "",
+              "img_url": "data:image/png;base64,AQID"
+            },
+            "parameters": {
+              "resolution": "720P",
+              "duration": 5,
+              "prompt_extend": true,
+              "watermark": false
+            }
+          }
+        }
+      }
+    },
+    "submit": [
+      {
+        "status": "async",
+        "taskId": "t1"
+      },
+      {
+        "status": "failed",
+        "message": "Aliyun submit 响应里没找到 output.task_id"
+      },
+      {
+        "status": "failed",
+        "message": "Aliyun submit 响应里没找到 output.task_id"
+      }
+    ],
+    "pollRequests": [
+      {
+        "method": "GET",
+        "url": "https://api.example.com/aliyun/api/v1/tasks/t1",
+        "headers": {
+          "Authorization": "Bearer sk-secret"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "https://api.example.com/aliyun/api/v1/tasks/a%2Fb",
+        "headers": {
+          "Authorization": "Bearer sk-secret"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "https://api.example.com/aliyun/api/v1/tasks/cgt%201",
+        "headers": {
+          "Authorization": "Bearer sk-secret"
+        }
+      }
+    ],
+    "poll": [
+      {
+        "status": "queued"
+      },
+      {
+        "status": "processing"
+      },
+      {
+        "status": "queued"
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/1.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/2.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/3.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "failed",
+        "message": "Aliyun: 任务成功但响应里没找到 video_url（output.video_url 与 output.results[].url 都没值）"
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/4.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "failed",
+        "message": "bad image"
+      },
+      {
+        "status": "failed",
+        "message": "任务failed"
+      },
+      {
+        "status": "failed",
+        "message": "任务canceled"
+      }
+    ]
+  },
+  "volcengine-video": {
+    "requests": {
+      "doubao-seedance-2-0-fast-260128 | minimal": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | camera": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p. dolly in"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | duration-3": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 3,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | duration-6-snap": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 6,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | duration-12": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 12,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | allowed-5": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 9,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | allowed-list": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 4,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | aspect-916": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "9:16",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | aspect-169": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/jpeg;base64,CQgHBg=="
+                }
+              }
+            ],
+            "ratio": "16:9",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | aspect-11": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "1:1",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | res-480P": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "480P",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | res-720p": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | res-1080P": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "1080P",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | audio-on": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": true,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | audio-off": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | last-frame": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "p"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                },
+                "role": "first_frame"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/jpeg;base64,CQgHBg=="
+                },
+                "role": "last_frame"
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | everything": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "text",
+                "text": "开场。. slow push"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                },
+                "role": "first_frame"
+              },
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/jpeg;base64,CQgHBg=="
+                },
+                "role": "last_frame"
+              }
+            ],
+            "ratio": "9:16",
+            "duration": 10,
+            "resolution": "720p",
+            "generate_audio": true,
+            "watermark": false
+          }
+        }
+      },
+      "doubao-seedance-2-0-fast-260128 | empty-prompt": {
+        "method": "POST",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "doubao-seedance-2-0-fast-260128",
+            "content": [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": "data:image/png;base64,AQID"
+                }
+              }
+            ],
+            "ratio": "adaptive",
+            "duration": 5,
+            "resolution": "720p",
+            "generate_audio": false,
+            "watermark": false
+          }
+        }
+      }
+    },
+    "submit": [
+      {
+        "status": "async",
+        "taskId": "cgt-1"
+      },
+      {
+        "status": "failed",
+        "message": "Volcengine submit 响应里没找到 task id"
+      },
+      {
+        "status": "failed",
+        "message": "Volcengine submit 响应里没找到 task id"
+      }
+    ],
+    "pollRequests": [
+      {
+        "method": "GET",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks/t1",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks/a%2Fb",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "https://api.example.com/volcengine/api/v3/contents/generations/tasks/cgt%201",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        }
+      }
+    ],
+    "poll": [
+      {
+        "status": "queued"
+      },
+      {
+        "status": "processing"
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/a.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/b.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "failed",
+        "message": "Volcengine: 任务成功但缺少 content.video_url"
+      },
+      {
+        "status": "failed",
+        "message": "blocked"
+      },
+      {
+        "status": "failed",
+        "message": "任务failed（火山方舟未提供详细错误）"
+      },
+      {
+        "status": "failed",
+        "message": "任务error（火山方舟未提供详细错误）"
+      },
+      {
+        "status": "failed",
+        "message": "任务expired（火山方舟未提供详细错误）"
+      },
+      {
+        "status": "failed",
+        "message": "任务cancelled（火山方舟未提供详细错误）"
+      },
+      {
+        "status": "queued"
+      }
+    ]
+  },
+  "kling-video": {
+    "requests": {
+      "kling-v2-6 | minimal": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5"
+          }
+        }
+      },
+      "kling-v2-6 | camera": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p. dolly in",
+            "duration": "5"
+          }
+        }
+      },
+      "kling-v2-6 | duration-3": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "3"
+          }
+        }
+      },
+      "kling-v2-6 | duration-6-snap": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "6"
+          }
+        }
+      },
+      "kling-v2-6 | duration-12": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "12"
+          }
+        }
+      },
+      "kling-v2-6 | allowed-5": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "9"
+          }
+        }
+      },
+      "kling-v2-6 | allowed-list": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "4"
+          }
+        }
+      },
+      "kling-v2-6 | aspect-916": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5",
+            "aspect_ratio": "9:16"
+          }
+        }
+      },
+      "kling-v2-6 | aspect-169": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "CQgHBg==",
+            "prompt": "p",
+            "duration": "5",
+            "aspect_ratio": "16:9"
+          }
+        }
+      },
+      "kling-v2-6 | aspect-11": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5",
+            "aspect_ratio": "1:1"
+          }
+        }
+      },
+      "kling-v2-6 | res-480P": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5"
+          }
+        }
+      },
+      "kling-v2-6 | res-720p": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5"
+          }
+        }
+      },
+      "kling-v2-6 | res-1080P": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5"
+          }
+        }
+      },
+      "kling-v2-6 | audio-on": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5"
+          }
+        }
+      },
+      "kling-v2-6 | audio-off": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5"
+          }
+        }
+      },
+      "kling-v2-6 | last-frame": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "p",
+            "duration": "5",
+            "image_tail": "CQgHBg=="
+          }
+        }
+      },
+      "kling-v2-6 | everything": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "开场。. slow push",
+            "duration": "10",
+            "image_tail": "CQgHBg==",
+            "aspect_ratio": "9:16"
+          }
+        }
+      },
+      "kling-v2-6 | empty-prompt": {
+        "method": "POST",
+        "url": "https://api.example.com/v1/videos/image2video",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model_name": "kling-v2-6",
+            "image": "AQID",
+            "prompt": "",
+            "duration": "5"
+          }
+        }
+      }
+    },
+    "submit": [
+      {
+        "status": "async",
+        "taskId": "k1"
+      },
+      {
+        "status": "async",
+        "taskId": "k2"
+      },
+      {
+        "status": "failed",
+        "message": "Kling submit 响应里没找到 task_id"
+      },
+      {
+        "status": "failed",
+        "message": "Kling submit 响应里没找到 task_id"
+      }
+    ],
+    "pollRequests": [
+      {
+        "method": "GET",
+        "url": "https://api.example.com/v1/videos/image2video/t1",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "https://api.example.com/v1/videos/image2video/a%2Fb",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "https://api.example.com/v1/videos/image2video/cgt%201",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        }
+      }
+    ],
+    "poll": [
+      {
+        "status": "queued"
+      },
+      {
+        "status": "processing",
+        "message": "x"
+      },
+      {
+        "status": "processing"
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/k.mp4",
+            "mime": "video/mp4"
+          }
+        ],
+        "durationSec": 5.1
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/k2.mp4",
+            "mime": "video/mp4"
+          }
+        ],
+        "durationSec": 10
+      },
+      {
+        "status": "failed",
+        "message": "Kling: 任务成功但缺少 video.url"
+      },
+      {
+        "status": "failed",
+        "message": "nope"
+      },
+      {
+        "status": "failed",
+        "message": "Kling 任务失败"
+      },
+      {
+        "status": "failed",
+        "message": "Kling 任务失败"
+      },
+      {
+        "status": "queued"
+      }
+    ]
+  },
+  "generic-video": {
+    "requests": {
+      "some-video-model | minimal": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      },
+      "some-video-model | camera": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p. dolly in",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      },
+      "some-video-model | duration-3": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID",
+            "duration": 3
+          }
+        }
+      },
+      "some-video-model | duration-6-snap": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID",
+            "duration": 6
+          }
+        }
+      },
+      "some-video-model | duration-12": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID",
+            "duration": 12
+          }
+        }
+      },
+      "some-video-model | allowed-5": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID",
+            "duration": 9
+          }
+        }
+      },
+      "some-video-model | allowed-list": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID",
+            "duration": 4
+          }
+        }
+      },
+      "some-video-model | aspect-916": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID",
+            "aspect_ratio": "9:16"
+          }
+        }
+      },
+      "some-video-model | aspect-169": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/jpeg;base64,CQgHBg==",
+            "image_url": "data:image/jpeg;base64,CQgHBg==",
+            "aspect_ratio": "16:9"
+          }
+        }
+      },
+      "some-video-model | aspect-11": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID",
+            "aspect_ratio": "1:1"
+          }
+        }
+      },
+      "some-video-model | res-480P": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      },
+      "some-video-model | res-720p": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      },
+      "some-video-model | res-1080P": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      },
+      "some-video-model | audio-on": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      },
+      "some-video-model | audio-off": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      },
+      "some-video-model | last-frame": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "p",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      },
+      "some-video-model | everything": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "开场。. slow push",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID",
+            "duration": 10,
+            "aspect_ratio": "9:16"
+          }
+        }
+      },
+      "some-video-model | empty-prompt": {
+        "method": "POST",
+        "url": "https://api.example.com/videos/generations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-secret"
+        },
+        "body": {
+          "type": "json",
+          "value": {
+            "model": "some-video-model",
+            "prompt": "",
+            "image": "data:image/png;base64,AQID",
+            "image_url": "data:image/png;base64,AQID"
+          }
+        }
+      }
+    },
+    "submit": [
+      {
+        "status": "async",
+        "taskId": "g1"
+      },
+      {
+        "status": "async",
+        "taskId": "g2"
+      },
+      {
+        "status": "async",
+        "taskId": "g3"
+      },
+      {
+        "status": "async",
+        "taskId": "g4"
+      },
+      {
+        "status": "async",
+        "taskId": "g5"
+      },
+      {
+        "status": "failed",
+        "message": "Video submit 响应里没找到任务 id"
+      }
+    ],
+    "pollRequests": [
+      {
+        "method": "GET",
+        "url": "https://api.example.com/videos/generations/t1",
+        "headers": {
+          "Authorization": "Bearer sk-secret"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "https://api.example.com/videos/generations/a%2Fb",
+        "headers": {
+          "Authorization": "Bearer sk-secret"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "https://api.example.com/videos/generations/cgt%201",
+        "headers": {
+          "Authorization": "Bearer sk-secret"
+        }
+      }
+    ],
+    "poll": [
+      {
+        "status": "processing"
+      },
+      {
+        "status": "processing"
+      },
+      {
+        "status": "queued"
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/g.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/g2.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/g3.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/g4.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/g5.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/g6.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/g7.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "completed",
+        "outputs": [
+          {
+            "kind": "url",
+            "url": "https://v/g8.mp4",
+            "mime": "video/mp4"
+          }
+        ]
+      },
+      {
+        "status": "failed",
+        "message": "Video poll: 任务成功但缺少 url"
+      },
+      {
+        "status": "failed",
+        "message": "boom"
+      },
+      {
+        "status": "failed",
+        "message": "oops"
+      },
+      {
+        "status": "failed",
+        "message": "deep"
+      },
+      {
+        "status": "failed",
+        "message": "视频任务失败"
+      }
+    ]
+  }
+}
