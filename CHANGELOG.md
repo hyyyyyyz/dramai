@@ -6,6 +6,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- GitHub Pages now serves the landing page (`apps/site`) instead of the old browser-only workspace, which is taken
+  down and not kept. Links into the old app land on the landing page's 404 page. Data the old workspace stored in a
+  browser can no longer be opened or exported from anywhere, so export a backup from the old app before the switch
+  if you still need it.
+
 ## [0.5.0-beta.1] - 2026-11-12
 
 First beta of 0.5.0, a rewrite of dramai. It is **no longer a browser-only app**: the studio now runs

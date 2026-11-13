@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+# apps/site 的构建和类型检查是 Astro 跑的；不向它发送遥测。
+env:
+  ASTRO_TELEMETRY_DISABLED: '1'
+
 # 同一分支 / PR 上新的运行会取消旧的；main 上不取消，保证每个提交都有完整结果。
 # PR 和它的源分支的推送共用一个组，所以只会留下最新的一次。
 concurrency:

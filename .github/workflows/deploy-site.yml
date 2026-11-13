@@ -4,11 +4,18 @@ name: Deploy site to GitHub Pages
 # https://hyyyyyyz.github.io/dramai/ 。base 和 site 在 apps/site/astro.config.mjs 里。
 # 构建后先跑 apps/site 的检查（链接和锚点、中英对等、没有第三方请求等），检查不过不部署。
 #
-# 现在只能手动触发（Actions → Deploy site to GitHub Pages → Run workflow）。第一次部署会替换 Pages 上
-# 线上的旧版应用，要先得到仓库所有者的同意。以后想在 main 上 apps/site 有变更时自动部署，
-# 把下面 `push:` 那几行的注释去掉即可（再保留 workflow_dispatch，方便手动重发）。
+# 现在只能手动触发（Actions → Deploy site to GitHub Pages → Run workflow），并且必须勾选 confirm：
+# 第一次部署会替换 Pages 上线上的旧版应用，这一步不可逆，要先得到仓库所有者的同意。
+# 以后想在 main 上 apps/site 有变更时自动部署，把下面 `push:` 那几行的注释去掉即可
+# （保留 workflow_dispatch，方便手动重发；两个 job 的 `if` 已经允许 push 触发时不需要 confirm）。
 on:
   workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'I understand this replaces what GitHub Pages serves today (the old v0.4 web app) with the landing page, and that this cannot be undone'
+        type: boolean
+        required: true
+        default: false
   # push:
   #   branches: [main]
   #   paths:
@@ -19,6 +26,10 @@ on:
 # 默认只读；只有 deploy 这个 job 需要写 Pages 和换取 OIDC 令牌。
 permissions:
   contents: read
+
+# 站点承诺没有任何第三方请求，构建时也不向 Astro 发送遥测。
+env:
+  ASTRO_TELEMETRY_DISABLED: '1'
 
 # 同一时间只部署一次，不取消正在进行的部署。
 concurrency:
@@ -32,6 +43,7 @@ defaults:
 jobs:
   build:
     name: Build and check the site
+    if: github.event_name != 'workflow_dispatch' || inputs.confirm
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -41,13 +53,11 @@ jobs:
       - name: Setup workspace
         uses: ./.github/actions/setup
 
-      - name: Build
-        run: pnpm build:site
-
-      # 单元测试加构建后的检查（scripts/check-dist.mjs）：每个内部链接和锚点都能解析、
-      # 中英两个语言的章节和内容量一致、输出里没有任何第三方请求、hreflang / canonical / sitemap 一致。
-      # 它会再构建一次，所以上传的就是被检查过的那一份。
-      - name: Test and check the build output
+      # `pnpm build:site` 就是 apps/site 的 `astro build`。`test` 脚本先跑单元测试，再由
+      # scripts/check-dist.mjs 构建一次并检查输出：每个内部链接和锚点都能解析、中英两个语言的章节和内容量一致、
+      # 输出里没有任何第三方请求、hreflang / canonical / sitemap 一致。构建只做这一次，
+      # 所以下面上传的就是被检查过的那一份。
+      - name: Build, test and check the output
         run: pnpm --filter @dramai/site test
 
       - name: Upload Pages artifact
@@ -58,8 +68,9 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
+    if: github.event_name != 'workflow_dispatch' || inputs.confirm
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15 # deploy-pages 自己的超时是 10 分钟，这里留出余量
     permissions:
       pages: write # 发布到 Pages
       id-token: write # 证明这次部署来自本工作流（OIDC）

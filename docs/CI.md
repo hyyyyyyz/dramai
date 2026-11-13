@@ -23,7 +23,7 @@ dependencies.
 | Desktop                 | `pnpm desktop:build` (builds the frontend, bundles the app and runs electron-builder into `apps/desktop/release/`), then `pnpm desktop:check-install --skip-build` (an unattended install into a temporary folder, a smoke check of the installed app, uninstall, and purging the data), on Linux, macOS and Windows. Electron and electron-builder downloads are cached (see below) |
 | Lint workflows          | actionlint checks the syntax, expressions and inline shell in `.github/workflows/`                                                                                                                                                                                                                                                                                                   |
 | E2E (browser)           | `pnpm e2e`: Playwright specs in demo mode (installs ffmpeg and Chromium; uploads `test-results/` as an artifact on failure)                                                                                                                                                                                                                                                          |
-| CI passed               | Summarises all the jobs above in a table. Branch protection only needs this one as a required check; skipped jobs do not count as failures, but anything that did not actually run is listed under "Not run" in the summary                                                                                                                                                          |
+| CI passed               | Summarises all the jobs above in a table of their results. Branch protection only needs this one as a required check; a skipped job does not count as a failure, a failed or cancelled one does                                                                                                                                                                                      |
 
 When a branch or pull request gets a new commit, the older run is cancelled (never on `main`).
 
@@ -50,7 +50,7 @@ When a branch or pull request gets a new commit, the older run is cancelled (nev
    the capability-error check (a warning appears in the log). On Linux libass is required.
 4. A failing `Test` job's summary lists the failing packages; the Vitest output of each is in the `Test` step. Locally `pnpm test` behaves the same way (it runs all packages, then prints `Summary: N fails, M passes`). When E2E fails, the report is an artifact (`e2e-report`) at the
    bottom of the run page.
-5. **A green job is not always a job that ran.** Open the run's summary page: jobs that cannot run yet (for example the desktop steps before the root `desktop:*` scripts exist) are marked NOT RUN there and in the `CI passed` table.
+5. **Read the `CI passed` table, not just the colour.** It lists every job's result (`success`, `failure`, `cancelled` or `skipped`). A skipped job did not run; there are no jobs that are skipped on purpose any more, so a `skipped` row means something upstream failed.
 6. A failure with no code change is most often an external service (apt, Homebrew or Chocolatey
    downloads) or a runner image update; re-run once and read the log if it keeps failing. Actions are
    pinned to commit SHAs, so they cannot change under you.
