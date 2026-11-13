@@ -231,19 +231,6 @@ export function subtitleBurnOptions(
   }
 }
 
-/**
- * 一个片段的原声实际音量。时间线上的 `sourceVolume` 是"想听到多大声"，但前提是这个视频的原声是被要求的：
- * 生成时没有要求原生人声（`withNativeAudio === false`，即这个镜头的声音由 TTS / 后期配音 / 静音承担）的视频版本，
- * 成片里**不能**出现模型自带的音轨——有的模型关不掉原生音频（可灵 4.0），有的会无视开关。这类片段静音。
- * 要求过原生人声的、用户上传的（没有这个标记）保持时间线上的音量。
- */
-export function clipSourceVolume(
-  clip: { sourceVolume: number },
-  version: { withNativeAudio?: boolean } | undefined,
-): number {
-  return version?.withNativeAudio === false ? 0 : clip.sourceVolume
-}
-
 export interface ComposeEpisodeOptions {
   /** 字幕：soft（默认，mov_text 软字幕）/ burn（烧进画面，需要 libass，没有则报错）/ none。 */
   subtitles?: SubtitleMode
@@ -316,7 +303,7 @@ export async function composeEpisode(
             ? usToSec(pc.srcOutUs)
             : undefined,
         holdSec: pc.holdUs > 0 ? usToSec(pc.holdUs) : undefined,
-        volume: clipSourceVolume(clip, v),
+        volume: clip.sourceVolume,
       })
       normalized.push(out)
     }
