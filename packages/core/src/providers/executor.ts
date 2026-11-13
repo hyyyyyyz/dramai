@@ -162,6 +162,17 @@ function snippet(raw: RawResponse): string {
   return raw.text.slice(0, 280)
 }
 
+function safeHttpError(
+  protocol: MediaProtocol<never>,
+  raw: RawResponse,
+): { code?: string; message?: string; recoverable?: boolean } | undefined {
+  try {
+    return protocol.parseHttpError?.(raw)
+  } catch {
+    return undefined // 解析错误体失败不能盖住原来的错误
+  }
+}
+
 function submissionOutcomeForStatus(status: number): 'rejected' | 'unknown' {
   // 4xx：上游明确拒绝，没有任务、没有费用。5xx：不知道有没有受理。
   return status >= 400 && status < 500 ? 'rejected' : 'unknown'
@@ -184,11 +195,15 @@ export async function downloadOutput(
   let last: unknown
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const raw = await sendRequest({ method: 'GET', url: output.url, headers: {} }, deps, {
-        signal: options.signal,
-        timeoutMs: options.timeoutMs ?? 300_000,
-        binary: true,
-      })
+      const raw = await sendRequest(
+        { method: 'GET', url: output.url, headers: output.headers ?? {} },
+        deps,
+        {
+          signal: options.signal,
+          timeoutMs: options.timeoutMs ?? 300_000,
+          binary: true,
+        },
+      )
       if (raw.status < 200 || raw.status >= 300 || !raw.bytes) {
         throw new ProviderError('download_failed', `下载成品失败：HTTP ${raw.status}`, {
           status: raw.status,
@@ -254,11 +269,21 @@ async function submit<I>(
     throw err
   }
   if (raw.status < 200 || raw.status >= 300) {
-    throw new ProviderError('http', `HTTP ${raw.status}${raw.text ? ` · ${snippet(raw)}` : ''}`, {
-      status: raw.status,
-      body: snippet(raw),
-      submission: submissionOutcomeForStatus(raw.status),
-    })
+    // 协议可以从响应体里取稳定码和人话（没有这个钩子的协议行为不变）
+    const parsedError = safeHttpError(protocol, raw)
+    throw new ProviderError(
+      'http',
+      parsedError?.message
+        ? `HTTP ${raw.status} · ${parsedError.message}`
+        : `HTTP ${raw.status}${raw.text ? ` · ${snippet(raw)}` : ''}`,
+      {
+        status: raw.status,
+        body: snippet(raw),
+        submission: submissionOutcomeForStatus(raw.status),
+        ...(parsedError?.code ? { code: parsedError.code } : {}),
+        ...(parsedError?.recoverable !== undefined ? { recoverable: parsedError.recoverable } : {}),
+      },
+    )
   }
   let parsed: GenerateParse
   try {
@@ -311,11 +336,17 @@ async function pollUntilDone<I>(
         },
       )
       if (raw.status >= 400 && raw.status < 500 && raw.status !== 429) {
-        throw new ProviderError('http', `轮询被拒绝：HTTP ${raw.status} · ${snippet(raw)}`, {
-          status: raw.status,
-          body: snippet(raw),
-          recoverable: raw.status !== 404 && raw.status !== 410,
-        })
+        const parsedError = safeHttpError(protocol, raw)
+        throw new ProviderError(
+          'http',
+          `轮询被拒绝：HTTP ${raw.status} · ${parsedError?.message ?? snippet(raw)}`,
+          {
+            status: raw.status,
+            body: snippet(raw),
+            recoverable: parsedError?.recoverable ?? (raw.status !== 404 && raw.status !== 410),
+            ...(parsedError?.code ? { code: parsedError.code } : {}),
+          },
+        )
       }
       if (raw.status < 200 || raw.status >= 300) {
         throw new PollTransient(`HTTP ${raw.status}`)
