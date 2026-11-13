@@ -8,7 +8,7 @@ import {
   str,
   toDataUrl,
 } from '../http.ts'
-import type { MediaProtocol, OutputRef, VideoGenInput } from '../types.ts'
+import type { MediaProtocol, OutputRef, ImageToVideoInput } from '../types.ts'
 
 /**
  * 火山方舟（Volcengine）即梦 Seedance 系列图生视频，经 302.AI 透传（2026-05 验证）。
@@ -23,7 +23,7 @@ import type { MediaProtocol, OutputRef, VideoGenInput } from '../types.ts'
  * 首尾帧（`role: first_frame/last_frame`）只在调用方给了 `lastImage` 时发出，并由模型能力
  * （lastFrame）把关；本协议实现未经实测。
  */
-export const volcengineVideo: MediaProtocol<VideoGenInput> = {
+export const volcengineVideo: MediaProtocol<ImageToVideoInput> = {
   id: 'volcengine-video',
   media: 'video',
 

@@ -20,6 +20,9 @@ export type ProtocolId =
   | 'volcengine-video'
   | 'kling-video'
   | 'generic-video'
+  | 'ark-video'
+  | 'kling-contents'
+  | 'dashscope-video'
   | 'openai-tts'
   | 'openai-responses'
   | 'anthropic-messages'
@@ -181,9 +184,19 @@ export interface RawResponse {
   bytes?: Uint8Array
 }
 
+/**
+ * 协议返回的成品。约定：`outputs[0]` 永远是主成品（视频 / 图片 / 音频）；其余（如视频的尾帧）排在后面，
+ * 用 `role` 标出，管线默认只取第一个。`headers` 是下载这个地址要带的请求头（绝大多数不需要）。
+ */
 export type OutputRef =
-  | { kind: 'url'; url: string; mime?: string }
-  | { kind: 'bytes'; bytes: Uint8Array; mime: string }
+  | {
+      kind: 'url'
+      url: string
+      mime?: string
+      role?: 'video' | 'last_frame'
+      headers?: Record<string, string>
+    }
+  | { kind: 'bytes'; bytes: Uint8Array; mime: string; role?: 'video' | 'last_frame' }
 
 export type GenerateParse =
   | { status: 'sync'; outputs: OutputRef[] }
@@ -206,6 +219,11 @@ export interface MediaProtocol<Input> {
   parseGenerateResponse(raw: RawResponse): GenerateParse
   buildPollRequest?(auth: AuthContext, taskId: string): HttpRequestSpec
   parsePollResponse?(raw: RawResponse): PollParse
+  /**
+   * 非 2xx 的响应：从响应体里取稳定的错误码和人话（可灵 `code`、百炼 `code/message`、方舟 `error.code`…）。
+   * 不实现 = 沿用 `HTTP_<状态>` 和响应文本，行为不变。
+   */
+  parseHttpError?(raw: RawResponse): { code?: string; message?: string; recoverable?: boolean }
 }
 
 export interface ImageGenInput {
@@ -219,12 +237,40 @@ export interface ImageGenInput {
   references?: BinaryImage[]
 }
 
+/** 视频任务的输入类型，由 `videoModeOf()` 从输入推导（管线、准入、协议共用）。 */
+export type VideoInputMode = 't2v' | 'i2v' | 'first_last' | 'omni_ref'
+
+/** 一份要交给上游的素材。首批只用 `bytes`；`url` / `asset`（上游自己的素材 ID）先占位，供上传通道、数字人库使用。 */
+export type MediaPayload =
+  | { kind: 'bytes'; bytes: Uint8Array; mime: string }
+  | { kind: 'url'; url: string }
+  | { kind: 'asset'; id: string }
+
+export interface VideoReference {
+  /** 首批协议只实现 `image`；`video` / `audio` 遇到不支持的协议抛 `REFERENCE_KIND_UNSUPPORTED`。 */
+  kind: 'image' | 'video' | 'audio'
+  media: MediaPayload
+  /** 用途，只给提示词绑定和日志用，不发给上游。`frame` = 本来是首帧、因为协议互斥被降成参考图。 */
+  purpose?: 'frame' | 'character' | 'scene' | 'prop' | 'style'
+  /** 资产名（提示词绑定句里的 `{name}`），不发给上游。 */
+  label?: string
+}
+
 export interface VideoGenInput {
   prompt: string
   /** 附加运镜说明，会拼到提示词后面。 */
   cameraInstruction?: string
-  image: BinaryImage
+  /** 首帧。**可选**：不给 = 文生视频（或纯参考图）。旧调用方照旧传。 */
+  image?: BinaryImage
   lastImage?: BinaryImage
+  /**
+   * 参考素材。同一 `kind` 内按数组顺序编号：第 n 个图片参考就是提示词里的"图 n" / `@image_n`。
+   * 与 `image` / `lastImage` 能否同时出现由模型画像的 `firstFrameWithRefs` 决定；**协议只按字面发**，
+   * 互斥的协议遇到两者同时出现抛 `FRAME_WITH_REFS_UNSUPPORTED`。
+   */
+  references?: VideoReference[]
+  /** 想要上游一并返回无水印尾帧（镜头衔接用）；支持的协议实现，管线首批不开。 */
+  returnLastFrame?: boolean
   durationSec?: number
   /** 该模型支持的时长档；缺省时协议用自己的默认档。 */
   allowedDurations?: number[]
@@ -233,6 +279,9 @@ export interface VideoGenInput {
   resolution?: string
   withAudio?: boolean
 }
+
+/** 旧四个视频协议（302.AI 透传 / 旧版）的输入：必须有首帧。运行时请求与改动前逐字节相同。 */
+export type ImageToVideoInput = VideoGenInput & { image: BinaryImage }
 
 export interface SpeechInput {
   text: string
@@ -303,6 +352,12 @@ export interface ModelCapability {
    * 尺寸计算在统一入口（`resolveOutputSize`）按它补足：保持画幅比例、对齐步长、不超过上限。
    */
   minPixels?: number
+  /** 视频：首帧能否与参考图在同一次请求里同用（火山 / 万相互斥，可灵可以）。缺省按 `unsupported`。 */
+  firstFrameWithRefs?: Support
+  /** 视频：原生音频能否关闭（可灵 4.0 只有 native / original）。缺省按 `unverified`。 */
+  audioToggle?: Support
+  /** 参考视频的总时长上限（秒），与 `refAudioMaxTotalSec` 对称。 */
+  refVideoMaxTotalSec?: number
 }
 
 /**

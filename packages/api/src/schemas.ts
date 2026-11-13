@@ -684,6 +684,9 @@ export const protocolId = z.enum([
   'volcengine-video',
   'kling-video',
   'generic-video',
+  'ark-video',
+  'kling-contents',
+  'dashscope-video',
   'openai-tts',
   'openai-responses',
   'anthropic-messages',
@@ -798,6 +801,9 @@ export const modelCapability = z.object({
   maxLongSide: z.number().optional(),
   maxPixels: z.number().optional(),
   minPixels: z.number().optional(),
+  firstFrameWithRefs: support.optional(),
+  audioToggle: support.optional(),
+  refVideoMaxTotalSec: z.number().optional(),
 })
 
 export const priceEntry = z.object({

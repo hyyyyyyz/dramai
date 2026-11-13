@@ -8,7 +8,7 @@ import {
   jsonPost,
   str,
 } from '../http.ts'
-import type { MediaProtocol, OutputRef, VideoGenInput } from '../types.ts'
+import type { MediaProtocol, OutputRef, ImageToVideoInput } from '../types.ts'
 
 /**
  * Kling 图生视频（公开协议）。
@@ -20,7 +20,7 @@ import type { MediaProtocol, OutputRef, VideoGenInput } from '../types.ts'
  *
  * 尾帧（`image_tail`）只在调用方给了 `lastImage` 时发出，实现未经实测。
  */
-export const klingVideo: MediaProtocol<VideoGenInput> = {
+export const klingVideo: MediaProtocol<ImageToVideoInput> = {
   id: 'kling-video',
   media: 'video',
 

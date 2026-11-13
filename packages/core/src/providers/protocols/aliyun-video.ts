@@ -10,7 +10,7 @@ import {
   str,
   toDataUrl,
 } from '../http.ts'
-import type { MediaProtocol, OutputRef, VideoGenInput } from '../types.ts'
+import type { MediaProtocol, OutputRef, ImageToVideoInput } from '../types.ts'
 
 const DEFAULT_DURATIONS = [3, 4, 5, 10, 15]
 
@@ -26,7 +26,7 @@ const DEFAULT_DURATIONS = [3, 4, 5, 10, 15]
  *
  * img_url 支持 base64 data URL，无需图床。
  */
-export const aliyunVideo: MediaProtocol<VideoGenInput> = {
+export const aliyunVideo: MediaProtocol<ImageToVideoInput> = {
   id: 'aliyun-video',
   media: 'video',
 

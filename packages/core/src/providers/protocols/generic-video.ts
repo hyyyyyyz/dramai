@@ -9,7 +9,7 @@ import {
   str,
   toDataUrl,
 } from '../http.ts'
-import type { MediaProtocol, OutputRef, VideoGenInput } from '../types.ts'
+import type { MediaProtocol, OutputRef, ImageToVideoInput } from '../types.ts'
 
 /**
  * 通用 OpenAI 兼容图生视频（best-effort；业界没有统一标准，这里取最常见的形态）。
@@ -19,7 +19,7 @@ import type { MediaProtocol, OutputRef, VideoGenInput } from '../types.ts'
  *   GET  {baseUrl}/videos/generations/{id}
  *     resp: { status, output.url | video.url | data[0].url | url }
  */
-export const genericVideo: MediaProtocol<VideoGenInput> = {
+export const genericVideo: MediaProtocol<ImageToVideoInput> = {
   id: 'generic-video',
   media: 'video',
 
