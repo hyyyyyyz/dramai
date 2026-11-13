@@ -190,6 +190,7 @@ export default {
     acceptedUnverified: '你已接受 {{count}} 項未驗證的能力，生成時不再為它們單獨確認',
     testSaveFirst: '先儲存修改，再測試連線',
     testNeedsKey: '先儲存 API Key，再測試連線',
+    testNeedsLogin: '先用 ChatGPT 帳號登入，再測試連線',
     test: {
       action: '測試連線',
       ok: '連線成功',

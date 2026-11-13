@@ -20,10 +20,13 @@ import {
 } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
-import { useCall, useProviderCapability } from '@/data/queries'
+import { useCall, useProviderCapability, useProviderModels } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { CapabilityGrid, PriceTable } from './CapabilityGrid'
 import { capabilitySummary } from './capability-summary'
+import { LoginPanel } from './LoginPanel'
+import { AuthChip, VerificationChip, VerificationNote } from './ProviderBadges'
+import { authState, canTest } from './provider-model'
 import { TestResult } from './TestConnection'
 import { PROTOCOLS_BY_KIND, type ProtocolId } from './protocols'
 
@@ -70,9 +73,11 @@ export function ProviderCard({
           </div>
           {!open && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {!provider.hasKey && (
-                <Chip className="border-warn text-warn">{t('providers.noKey')}</Chip>
-              )}
+              <AuthChip provider={provider} />
+              <VerificationChip
+                verification={provider.verification}
+                verifiedAt={provider.verifiedAt}
+              />
               {cap.isPending && <Skeleton className="h-6 w-24" />}
               {summary.map((s) => (
                 <Chip key={s}>{s}</Chip>
@@ -121,6 +126,8 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
   const [protocol, setProtocol] = useState<ProtocolId>(provider.protocol)
   const [baseUrl, setBaseUrl] = useState(provider.baseUrl)
   const [model, setModel] = useState(provider.model)
+  const login = provider.auth.type === 'account_login'
+  const state = authState(provider)
   const [replacing, setReplacing] = useState(!provider.hasKey)
   const [key, setKey_] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -169,7 +176,7 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
           <Select
             value={protocol}
             onChange={(e) => setProtocol(e.target.value as ProtocolId)}
-            disabled={protocols.length < 2}
+            disabled={protocols.length < 2 || login}
           >
             {protocols.map((p) => (
               <option key={p} value={p}>
@@ -178,66 +185,86 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
             ))}
           </Select>
         </Field>
-        <Field className="col-span-full" label="Base URL">
-          <Input mono value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+        <Field
+          className="col-span-full"
+          label="Base URL"
+          hint={login ? t('providerAuth.loginFixed') : undefined}
+        >
+          <Input
+            mono
+            value={baseUrl}
+            readOnly={login}
+            onChange={(e) => setBaseUrl(e.target.value)}
+          />
         </Field>
-        <Field className="col-span-full" label="Model">
-          <Input mono value={model} onChange={(e) => setModel(e.target.value)} />
-        </Field>
+        <ModelField provider={provider} value={model} onChange={setModel} />
 
-        <div className="col-span-full flex flex-col gap-2">
-          <Label htmlFor={`key-${provider.id}`}>API Key</Label>
-          {!replacing ? (
-            <SecretField
-              status={t('providers.key.saved', { mask: provider.keyMask ?? '••••••••' })}
-              action={
-                <Button variant="secondary" onClick={() => setReplacing(true)}>
-                  {t('providers.key.replace')}
-                </Button>
-              }
-            />
-          ) : (
-            <div className="flex gap-2 max-[640px]:flex-wrap">
-              <Input
-                id={`key-${provider.id}`}
-                mono
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={t('providers.key.placeholder')}
-                value={key}
-                onChange={(e) => setKey_(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void saveKey()
-                }}
-                className="min-w-0 flex-1"
+        {state === 'none' && (
+          <div className="col-span-full">
+            <Notice tone="info">{t('providerAuth.noneNote')}</Notice>
+          </div>
+        )}
+        {login && (
+          <div className="col-span-full">
+            <LoginPanel provider={provider} />
+          </div>
+        )}
+        {!login && state !== 'none' && (
+          <div className="col-span-full flex flex-col gap-2">
+            <Label htmlFor={`key-${provider.id}`}>API Key</Label>
+            {!replacing ? (
+              <SecretField
+                status={t('providers.key.saved', { mask: provider.keyMask ?? '••••••••' })}
+                action={
+                  <Button variant="secondary" onClick={() => setReplacing(true)}>
+                    {t('providers.key.replace')}
+                  </Button>
+                }
               />
-              <Button
-                variant="primary"
-                disabled={key.trim() === ''}
-                loading={setKey.isPending}
-                onClick={saveKey}
-              >
-                {t('providers.key.save')}
-              </Button>
-              {provider.hasKey && (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setReplacing(false)
-                    setKey_('')
+            ) : (
+              <div className="flex gap-2 max-[640px]:flex-wrap">
+                <Input
+                  id={`key-${provider.id}`}
+                  mono
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder={t('providers.key.placeholder')}
+                  value={key}
+                  onChange={(e) => setKey_(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void saveKey()
                   }}
+                  className="min-w-0 flex-1"
+                />
+                <Button
+                  variant="primary"
+                  disabled={key.trim() === ''}
+                  loading={setKey.isPending}
+                  onClick={saveKey}
                 >
-                  {t('common.cancel')}
+                  {t('providers.key.save')}
                 </Button>
-              )}
-            </div>
-          )}
-          <Hint>{t('providers.key.hint')}</Hint>
-          {setKey.isError && <ErrorNotice error={setKey.error} />}
-        </div>
+                {provider.hasKey && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setReplacing(false)
+                      setKey_('')
+                    }}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                )}
+              </div>
+            )}
+            <Hint>{t('providers.key.hint')}</Hint>
+            {setKey.isError && <ErrorNotice error={setKey.error} />}
+          </div>
+        )}
       </div>
 
+      <VerificationNote verification={provider.verification} />
       {cap.isPending && <Skeleton className="h-24" />}
       {cap.isError && <ErrorNotice error={cap.error} />}
       {cap.data && (
@@ -286,12 +313,12 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
           size="sm"
           variant="secondary"
           loading={test.isPending}
-          disabled={dirty || !provider.hasKey}
+          disabled={dirty || !canTest(provider)}
           title={
             dirty
               ? t('providers.testSaveFirst')
-              : !provider.hasKey
-                ? t('providers.testNeedsKey')
+              : !canTest(provider)
+                ? t(login ? 'providers.testNeedsLogin' : 'providers.testNeedsKey')
                 : undefined
           }
           onClick={() => test.mutate({ params: { providerId: provider.id } })}
@@ -343,5 +370,50 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
         </div>
       </Modal>
     </div>
+  )
+}
+
+/** The model: typed in, or (signed in with an account) chosen from what that account can use. */
+function ModelField({
+  provider,
+  value,
+  onChange,
+}: {
+  provider: ProviderConfigDto
+  value: string
+  onChange: (v: string) => void
+}) {
+  const { t } = useTranslation()
+  const signedIn = provider.auth.type === 'account_login' && provider.login?.state === 'signed_in'
+  const models = useProviderModels(provider.id, signedIn)
+  const items = models.data?.items
+  if (signedIn && items && items.length > 0) {
+    const ids = items.map((m) => m.id)
+    return (
+      <Field className="col-span-full" label={t('providerLogin.models.label')}>
+        <Select value={value} onChange={(e) => onChange(e.target.value)}>
+          {!ids.includes(value) && <option value={value}>{value}</option>}
+          {items.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label === m.id ? m.id : `${m.label} (${m.id})`}
+            </option>
+          ))}
+        </Select>
+      </Field>
+    )
+  }
+  const hint = signedIn
+    ? models.isPending
+      ? t('providerLogin.models.loading')
+      : models.isError
+        ? t('providerLogin.models.failed')
+        : undefined
+    : provider.auth.type === 'account_login'
+      ? t('providerLogin.models.hint')
+      : undefined
+  return (
+    <Field className="col-span-full" label="Model" hint={hint}>
+      <Input mono value={value} onChange={(e) => onChange(e.target.value)} />
+    </Field>
   )
 }

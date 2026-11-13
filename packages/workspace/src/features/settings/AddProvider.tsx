@@ -2,12 +2,22 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import type { ProviderConfigDto } from '@dramai/api'
-import { Button, Field, Input, Menu, Select, iconProps } from '@dramai/ui/v2'
+import {
+  Button,
+  Field,
+  Hint,
+  Input,
+  Menu,
+  SegmentedControl,
+  Select,
+  iconProps,
+} from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall, usePresets } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { PROTOCOLS_BY_KIND, type ProtocolId, type ProviderKind } from './protocols'
+import { sortPresets } from './provider-model'
 
 /** 添加服务商：从预设挑一个（预设自带地址、型号和已知限制），或者自己填。 */
 export function AddProvider({
@@ -21,7 +31,8 @@ export function AddProvider({
   const presets = usePresets()
   const fromPreset = useCall('providers.fromPreset', { invalidate: [qk.providers] })
   const [custom, setCustom] = useState(false)
-  const list = (presets.data?.items ?? []).filter((p) => p.kind === kind)
+  // tested presets first; documented-only ones are never the first thing offered
+  const list = sortPresets((presets.data?.items ?? []).filter((p) => p.kind === kind))
 
   return (
     <>
@@ -37,7 +48,10 @@ export function AddProvider({
         items={[
           ...list.map((p) => ({
             key: p.id,
-            label: p.label,
+            label:
+              p.verification.status === 'documented'
+                ? `${p.label} · ${t('providerAuth.preset.documented')}`
+                : p.label,
             onSelect: () => fromPreset.mutate({ body: { presetId: p.id } }, { onSuccess: onAdded }),
           })),
           ...(list.length > 0 ? (['separator'] as const) : []),
@@ -69,6 +83,7 @@ function CustomProviderDialog({
   const [baseUrl, setBaseUrl] = useState('')
   const [model, setModel] = useState('')
   const [apiKey, setApiKey] = useState('')
+  const [auth, setAuth] = useState<'api_key' | 'none'>('api_key')
   const valid = label.trim() && baseUrl.trim() && model.trim()
   const submit = async () => {
     if (!valid) return
@@ -80,7 +95,9 @@ function CustomProviderDialog({
           protocol,
           baseUrl: baseUrl.trim(),
           model: model.trim(),
-          ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+          // saying it outright keeps "no key yet" and "needs no key" apart
+          auth: { type: auth },
+          ...(auth === 'api_key' && apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
         },
       })
       onClose()
@@ -135,16 +152,31 @@ function CustomProviderDialog({
         <Field label="Model" required>
           <Input mono value={model} onChange={(e) => setModel(e.target.value)} />
         </Field>
-        <Field label="API Key" hint={t('providers.key.hint')}>
-          <Input
-            mono
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+        <Field label={t('providerAuth.custom.auth')}>
+          <SegmentedControl
+            aria-label={t('providerAuth.custom.auth')}
+            value={auth}
+            onValueChange={setAuth}
+            options={[
+              { value: 'api_key', label: t('providerAuth.custom.apiKey') },
+              { value: 'none', label: t('providerAuth.custom.none') },
+            ]}
           />
         </Field>
+        {auth === 'api_key' ? (
+          <Field label="API Key" hint={t('providers.key.hint')}>
+            <Input
+              mono
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+          </Field>
+        ) : (
+          <Hint>{t('providerAuth.custom.noneHint')}</Hint>
+        )}
         {create.isError && <ErrorNotice error={create.error} />}
       </div>
     </Modal>

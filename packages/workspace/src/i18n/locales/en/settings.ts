@@ -207,6 +207,7 @@ export default {
       'You accepted {{count}} unverified capabilities, so they aren’t confirmed separately when generating',
     testSaveFirst: 'Save your changes before testing the connection',
     testNeedsKey: 'Save an API key before testing the connection',
+    testNeedsLogin: 'Sign in with ChatGPT before testing the connection',
     test: {
       action: 'Test connection',
       ok: 'Connected',

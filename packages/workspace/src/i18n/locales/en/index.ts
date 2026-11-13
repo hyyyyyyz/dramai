@@ -8,6 +8,7 @@ import settings from './settings'
 import jobs from './jobs'
 import production from './production'
 import compose from './compose'
+import providerAuth from './provider-auth'
 import exportPage from './export'
 
 export default {
@@ -21,5 +22,6 @@ export default {
   ...jobs,
   ...production,
   ...compose,
+  ...providerAuth,
   ...exportPage,
 }

@@ -97,3 +97,19 @@ types itself in `src/desktop/bridge.ts` and never imports from `apps/desktop`.
 - **Settings hints**: the data page points to the app menu for changing the data folder (the bridge has no setter, and
   `selectFolder` is not used because no screen has a directory input); the access page warns when API keys are not
   encrypted by the system (`secretStorage === 'plain'`).
+
+## Provider sign-in methods and ChatGPT account sign-in
+
+- Every provider shows how it authenticates (`api_key`, `account_login`, `none`) and where it comes from (tested, with a
+  date, or set up from the official docs and not tested, with its source). "No API key yet" and "needs no
+  authentication" are different states. A provider made from a documented-only preset is never chosen automatically:
+  the settings page tells the user and offers "Use this".
+- `features/settings/LoginPanel.tsx` is the whole "Continue with ChatGPT" flow: start, wait in the browser (the status
+  is polled every 1.5 s only while a sign-in is pending, and the polling stops when the panel goes away or the sign-in is
+  cancelled), signed in, failures, sign in again or with another account, sign out. Statuses never contain tokens. When
+  the server is opened from another machine the sign-in is unavailable and the reason is shown instead of a button.
+- OpenAI's guidelines are followed for the wording ("Continue with ChatGPT", "Using ChatGPT plan", "Manage usage", the
+  one-time welcome note, "Usage limit reached"). The button is plain text: no ChatGPT logo is drawn or bundled, because
+  the guideline pages name logo files but do not say that third parties may download and use them.
+- Task failures with `LOGIN_REQUIRED`, `LOGIN_ENDPOINT_NOT_ALLOWED` and the `subscription_sharing_*` codes get a plain
+  explanation and the next step in the task panel (`features/jobs/ProviderErrorNotice.tsx`).
