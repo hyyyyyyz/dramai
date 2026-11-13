@@ -1,3 +1,4 @@
+import { mergeHeaders } from '../util/merge.ts'
 import { ProviderError } from './errors.ts'
 import { sendRequest } from './executor.ts'
 import { modelListRequest } from './model-list.ts'
@@ -17,7 +18,9 @@ export type TestConnectionResult =
   | { outcome: 'unverifiable'; reason: string }
 
 export async function testProvider(
-  config: Pick<ProviderConfig, 'baseUrl' | 'protocol' | 'model'>,
+  config: Pick<ProviderConfig, 'baseUrl' | 'protocol' | 'model'> & {
+    dialect?: Pick<NonNullable<ProviderConfig['dialect']>, 'extraHeaders'>
+  },
   apiKey: string | undefined,
   deps: ExecutorDeps & { signal?: AbortSignal } = {},
 ): Promise<TestConnectionResult> {
@@ -50,13 +53,26 @@ export async function testProvider(
         headers,
         config.model,
         deps,
+        config.dialect?.extraHeaders,
       )
     }
     case 'anthropic-messages':
     case 'gemini-chat': {
       // 各自的鉴权头和列表地址（见 model-list.ts）
-      const req = modelListRequest(config.protocol, config.baseUrl, apiKey)!
-      return probeList(config.protocol, req.url, req.headers, config.model, deps)
+      const req = modelListRequest(
+        config.protocol,
+        config.baseUrl,
+        apiKey,
+        config.dialect?.extraHeaders,
+      )!
+      return probeList(
+        config.protocol,
+        req.url,
+        req.headers,
+        config.model,
+        deps,
+        config.dialect?.extraHeaders,
+      )
     }
     default:
       return probeList(
@@ -65,6 +81,7 @@ export async function testProvider(
         authHeaders(apiKey),
         config.model,
         deps,
+        config.dialect?.extraHeaders,
       )
   }
 }
@@ -75,12 +92,17 @@ async function probeList(
   headers: Record<string, string>,
   model: string,
   deps: ExecutorDeps & { signal?: AbortSignal },
+  extraHeaders?: Record<string, string>,
 ): Promise<TestConnectionResult> {
   try {
-    const raw = await sendRequest({ method: 'GET', url, headers }, deps, {
-      signal: deps.signal,
-      timeoutMs: 20_000,
-    })
+    const raw = await sendRequest(
+      { method: 'GET', url, headers: mergeHeaders(headers, extraHeaders) },
+      deps,
+      {
+        signal: deps.signal,
+        timeoutMs: 20_000,
+      },
+    )
     if (raw.status < 200 || raw.status >= 300) {
       return {
         outcome: 'failed',

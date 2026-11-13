@@ -1,3 +1,4 @@
+import { mergeHeaders } from '../util/merge.ts'
 import { ProviderError } from './errors.ts'
 import type {
   AuthContext,
@@ -214,6 +215,18 @@ export async function downloadOutput(
   )
 }
 
+/**
+ * 配置里的额外请求头（`dialect.extraHeaders`）统一在这里并进**所有媒体协议**的提交和轮询请求
+ * （图片、视频、语音同一个入口；文本协议在自己的构造函数里用同一个 `mergeHeaders`）。
+ * 保护名单（鉴权头、内容类型头、传输层头…）由 `mergeHeaders` 统一把关。
+ * **不**用于下载成品：结果地址常在别的主机上（对象存储 / CDN），不能把用户填的头带过去。
+ */
+function withExtraHeaders(spec: HttpRequestSpec, auth: AuthContext): HttpRequestSpec {
+  const extra = auth.dialect?.extraHeaders
+  if (!extra) return spec
+  return { ...spec, headers: mergeHeaders(spec.headers, extra) }
+}
+
 async function submit<I>(
   protocol: MediaProtocol<I>,
   auth: AuthContext,
@@ -221,7 +234,7 @@ async function submit<I>(
   deps: ExecutorDeps,
   options: GenerateOptions,
 ): Promise<GenerateParse> {
-  const spec = protocol.buildGenerateRequest(auth, input)
+  const spec = withExtraHeaders(protocol.buildGenerateRequest(auth, input), auth)
   let raw: RawResponse
   try {
     raw = await sendRequest(spec, deps, {
@@ -289,10 +302,14 @@ async function pollUntilDone<I>(
   for (let attempt = 1; attempt <= poll.maxAttempts; attempt++) {
     if (options.signal?.aborted) throw abortError()
     try {
-      const raw = await sendRequest(protocol.buildPollRequest(auth, taskId), deps, {
-        signal: options.signal,
-        timeoutMs: options.requestTimeoutMs,
-      })
+      const raw = await sendRequest(
+        withExtraHeaders(protocol.buildPollRequest(auth, taskId), auth),
+        deps,
+        {
+          signal: options.signal,
+          timeoutMs: options.requestTimeoutMs,
+        },
+      )
       if (raw.status >= 400 && raw.status < 500 && raw.status !== 429) {
         throw new ProviderError('http', `轮询被拒绝：HTTP ${raw.status} · ${snippet(raw)}`, {
           status: raw.status,

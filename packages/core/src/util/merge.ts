@@ -18,14 +18,27 @@ export function deepMerge(
 const isPlain = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
 
-/** 额外请求头不能覆盖的头：鉴权头和内容类型头（还有协议必需的版本头）。比较不分大小写。 */
-const PROTECTED_HEADERS = new Set([
+/**
+ * 额外请求头不能覆盖的头。比较不分大小写。
+ * - 鉴权头；
+ * - 内容类型头、协议必需的版本头；
+ * - 传输层的头（`Host`、`Content-Length`、`Transfer-Encoding`、`Connection`）：由 fetch 按请求体自己算，
+ *   填错会让请求直接失败；
+ * - `Cookie`、`Proxy-Authorization`：不应该由"额外请求头"带出去。
+ */
+export const PROTECTED_HEADERS: ReadonlySet<string> = new Set([
   'authorization',
+  'proxy-authorization',
+  'cookie',
   'x-api-key',
   'x-goog-api-key',
   'x-key',
   'api-key',
   'content-type',
+  'content-length',
+  'transfer-encoding',
+  'connection',
+  'host',
   'anthropic-version',
 ])
 

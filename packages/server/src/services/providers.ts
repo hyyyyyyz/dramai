@@ -348,7 +348,7 @@ export class ProviderService {
       }
       throw err
     }
-    const req = modelListRequest(cfg.protocol, cfg.baseUrl, bearer)
+    const req = modelListRequest(cfg.protocol, cfg.baseUrl, bearer, cfg.dialect?.extraHeaders)
     if (!req) throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
     const raw = await sendRequest(
       { method: 'GET', url: req.url, headers: req.headers },
