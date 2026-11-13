@@ -501,6 +501,7 @@
         },
         "sizeStep": 16,
         "maxPixels": 3686400,
+        "minPixels": 655360,
         "maxLongSide": 2560
       },
       "pricing": [],
@@ -561,6 +562,7 @@
         },
         "sizeStep": 16,
         "maxPixels": 3686400,
+        "minPixels": 655360,
         "maxLongSide": 2560
       },
       "pricing": [],
@@ -621,6 +623,7 @@
         },
         "sizeStep": 16,
         "maxPixels": 4194304,
+        "minPixels": 655360,
         "maxLongSide": 2048
       },
       "pricing": [],
@@ -631,6 +634,7 @@
         "suffixFloor": []
       },
       "quirks": [
+        "官方（H3 generations 页，2026-11 核对，未实测）：size 的总像素下限 655,360，上限 20,000,000；本项目的尺寸计算会补足下限。",
         "官方：提示词增强始终开启，改写后的提示词在 data[].revised_prompt；没有 seed、没有 negative_prompt。",
         "官方：给了 WxH 的 size 就不能再发 aspect_ratio / area（会 400）；本协议只发 size。",
         "官方：同步接口服务端最长等 600 秒，客户端超时至少 600 秒；接口不幂等，断连或重试都会再次计费。",
@@ -680,6 +684,7 @@
         },
         "sizeStep": 16,
         "maxPixels": 4194304,
+        "minPixels": 655360,
         "maxLongSide": 2048
       },
       "pricing": [],
@@ -689,7 +694,10 @@
         "referenceBinding": "图{n}",
         "suffixFloor": []
       },
-      "quirks": ["官方：和 MiniMax-H3-Image 参数和限制相同，更快。"],
+      "quirks": [
+        "官方：和 MiniMax-H3-Image 参数和限制相同，更快。",
+        "官方（H3 generations 页，2026-11 核对，未实测）：size 的总像素下限 655,360，上限 20,000,000；本项目的尺寸计算会补足下限。"
+      ],
       "provenance": "同 MiniMax-H3-Image（官方文档，2026-11 核对，未实测）。价格留空。"
     },
     {
@@ -734,6 +742,7 @@
         },
         "sizeStep": 16,
         "maxPixels": 4624220,
+        "minPixels": 921600,
         "maxLongSide": 4096
       },
       "pricing": [],
@@ -794,6 +803,7 @@
         },
         "sizeStep": 16,
         "maxPixels": 16777216,
+        "minPixels": 3686400,
         "maxLongSide": 4096
       },
       "pricing": [],
@@ -852,6 +862,7 @@
         },
         "sizeStep": 16,
         "maxPixels": 4194304,
+        "minPixels": 262144,
         "maxLongSide": 2048
       },
       "pricing": [],
@@ -911,6 +922,7 @@
         },
         "sizeStep": 16,
         "maxPixels": 4194304,
+        "minPixels": 262144,
         "maxLongSide": 2048
       },
       "pricing": [],

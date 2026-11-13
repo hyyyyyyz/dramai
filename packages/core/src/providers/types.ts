@@ -289,6 +289,11 @@ export interface ModelCapability {
   sizeStep?: number
   maxLongSide?: number
   maxPixels?: number
+  /**
+   * 总像素下限（官方有下限的模型才填，并在画像的 quirks / provenance 里注明出处）。
+   * 尺寸计算在统一入口（`resolveOutputSize`）按它补足：保持画幅比例、对齐步长、不超过上限。
+   */
+  minPixels?: number
 }
 
 /**

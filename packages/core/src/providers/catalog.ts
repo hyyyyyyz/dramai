@@ -73,6 +73,7 @@ const capabilitySchema = z.object({
   sizeStep: z.number().int().positive().optional(),
   maxLongSide: z.number().int().positive().optional(),
   maxPixels: z.number().int().positive().optional(),
+  minPixels: z.number().int().positive().optional(),
 })
 
 const priceSchema = z.object({

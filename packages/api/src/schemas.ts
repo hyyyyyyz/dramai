@@ -795,6 +795,7 @@ export const modelCapability = z.object({
   sizeStep: z.number().optional(),
   maxLongSide: z.number().optional(),
   maxPixels: z.number().optional(),
+  minPixels: z.number().optional(),
 })
 
 export const priceEntry = z.object({

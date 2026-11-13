@@ -501,6 +501,7 @@ async function doImageJob(
           step: cap.sizeStep ?? 16,
           maxLongSide: cap.maxLongSide,
           maxPixels: cap.maxPixels,
+          minPixels: cap.minPixels,
         })
       : undefined
   const protocol = getMediaProtocol(config.protocol)

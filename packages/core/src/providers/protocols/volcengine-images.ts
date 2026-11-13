@@ -1,3 +1,4 @@
+import { scaleUpToMinPixels } from '../../media/output-size.ts'
 import { joinUrl, jsonHeaders, jsonPost, toDataUrl } from '../http.ts'
 import type { ImageGenInput, MediaProtocol } from '../types.ts'
 import { parseImagesData } from './openai-images.ts'
@@ -35,13 +36,9 @@ export const volcengineImages: MediaProtocol<ImageGenInput> = {
       watermark: false,
     }
     if (input.size) {
-      let { width, height } = input.size
-      const min = seedreamMinPixels(auth.model)
-      if (width * height < min) {
-        const k = Math.sqrt(min / (width * height))
-        width = Math.ceil((width * k) / 2) * 2
-        height = Math.ceil((height * k) / 2) * 2
-      }
+      // 有模型画像的型号，尺寸计算（`resolveOutputSize` 的 `minPixels`）已经补足；
+      // 这里只兜底没有画像的型号（含填接入点 ID `ep-…` 的情形：从名字认不出型号，按默认下限）。
+      const { width, height } = scaleUpToMinPixels(input.size, seedreamMinPixels(auth.model))
       body.size = `${width}x${height}`
     }
     const refs = input.references ?? []
