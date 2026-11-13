@@ -7,7 +7,7 @@
 
 [English](./README.md) · **简体中文**
 
-[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![Version](https://img.shields.io/github/package-json/v/hyyyyyyz/dramai?color=DF500C&label=version)](./CHANGELOG.md)
+[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![CI](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/hyyyyyyz/dramai?include_prereleases&label=release&color=DF500C)](https://github.com/hyyyyyyz/dramai/releases)
 
 </div>
 
@@ -16,7 +16,7 @@ dramai 是一个开源的 AI 短剧工作室，在你自己的电脑上运行。
 它面向做连载短剧、又想把作品握在自己手里的人：项目是你磁盘上的普通文件夹，API Key 留在你的电脑上，不经过任何由我们运营的服务。
 
 > [!IMPORTANT]
-> **当前是 `0.5.0-beta.1`，一个测试版。** 它只用自动化测试和内置的模拟服务商验证过，**还没有连过真实的 AI 服务商**。桌面端只在 macOS 上实际运行过。目前没有发布任何版本：没有安装包、npm 包或 Docker 镜像可以下载。详见[现状](#现状)。
+> **当前是 `0.5.0-beta.1`，一个测试版。** 它只用自动化测试和内置的模拟服务商验证过，**还没有连过真实的 AI 服务商**。未签名的桌面端安装包已作为[预发布](https://github.com/hyyyyyyz/dramai/releases)公开，但只有 macOS Apple 芯片的包在真机上启动过，其余安装包只经过 CI 构建。还没有 npm 包和 Docker 镜像。详见[现状](#现状)。
 
 <p align="center">
   <picture>
@@ -113,7 +113,7 @@ pnpm demo
 - **WebUI**：`pnpm webui`。启动服务、托管工作台，并打开浏览器。
 - **桌面端：从源码运行**：`pnpm desktop:dev`。一个 Electron 窗口，里面是同一个服务和同一个工作台。
 - **桌面端：本机编译安装**：`pnpm desktop:install`。在你的机器上编译并安装给当前用户。不需要证书，也没有下载警告，因为应用是在你自己的电脑上生成的。`pnpm desktop:uninstall` 卸载应用，保留你的数据。
-- **桌面端：安装包**：暂无安装包。 macOS、Windows、Linux 的安装包由发布工作流构建，首个测试版发布后会附在 GitHub Release 上。安装包不签名。
+- **桌面端：安装包**：到 [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases) 下载；`0.5.0-beta.1` 标为预发布，所以不是标着 Latest 的那个。macOS 选 `.dmg`（Apple 芯片用 `mac-arm64`，Intel 用 `mac-x64`），Windows 选 `.exe` 安装程序或免安装的 `.zip`，Linux 选 `.AppImage` 或 `.tar.gz`。`SHA256SUMS.txt` 里是校验和。安装包不签名，不带 ffmpeg（要自己装），也不会自动更新。只有 macOS Apple 芯片的包在真机上启动过；macOS Intel、Windows 和 Linux 的包只经过 CI 构建。
 
 所有形式都从一份检出的代码开始，需要 Node.js 22.22.2+、pnpm 9 和 ffmpeg：
 
@@ -145,7 +145,7 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 
 <br />
 
-桌面端把数据放在你的用户目录下（例如 macOS 上是 `~/Library/Application Support/Dramai/data`），有系统密钥库时用它保存 API Key。安装包不签名，所以 macOS 和 Windows 第一次打开时会给出警告，放行的步骤以及编译、安装、卸载的细节见 [apps/desktop](./apps/desktop/README.md)。
+桌面端把数据放在你的用户目录下（例如 macOS 上是 `~/Library/Application Support/Dramai/data`），有系统密钥库时用它保存 API Key。安装包不签名，所以 macOS 和 Windows 第一次打开时会给出警告，macOS 每次升级后还会再次询问钥匙串访问，放行的步骤以及编译、安装、卸载的细节见 [apps/desktop](./apps/desktop/README.md)。
 
 </details>
 
@@ -155,18 +155,17 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 
 - 整条流程在演示模式下端到端可用：上传文本、规划分集、拆分镜头、确认角色和地点、生成图片和视频、合成、导出。
 - 浏览器测试（Playwright）覆盖了这条路径、失败任务的恢复、英文界面和纯键盘操作。
-- 桌面端在 macOS 上实机运行过。
+- macOS Apple 芯片的桌面端在真机上启动过：窗口能加载，服务健康，鉴权通过。CI 在 Linux、macOS 和 Windows 上运行。
 
 **还没验证的**
 
 - 任何真实的 AI 服务商。四个服务商预设里的模型名和价格，最后核对于 2026 年 5 月。
-- 桌面端在 Windows 和 Linux 上的表现。CI 在这两个系统上编译了它，并跑了安装自检，但还没有人在真实的 Linux 或 Windows 桌面环境里操作过。
-- CI 在 Linux、macOS 和 Windows 上都在跑；写这份说明时还没有全部通过。
+- macOS Intel、Windows 和 Linux 的桌面端安装包。CI 构建了它们，并在 Windows 和 Linux 上跑了安装自检，但还没有人在真机上打开过。
 - WebUI 下 API Key 没有加密。
 
 **还没发布的**
 
-- 安装包、npm 包、Docker 镜像和宣传页。GitHub Pages 上不再提供可用的工作台。
+- npm 包、Docker 镜像和宣传页。GitHub Pages 上不再提供可用的工作台。
 
 已知的限制：转场目前只有硬切，配乐只支持一条，浏览器里的预览不含字幕、配乐和转场。服务商（大模型、图片、视频、配音）的配置方法会另外成文；在那之前，应用里的 设置 → 服务商 列出了预设，并且可以测试连接。完整清单见[更新日志](./CHANGELOG.md)。
 

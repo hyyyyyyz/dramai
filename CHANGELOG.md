@@ -6,7 +6,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.5.0-beta.1] - 2026-11-11
+## [0.5.0-beta.1] - 2026-11-12
 
 First beta of 0.5.0, a rewrite of dramai. It is **no longer a browser-only app**: the studio now runs
 on a local server on your own machine, which is what removes the browser's limits (CORS, storage

@@ -7,7 +7,7 @@
 
 **English** · [简体中文](./README_CN.md)
 
-[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![Version](https://img.shields.io/github/package-json/v/hyyyyyyz/dramai?color=DF500C&label=version)](./CHANGELOG.md)
+[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![CI](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/hyyyyyyz/dramai?include_prereleases&label=release&color=DF500C)](https://github.com/hyyyyyyz/dramai/releases)
 
 </div>
 
@@ -16,7 +16,7 @@ dramai is an open-source AI short-drama studio that runs on your own computer. G
 It is for people who make serialised short dramas and want to keep control of the work. Projects are ordinary folders on your disk, API keys stay on your machine, and nothing passes through a service we run.
 
 > [!IMPORTANT]
-> **This is `0.5.0-beta.1`, a beta.** It has been verified with automated tests and built-in mock providers only, and has **not yet been run against a real AI provider**. The desktop app has only been run on macOS. No release is published yet: there are no installers, npm package or Docker image to download. See [Status](#status).
+> **This is `0.5.0-beta.1`, a beta.** It has been verified with automated tests and built-in mock providers only, and has **not yet been run against a real AI provider**. Unsigned desktop installers are published as a [pre-release](https://github.com/hyyyyyyz/dramai/releases), but only the macOS Apple silicon build has been started on a real machine; the other installers have only been built by CI. There is no npm package or Docker image yet. See [Status](#status).
 
 <p align="center">
   <picture>
@@ -113,7 +113,7 @@ In words: source text → episodes → scenes → shots → shot images → shot
 - **WebUI**: `pnpm webui`. Starts the server, serves the workspace and opens your browser.
 - **Desktop, run from source**: `pnpm desktop:dev`. An Electron window around the same server and workspace.
 - **Desktop, build and install on your machine**: `pnpm desktop:install`. Builds the app locally and installs it for the current user. No certificate and no download warnings, because the app is made on your machine. `pnpm desktop:uninstall` removes it and keeps your data.
-- **Desktop, installer**: no installer yet. Installers for macOS, Windows and Linux are built by the release workflow and will be attached to a GitHub release once the first beta is published. They are unsigned.
+- **Desktop, installer**: download from [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases); `0.5.0-beta.1` is marked as a pre-release, so it is not the one labelled Latest. On macOS take the `.dmg` (`mac-arm64` for Apple silicon, `mac-x64` for Intel), on Windows the `.exe` installer or the portable `.zip`, on Linux the `.AppImage` or the `.tar.gz`. `SHA256SUMS.txt` lists the checksums. The installers are unsigned, do not include ffmpeg (install it yourself) and do not update themselves. Only the macOS Apple silicon build has been started on a real machine; the macOS Intel, Windows and Linux builds have only been built by CI.
 
 Everything starts from a checkout, with Node.js 22.22.2+, pnpm 9 and ffmpeg:
 
@@ -145,7 +145,7 @@ The default address is `http://127.0.0.1:8787` and the default data directory is
 
 <br />
 
-The desktop app keeps your data in your user folder (for example `~/Library/Application Support/Dramai/data` on macOS) and stores API keys with the operating system's key store where one exists. Installers are unsigned, so macOS and Windows will warn the first time you open one; the steps are in [apps/desktop](./apps/desktop/README.md), along with the build, install and uninstall details.
+The desktop app keeps your data in your user folder (for example `~/Library/Application Support/Dramai/data` on macOS) and stores API keys with the operating system's key store where one exists. Installers are unsigned, so macOS and Windows will warn the first time you open one, and macOS asks for Keychain access again after each upgrade; the steps are in [apps/desktop](./apps/desktop/README.md), along with the build, install and uninstall details.
 
 </details>
 
@@ -155,18 +155,17 @@ The desktop app keeps your data in your user folder (for example `~/Library/Appl
 
 - The whole workflow runs end to end in demo mode: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export.
 - Browser tests (Playwright) cover that path, a failed task being resumed, the English interface and keyboard-only use.
-- The desktop app has been run on macOS.
+- The macOS Apple silicon desktop build has been started on a real machine: the window loads, the server is healthy and authentication works. CI runs on Linux, macOS and Windows.
 
 **Not verified**
 
 - Any real AI provider. The four provider presets carry model ids and prices last checked in May 2026.
-- The desktop app on Windows and Linux. CI builds it and runs an install self-check on both, but nobody has used it on a real Linux or Windows desktop yet.
-- CI runs on Linux, macOS and Windows; it was not yet fully green when this was written.
+- The desktop installers for macOS Intel, Windows and Linux. CI builds them and runs an install self-check on Windows and Linux, but nobody has opened them on a real machine yet.
 - API keys are not encrypted in the WebUI.
 
-**Not released**
+**Not released yet**
 
-- Installers, an npm package, a Docker image and a landing page. GitHub Pages no longer serves a workspace.
+- An npm package, a Docker image and a landing page. GitHub Pages no longer serves a workspace.
 
 Known limits: transitions are hard cuts, there is a single music track, and the in-browser preview leaves out subtitles, music and transitions. Setting up providers (language model, image, video and voice) will be documented separately; until then, Settings → Providers in the app lists the presets and can test a connection. The full list is in the [changelog](./CHANGELOG.md).
 
