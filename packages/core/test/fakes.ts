@@ -288,6 +288,13 @@ export interface MediaEnv {
   caps: FfmpegCapabilities
 }
 
+/**
+ * Timeout for a `beforeAll` that calls `locateMedia`. It runs ffmpeg several times (version and capability probes),
+ * which is slow where processes are slow to start (the Windows CI runner is several times slower than a laptop; see
+ * the server package's vitest.config.ts), and vitest's default hook timeout is only 10 s.
+ */
+export const LOCATE_MEDIA_HOOK_TIMEOUT_MS = 60_000
+
 export async function locateMedia(): Promise<MediaEnv | undefined> {
   try {
     const bins = await locateFfmpeg()

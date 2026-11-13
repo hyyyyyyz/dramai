@@ -10,7 +10,7 @@ import type { LegacyBackup } from '../src/export/legacy-import.ts'
 import { loadProjection } from '../src/generation/projection.ts'
 import { countChars } from '../src/parsers/chapters.ts'
 import { episodeShots } from '../src/pipeline/entities.ts'
-import { locateMedia, makePipelineEnv } from './fakes.ts'
+import { LOCATE_MEDIA_HOOK_TIMEOUT_MS, locateMedia, makePipelineEnv } from './fakes.ts'
 import type { MediaEnv, PipelineEnv } from './fakes.ts'
 
 // 导入不需要 ffmpeg；没有时用占位。
@@ -19,7 +19,7 @@ beforeAll(async () => {
   media =
     (await locateMedia()) ??
     ({ bins: { ffmpeg: 'ffmpeg', source: 'path' }, caps: {} } as unknown as MediaEnv)
-})
+}, LOCATE_MEDIA_HOOK_TIMEOUT_MS)
 
 const be32 = (n: number) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]
 const png = (w: number, h: number, salt = 0) =>

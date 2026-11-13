@@ -16,7 +16,16 @@ import { episodeSourceText, planEpisodes } from '../src/pipeline/episodes.ts'
 import { generateShotPrompts, missingPromptParts } from '../src/pipeline/frames.ts'
 import { ingestMaterial } from '../src/pipeline/materials.ts'
 import { renderMentionsPlain } from '../src/prompts/mentions.ts'
-import { HERO, LEAD, PLACE, PROP, locateMedia, makeNovel, makePipelineEnv } from './fakes.ts'
+import {
+  HERO,
+  LEAD,
+  LOCATE_MEDIA_HOOK_TIMEOUT_MS,
+  PLACE,
+  PROP,
+  locateMedia,
+  makeNovel,
+  makePipelineEnv,
+} from './fakes.ts'
 import type { MediaEnv } from './fakes.ts'
 
 let media: MediaEnv | undefined
@@ -25,7 +34,7 @@ beforeAll(async () => {
   media =
     (await locateMedia()) ??
     ({ bins: { ffmpeg: 'ffmpeg', source: 'path' }, caps: {} } as unknown as MediaEnv)
-})
+}, LOCATE_MEDIA_HOOK_TIMEOUT_MS)
 
 const novel = (chapters: number, paras = 10) => new TextEncoder().encode(makeNovel(chapters, paras))
 

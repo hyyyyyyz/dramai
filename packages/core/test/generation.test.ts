@@ -7,7 +7,14 @@ import { chooseSheetLayout, sheetAspect } from '../src/pipeline/sheets.ts'
 import { episodeShots } from '../src/pipeline/entities.ts'
 import { preflightEpisode, preflightTargets, requestGeneration } from '../src/pipeline/request.ts'
 import { createQueue } from '../src/pipeline/request.ts'
-import { HERO, PLACE, PROP, locateMedia, makePipelineEnv } from './fakes.ts'
+import {
+  HERO,
+  LOCATE_MEDIA_HOOK_TIMEOUT_MS,
+  PLACE,
+  PROP,
+  locateMedia,
+  makePipelineEnv,
+} from './fakes.ts'
 import type { MediaEnv, PipelineEnv } from './fakes.ts'
 import { makeWorker, prepareEpisode, runAll } from './helpers-pipeline.ts'
 import type { AdmissionTarget } from '../src/admission/index.ts'
@@ -19,7 +26,7 @@ beforeAll(async () => {
     console.warn(
       '[generation tests] SKIPPED: ffmpeg not found (needed to make fake provider media)',
     )
-})
+}, LOCATE_MEDIA_HOOK_TIMEOUT_MS)
 
 const real = (name: string, fn: () => Promise<void>, timeout = 60_000) => {
   it(

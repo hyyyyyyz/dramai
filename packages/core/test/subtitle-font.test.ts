@@ -7,7 +7,7 @@ import { bundledFontsDir, SUBTITLE_FONT_FAMILY } from '../src/data-dir.ts'
 import { runProcess } from '../src/media/ffmpeg.ts'
 import { buildSubtitlesFilter, filterPath } from '../src/media/render.ts'
 import { subtitleBurnOptions } from '../src/pipeline/compose.ts'
-import { locateMedia } from './fakes.ts'
+import { LOCATE_MEDIA_HOOK_TIMEOUT_MS, locateMedia } from './fakes.ts'
 import type { MediaEnv } from './fakes.ts'
 
 /**
@@ -100,7 +100,7 @@ describe('burning with the bundled font really draws Chinese (needs an ffmpeg wi
       join(dir, 't.srt'),
       '1\n00:00:00,000 --> 00:00:02,000\n这是一条旁白字幕：视频、影片與設定圖\n',
     )
-  })
+  }, LOCATE_MEDIA_HOOK_TIMEOUT_MS)
   afterAll(async () => {
     if (previousFontconfig === undefined) delete process.env.FONTCONFIG_FILE
     else process.env.FONTCONFIG_FILE = previousFontconfig
