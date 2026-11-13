@@ -1,76 +1,67 @@
 # Deployment
 
-`dramai` 是纯静态站点，最推荐的部署方式是 **GitHub Pages**。本文也介绍其他常见
-托管平台的配置要点。
+dramai is an application you run on your own computer, so there is nothing to host for it. What is deployed is the
+**landing page** (`apps/site`), a static Astro site published to GitHub Pages at
+`https://hyyyyyyz.github.io/dramai/`: Chinese at `/dramai/`, English at `/dramai/en/`.
 
-## 1. GitHub Pages（默认）
+| What                        | Where it lives                       | How people get it                                                                                                                                                                 |
+| --------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The app (WebUI and desktop) | Your computer                        | Run from a checkout, build and install locally, or download an installer from a release. See the [README](../README.md) and [`apps/desktop/README.md`](../apps/desktop/README.md) |
+| The landing page            | GitHub Pages, built from `apps/site` | Visit the site                                                                                                                                                                    |
 
-仓库已经包含 `.github/workflows/deploy.yml`，会在每次 push 到 `main` 时自动构建
-并发布到 `https://<user>.github.io/dramai/`。
+GitHub Pages cannot run the app: it needs the local server (`@dramai/server`) behind it. The previous browser-only
+version (v0.4.1) is no longer published on Pages and is not kept anywhere on the site.
 
-### 一次性配置
+## Deploying the landing page
 
-1. 打开 **Settings → Pages**。
-2. **Build and deployment → Source** 选择 `GitHub Actions`。
-3. **Settings → Actions → General → Workflow permissions** 选择
-   `Read and write permissions`（可选，但有些场景需要）。
-4. 推一次代码，等待 Actions 完成（首次约 2-3 分钟）。
+The workflow is `.github/workflows/deploy-site.yml` ("Deploy site to GitHub Pages"). It runs in two jobs:
 
-### 自定义域名
+1. **Build and check**: `pnpm build:site` builds `apps/site` into `apps/site/dist`, then `pnpm --filter @dramai/site test`
+   runs the unit tests and the post-build checks in `apps/site/scripts/check-dist.mjs`: every internal link and anchor
+   resolves, both languages have the same sections and amount of content, nothing in the output requests a third-party
+   host, and hreflang, canonical, Open Graph and the sitemap are consistent. If any of this fails, nothing is deployed.
+   The checked output is uploaded as the Pages artifact.
+2. **Deploy**: publishes the artifact with `actions/deploy-pages`. Only this job has `pages: write` and `id-token: write`;
+   the rest of the workflow has read-only access.
 
-1. 在 `public/CNAME` 放上你的域名（例如 `dramai.example.com`）。
-2. 在 Pages 设置里勾选 `Enforce HTTPS`。
-3. 修改 `vite.config.ts`：
+Actions are pinned to commit SHAs, like every other workflow in the repository (Dependabot keeps them current).
 
-   ```ts
-   export default defineConfig({
-     base: '/', // 自定义根域名时无需子路径
-     // ...
-   })
-   ```
+### One-time repository setup
 
-### 子路径回退（SPA 路由刷新 404）
+1. **Settings → Pages → Build and deployment → Source** must be **GitHub Actions** (it already is if Pages was used
+   before; no other Pages setting is needed).
+2. **Settings → Environments → github-pages**: by default only the default branch may deploy to this environment. Run the
+   workflow from `main`, or add the branch you want under "Deployment branches and tags".
 
-`deploy.yml` 已经把 `dist/index.html` 复制成 `dist/404.html`，这样在子路径下
-直接刷新页面也能正确加载 SPA。
+### Deploying
 
-### `.nojekyll`
+The workflow is manual for now: **Actions → Deploy site to GitHub Pages → Run workflow**, choosing `main`. The first
+deployment **replaces whatever Pages serves today**, which at the time of writing is the old v0.4.1 workspace.
 
-`deploy.yml` 也会创建空的 `dist/.nojekyll`，避免 GitHub Pages 把以下划线开头的
-资源（如 `_app/`）误删。
+To deploy automatically whenever `apps/site` changes on `main`, uncomment the `push:` block at the top of the workflow
+(it is written and commented out); keep `workflow_dispatch` so a deployment can still be re-run by hand.
 
-## 2. Cloudflare Pages
+### What visitors see after the switch
 
-1. 连接 GitHub 仓库。
-2. 构建命令：`npm run build`，输出目录：`dist`。
-3. 在 **Settings → Environment variables** 设置 `VITE_BASE=/`。
-4. SPA 回退：在 `public/_redirects` 加 `/* /index.html 200`。
+- `/dramai/` and `/dramai/en/` are the landing page.
+- Links into the old app (`/dramai/projects`, `/dramai/settings`, and so on) land on the landing page's own 404 page;
+  there is no redirect and no copy of the old app.
+- Data that someone's browser stored for v0.4.1 stays in that browser but nothing on the site can open it any more.
+  Anyone who still needs it can run v0.4.1 from the `v0.4.1` tag and export a backup; the 0.5.0 app imports those backups
+  (Settings → Data & backup).
 
-## 3. Vercel / Netlify
+### Checking a deployment
 
-类似 Cloudflare Pages：构建 `npm run build` → 输出 `dist`。SPA 回退它们都内置。
+Open `https://hyyyyyyz.github.io/dramai/` and `https://hyyyyyyz.github.io/dramai/en/`, check that the page shows the
+current version, that the language switch works, and that an unknown path such as `/dramai/nope/` shows the 404 page.
 
-## 4. 任意静态空间（nginx / OSS / S3）
+### Rolling back
 
-```
-npm run build
-# 把 dist/ 整个上传，确保托管服务支持
-#   - 路由 fallback：所有 404 返回 index.html
-#   - 正确的 MIME 类型（特别是 .js / .mjs）
-#   - HTTPS（很多浏览器 API、CORS 都要 HTTPS）
-```
+Run the workflow again from an earlier commit or tag of `apps/site` (choose it under "Use workflow from"). There is no
+previous artifact to restore: each deployment is built from the ref you pick.
 
-## 5. CORS 提示
+### Custom domain
 
-浏览器直连 OpenAI 兼容 API 时，部分服务商会限制 CORS。已知 CORS-friendly 的
-服务商示例见 [PROVIDERS.md](./PROVIDERS.md)。如果遇到 CORS 报错：
-
-- 优先换一个支持 CORS 的服务商；
-- 或者自建一个 1 文件的 Cloudflare Worker / Vercel Edge Function 做透传（v0.x 暂不内置）。
-
-## 6. 验证部署成功
-
-1. 打开 `https://<user>.github.io/dramai/`，能看到骨架页"`dramai · 浏览器内的
-AI 短剧工作台`"。
-2. F12 控制台无报错。
-3. 在 v0.1 之后，进入 **Settings** 填入 OpenAI 兼容 base URL + key，点测试连接成功。
+If the site moves to its own domain, put the domain in `apps/site/public/CNAME`, set it under Settings → Pages, and change
+`site` and `base` in `apps/site/astro.config.mjs` (`base: '/'` for a root domain). The post-build check assumes the current
+origin and base, so update `scripts/check-dist.mjs` as well.

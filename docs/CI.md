@@ -4,11 +4,11 @@ The workflows live in `.github/workflows/`. See [RELEASING.md](RELEASING.md) for
 
 ## Workflows
 
-| Workflow              | When it runs                                                                                     | What it does                                                                                                                                                     |
-| --------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`              | Pushes to `main` or `refactor/**`; every pull request; manually; called by `release-desktop.yml` | Everyday checks, see below                                                                                                                                       |
-| `release-desktop.yml` | Pushing a `v*.*.*` tag; manually (dry run, no release)                                           | Builds installers on each system and creates a GitHub Release                                                                                                    |
-| `deploy.yml`          | Manually only                                                                                    | The old Pages deployment. Automatic runs are off because the old workspace cannot run without the local server; it will be replaced once the landing page exists |
+| Workflow              | When it runs                                                                                     | What it does                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`              | Pushes to `main` or `refactor/**`; every pull request; manually; called by `release-desktop.yml` | Everyday checks, see below                                                                                                   |
+| `release-desktop.yml` | Pushing a `v*.*.*` tag; manually (dry run, no release)                                           | Builds installers on each system and creates a GitHub Release                                                                |
+| `deploy-site.yml`     | Manually only (an automatic trigger for changes under `apps/site` is written and commented out)  | Builds `apps/site`, runs its tests and post-build checks, and deploys it to GitHub Pages. See [DEPLOYMENT.md](DEPLOYMENT.md) |
 
 Dependabot (`.github/dependabot.yml`) opens weekly update pull requests for GitHub Actions and npm
 dependencies.

@@ -12,12 +12,12 @@ pipeline.
 
 ## Workflows at a glance
 
-| File                  | When it runs                                                                                    | What it does                                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`              | Pushes to `main` or `refactor/**`; every pull request; manually; called by the release workflow | See [CI.md](CI.md)                                                                                                                             |
-| `release-desktop.yml` | Pushing a `v*.*.*` tag; manually (build only, no release)                                       | Check the tag → run CI → build installers on four platforms → checksums → create the Release                                                   |
-| `deploy.yml`          | Manually only                                                                                   | The old Pages deployment, automatic runs disabled (reason in the file header); replaced by the landing page deployment once `apps/site` exists |
-| `dependabot.yml`      | Weekly                                                                                          | Updates GitHub Actions (pinned to SHAs) and npm dependencies; new versions wait 7 days                                                         |
+| File                  | When it runs                                                                                    | What it does                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `ci.yml`              | Pushes to `main` or `refactor/**`; every pull request; manually; called by the release workflow | See [CI.md](CI.md)                                                                           |
+| `release-desktop.yml` | Pushing a `v*.*.*` tag; manually (build only, no release)                                       | Check the tag → run CI → build installers on four platforms → checksums → create the Release |
+| `deploy-site.yml`     | Manually only                                                                                   | Deploys the landing page (`apps/site`) to GitHub Pages; see [DEPLOYMENT.md](DEPLOYMENT.md)   |
+| `dependabot.yml`      | Weekly                                                                                          | Updates GitHub Actions (pinned to SHAs) and npm dependencies; new versions wait 7 days       |
 
 The shared composite step is in `.github/actions/setup/` (installs pnpm and Node, caches the pnpm store,
 installs dependencies).
@@ -147,8 +147,7 @@ In the order of "worth doing"; everything here is optional hardening and release
    so a version tag cannot be pushed by mistake or tampered with after release.
 5. **Code security**: turn on Dependabot alerts and security updates; `.github/dependabot.yml` drives the
    version updates.
-6. **Pages**: keep the source set to "GitHub Actions" (the old deployment uses it when run by hand; the
-   landing page keeps using it once it exists).
+6. **Pages**: keep the source set to "GitHub Actions" (the landing page deployment uses it). The `github-pages` environment only lets the default branch deploy unless you add others; see [DEPLOYMENT.md](DEPLOYMENT.md).
 7. (Optional) **Environments**: create a `release` environment with required reviewers, then add
    `environment: release` to the `release` job of `release-desktop.yml`, so a person has to confirm before
    anything is published.
