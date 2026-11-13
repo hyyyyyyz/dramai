@@ -1,11 +1,11 @@
 import type { LoginStatusDto, ProviderConfigDto } from '@dramai/api'
 import {
+  checkBaseUrl,
   configFromPreset,
   effectiveAuth,
-  joinUrl,
   localizeProviderConfig,
   loginEndpointProblem,
-  parseResponsesModels,
+  modelListRequest,
   PROVIDER_PRESETS,
   ProviderError,
   sendRequest,
@@ -14,7 +14,8 @@ import {
 import type {
   Clock,
   CredentialResolver,
-  OpenAiLogin,
+  LoginChannelId,
+  LoginService,
   ExecutorDeps,
   IdGenerator,
   Locale,
@@ -40,7 +41,7 @@ export interface ProviderServiceDeps {
   clock: Clock
   executor?: ExecutorDeps
   /** 账号登录（OpenAI）。 */
-  login?: OpenAiLogin
+  logins?: Partial<Record<LoginChannelId, LoginService>>
   /** 统一取凭据（含登录令牌的自动刷新）。 */
   credentials?: CredentialResolver
 }
@@ -118,6 +119,23 @@ export class ProviderService {
     return cfg
   }
 
+  /**
+   * 写入前校验接口地址（创建、按预设创建、改地址三处共用同一套规则，见 core 的 `checkBaseUrl`）。
+   * 只在写入时做：库里已有的旧配置不会因为规则收紧而读不出来。返回去掉首尾空白的地址。
+   */
+  private checkedBaseUrl(url: string): string {
+    const checked = checkBaseUrl(url)
+    if (checked.ok) return checked.url
+    throw new HttpError(
+      400,
+      checked.code,
+      checked.message,
+      checked.code === 'BASE_URL_PLACEHOLDER_UNFILLED'
+        ? { placeholders: checked.placeholders }
+        : undefined,
+    )
+  }
+
   async create(
     input: Omit<ProviderConfig, 'id' | 'secretRef' | 'enabled'> & { enabled?: boolean },
     apiKey?: string,
@@ -133,8 +151,10 @@ export class ProviderService {
       if (problem) throw new HttpError(400, 'AUTH_NOT_ALLOWED', problem)
       if (apiKey) throw badRequest('账号登录的服务商不需要 API Key')
     }
+    const baseUrl = this.checkedBaseUrl(input.baseUrl)
     const cfg: ProviderConfig = {
       ...input,
+      baseUrl,
       id,
       auth,
       enabled: input.enabled ?? true,
@@ -147,19 +167,36 @@ export class ProviderService {
     return cfg
   }
 
-  async createFromPreset(presetId: string, options: { apiKey?: string; label?: string }) {
+  async createFromPreset(
+    presetId: string,
+    options: { apiKey?: string; label?: string; baseUrl?: string; model?: string },
+  ) {
     const preset = PROVIDER_PRESETS.find((p) => p.id === presetId)
     if (!preset) throw notFound('provider_preset', presetId)
-    const id = this.d.ids.next('prov')
     if (preset.auth.type === 'account_login' && options.apiKey) {
       throw badRequest('这个预设用账号登录，不需要 API Key')
     }
+    // 接口地址：账号登录的预设钉死不能改；其余的覆盖值或预设原值都要过基本校验
+    // （尤其是预设里还带 {占位符} 却没填的——建出来也只会 404，拒绝比留一份坏配置好）。
+    const override = options.baseUrl?.trim()
+    if (override && preset.auth.type === 'account_login') {
+      throw new HttpError(
+        400,
+        'BASE_URL_NOT_OVERRIDABLE',
+        '账号登录的预设接口地址是固定的，不能覆盖',
+      )
+    }
+    const baseUrl = override || preset.baseUrl
+    const checked = { url: this.checkedBaseUrl(baseUrl) }
+    const id = this.d.ids.next('prov')
     const cfg = configFromPreset(preset, {
       id,
       secretRef:
         options.apiKey || preset.auth.type === 'account_login' ? secretRefFor(id) : undefined,
     })
     if (options.label) cfg.label = options.label
+    cfg.baseUrl = checked.url
+    if (options.model?.trim()) cfg.model = options.model.trim()
     if (options.apiKey) await this.d.secrets.set(secretRefFor(id), options.apiKey)
     await this.d.store.providers.put(cfg)
     await this.autoActivate(cfg)
@@ -190,15 +227,20 @@ export class ProviderService {
           : loginEndpointProblem(auth.channel, next)
       if (problem) throw new HttpError(400, 'AUTH_NOT_ALLOWED', problem)
     }
+    // 只有这次真的改了地址才校验：没动地址的更新不会因为旧地址不符合新规则而失败
+    if (patch.baseUrl !== undefined && patch.baseUrl !== cur.baseUrl) {
+      next.baseUrl = this.checkedBaseUrl(patch.baseUrl)
+    }
     await this.d.store.providers.put(next)
     return next
   }
 
   async delete(id: string): Promise<void> {
     const cfg = await this.require(id)
-    // 账号登录：先撤销刷新令牌（尽力而为），再删凭据
-    if (effectiveAuth(cfg).type === 'account_login') {
-      await this.d.login?.logout(cfg.id, cfg.secretRef).catch(() => {})
+    // 账号登录：先登出（有撤销接口的通道会撤销令牌，尽力而为），再删凭据
+    const auth = effectiveAuth(cfg)
+    if (auth.type === 'account_login') {
+      await this.d.logins?.[auth.channel]?.logout(cfg.id, cfg.secretRef).catch(() => {})
     }
     if (cfg.secretRef) await this.d.secrets.delete(cfg.secretRef)
     await this.d.store.providers.delete(id)
@@ -243,7 +285,12 @@ export class ProviderService {
       const bearer = (await this.credential(cfg)).bearer
       return await testProvider(cfg, bearer, this.d.executor)
     } catch (err) {
-      return { outcome: 'failed', error: err instanceof Error ? err.message : String(err) }
+      return {
+        outcome: 'failed',
+        error: err instanceof Error ? err.message : String(err),
+        // 和任务失败时同一套码（LOGIN_REQUIRED / TIMEOUT / NETWORK / HTTP_<状态> …）
+        ...(err instanceof ProviderError ? { code: err.code } : {}),
+      }
     }
   }
 
@@ -256,19 +303,20 @@ export class ProviderService {
 
   // === 账号登录 ===
 
-  private requireLogin(cfg: ProviderConfig): OpenAiLogin {
-    if (effectiveAuth(cfg).type !== 'account_login' || !this.d.login) {
-      throw conflict('LOGIN_NOT_SUPPORTED', '这个服务商不是账号登录方式')
-    }
-    return this.d.login
+  private requireLogin(cfg: ProviderConfig): LoginService {
+    const auth = effectiveAuth(cfg)
+    const service = auth.type === 'account_login' ? this.d.logins?.[auth.channel] : undefined
+    if (!service) throw conflict('LOGIN_NOT_SUPPORTED', '这个服务商不是账号登录方式')
+    return service
   }
 
   async loginStatus(cfg: ProviderConfig, origin: LoginRequestOrigin = {}): Promise<LoginStatusDto> {
     const availability = loginAvailability(origin)
-    if (!this.d.login) {
-      return { channel: 'openai-chatgpt', state: 'signed_out', availability }
-    }
-    return { ...(await this.d.login.status(cfg.id, cfg.secretRef)), availability }
+    const auth = effectiveAuth(cfg)
+    const channel: LoginChannelId = auth.type === 'account_login' ? auth.channel : 'openai-chatgpt'
+    const service = this.d.logins?.[channel]
+    if (!service) return { channel, state: 'signed_out', availability }
+    return { ...(await service.status(cfg.id, cfg.secretRef)), availability }
   }
 
   async loginStart(id: string, options: { account?: 'same' | 'new' }, origin: LoginRequestOrigin) {
@@ -289,16 +337,21 @@ export class ProviderService {
 
   async logout(id: string, origin: LoginRequestOrigin = {}) {
     const cfg = await this.require(id)
-    const { revoked } = await this.requireLogin(cfg).logout(cfg.id, cfg.secretRef)
-    return { status: await this.loginStatus(cfg, origin), revoked }
+    const { revoked, manageUrl } = await this.requireLogin(cfg).logout(cfg.id, cfg.secretRef)
+    return {
+      status: await this.loginStatus(cfg, origin),
+      revoked,
+      ...(manageUrl ? { manageUrl } : {}),
+    }
   }
 
-  /** 这个服务商当前能用的模型：登录方式下取 `/v1/models` 里 `visibility == "list"` 的那些。 */
+  /**
+   * 这个服务商当前能用的模型。支持列表接口的协议（openai-chat / openai-responses / anthropic-messages /
+   * gemini-chat）取列表；图片、视频、语音协议没有统一的列表接口，返回 `MODEL_LIST_UNSUPPORTED`。
+   * 登录方式下取 `/v1/models` 里 `visibility == "list"` 的那些。
+   */
   async models(id: string): Promise<Array<{ id: string; label: string }>> {
     const cfg = await this.require(id)
-    if (cfg.protocol !== 'openai-responses' && cfg.protocol !== 'openai-chat') {
-      throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
-    }
     let bearer: string | undefined
     try {
       bearer = (await this.credential(cfg)).bearer
@@ -308,12 +361,10 @@ export class ProviderService {
       }
       throw err
     }
+    const req = modelListRequest(cfg.protocol, cfg.baseUrl, bearer, cfg.dialect?.extraHeaders)
+    if (!req) throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
     const raw = await sendRequest(
-      {
-        method: 'GET',
-        url: joinUrl(cfg.baseUrl, '/models'),
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
-      },
+      { method: 'GET', url: req.url, headers: req.headers },
       this.d.executor ?? {},
       { timeoutMs: 20_000 },
     )
@@ -322,7 +373,7 @@ export class ProviderService {
         status: raw.status,
       })
     }
-    return parseResponsesModels(raw.json)
+    return req.parse(raw.json)
   }
 
   capability(cfg: ProviderConfig) {

@@ -828,7 +828,8 @@ describe('prices keep the provider currency; conversion is an optional user sett
   it('stores the provider’s original unit and currency (PTC points), without a hidden exchange rate', () => {
     for (const p of catalog.models.all()) {
       for (const price of p.pricing) {
-        expect(price.currency, p.id).toBe('PTC')
+        // 价目按各家官方页面的原始币种存，从不折算：302.AI 的价目是 PTC 点数，官方页面抄来的未实测价目是 USD / CNY
+        expect(price.currency, p.id).toMatch(/^(PTC|USD|CNY)$/)
         expect(['per_image', 'per_second', 'per_call', 'per_1k_chars']).toContain(price.unit)
       }
     }

@@ -1,5 +1,6 @@
 import {
   asRecord,
+  bodyError,
   bytesToBase64,
   joinPrompt,
   joinUrl,
@@ -53,6 +54,10 @@ export const klingVideo: MediaProtocol<VideoGenInput> = {
   parsePollResponse(raw) {
     const data = asRecord(asRecord(raw.json)?.data)
     const status = (str(data?.task_status) ?? 'unknown').toLowerCase()
+    if (!str(data?.task_status)) {
+      const err = bodyError(raw.json)
+      if (err) return { status: 'failed', message: err }
+    }
     if (status === 'succeed' || status === 'succeeded' || status === 'success') {
       const videos = asRecord(data?.task_result)?.videos
       const v = asRecord(Array.isArray(videos) ? videos[0] : undefined)

@@ -1,3 +1,4 @@
+import { mergeHeaders } from '../../util/merge.ts'
 import { asRecord, joinUrl, jsonHeaders, jsonPost, str } from '../http.ts'
 import { ProviderError } from '../errors.ts'
 import type { AuthContext, HttpRequestSpec } from '../types.ts'
@@ -111,7 +112,11 @@ export function buildResponsesRequest(
     else body[field] = value
   }
   return {
-    spec: jsonPost(joinUrl(auth.baseUrl, '/responses'), body, jsonHeaders(auth.apiKey)),
+    spec: jsonPost(
+      joinUrl(auth.baseUrl, '/responses'),
+      body,
+      mergeHeaders(jsonHeaders(auth.apiKey), auth.dialect?.extraHeaders),
+    ),
     dropped,
   }
 }

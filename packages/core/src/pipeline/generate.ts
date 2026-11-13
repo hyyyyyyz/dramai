@@ -100,12 +100,26 @@ export function defaultDialect(
   switch (config.protocol) {
     case 'openai-images':
       return { lang: 'en', negative: 'field' }
+    case 'volcengine-images':
+    case 'dashscope-image':
+    case 'siliconflow-images':
+      return { lang: 'zh', negative: 'none' }
+    case 'kling-image':
+      return { lang: 'zh', negative: 'none' }
     case 'gemini-image':
       return { lang: 'en', negative: 'inline' }
     default:
       return { lang: 'zh', negative: 'none' }
   }
 }
+
+/** 按像素尺寸出图的图像协议（其余经画幅参数）。 */
+const PIXEL_SIZE_PROTOCOLS: ReadonlySet<string> = new Set([
+  'openai-images',
+  'volcengine-images',
+  'dashscope-image',
+  'siliconflow-images',
+])
 
 function jobTarget(ctx: JobContext): GenerationTarget {
   const t = ctx.job.params.target as GenerationTarget | undefined
@@ -480,13 +494,14 @@ async function doImageJob(
   const refBytes = await prepareReferenceImages(deps, project.id, refs)
   // 只有 OpenAI 兼容的图像接口按像素尺寸出图；Gemini 协议经画幅参数。画幅比例永远来自项目 / 版式，分辨率只决定清晰度。
   const sizeFor = (aspectRatio: AspectRatio) =>
-    config.protocol === 'openai-images'
+    PIXEL_SIZE_PROTOCOLS.has(config.protocol)
       ? resolveOutputSize({
           aspectRatio,
           resolution: params.resolution && params.resolution !== 'none' ? params.resolution : 1024,
           step: cap.sizeStep ?? 16,
           maxLongSide: cap.maxLongSide,
           maxPixels: cap.maxPixels,
+          minPixels: cap.minPixels,
         })
       : undefined
   const protocol = getMediaProtocol(config.protocol)

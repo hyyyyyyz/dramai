@@ -80,10 +80,15 @@ const providerWritable = z.object({
   label: z.string().min(1).max(120),
   kind: S.providerKind,
   protocol: S.protocolId,
+  /**
+   * 接口地址（创建 / 改地址时校验，400 + `BASE_URL_*`）：http(s)；不带查询串和片段；不留 `{占位符}`（含 `%7B…%7D`）；
+   * 明文 http 只能发往本机 / 局域网（链路本地地址如 169.254.x 不算）。已存在的旧配置不受影响。
+   */
   baseUrl: z.string().min(1),
   model: z.string().min(1),
   enabled: z.boolean().optional(),
   notes: z.string().optional(),
+  dialect: S.providerDialect.optional(),
   capabilityOverrides: z.record(z.string(), z.unknown()).optional(),
 })
 export const providerCreate = providerWritable.extend({
@@ -191,6 +196,14 @@ export const routes = {
       presetId: z.string(),
       apiKey: z.string().min(1).optional(),
       label: z.string().optional(),
+      /**
+       * 覆盖预设的接口地址（一步建好）：预设里带 `{WorkspaceId}` 之类占位符的，必须在这里填完整地址。
+       * 校验：必须是 http / https；公网地址必须 https（明文 http 只允许本机 / 局域网）；
+       * 账号登录的预设地址是钉死的，不接受覆盖。
+       */
+      baseUrl: z.string().min(1).optional(),
+      /** 覆盖预设的建议模型名。 */
+      model: z.string().min(1).optional(),
     }),
     response: S.providerConfig,
   }),
@@ -233,6 +246,8 @@ export const routes = {
     response: z.object({
       status: S.loginStatus,
       revoked: z.enum(['confirmed', 'unconfirmed', 'nothing_to_revoke']),
+      /** 通道没有撤销接口时（OpenRouter），用户去这里作废这份授权。 */
+      manageUrl: z.string().optional(),
     }),
   }),
   'providers.models': route('GET', '/api/providers/:providerId/models', {

@@ -22,6 +22,12 @@ export type ProtocolId =
   | 'generic-video'
   | 'openai-tts'
   | 'openai-responses'
+  | 'anthropic-messages'
+  | 'gemini-chat'
+  | 'volcengine-images'
+  | 'dashscope-image'
+  | 'siliconflow-images'
+  | 'kling-image'
 
 /**
  * 同步返回结果的协议：请求发出后直接拿到成品，根本没有上游任务号可查。
@@ -33,12 +39,17 @@ export const SYNC_PROTOCOLS: readonly ProtocolId[] = [
   'gemini-image',
   'openai-tts',
   'openai-responses',
+  'anthropic-messages',
+  'gemini-chat',
+  'volcengine-images',
+  'dashscope-image',
+  'siliconflow-images',
 ]
 
 /** 账号登录通道。现在只有 OpenAI 一种；加通道 = 在这里加一项，并在 CredentialResolver 里注册。 */
-export type LoginChannelId = 'openai-chatgpt'
+export type LoginChannelId = 'openai-chatgpt' | 'openrouter'
 
-export const LOGIN_CHANNELS: readonly LoginChannelId[] = ['openai-chatgpt']
+export const LOGIN_CHANNELS: readonly LoginChannelId[] = ['openai-chatgpt', 'openrouter']
 
 /**
  * 服务商的鉴权方式。
@@ -51,6 +62,40 @@ export type ProviderAuth =
   | { type: 'api_key' }
   | { type: 'account_login'; channel: LoginChannelId }
   | { type: 'none' }
+
+/**
+ * 文本服务商之间的"方言"差异，每个服务商配置自己带一份（预设里预填，用户可以看、可以改）。
+ * 协议层把它用在请求里；不认识的字段不会报错，只是不生效。
+ */
+export interface ProviderDialect {
+  /**
+   * 合并进请求体的额外字段（深合并，覆盖协议层自己生成的同名字段，但 `model`、`messages`、`input`、`contents`、
+   * `stream`、`store` 不能被覆盖）。典型用途：给默认开思考的模型关思考，例如 `{ "enable_thinking": false }`、
+   * `{ "thinking": { "type": "disabled" } }`、`{ "reasoning_effort": "low" }`。
+   */
+  extraBody?: Record<string, unknown>
+  /** openai-chat 的输出长度字段名：OpenAI / Moonshot / MiniMax 等新字段，其他多数用 `max_tokens`。缺省 `max_tokens`。 */
+  maxTokensField?: 'max_tokens' | 'max_completion_tokens'
+  /**
+   * 要 JSON 输出时怎么交付：`json_object`（缺省，发 `response_format`）或 `prompt_only`（不发，靠提示词 +
+   * 解析重试；给不支持 `json_object` 的服务商用）。
+   */
+  jsonMode?: 'json_object' | 'prompt_only'
+  /**
+   * 额外请求头（例如 Anthropic 对没有限定到单个工作区的 API Key 要求的 `anthropic-workspace-id`）。
+   * 不能覆盖鉴权头、内容类型头和协议的版本头。
+   */
+  extraHeaders?: Record<string, string>
+  /**
+   * 生图（`openai-images` 协议）的请求写法：
+   * - `auto`（缺省）：按模型名判断，会去掉 `openai/`、`vendor/` 这类前缀再认；
+   * - `openai`：OpenAI 官方写法（不发 `response_format` / `negative_prompt`，多参考图走 multipart `/images/edits`）；
+   * - `compat`：OpenAI 兼容写法（总要 `b64_json`，参考图填 `image` / `image_url` / `reference_images`）；
+   * - `minimax`：MiniMax H3 的写法。
+   * 经转发站使用 `gpt-image-*` 时，转发站未必支持 multipart 的 `/images/edits`，改成 `compat` 即可。
+   */
+  imageStyle?: 'auto' | 'openai' | 'compat' | 'minimax'
+}
 
 /**
  * 预设（和由它创建的配置）的验证状态。
@@ -83,6 +128,8 @@ export interface ProviderConfig {
   verifiedAt?: string
   /** 由预设创建时的验证状态。没有 = 用户自己加的配置，不声称验证过。 */
   verification?: ProviderVerification
+  /** 方言差异（额外请求体、输出长度字段名、JSON 模式）。 */
+  dialect?: ProviderDialect
   knownLimitations?: string[]
   /** 用户对某个模型能力的覆盖（自定义模型时用）。 */
   capabilityOverrides?: Partial<ModelCapability>
@@ -98,13 +145,16 @@ export interface AuthContext {
   baseUrl: string
   model: string
   /**
-   * Bearer 凭据：`api_key` 时是 API Key，`account_login` 时是当前有效的访问令牌（调用前已由
-   * CredentialResolver 刷新），`none` 时为空。适配器只管放进 Authorization 头。
+   * 凭据：`api_key` 时是 API Key，`account_login` 时是当前有效的访问令牌（调用前已由 CredentialResolver
+   * 刷新），`none` 时为空。**由协议决定怎么发**：多数放 `Authorization: Bearer`，Anthropic 用 `x-api-key`，
+   * Gemini 用 `x-goog-api-key`。
    */
   apiKey?: string
   /** 鉴权方式；缺省 = `api_key`。协议层据此处理登录方式下的额外要求（例如 openai-responses）。 */
   method?: ProviderAuth['type']
   channel?: LoginChannelId
+  /** 服务商配置里的方言差异（文本协议用）。 */
+  dialect?: ProviderDialect
 }
 
 export interface BinaryImage {
@@ -150,6 +200,8 @@ export interface MediaProtocol<Input> {
   media: 'image' | 'video' | 'audio'
   /** 默认 json。 */
   responseType?: 'json' | 'binary'
+  /** 单次提交请求的超时（毫秒）；比执行器默认的 120 秒长的协议（同步大图）在这里声明。 */
+  requestTimeoutMs?(auth: AuthContext): number | undefined
   buildGenerateRequest(auth: AuthContext, input: Input): HttpRequestSpec
   parseGenerateResponse(raw: RawResponse): GenerateParse
   buildPollRequest?(auth: AuthContext, taskId: string): HttpRequestSpec
@@ -246,6 +298,11 @@ export interface ModelCapability {
   sizeStep?: number
   maxLongSide?: number
   maxPixels?: number
+  /**
+   * 总像素下限（官方有下限的模型才填，并在画像的 quirks / provenance 里注明出处）。
+   * 尺寸计算在统一入口（`resolveOutputSize`）按它补足：保持画幅比例、对齐步长、不超过上限。
+   */
+  minPixels?: number
 }
 
 /**

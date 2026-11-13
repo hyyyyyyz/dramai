@@ -1,5 +1,6 @@
 import {
   asRecord,
+  bodyError,
   authHeaders,
   joinPrompt,
   joinUrl,
@@ -59,6 +60,10 @@ export const genericVideo: MediaProtocol<VideoGenInput> = {
   parsePollResponse(raw) {
     const json = asRecord(raw.json) ?? {}
     const status = String(json.status ?? json.state ?? '').toLowerCase()
+    if (!status) {
+      const err = bodyError(raw.json)
+      if (err) return { status: 'failed', message: err }
+    }
     if (['completed', 'succeeded', 'success', 'done'].includes(status)) {
       const url = pickVideoUrl(json)
       if (!url) return { status: 'failed', message: 'Video poll: 任务成功但缺少 url' }

@@ -75,11 +75,14 @@ export async function authFor(
   deps: Pick<PipelineDeps, 'secrets' | 'credentials'>,
   config: ProviderConfig,
 ): Promise<AuthContext> {
-  if (effectiveAuth(config).type === 'account_login' && config.protocol !== 'openai-responses') {
+  const auth = effectiveAuth(config)
+  if (auth.type === 'account_login' && config.kind !== 'llm') {
     throw new ProviderError(
       'capability',
-      '账号登录目前只覆盖文本（openai-responses），不能用于图片、视频或语音服务商',
-      { code: 'LOGIN_TEXT_ONLY' },
+      '账号登录目前只覆盖文本，不能用于图片、视频或语音服务商',
+      {
+        code: 'LOGIN_TEXT_ONLY',
+      },
     )
   }
   const resolver = deps.credentials ?? createCredentialResolver({ secrets: deps.secrets })
@@ -90,6 +93,7 @@ export async function authFor(
     apiKey: cred.bearer,
     method: cred.method,
     channel: cred.channel,
+    ...(config.dialect ? { dialect: config.dialect } : {}),
   }
 }
 

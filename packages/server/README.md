@@ -71,6 +71,33 @@ WebUI / 容器场景没有系统加密可用，靠文件权限和数据目录隔
 
 **Preset verification.** Every preset carries `verification`: `{ status: 'tested', testedAt }` or `{ status: 'documented', source }` (connected from official documentation, not tested). Documented presets never become the current choice automatically. The four v0.4 presets stay `tested` (2026-05-04). The OpenAI preset (`openai-responses-login`) is `documented`, text only, and its limitations say so.
 
+## Creating a provider from a preset in one step (English)
+
+`providers.fromPreset({ presetId, apiKey?, label?, baseUrl?, model? })` creates the provider with the address and model already filled in. The effective address (override or the preset's own) is validated before anything is stored, and every failure is a 400:
+
+- `BASE_URL_PLACEHOLDER_UNFILLED`: a `{placeholder}` such as `{WorkspaceId}` is still in the address (`details.placeholders`). Presets with placeholders must be created with a complete `baseUrl`.
+- `BASE_URL_INVALID`: not a URL, not `http`/`https`, user name or password in it, or whitespace.
+- `BASE_URL_INSECURE`: plain `http` is only accepted for this machine and the local network (loopback, private IPv4 ranges incl. 100.64.0.0/10, IPv6 `fc`/`fd`/`fe80`, `*.local` / `*.lan` / `*.internal`, single-label host names); everything else needs `https`.
+- `BASE_URL_NOT_OVERRIDABLE`: account-login presets pin their address; only `model` may be overridden.
+
+`providers.test` failures also carry a machine-readable `code` (the same set job failures use: Anthropic `error.type`, Gemini `error.status`, `HTTP_<status>`, `NETWORK`, `TIMEOUT`, `LOGIN_REQUIRED`, ...) next to the unchanged `error` string. `providers.login.logout` always carries `manageUrl` when there is something to invalidate (OpenRouter), because the key is gone from the status once logout has run. Preset `label` / `notes` / `knownLimitations` are localized (`en`, `zh-Hant`) both in `presets.list` and in provider configs made from presets, as long as the user has not edited the text.
+
+## Text providers, dialect options and OpenRouter sign-in (English)
+
+**Protocols.** Text providers use one of `openai-chat`, `openai-responses`, `anthropic-messages` (`POST /v1/messages`, `x-api-key` + `Authorization`, `anthropic-version`, `max_tokens` always set, no temperature/top_p) and `gemini-chat` (`:streamGenerateContent?alt=sse`, `x-goog-api-key`; the official reference does not describe the stream format, so a plain JSON array is accepted too). All stream; all fail on interruption, error events, blocked output and an empty output cut by the length limit (`EMPTY_OUTPUT_TRUNCATED`). Model lists and connection tests are per protocol (`providers.models`; image, video and speech protocols answer `MODEL_LIST_UNSUPPORTED`).
+
+**Dialect.** A provider config carries `dialect` (copied from the preset, editable through `providers.create/update`): `extraBody` (deep-merged into the request body; cannot replace `model`, `messages`, `input`, `contents`, `stream`, `store`) — presets use it to switch thinking off where a model thinks by default and the docs allow it; `maxTokensField` (`max_tokens` or `max_completion_tokens`); `jsonMode` (`json_object`, or `prompt_only` for services without `response_format`). `openai-chat` ignores `reasoning_content` / `reasoning` / `reasoning_details`, reads array `content` (Mistral) and skips SSE comment lines; `<think>…</think>` inlined in content is stripped.
+
+**Presets.** `vendor` (grouping, localized name), `region` (`cn` / `global` / `local`), `baseUrlPlaceholders`, `dialect`, `auth`, `verification`. The fifteen text presets added in this batch are all "documented" (official source, not tested) and never auto-selected; local models (Ollama, LM Studio) use `auth: none`.
+
+**OpenRouter sign-in** (`channel: 'openrouter'`, same `providers.login.*` routes). From the official OAuth page: no registration or secret; `callback_url` is `http://localhost:<port>/callback` (the only form the docs mention; the listener also binds `::1`); PKCE `S256`; the code is exchanged at `POST /api/v1/auth/keys` and the response is the user's own API key, stored in the `SecretStore` and used as a plain Bearer (provider pinned to `https://openrouter.ai/api/v1`, `openai-chat`). There is no refresh and no revocation endpoint: logout clears the local key and answers `revoked: 'unconfirmed'` with `manageUrl`, the official key page (`/keys/<SHA-256 of the key>`). A denial carries no `state`, so it is ignored like any request with the wrong state and the attempt waits for the timeout or cancel. Login status is generic: `credential: { kind: 'api_key', mask }` and `manageUrl` replace OpenAI's account label, expiry and `planUsage`.
+
+## Image providers (English)
+
+Image protocols: `openai-images` (writing chosen by model name: `gpt-image*` / `chatgpt-image*` follow the official OpenAI reference — no `response_format`, no `negative_prompt`, references through `POST /images/edits` as multipart `image[]`; `MiniMax-H3-Image*` use `/images/edits` with JSON `images[{image_url}]`; every other name keeps the original compat request unchanged, which the tested 302.AI Seedream preset relies on), `gemini-image` (Google's official address gets only `x-goog-api-key`), and new `volcengine-images` (Seedream direct: `image` as data URIs, watermark off, no `n`, size scaled up to the model minimum), `dashscope-image` (Qwen-Image, synchronous, `W*H` size, exactly one text, prompt rewriting off), `siliconflow-images` (`images[].url`, `image_size`, one reference in the model's field) and `kling-image` (generations and Omni, submit + poll, bare-base64 references, up to 10). A generation downloads its result as soon as it succeeds (result URLs live from one hour to 30 days); the URL is checkpointed first, so a restart resumes the download.
+
+The eight image presets are "documented" (official source, not tested), never auto-selected, with vendor and region. Their model profiles mark every capability unverified and carry the officially claimed reference-image limit; prices are the official USD per image where the page gives one, otherwise empty. Not done and why: BFL FLUX (the official reference does not say whether `input_image` accepts base64, and we only have local files), fal (per-model schemas and the failure states are not documented on the pages read), BytePlus (the official page body could not be read), Replicate / Stability / Ideogram / ComfyUI (out of scope for this round).
+
 ## 安全（计划 4.2）
 
 - 默认只监听 `127.0.0.1`；非回环地址没有 token 直接拒绝启动。
@@ -309,3 +336,11 @@ core 的业务错误是 `DomainError`（`code` + `kind`：not_found / conflict /
 | GET    | `/api/events`                                    | `events` (非 JSON)                       |
 
 multipart 上传的文件字段统一叫 `file`（`assets.uploadSheet` 可选 `variantName`；`projects.setStyleReference` 可选 `label`；`import.legacy` 可选 `projectIds`、`allowDuplicate`）。
+
+## Review fixes for the image/text provider batch (English)
+
+- **Extra headers** (`dialect.extraHeaders`) now apply to every provider kind: text protocols merge them in their request builders, the executor merges them into the submit and poll requests of every media protocol (image, video, speech), and the connection test and model list send them too. Result downloads never get them (the result host is usually another host). The protected list (case-insensitive): `Authorization`, `Proxy-Authorization`, `Cookie`, `X-Api-Key`, `X-Goog-Api-Key`, `X-Key`, `Api-Key`, `Content-Type`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Host`, `Anthropic-Version`.
+- **Minimum image size**: `ModelCapability.minPixels`, applied in `resolveOutputSize` (keeps the ratio and the step, stays under the ceilings; a floor above the ceiling is an error). The Seedream in-protocol scale-up remains only as the fallback for models without a profile.
+- **Image style** (`dialect.imageStyle`: `auto` | `openai` | `compat` | `minimax`) for the `openai-images` protocol; `auto` strips vendor prefixes (`openai/gpt-image-1`) and decides from the last path segment.
+- **Polling**: a response with no task state but an explicit error (`{ code: non-zero, message }`, `{ output: { code, message } }`, `{ error }`) fails the task at once instead of waiting for the poll timeout.
+- **Base URL** rules are checked on `providers.create`, `providers.fromPreset` and on `providers.update` when the address changes (never when stored rows are read): http(s) only, no query string or fragment, no placeholder (also percent-encoded), plain http only to this machine or the local network, never to link-local addresses (`169.254.0.0/16`, `fe80::/10`).

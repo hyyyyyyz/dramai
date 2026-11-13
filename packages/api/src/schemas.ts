@@ -686,11 +686,17 @@ export const protocolId = z.enum([
   'generic-video',
   'openai-tts',
   'openai-responses',
+  'anthropic-messages',
+  'gemini-chat',
+  'volcengine-images',
+  'dashscope-image',
+  'siliconflow-images',
+  'kling-image',
 ])
 export const support = z.enum(['supported', 'unsupported', 'unverified'])
 
 /** 账号登录通道（现在只有 OpenAI）。 */
-export const loginChannelId = z.enum(['openai-chatgpt'])
+export const loginChannelId = z.enum(['openai-chatgpt', 'openrouter'])
 /** 服务商的鉴权方式；永远是推断后的结果（旧数据没有这个字段时：有 Key = api_key，否则 none）。 */
 export const providerAuth = z.discriminatedUnion('type', [
   z.object({ type: z.literal('api_key') }),
@@ -702,6 +708,18 @@ export const providerVerification = z.discriminatedUnion('status', [
   z.object({ status: z.literal('tested'), testedAt: z.string() }),
   z.object({ status: z.literal('documented'), source: z.string() }),
 ])
+/** 方言差异：额外请求体、输出长度字段名、JSON 模式（文本服务商）。预设预填，用户可以看、可以改。 */
+export const providerDialect = z.object({
+  extraBody: z.record(z.string(), z.unknown()).optional(),
+  maxTokensField: z.enum(['max_tokens', 'max_completion_tokens']).optional(),
+  jsonMode: z.enum(['json_object', 'prompt_only']).optional(),
+  /** 额外请求头（如 Anthropic 的 anthropic-workspace-id）；不能覆盖鉴权头和内容类型头。 */
+  extraHeaders: z.record(z.string(), z.string()).optional(),
+  /** 生图请求写法：auto（按模型名，认得 `openai/gpt-image-1` 这类带前缀的名字）/ openai 官方 / compat 兼容 / minimax。 */
+  imageStyle: z.enum(['auto', 'openai', 'compat', 'minimax']).optional(),
+})
+export type ProviderDialectDto = z.infer<typeof providerDialect>
+
 export const loginErrorCode = z.enum([
   'user_denied',
   'authorization_error',
@@ -735,6 +753,12 @@ export const loginStatus = z.object({
   account: z.object({ label: z.string() }).optional(),
   expiresAt: z.string().optional(),
   planUsage: z.boolean().optional(),
+  /** 登录换回的凭据：`access_token`（会刷新）或 `api_key`（登录得到的一把用户自己的 Key，不刷新）。`mask` 是掩码。 */
+  credential: z
+    .object({ kind: z.enum(['access_token', 'api_key']), mask: z.string().optional() })
+    .optional(),
+  /** 在厂商那里管理 / 作废这份授权的页面（OpenRouter 没有撤销接口，用户靠它）。 */
+  manageUrl: z.string().optional(),
   pending: z.object({ expiresAt: z.string() }).optional(),
   lastError: z.object({ code: loginErrorCode, message: z.string(), at: z.string() }).optional(),
   /** 当前的访问方式下能不能发起登录（回调只到得了服务所在机器的 127.0.0.1）。 */
@@ -773,6 +797,7 @@ export const modelCapability = z.object({
   sizeStep: z.number().optional(),
   maxLongSide: z.number().optional(),
   maxPixels: z.number().optional(),
+  minPixels: z.number().optional(),
 })
 
 export const priceEntry = z.object({
@@ -794,6 +819,7 @@ export const providerConfig = z.object({
   model: z.string(),
   enabled: z.boolean(),
   auth: providerAuth,
+  dialect: providerDialect.optional(),
   presetId: z.string().optional(),
   notes: z.string().optional(),
   verifiedAt: z.string().optional(),
@@ -828,7 +854,18 @@ export const testConnectionResult = z.discriminatedUnion('outcome', [
     detectedModels: z.array(z.string()).optional(),
     modelListed: z.boolean().optional(),
   }),
-  z.object({ outcome: z.literal('failed'), error: z.string(), status: z.number().optional() }),
+  z.object({
+    outcome: z.literal('failed'),
+    /** 给人看的说明（原样保留，向后兼容）。 */
+    error: z.string(),
+    status: z.number().optional(),
+    /**
+     * 机器可读的错误码，和任务失败时的 `error.code` 是同一套：`HTTP_401` / `HTTP_429`、`TIMEOUT`、`NETWORK`、
+     * `LOGIN_REQUIRED`、`UNREADABLE_RESPONSE`，以及上游错误体里的稳定码（Anthropic 的 `authentication_error` /
+     * `overloaded_error`，Gemini 的 `PERMISSION_DENIED` 等）。前端按它显示和任务失败时同样的解释与下一步。
+     */
+    code: z.string().optional(),
+  }),
   z.object({ outcome: z.literal('unverifiable'), reason: z.string() }),
 ])
 
@@ -838,8 +875,15 @@ export const providerPreset = z.object({
   kind: providerKind,
   protocol: protocolId,
   baseUrl: z.string(),
+  /** 地址里要用户自己替换的 `{占位符}` 名，如 `WorkspaceId`。 */
+  baseUrlPlaceholders: z.array(z.string()).optional(),
   suggestedModel: z.string(),
   auth: providerAuth,
+  dialect: providerDialect.optional(),
+  /** 厂商（设置页按厂商分组）；`label` 已按请求的语言翻译。 */
+  vendor: z.object({ id: z.string(), label: z.string() }),
+  /** `cn` 国内站 / `global` 国际站 / `local` 本机服务。 */
+  region: z.enum(['cn', 'global', 'local']).optional(),
   notes: z.string(),
   /** 已实测（带日期）或按官方文档接入、未实测（带出处）。未实测的不会自动成为当前选择。 */
   verification: providerVerification,

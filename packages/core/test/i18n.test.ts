@@ -83,8 +83,9 @@ describe('built-in data is bilingual (nothing Chinese leaks into the English UI)
 
 // Characters that exist only in Simplified Chinese (each has a different Traditional form). A Traditional text that still
 // contains one was converted carelessly or not at all. This is a guard, not a proof of correctness.
+// (Only characters whose Traditional form differs: 器 is the same in both, 机器 -> 機器 is caught by 机.)
 const SIMPLIFIED_ONLY = new Set(
-  '视频画风动剧图设镜选悬经对验试费务器码档实现创区热爱阳龙层开关发时间点电脑软连续项数据库网络线门义乐书买卖产亲仅从众优伤传体价儿党兰册写军农冲决况净减凤击则刚办励劳势单卫厂历压县参变叙叶号叹员团园围国圆圣场坏块坚备头夹奋奖妇妈学宁宝审寻导将尔尝尽属岁岛币师带帮并应庙废异弃张弹强归当录总恋恶悦惊惯愿戏战户扑执扩扫扬护报担拟拥择挥损换据摄摇数斗断无旧显晓术机杀杂权条来极构标栋树样桥检楼欢欧毕气汇汉汤没泽洁测济浓涂润温湾满灭灯灵灾炉炼烦烧焕爷牵独猎猪猫献玛疗盘监盖确礼离种积称穷竞笔筑签简类粮紧纠红约级纪纯纲纳纷纸纹练组细织终绍结绕绘给统继维缘缩罗习联肃脏脚艺节苏范获营虑虽补装见观规觉计订认讨让训议记讲许论访证评识词译诗话语误说请读课调谈谢负贡财责败账货质购贵贸资赛赞赢趋跃车轮转软轻载较辅辈输边过运还这进远违连迟适递遗鉴针钟钱铁银链销错锁长闪闭问闲间闹闻阅队际陆陈险随难静页顶顺须预领频题颜额饭饮饰馆马驶验骑鱼鲜鸟鸡麦黄齐齿龄',
+  '视频画风动剧图设镜选悬经对验试费务码档实现创区热爱阳龙层开关发时间点电脑软连续项数据库网络线门义乐书买卖产亲仅从众优伤传体价儿党兰册写军农冲决况净减凤击则刚办励劳势单卫厂历压县参变叙叶号叹员团园围国圆圣场坏块坚备头夹奋奖妇妈学宁宝审寻导将尔尝尽属岁岛币师带帮并应庙废异弃张弹强归当录总恋恶悦惊惯愿戏战户扑执扩扫扬护报担拟拥择挥损换据摄摇数斗断无旧显晓术机杀杂权条来极构标栋树样桥检楼欢欧毕气汇汉汤没泽洁测济浓涂润温湾满灭灯灵灾炉炼烦烧焕爷牵独猎猪猫献玛疗盘监盖确礼离种积称穷竞笔筑签简类粮紧纠红约级纪纯纲纳纷纸纹练组细织终绍结绕绘给统继维缘缩罗习联肃脏脚艺节苏范获营虑虽补装见观规觉计订认讨让训议记讲许论访证评识词译诗话语误说请读课调谈谢负贡财责败账货质购贵贸资赛赞赢趋跃车轮转软轻载较辅辈输边过运还这进远违连迟适递遗鉴针钟钱铁银链销错锁长闪闭问闲间闹闻阅队际陆陈险随难静页顶顺须预领频题颜额饭饮饰馆马驶验骑鱼鲜鸟鸡麦黄齐齿龄',
 )
 // Mainland wording that Traditional-Chinese (Taiwan) readers would not use.
 const MAINLAND_TERMS = [

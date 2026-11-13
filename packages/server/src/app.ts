@@ -17,6 +17,7 @@ import {
   loadCatalog,
   locateFfmpeg,
   OpenAiLogin,
+  OpenRouterLogin,
   probeCapabilities,
   recoverRunningJobs,
 } from '@dramai/core'
@@ -181,18 +182,26 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
     const events = new EnrichingEventSink(bus, (job) => targets.resolve(job))
     const settings = new SettingsService(store)
     // 账号登录：令牌只在 SecretStore；日志只收不含凭据的事件
-    const login = new OpenAiLogin({
-      secrets,
-      listen: options.login?.listen ?? createLoopbackListenerFactory(),
-      fetch: options.login?.fetch,
-      now: options.login?.now,
-      appName: 'dramai',
-      log: (e) => logger.info?.('[login]', e),
-    })
-    const credentials = createCredentialResolver({
-      secrets,
-      channels: { 'openai-chatgpt': login },
-    })
+    const listen = options.login?.listen ?? createLoopbackListenerFactory()
+    const log = (e: unknown) => logger.info?.('[login]', e)
+    const logins = {
+      'openai-chatgpt': new OpenAiLogin({
+        secrets,
+        listen,
+        fetch: options.login?.fetch,
+        now: options.login?.now,
+        appName: 'dramai',
+        log,
+      }),
+      openrouter: new OpenRouterLogin({
+        secrets,
+        listen,
+        fetch: options.login?.fetch,
+        now: options.login?.now,
+        log,
+      }),
+    }
+    const credentials = createCredentialResolver({ secrets, channels: logins })
     const providers = new ProviderService({
       store,
       secrets,
@@ -201,7 +210,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       ids,
       clock,
       executor: options.executor,
-      login,
+      logins,
       credentials,
     })
     const config = {
@@ -433,7 +442,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
         })
         await worker!.stop({ waitForActive: closeOptions.graceful !== false })
         await events.idle()
-        login.dispose()
+        for (const l of Object.values(logins)) l.dispose()
         bus!.dispose()
         store!.close()
         await lock.release()

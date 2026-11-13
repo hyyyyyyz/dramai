@@ -1,6 +1,7 @@
 import { snapDuration } from '../duration.ts'
 import {
   asRecord,
+  bodyError,
   authHeaders,
   joinPrompt,
   joinUrl,
@@ -70,6 +71,10 @@ export const aliyunVideo: MediaProtocol<VideoGenInput> = {
   parsePollResponse(raw) {
     const output = asRecord(asRecord(raw.json)?.output)
     const status = (str(output?.task_status) ?? '').toUpperCase()
+    if (!status) {
+      const err = bodyError(raw.json)
+      if (err) return { status: 'failed', message: err }
+    }
     if (status === 'SUCCEEDED' || status === 'SUCCESS') {
       const results = Array.isArray(output?.results) ? output.results : []
       const first = asRecord(results[0])

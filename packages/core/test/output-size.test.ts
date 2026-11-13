@@ -69,3 +69,58 @@ describe('resolveOutputSize', () => {
     expect(resolveOutputSize({ aspectRatio: '9:16' })).toEqual({ width: 720, height: 1280 })
   })
 })
+
+describe('resolveOutputSize: minimum total pixels', () => {
+  it('raises the size to the floor, keeps the ratio and the step, and never goes under it', () => {
+    // the reviewer's cases: gpt-image-2.5 floor 655,360 (1:1 @ short side 720 used to give 720x720)
+    const a = resolveOutputSize({
+      aspectRatio: '1:1',
+      resolution: 720,
+      step: 16,
+      minPixels: 655_360,
+    })
+    expect(a).toEqual({ width: 816, height: 816 })
+    const b = resolveOutputSize({
+      aspectRatio: '9:16',
+      resolution: 480,
+      step: 16,
+      minPixels: 655_360,
+    })
+    expect(b.width * b.height).toBeGreaterThanOrEqual(655_360)
+    expect(b.width / b.height).toBeCloseTo(9 / 16, 10)
+    expect(b.width % 16).toBe(0)
+    expect(b.height % 16).toBe(0)
+    // no floor: unchanged
+    expect(resolveOutputSize({ aspectRatio: '1:1', resolution: 720, step: 16 })).toEqual({
+      width: 720,
+      height: 720,
+    })
+  })
+
+  it('a size already above the floor is untouched', () => {
+    expect(
+      resolveOutputSize({ aspectRatio: '16:9', resolution: 1080, step: 16, minPixels: 655_360 }),
+    ).toEqual(resolveOutputSize({ aspectRatio: '16:9', resolution: 1080, step: 16 }))
+  })
+
+  it('a floor above the ceiling is an error, not a size the backend will reject', () => {
+    expect(() =>
+      resolveOutputSize({
+        aspectRatio: '1:1',
+        resolution: 720,
+        step: 16,
+        minPixels: 1_000_000,
+        maxPixels: 500_000,
+      }),
+    ).toThrow(OutputSizeError)
+    expect(() =>
+      resolveOutputSize({
+        aspectRatio: '16:9',
+        resolution: 720,
+        step: 16,
+        minPixels: 1_000_000,
+        maxLongSide: 1000,
+      }),
+    ).toThrow(OutputSizeError)
+  })
+})

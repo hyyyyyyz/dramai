@@ -10,6 +10,9 @@ import type { AspectRatio } from '../domain/common.ts'
  * - 合法尺寸 = (aw·k·t, ah·k·t)，aw:ah 是约简后的比例，k 是该模型要求的整除步长，t 是正整数：
  *   比例零误差，且宽高都能被 k 整除。
  * - 再按各后端的最长边/总像素上限夹取（减小 t）。
+ * - 官方有总像素**下限**的模型（模型画像的 `minPixels`）：t 不够就增大，直到面积达到下限；
+ *   仍保持比例、仍是步长 k 的整数倍；下限和上限互相矛盾时报 `OutputSizeError`，不发出会被拒绝的尺寸。
+ *   这是所有按像素出图的协议共用的唯一入口（Seedream 的协议内放大只作为没有画像时的兜底）。
  */
 
 export const RESOLUTION_TIERS: Record<string, number> = {
@@ -59,6 +62,8 @@ export interface OutputSizeInput {
   step?: number
   maxLongSide?: number
   maxPixels?: number
+  /** 总像素下限；缺省不限。 */
+  minPixels?: number
 }
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
@@ -71,7 +76,11 @@ export function resolveOutputSize(input: OutputSizeInput): { width: number; heig
   const ah = rh / g
   const shortSide = normalizeShortSide(input.resolution)
   const unit = Math.min(aw, ah) * k
-  let t = Math.max(1, Math.round(shortSide / unit))
+  // 面积 = aw·ah·k²·t²：满足下限的最小 t
+  const tMin = input.minPixels
+    ? Math.max(1, Math.ceil(Math.sqrt(input.minPixels / (aw * ah * k * k))))
+    : 1
+  let t = Math.max(tMin, Math.round(shortSide / unit))
   const dims = (tt: number) => ({ width: aw * k * tt, height: ah * k * tt })
   const fits = (tt: number) => {
     const { width, height } = dims(tt)
@@ -79,11 +88,25 @@ export function resolveOutputSize(input: OutputSizeInput): { width: number; heig
     if (input.maxPixels && width * height > input.maxPixels) return false
     return true
   }
-  while (t > 1 && !fits(t)) t--
+  while (t > tMin && !fits(t)) t--
   if (!fits(t)) {
     throw new OutputSizeError(
-      `no valid size for ${input.aspectRatio} at step ${k} within the backend limits (maxLongSide=${input.maxLongSide ?? '-'}, maxPixels=${input.maxPixels ?? '-'})`,
+      `no valid size for ${input.aspectRatio} at step ${k} within the backend limits (minPixels=${input.minPixels ?? '-'}, maxLongSide=${input.maxLongSide ?? '-'}, maxPixels=${input.maxPixels ?? '-'})`,
     )
   }
   return dims(t)
+}
+
+/**
+ * 没有模型画像时的兜底：尺寸低于总像素下限就按比例放大（宽高各取 2 的倍数）。
+ * 有画像的模型走 `resolveOutputSize({ minPixels })`，不会走到这里。
+ */
+export function scaleUpToMinPixels(
+  size: { width: number; height: number },
+  minPixels: number,
+): { width: number; height: number } {
+  const { width, height } = size
+  if (width * height >= minPixels) return size
+  const k = Math.sqrt(minPixels / (width * height))
+  return { width: Math.ceil((width * k) / 2) * 2, height: Math.ceil((height * k) / 2) * 2 }
 }

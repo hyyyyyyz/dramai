@@ -70,6 +70,19 @@ export const ERROR_CODES = {
     summary: '当前访问方式下不能登录：授权回调只能到达服务所在机器的 127.0.0.1',
   },
   KEY_NOT_APPLICABLE: { status: 409, summary: '账号登录的服务商没有 API Key，不能设置或清除' },
+  BASE_URL_PLACEHOLDER_UNFILLED: {
+    status: 400,
+    summary: '接口地址里还有没替换的 {占位符}（如 {WorkspaceId}）；details: { placeholders }',
+  },
+  BASE_URL_INVALID: {
+    status: 400,
+    summary: '接口地址不合法（不是 http / https 网址，或带了用户名密码 / 空白）',
+  },
+  BASE_URL_INSECURE: {
+    status: 400,
+    summary: '公网地址必须用 https；明文 http 只允许本机 / 局域网',
+  },
+  BASE_URL_NOT_OVERRIDABLE: { status: 400, summary: '账号登录的预设接口地址是钉死的，不能覆盖' },
   AUTH_NOT_ALLOWED: { status: 400, summary: '这个协议不支持所选的鉴权方式（账号登录只覆盖文本）' },
   MODEL_LIST_UNSUPPORTED: { status: 409, summary: '这个服务商的协议没有模型列表' },
   NO_LLM_PROVIDER: { status: 409, summary: '还没有选中可用的大模型服务商，先到设置里配置' },

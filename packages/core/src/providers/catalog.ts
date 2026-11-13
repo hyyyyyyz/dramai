@@ -33,6 +33,12 @@ const protocol = z.enum([
   'generic-video',
   'openai-tts',
   'openai-responses',
+  'anthropic-messages',
+  'gemini-chat',
+  'volcengine-images',
+  'dashscope-image',
+  'siliconflow-images',
+  'kling-image',
 ])
 
 const support = z.enum(['supported', 'unsupported', 'unverified'])
@@ -67,6 +73,7 @@ const capabilitySchema = z.object({
   sizeStep: z.number().int().positive().optional(),
   maxLongSide: z.number().int().positive().optional(),
   maxPixels: z.number().int().positive().optional(),
+  minPixels: z.number().int().positive().optional(),
 })
 
 const priceSchema = z.object({
@@ -123,11 +130,17 @@ export function defaultCapability(protocolId: ProtocolId): ModelCapability {
   switch (protocolId) {
     case 'openai-images':
     case 'gemini-image':
+    case 'volcengine-images':
+    case 'dashscope-image':
+    case 'siliconflow-images':
+    case 'kling-image':
       return { ...base, media: 'image', modes: { t2i: 'supported' } }
     case 'openai-tts':
       return { ...base, media: 'audio', modes: { tts: 'supported' } }
     case 'openai-chat':
     case 'openai-responses':
+    case 'anthropic-messages':
+    case 'gemini-chat':
       return { ...base, media: 'audio', modes: {} }
     default:
       return {

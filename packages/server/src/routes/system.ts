@@ -1,5 +1,6 @@
 import {
   localizeProviderPreset,
+  localizeVendor,
   localizeStyleGroup,
   localizeStylePreset,
   pick,
@@ -88,6 +89,10 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
         protocol: p.protocol,
         baseUrl: p.baseUrl,
         suggestedModel: p.suggestedModel,
+        ...(p.baseUrlPlaceholders ? { baseUrlPlaceholders: p.baseUrlPlaceholders } : {}),
+        ...(p.dialect ? { dialect: p.dialect } : {}),
+        vendor: localizeVendor(p.vendor, locale),
+        ...(p.region ? { region: p.region } : {}),
         auth: p.auth,
         verification: p.verification,
         ...(p.verifiedAt ? { verifiedAt: p.verifiedAt } : {}),
