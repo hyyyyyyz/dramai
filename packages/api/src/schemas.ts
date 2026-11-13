@@ -704,6 +704,14 @@ export const providerVerification = z.discriminatedUnion('status', [
   z.object({ status: z.literal('tested'), testedAt: z.string() }),
   z.object({ status: z.literal('documented'), source: z.string() }),
 ])
+/** 方言差异：额外请求体、输出长度字段名、JSON 模式（文本服务商）。预设预填，用户可以看、可以改。 */
+export const providerDialect = z.object({
+  extraBody: z.record(z.string(), z.unknown()).optional(),
+  maxTokensField: z.enum(['max_tokens', 'max_completion_tokens']).optional(),
+  jsonMode: z.enum(['json_object', 'prompt_only']).optional(),
+})
+export type ProviderDialectDto = z.infer<typeof providerDialect>
+
 export const loginErrorCode = z.enum([
   'user_denied',
   'authorization_error',
@@ -796,6 +804,7 @@ export const providerConfig = z.object({
   model: z.string(),
   enabled: z.boolean(),
   auth: providerAuth,
+  dialect: providerDialect.optional(),
   presetId: z.string().optional(),
   notes: z.string().optional(),
   verifiedAt: z.string().optional(),
@@ -840,8 +849,15 @@ export const providerPreset = z.object({
   kind: providerKind,
   protocol: protocolId,
   baseUrl: z.string(),
+  /** 地址里要用户自己替换的 `{占位符}` 名，如 `WorkspaceId`。 */
+  baseUrlPlaceholders: z.array(z.string()).optional(),
   suggestedModel: z.string(),
   auth: providerAuth,
+  dialect: providerDialect.optional(),
+  /** 厂商（设置页按厂商分组）；`label` 已按请求的语言翻译。 */
+  vendor: z.object({ id: z.string(), label: z.string() }),
+  /** `cn` 国内站 / `global` 国际站 / `local` 本机服务。 */
+  region: z.enum(['cn', 'global', 'local']).optional(),
   notes: z.string(),
   /** 已实测（带日期）或按官方文档接入、未实测（带出处）。未实测的不会自动成为当前选择。 */
   verification: providerVerification,

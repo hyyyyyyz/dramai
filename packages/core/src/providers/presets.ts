@@ -1,5 +1,12 @@
 import type { Locale, TranslatedLocale } from '../i18n.ts'
-import type { ProviderAuth, ProviderConfig, ProviderKind, ProviderVerification } from './types.ts'
+import { TEXT_PRESETS } from './presets-text.ts'
+import type {
+  ProviderAuth,
+  ProviderConfig,
+  ProviderDialect,
+  ProviderKind,
+  ProviderVerification,
+} from './types.ts'
 
 /**
  * 预设服务商。每个预设都标明验证状态，界面如实显示：
@@ -20,13 +27,57 @@ import type { ProviderAuth, ProviderConfig, ProviderKind, ProviderVerification }
  * 加预设前请：(1) 真实跑过；(2) 价格用过；(3) base URL + 协议 + model id 都验证；
  *           (4) 写进 notes 与 verifiedAt。
  */
+/** 预设所属的厂商（设置页按厂商分组用）。名称大多是品牌名，不翻译；翻译了的放在 `i18n`。 */
+export interface ProviderVendor {
+  id: string
+  name: string
+  i18n?: Partial<Record<TranslatedLocale, string>>
+}
+
+export const PROVIDER_VENDORS: readonly ProviderVendor[] = [
+  { id: 'openai', name: 'OpenAI' },
+  { id: 'anthropic', name: 'Anthropic' },
+  { id: 'google', name: 'Google' },
+  { id: 'deepseek', name: 'DeepSeek' },
+  {
+    id: 'aliyun',
+    name: '阿里云百炼',
+    i18n: { 'zh-Hant': '阿里雲百煉', en: 'Alibaba Cloud Model Studio' },
+  },
+  { id: 'volcengine', name: '火山方舟', i18n: { 'zh-Hant': '火山方舟', en: 'Volcengine Ark' } },
+  { id: 'zhipu', name: '智谱 AI', i18n: { 'zh-Hant': '智譜 AI', en: 'Zhipu AI' } },
+  { id: 'moonshot', name: 'Moonshot AI（Kimi）' },
+  { id: 'minimax', name: 'MiniMax' },
+  { id: 'siliconflow', name: '硅基流动', i18n: { 'zh-Hant': '矽基流動', en: 'SiliconFlow' } },
+  { id: 'openrouter', name: 'OpenRouter' },
+  { id: '302ai', name: '302.AI' },
+  { id: 'ollama', name: 'Ollama' },
+  { id: 'lmstudio', name: 'LM Studio' },
+]
+
+export function localizeVendor(vendorId: string, locale: Locale): { id: string; label: string } {
+  const v = PROVIDER_VENDORS.find((x) => x.id === vendorId)
+  if (!v) return { id: vendorId, label: vendorId }
+  return { id: v.id, label: locale === 'zh' ? v.name : (v.i18n?.[locale] ?? v.name) }
+}
+
+/** 官方服务的地区：`cn` 国内站、`global` 国际站 / 全球、`local` 本机服务。 */
+export type PresetRegion = 'cn' | 'global' | 'local'
+
 export interface ProviderPreset {
   id: string
   label: string
+  /** 厂商 id（见 `PROVIDER_VENDORS`），设置页按它分组。 */
+  vendor: string
+  region?: PresetRegion
   kind: ProviderKind
   protocol: ProviderConfig['protocol']
   baseUrl: string
+  /** 地址里要用户自己替换的 `{占位符}` 名（例如阿里云的 `WorkspaceId`）；没有就不写。 */
+  baseUrlPlaceholders?: string[]
   suggestedModel: string
+  /** 方言差异（额外请求体、输出长度字段名、JSON 模式），创建的配置里会带上这一份，用户可以改。 */
+  dialect?: ProviderDialect
   /** 鉴权方式：API Key / 账号登录 / 无需鉴权。 */
   auth: ProviderAuth
   notes: string
@@ -41,9 +92,11 @@ export interface ProviderPreset {
   >
 }
 
-export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
+const CORE_PRESETS: readonly ProviderPreset[] = [
   {
     id: 'deepseek-llm',
+    vendor: 'deepseek',
+    region: 'cn',
     label: 'DeepSeek 直连 (LLM)',
     kind: 'llm',
     protocol: 'openai-chat',
@@ -71,6 +124,8 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
   },
   {
     id: '302-image-seedream',
+    vendor: '302ai',
+    region: 'global',
     label: '302.AI · 即梦 Seedream 5.0 (字节，便宜)',
     kind: 'image',
     protocol: 'openai-images',
@@ -105,6 +160,8 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
   },
   {
     id: '302-image-nano-banana',
+    vendor: '302ai',
+    region: 'global',
     label: '302.AI · Nano Banana (Gemini 文生图)',
     kind: 'image',
     protocol: 'gemini-image',
@@ -135,6 +192,8 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
   },
   {
     id: '302-i2v-wan-flash',
+    vendor: '302ai',
+    region: 'global',
     label: '⭐ 302.AI · 通义万相 Wan2.2 Flash (最便宜 · 阿里)',
     kind: 'video',
     protocol: 'aliyun-video',
@@ -166,6 +225,8 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
   },
   {
     id: 'openai-responses-login',
+    vendor: 'openai',
+    region: 'global',
     label: 'OpenAI（账号登录 · 文本）',
     kind: 'llm',
     protocol: 'openai-responses',
@@ -211,6 +272,9 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
   },
 ]
 
+/** 全部预设：v0.4 实测的四个、OpenAI 账号登录，以及第一批文本服务商（按官方文档接入、未实测）。 */
+export const PROVIDER_PRESETS: readonly ProviderPreset[] = [...CORE_PRESETS, ...TEXT_PRESETS]
+
 export const PROVIDER_KIND_LABEL: Record<ProviderKind, string> = {
   llm: 'LLM 文本生成',
   image: '文生图 / 图生图',
@@ -231,6 +295,7 @@ export function configFromPreset(
     baseUrl: preset.baseUrl,
     model: preset.suggestedModel,
     auth: preset.auth,
+    ...(preset.dialect ? { dialect: structuredClone(preset.dialect) } : {}),
     secretRef: options.secretRef,
     enabled: true,
     presetId: preset.id,

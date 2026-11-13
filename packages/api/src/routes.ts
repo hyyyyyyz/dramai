@@ -84,6 +84,7 @@ const providerWritable = z.object({
   model: z.string().min(1),
   enabled: z.boolean().optional(),
   notes: z.string().optional(),
+  dialect: S.providerDialect.optional(),
   capabilityOverrides: z.record(z.string(), z.unknown()).optional(),
 })
 export const providerCreate = providerWritable.extend({
