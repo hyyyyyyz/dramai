@@ -90,6 +90,14 @@ const SUBMIT: Record<string, unknown[]> = {
 /** 轮询响应（都有任务状态，即"正常响应"）。 */
 const POLL: Record<string, unknown[]> = {
   'aliyun-video': [
+    { code: 200, message: 'ok' },
+    { code: '200', message: 'OK' },
+    { code: 0, message: 'success' },
+    { code: 'Success' },
+    { code: '', message: '' },
+    { error: '' },
+    { error: {} },
+    { request_id: 'x' },
     { output: { task_status: 'PENDING' } },
     { output: { task_status: 'RUNNING' } },
     { output: { task_status: 'UNKNOWN' } },
@@ -103,6 +111,11 @@ const POLL: Record<string, unknown[]> = {
     { output: { task_status: 'CANCELED' } },
   ],
   'volcengine-video': [
+    { error: {} },
+    { error: '' },
+    { code: 200 },
+    { code: 0, message: 'ok' },
+    { code: 'ok' },
     { status: 'queued' },
     { status: 'running' },
     { status: 'succeeded', content: { video_url: 'https://v/a.mp4' } },
@@ -116,6 +129,12 @@ const POLL: Record<string, unknown[]> = {
     { status: 'something-else' },
   ],
   'kling-video': [
+    { code: 200, data: {} },
+    { code: 0, data: {} },
+    { code: 200, message: 'ok' },
+    { code: '0' },
+    { error: {} },
+    { data: {} },
     { data: { task_status: 'submitted' } },
     { data: { task_status: 'processing', task_status_msg: 'x' } },
     { data: { task_status: 'running' } },
@@ -138,6 +157,13 @@ const POLL: Record<string, unknown[]> = {
     { data: { task_status: 'weird' } },
   ],
   'generic-video': [
+    { code: 200, data: { status: 'running' } },
+    { code: 200, message: 'ok' },
+    { code: 0 },
+    { code: 'success' },
+    { error: {} },
+    { error: '' },
+    {},
     { status: 'processing' },
     { status: 'in_progress' },
     { status: 'queued' },

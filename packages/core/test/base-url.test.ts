@@ -85,3 +85,26 @@ describe('checkBaseUrl: tightened rules', () => {
       expect(checkBaseUrl(ok).ok, ok).toBe(true)
   })
 })
+
+describe('checkBaseUrl: cloud metadata hosts never count as the local network', () => {
+  it('plain http to a metadata name or address is refused, https is still allowed', () => {
+    for (const bad of [
+      'http://metadata.google.internal/computeMetadata/v1',
+      'http://metadata/v1',
+      'http://METADATA.GOOGLE.INTERNAL./v1',
+      'http://100.100.100.200/latest/meta-data',
+      'http://instance-data/latest',
+      'http://instance-data.ec2.internal/latest',
+      'http://metadata.tencentyun.com/latest/meta-data',
+    ])
+      expect(checkBaseUrl(bad), bad).toMatchObject({ ok: false, code: 'BASE_URL_INSECURE' })
+    // ordinary neighbours of those ranges and names are unaffected
+    for (const ok of [
+      'http://100.100.100.201/v1',
+      'http://100.64.0.5/v1',
+      'http://my-metadata-box/v1',
+      'http://gpu.internal/v1',
+    ])
+      expect(checkBaseUrl(ok).ok, ok).toBe(true)
+  })
+})

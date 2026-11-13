@@ -25,9 +25,29 @@ const PRIVATE_V4 = [
   /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // 100.64.0.0/10（CGNAT / Tailscale）
 ]
 
-/** http 明文可以去的主机：本机和局域网。 */
+/**
+ * 云厂商的元数据服务：虽然落在"局域网"的判定里（单标签名、`.internal`、CGNAT 段），但它们是拿凭据的地方，
+ * 明文 http 一律拒绝。名字黑名单是尽力而为，不是完整的 SSRF 防护（这是本机应用，地址是用户自己填的）。
+ * - `metadata`、`metadata.google.internal`（GCP）、`instance-data` / `instance-data.ec2.internal`（AWS）、
+ *   `metadata.tencentyun.com`（腾讯云）、`100.100.100.200`（阿里云，落在 100.64.0.0/10 里）、
+ *   `169.254.169.254` / `fe80::` / `fd00:ec2::254`（已被链路本地规则排除）。
+ */
+const METADATA_HOSTS = new Set([
+  'metadata',
+  'metadata.google.internal',
+  'instance-data',
+  'instance-data.ec2.internal',
+  'metadata.tencentyun.com',
+  '100.100.100.200',
+])
+
+/** http 明文可以去的主机：本机和局域网（不含元数据服务）。 */
 export function isLocalNetworkHost(hostname: string): boolean {
-  const h = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  const h = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/\.$/, '')
+  if (METADATA_HOSTS.has(h)) return false
   if (h === 'localhost' || h === '::1' || h.endsWith('.localhost')) return true
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return PRIVATE_V4.some((re) => re.test(h))
   // IPv6 唯一本地地址（fc00::/7）；链路本地 fe80::/10 不算（含云元数据地址）。AWS 的 IPv6 元数据地址 fd00:ec2::254 同样排除。
