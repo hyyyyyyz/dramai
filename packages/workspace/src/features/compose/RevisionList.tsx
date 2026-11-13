@@ -3,6 +3,7 @@ import type { TimelineView } from '@dramai/api'
 import { Button, Pill } from '@dramai/ui/v2'
 import { useFormat } from '@/i18n/format'
 import { Block } from '@/features/common/PageHead'
+import { clipName } from './timeline-model'
 
 /** 修订历史：只追加，不改写；回滚是把旧修订的内容追加成一个新修订。 */
 export function RevisionList({
@@ -20,6 +21,23 @@ export function RevisionList({
   const { t } = useTranslation()
   const fmt = useFormat()
   const list = [...view.revisions].sort((a, b) => b.number - a.number)
+  // System revisions are described in the interface's language from what they are, not from the server's Chinese summary
+  // (and an automatic change is the system's, not an "agent edit"). Everything else shows the summary it was saved with.
+  const titleOf = (r: TimelineView['revisions'][number]): string => {
+    if (r.reason === 'native_audio_default') {
+      const names = (r.changedClipIds ?? []).map((id) => clipName(view.revision.content, id))
+      return names.length > 0
+        ? t('compose.revisions.nativeAudioClips', {
+            clips: names.join(t('compose.revisions.listSep')),
+          })
+        : t('compose.revisions.nativeAudio')
+    }
+    if (r.restoredFrom) return t('compose.revisions.restoredTo', { n: r.restoredFrom })
+    if (r.number === 1 && r.parent === undefined) return t('compose.revisions.initial')
+    return r.summary
+  }
+  const authorOf = (r: TimelineView['revisions'][number]) =>
+    r.reason ? t('compose.revisions.author.system') : t(`compose.revisions.author.${r.author.kind}`)
   return (
     <Block title={t('compose.revisions.title')} aria-label={t('compose.revisions.title')}>
       <ul className="flex flex-col p-4">
@@ -30,10 +48,10 @@ export function RevisionList({
           >
             <span className="font-mono text-muted-foreground tabular-nums">{r.number}</span>
             <div className="min-w-0">
-              <div className="truncate">{r.summary}</div>
+              <div className={r.reason ? undefined : 'truncate'}>{titleOf(r)}</div>
               <small className="text-xs text-muted-foreground">
                 {[
-                  t(`compose.revisions.author.${r.author.kind}`),
+                  authorOf(r),
                   fmt.ago(r.createdAt),
                   r.restoredFrom
                     ? t('compose.revisions.restoredFrom', { n: r.restoredFrom })

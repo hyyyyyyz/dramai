@@ -517,6 +517,15 @@ export default {
         '用参考图生成的视频，之后换了角色设定图，不会被自动标成“已过期”。换了设定图后，请手动重新生成这些镜头',
       used: '用了参考图：{{names}}',
       usedShort: '用了参考图',
+      list: {
+        summary: '会带上：{{names}}{{more}}',
+        more: '，共 {{count}} 张',
+        full: '看完整清单',
+        strictFrame: '镜头图：作为严格首帧（不在下面的参考图里）',
+        droppedTitle: '舍弃了：',
+        droppedItem: '{{name}}（{{reason}}）',
+        reason: { over_limit: '超过模型的参考图上限' },
+      },
       usedFrame: {
         as_reference: '镜头图作为第 1 张参考图，没有严格首帧',
         with_references: '保持严格首帧，参考图另发',

@@ -591,6 +591,15 @@ export default {
         'A video made with references is not marked outdated when a character sheet changes later. After changing a sheet, regenerate those shots by hand',
       used: 'Made with references: {{names}}',
       usedShort: 'made with references',
+      list: {
+        summary: 'Will send: {{names}}{{more}}',
+        more: ', {{count}} in all',
+        full: 'See the full list',
+        strictFrame: 'Shot image: used as the strict first frame (not among the references below)',
+        droppedTitle: 'Left out:',
+        droppedItem: '{{name}} ({{reason}})',
+        reason: { over_limit: 'over the model’s reference limit' },
+      },
       usedFrame: {
         as_reference: 'the shot image is reference no. 1, there is no strict first frame',
         with_references: 'strict first frame kept, references sent alongside',

@@ -517,6 +517,15 @@ export default {
         '用參考圖生成的影片，之後換了角色設定圖，不會被自動標成“已過期”。換了設定圖後，請手動重新生成這些鏡頭',
       used: '用了參考圖：{{names}}',
       usedShort: '用了參考圖',
+      list: {
+        summary: '會帶上：{{names}}{{more}}',
+        more: '，共 {{count}} 張',
+        full: '看完整清單',
+        strictFrame: '鏡頭圖：作為嚴格首幀（不在下面的參考圖裡）',
+        droppedTitle: '捨棄了：',
+        droppedItem: '{{name}}（{{reason}}）',
+        reason: { over_limit: '超過模型的參考圖上限' },
+      },
       usedFrame: {
         as_reference: '鏡頭圖作為第 1 張參考圖，沒有嚴格首幀',
         with_references: '保持嚴格首幀，參考圖另發',

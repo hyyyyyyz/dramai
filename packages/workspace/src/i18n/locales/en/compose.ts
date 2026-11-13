@@ -69,10 +69,22 @@ export default {
     },
     revisions: {
       title: 'Revision history',
-      author: { creator: 'You', agent: 'Agent', external: 'External tool' },
+      author: {
+        creator: 'You',
+        agent: 'Agent',
+        external: 'External tool',
+        system: 'System (automatic)',
+      },
       current: 'Current',
       cutFrom: 'cut rendered from this one',
       restoredFrom: 'rolled back to revision {{n}}',
+      restoredTo: 'Rolled back to revision {{n}}',
+      initial: 'Initial timeline',
+      nativeAudio:
+        'The model of some clips can’t turn its own audio off, so their audio starts muted; you can raise it',
+      nativeAudioClips:
+        'The model of these clips can’t turn its own audio off, so their audio starts muted; you can raise it: {{clips}}',
+      listSep: ', ',
       rollback: 'Go back to this',
       rollbackLabel: 'Go back to revision {{n}}',
       hint: 'Rolling back deletes nothing: the old revision’s content is appended as a new revision.',

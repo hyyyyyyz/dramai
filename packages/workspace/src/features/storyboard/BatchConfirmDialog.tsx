@@ -21,6 +21,7 @@ import { visibleReasons } from './reasons'
 import { useReasonText } from './use-reason-text'
 import { VideoRefsControl } from './VideoRefsControl'
 import { VIDEO_PLAN_WARNINGS, frameOutcome } from './video-refs-model'
+import { usedReferenceNames } from './version-model'
 import { useFormat } from '@/i18n/format'
 
 /**
@@ -383,7 +384,10 @@ function unverifiedGroup(
   return 'other'
 }
 
-/** One shot's reference-image plan: what happens to its shot image, how many references, how many were left out. */
+/**
+ * One shot's reference-image plan: what happens to its shot image, which references go along (a short list, the full
+ * ordered list one click away so a long batch stays short), and which were left out and why.
+ */
 function VideoPlanLine({
   video,
   blocked,
@@ -398,15 +402,65 @@ function VideoPlanLine({
         {t('video.refs.shot.blocked')}
       </p>
     )
+  const roleLabel = (r: string) => t(`video.refs.role.${r}` as 'video.refs.role.character')
+  const refs = video.references ?? []
+  const names = usedReferenceNames(
+    { frame: 'as_reference', references: refs, trimmed: 0 },
+    roleLabel,
+  )
+  const dropped = video.dropped ?? []
+  const shown = names.slice(0, 3)
   return (
-    <p className="mt-1 text-muted-foreground" data-testid="video-plan">
-      {t(`video.refs.shot.${frameOutcome(video)}`)}
-      {video.referenceCount > 0 && (
-        <> · {t('video.refs.shot.count', { count: video.referenceCount })}</>
+    <div className="mt-1 text-muted-foreground" data-testid="video-plan">
+      <p>
+        {t(`video.refs.shot.${frameOutcome(video)}`)}
+        {video.referenceCount > 0 && (
+          <> · {t('video.refs.shot.count', { count: video.referenceCount })}</>
+        )}
+        {video.droppedReferences > 0 && (
+          <> · {t('video.refs.shot.dropped', { count: video.droppedReferences })}</>
+        )}
+      </p>
+      {(names.length > 0 || dropped.length > 0 || video.startFrame) && (
+        <details className="mt-0.5 text-xs" data-testid="video-plan-list">
+          <summary className="cursor-pointer">
+            {names.length > 0
+              ? t('video.refs.list.summary', {
+                  names: shown.join(t('storyboard.batch.listSep')),
+                  more: t('video.refs.list.more', { count: names.length }),
+                })
+              : t('video.refs.list.full')}
+          </summary>
+          <div className="mt-1 flex flex-col gap-1">
+            {video.startFrame?.use === 'first_frame' && <p>{t('video.refs.list.strictFrame')}</p>}
+            {names.length > 0 && (
+              <ol className="list-decimal pl-5">
+                {names.map((n, i) => (
+                  <li key={i}>{n}</li>
+                ))}
+              </ol>
+            )}
+            {dropped.length > 0 && (
+              <div>
+                <p>{t('video.refs.list.droppedTitle')}</p>
+                <ul className="list-disc pl-5">
+                  {dropped.map((d, i) => (
+                    <li key={i}>
+                      {t('video.refs.list.droppedItem', {
+                        name: usedReferenceNames(
+                          { frame: 'as_reference', references: [{ ...d }], trimmed: 0 },
+                          roleLabel,
+                        )[0],
+                        reason: t(`video.refs.list.reason.${d.reason}`),
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </details>
       )}
-      {video.droppedReferences > 0 && (
-        <> · {t('video.refs.shot.dropped', { count: video.droppedReferences })}</>
-      )}
-    </p>
+    </div>
   )
 }
