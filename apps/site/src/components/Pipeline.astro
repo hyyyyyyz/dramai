@@ -1,0 +1,40 @@
+---
+import type { Content } from '../content/types.ts'
+import { stageArt } from '../content/stage-art.ts'
+
+interface Props {
+  c: Content
+}
+const { c } = Astro.props
+const p = c.pipeline
+---
+
+<section class="sec band ink" id="pipeline" aria-labelledby="pipeline-title">
+  <div class="c">
+    <div class="sec-head">
+      <h2 id="pipeline-title">{p.title}</h2>
+      <p>{p.lead}</p>
+    </div>
+
+    <ol class="stages">
+      {p.stages.map((s, i) => (
+        <li class="stage">
+          <div class="frame crop" style="--cm: var(--subtle)">
+            <span class="no" aria-hidden="true">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <svg viewBox="0 0 90 160" aria-hidden="true" focusable="false" set:html={stageArt[i]} />
+          </div>
+          <h3>
+            <span class="sr-only">
+              {p.stageLabel} {i + 1}:{' '}
+            </span>
+            {s.title}
+          </h3>
+          <p>{s.text}</p>
+          <p class="out">{s.out}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>

@@ -1,0 +1,74 @@
+---
+import type { Content, Locale } from '../content/types.ts'
+import Icon from './Icon.astro'
+import Shot from './Shot.astro'
+
+interface Props {
+  c: Content
+  locale: Locale
+}
+const { c, locale } = Astro.props
+const f = c.features
+---
+
+<section class="sec" id="features" aria-labelledby="features-title">
+  <div class="c">
+    <div class="sec-head">
+      <h2 id="features-title">{f.title}</h2>
+      <p>{f.lead}</p>
+    </div>
+
+    <ul class="feat">
+      {f.items.map((item) => (
+        <li>
+          <span class="ic">
+            <Icon name={item.icon} />
+          </span>
+          <h3>{item.title}</h3>
+          <p>{item.text}</p>
+        </li>
+      ))}
+    </ul>
+    <p class="feat-note">{f.locales}</p>
+
+    <div class="screens" id="screens">
+      <h3 class="block-title">{f.screensTitle}</h3>
+      <p class="block-lead">{f.screensNote}</p>
+      <div class="screen-grid">
+        {f.screens.map((s) => (
+          <figure class="screen">
+            <div class="frame">
+              <Shot
+                locale={locale}
+                shot={s.shot}
+                alt={s.alt}
+                sizes="(min-width: 760px) 520px, calc(100vw - 32px)"
+              />
+            </div>
+            <figcaption>
+              <b>{s.title}</b>
+              <span>{s.text}</span>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+
+    <div class="styles" id="styles">
+      <h3 class="block-title">{f.stylesTitle}</h3>
+      <p class="block-lead">{f.stylesLead}</p>
+      <div class="pg">
+        {f.styleGroups.map((g) => (
+          <div>
+            <h4>{g.name}</h4>
+            <ul class="chips">
+              {g.presets.map((p) => (
+                <li class="chip">{p}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

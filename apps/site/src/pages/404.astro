@@ -1,0 +1,57 @@
+---
+// GitHub Pages serves this file for every address that does not exist under /dramai/.
+// Old v0.4.1 web-app addresses end up here too: that app is no longer served, so the page says so
+// and points at the upgrade notes.
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { zh } from '../content/zh.ts'
+import { en } from '../content/en.ts'
+import { url } from '../content/site.ts'
+
+const blocks = [
+  { c: zh, lang: 'zh-CN', home: url(''), upgrade: url('#legacy') },
+  { c: en, lang: 'en', home: url('en/'), upgrade: url('en/#legacy') },
+]
+---
+
+<BaseLayout
+  lang="zh-CN"
+  locale="zh"
+  title={`${zh.notFound.heading} · ${en.notFound.heading} · dramai`}
+  description={zh.notFound.description}
+  path="404.html"
+  noindex
+  alternates={false}
+  preloadText={zh.notFound.heading}
+>
+  <header class="top">
+    <div class="c">
+      <a class="brand" href={url('')} aria-label="dramai">
+        <svg class="wm" aria-hidden="true" focusable="false" width="113" height="28">
+          <use href="#i-wordmark" />
+        </svg>
+      </a>
+    </div>
+  </header>
+  <main id="main" class="nf">
+    <div class="c">
+      {blocks.map(({ c, lang, home, upgrade }) => (
+        <section lang={lang} class="nf-block">
+          <h1>{c.notFound.heading}</h1>
+          <p>{c.notFound.text}</p>
+          <div class="cta">
+            <a class="btn btn-primary" href={home}>
+              {c.notFound.home}
+            </a>
+          </div>
+          <h2>{c.notFound.legacyHeading}</h2>
+          <p>{c.notFound.legacyText}</p>
+          <div class="cta">
+            <a class="btn btn-secondary" href={upgrade}>
+              {c.notFound.legacy}
+            </a>
+          </div>
+        </section>
+      ))}
+    </div>
+  </main>
+</BaseLayout>

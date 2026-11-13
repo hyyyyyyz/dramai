@@ -1,0 +1,132 @@
+---
+import type { Content } from '../content/types.ts'
+import { REPO, RELEASES, RELEASE_TAG, VERSION, fileName } from '../content/site.ts'
+import { rich } from '../lib/rich.ts'
+import Icon from './Icon.astro'
+
+interface Props {
+  c: Content
+}
+const { c } = Astro.props
+const i = c.install
+const d = i.desktop
+const w = i.webui
+const allCommands = w.commands.map((x) => `# ${x.comment}\n${x.command}`).join('\n\n')
+---
+
+<section class="sec panel" id="download" aria-labelledby="download-title">
+  <div class="c">
+    <div class="sec-head">
+      <h2 id="download-title">{i.title}</h2>
+      <p>{i.lead}</p>
+    </div>
+
+    <div class="dl">
+      <div class="dl-card" id="desktop">
+        <h3>
+          {d.name} <span class="ver mono">{VERSION}</span>
+        </h3>
+        <p class="dl-blurb">{d.blurb}</p>
+        <ul class="plat">
+          {d.platforms.map((p) => (
+            <li>
+              <div class="pn-head">
+                <b>{p.name}</b>
+                <span class={`pill ${p.tested ? 'ok' : ''}`}>
+                  <span class="dot" aria-hidden="true" />
+                  {p.tested ? d.testedLabel : d.untestedLabel}
+                </span>
+              </div>
+              <small set:html={rich(p.detail)} />
+              <small class="mono files">
+                {p.files.map((f) => (
+                  <span>{fileName(f)}</span>
+                ))}
+              </small>
+            </li>
+          ))}
+        </ul>
+        <div class="dl-actions">
+          <a class="btn btn-primary" href={RELEASES}>
+            {d.releases}
+          </a>
+          <a class="btn btn-secondary" href={RELEASE_TAG}>
+            {d.releasesTag}
+          </a>
+        </div>
+        <p class="warn" set:html={rich(d.note)} />
+      </div>
+
+      <div class="dl-card" id="webui">
+        <h3>{w.name}</h3>
+        <p class="dl-blurb">{w.blurb}</p>
+        <p class="warn">{w.prerequisites}</p>
+        <div class="term">
+          <button
+            class="icon-btn copy"
+            type="button"
+            data-copy="#cmd"
+            data-done={w.copied}
+            aria-label={w.copy}
+            hidden
+          >
+            <Icon name="copy" />
+          </button>
+          <pre id="cmd" tabindex="0"><code>{allCommands}</code></pre>
+        </div>
+        <p class="warn" set:html={rich(w.options)} />
+        <p class="warn" set:html={rich(w.network)} />
+        <p class="warn strong">{w.notYet}</p>
+      </div>
+    </div>
+
+    <div class="callout wide">
+      <h3>{d.unsignedTitle}</h3>
+      <ul>
+        {d.unsigned.map((t) => (
+          <li set:html={rich(t)} />
+        ))}
+      </ul>
+    </div>
+
+    <div class="ffmpeg">
+      <h3>{i.ffmpeg.title}</h3>
+      <p>{i.ffmpeg.text}</p>
+      <dl class="cmds">
+        {i.ffmpeg.commands.map((x) => (
+          <div>
+            <dt>{x.os}</dt>
+            <dd>
+              <code>{x.command}</code>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+
+    <section class="status" id="status" aria-labelledby="status-title">
+      <h3 id="status-title">{i.status.title}</h3>
+      <p class="block-lead">{i.status.lead}</p>
+      <div class="status-cols">
+        {[i.status.works, i.status.unverified, i.status.notReleased].map((col) => (
+          <div>
+            <h4>{col.title}</h4>
+            <ul>
+              {col.items.map((t) => (
+                <li>{t}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <div class="legacy" id="legacy">
+      <h3>{i.legacy.title}</h3>
+      <p>{i.legacy.text}</p>
+      <a class="btn btn-secondary btn-sm" href={`${REPO}/releases/tag/v0.4.1`}>
+        {i.legacy.link}
+      </a>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,33 @@
+---
+import type { Content } from '../content/types.ts'
+import { rich } from '../lib/rich.ts'
+import Icon from './Icon.astro'
+
+interface Props {
+  c: Content
+}
+const { c } = Astro.props
+---
+
+<section class="sec" id="faq" aria-labelledby="faq-title">
+  <div class="c">
+    <div class="sec-head">
+      <h2 id="faq-title">{c.faq.title}</h2>
+    </div>
+    <div class="faq">
+      {c.faq.items.map((item) => (
+        <details>
+          <summary>
+            <span>{item.q}</span>
+            <Icon name="down" />
+          </summary>
+          <div class="a">
+            {item.a.map((p) => (
+              <p set:html={rich(p)} />
+            ))}
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>

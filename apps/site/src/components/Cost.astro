@@ -1,0 +1,70 @@
+---
+import type { Content, Locale } from '../content/types.ts'
+import Shot from './Shot.astro'
+
+interface Props {
+  c: Content
+  locale: Locale
+}
+const { c, locale } = Astro.props
+const k = c.cost
+---
+
+<section class="sec" id="cost" aria-labelledby="cost-title">
+  <div class="c">
+    <div class="sec-head">
+      <h2 id="cost-title">{k.title}</h2>
+      <p>{k.lead}</p>
+    </div>
+
+    <div class="cost">
+      <div>
+        <p class="big">{k.headline}</p>
+        <p class="cap">{k.headlineText}</p>
+
+        <div class="cols2">
+          <div>
+            <h3 class="mini-title">{k.paysTitle}</h3>
+            <ul class="plain">
+              {k.pays.map((t) => (
+                <li>{t}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 class="mini-title">{k.freeTitle}</h3>
+            <ul class="plain">
+              {k.free.map((t) => (
+                <li>{t}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="mini-title">{k.guardTitle}</h3>
+        <ul class="cost-list">
+          {k.guards.map((g) => (
+            <li>
+              <span class="n">{g.title}</span>
+              <span class="d">{g.text}</span>
+            </li>
+          ))}
+        </ul>
+        <figure class="cost-shot">
+          <div class="frame">
+            <Shot
+              locale={locale}
+              shot="confirm"
+              alt={k.shotAlt}
+              sizes="(min-width: 900px) 600px, calc(100vw - 32px)"
+            />
+          </div>
+          <figcaption class="fig-note">{k.shotCaption}</figcaption>
+        </figure>
+      </div>
+    </div>
+    <p class="fine">{k.fine}</p>
+  </div>
+</section>

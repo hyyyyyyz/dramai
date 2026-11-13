@@ -1,0 +1,53 @@
+---
+// A screenshot in both colour schemes. Both <img> are in the HTML; CSS shows the one that matches the
+// theme (system preference, or the manual choice), and the hidden one is never downloaded because it is
+// lazy and display:none. Sizes are generated at build time (webp, several widths).
+import { Image } from 'astro:assets'
+import type { ImageMetadata } from 'astro'
+import type { Locale, ShotName } from '../content/types.ts'
+
+interface Props {
+  locale: Locale
+  shot: ShotName
+  alt: string
+  sizes: string
+  priority?: boolean
+}
+
+const { locale, shot, alt, sizes, priority = false } = Astro.props
+
+const all = import.meta.glob<{ default: ImageMetadata }>('../assets/shots/*/*.webp', {
+  eager: true,
+})
+function find(theme: 'light' | 'dark'): ImageMetadata {
+  const hit = all[`../assets/shots/${locale}/${shot}-${theme}.webp`]
+  if (!hit) throw new Error(`missing screenshot ${locale}/${shot}-${theme}`)
+  return hit.default
+}
+const widths = [640, 960, 1440]
+---
+
+<span class="shot">
+  <Image
+    class="for-light"
+    src={find('light')}
+    alt={alt}
+    widths={widths}
+    sizes={sizes}
+    format="webp"
+    quality={82}
+    loading={priority ? 'eager' : 'lazy'}
+    decoding="async"
+  />
+  <Image
+    class="for-dark"
+    src={find('dark')}
+    alt={alt}
+    widths={widths}
+    sizes={sizes}
+    format="webp"
+    quality={82}
+    loading={priority ? 'eager' : 'lazy'}
+    decoding="async"
+  />
+</span>

@@ -1,0 +1,86 @@
+---
+import type { Content, Locale } from '../content/types.ts'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import Header from './Header.astro'
+import Hero from './Hero.astro'
+import Pipeline from './Pipeline.astro'
+import Features from './Features.astro'
+import Editions from './Editions.astro'
+import Cost from './Cost.astro'
+import Install from './Install.astro'
+import Faq from './Faq.astro'
+import Footer from './Footer.astro'
+import { VERSION } from '../content/site.ts'
+
+interface Props {
+  c: Content
+  locale: Locale
+}
+const { c, locale } = Astro.props
+---
+
+<BaseLayout
+  lang={c.htmlLang}
+  locale={locale}
+  title={c.meta.title}
+  description={c.meta.description}
+  path={locale === 'zh' ? '' : 'en/'}
+  ogAlt={c.meta.ogAlt}
+  preloadText={c.hero.title.join('') + c.name}
+>
+  <Header c={c} locale={locale} />
+  <main id="main" data-version={VERSION}>
+    <Hero c={c} locale={locale} />
+    <Pipeline c={c} />
+    <Features c={c} locale={locale} />
+    <Editions c={c} />
+    <Cost c={c} locale={locale} />
+    <Install c={c} />
+    <Faq c={c} />
+  </main>
+  <Footer c={c} locale={locale} />
+</BaseLayout>
+
+<script>
+  // Progressive enhancements only; the page is complete without them.
+  const root = document.documentElement
+  const KEY = 'dramai-site-theme'
+  function store(value?: string): string | null {
+    try {
+      if (value === undefined) return localStorage.getItem(KEY)
+      localStorage.setItem(KEY, value)
+    } catch {
+      /* storage can be blocked */
+    }
+    return null
+  }
+
+  const theme = document.getElementById('theme')
+  if (theme) {
+    theme.hidden = false
+    theme.addEventListener('click', () => {
+      const current =
+        root.getAttribute('data-theme') ??
+        (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      const next = current === 'dark' ? 'light' : 'dark'
+      root.setAttribute('data-theme', next)
+      store(next)
+    })
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((button) => {
+    const target = document.querySelector(button.dataset.copy ?? '')
+    if (!target || !navigator.clipboard) return
+    button.hidden = false
+    const label = button.getAttribute('aria-label') ?? ''
+    button.addEventListener('click', () => {
+      navigator.clipboard
+        .writeText((target.textContent ?? '').trim())
+        .then(() => {
+          button.setAttribute('aria-label', button.dataset.done ?? label)
+          setTimeout(() => button.setAttribute('aria-label', label), 1500)
+        })
+        .catch(() => {})
+    })
+  })
+</script>

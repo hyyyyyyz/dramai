@@ -1,0 +1,51 @@
+---
+import type { Content, Locale } from '../content/types.ts'
+import { REPO, url } from '../content/site.ts'
+import Icon from './Icon.astro'
+
+interface Props {
+  c: Content
+  locale: Locale
+}
+const { c, locale } = Astro.props
+const home = url(locale === 'zh' ? '' : 'en/')
+const other = locale === 'zh' ? { href: url('en/'), lang: 'en' } : { href: url(''), lang: 'zh-CN' }
+---
+
+<a class="skip" href="#main">
+  {c.skip}
+</a>
+<header class="top">
+  <div class="c">
+    <a class="brand" href={home} aria-label={c.header.homeLabel}>
+      <svg class="wm" aria-hidden="true" focusable="false" width="113" height="28">
+        <use href="#i-wordmark" />
+      </svg>
+    </a>
+    <nav aria-label={c.header.navLabel}>
+      {c.header.nav.map((n) => (
+        <a href={`#${n.id}`}>{n.label}</a>
+      ))}
+    </nav>
+    <span class="grow"></span>
+    <a class="gh" href={REPO}>
+      <Icon name="git" />
+      <span>{c.header.github}</span>
+    </a>
+    <a
+      class="lang"
+      href={other.href}
+      hreflang={other.lang}
+      lang={other.lang}
+      aria-label={c.header.languageLabel}
+    >
+      {c.header.otherLanguage}
+    </a>
+    <button class="icon-btn" id="theme" type="button" aria-label={c.header.themeLabel} hidden>
+      <Icon name="sun" />
+    </button>
+    <a class="btn btn-primary btn-sm" href="#download">
+      {c.header.download}
+    </a>
+  </div>
+</header>
