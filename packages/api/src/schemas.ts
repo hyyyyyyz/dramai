@@ -686,11 +686,13 @@ export const protocolId = z.enum([
   'generic-video',
   'openai-tts',
   'openai-responses',
+  'anthropic-messages',
+  'gemini-chat',
 ])
 export const support = z.enum(['supported', 'unsupported', 'unverified'])
 
 /** 账号登录通道（现在只有 OpenAI）。 */
-export const loginChannelId = z.enum(['openai-chatgpt'])
+export const loginChannelId = z.enum(['openai-chatgpt', 'openrouter'])
 /** 服务商的鉴权方式；永远是推断后的结果（旧数据没有这个字段时：有 Key = api_key，否则 none）。 */
 export const providerAuth = z.discriminatedUnion('type', [
   z.object({ type: z.literal('api_key') }),

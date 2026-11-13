@@ -2,10 +2,9 @@ import type { LoginStatusDto, ProviderConfigDto } from '@dramai/api'
 import {
   configFromPreset,
   effectiveAuth,
-  joinUrl,
   localizeProviderConfig,
   loginEndpointProblem,
-  parseResponsesModels,
+  modelListRequest,
   PROVIDER_PRESETS,
   ProviderError,
   sendRequest,
@@ -293,12 +292,13 @@ export class ProviderService {
     return { status: await this.loginStatus(cfg, origin), revoked }
   }
 
-  /** 这个服务商当前能用的模型：登录方式下取 `/v1/models` 里 `visibility == "list"` 的那些。 */
+  /**
+   * 这个服务商当前能用的模型。支持列表接口的协议（openai-chat / openai-responses / anthropic-messages /
+   * gemini-chat）取列表；图片、视频、语音协议没有统一的列表接口，返回 `MODEL_LIST_UNSUPPORTED`。
+   * 登录方式下取 `/v1/models` 里 `visibility == "list"` 的那些。
+   */
   async models(id: string): Promise<Array<{ id: string; label: string }>> {
     const cfg = await this.require(id)
-    if (cfg.protocol !== 'openai-responses' && cfg.protocol !== 'openai-chat') {
-      throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
-    }
     let bearer: string | undefined
     try {
       bearer = (await this.credential(cfg)).bearer
@@ -308,12 +308,10 @@ export class ProviderService {
       }
       throw err
     }
+    const req = modelListRequest(cfg.protocol, cfg.baseUrl, bearer)
+    if (!req) throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
     const raw = await sendRequest(
-      {
-        method: 'GET',
-        url: joinUrl(cfg.baseUrl, '/models'),
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
-      },
+      { method: 'GET', url: req.url, headers: req.headers },
       this.d.executor ?? {},
       { timeoutMs: 20_000 },
     )
@@ -322,7 +320,7 @@ export class ProviderService {
         status: raw.status,
       })
     }
-    return parseResponsesModels(raw.json)
+    return req.parse(raw.json)
   }
 
   capability(cfg: ProviderConfig) {

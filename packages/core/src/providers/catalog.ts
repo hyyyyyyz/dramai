@@ -33,6 +33,8 @@ const protocol = z.enum([
   'generic-video',
   'openai-tts',
   'openai-responses',
+  'anthropic-messages',
+  'gemini-chat',
 ])
 
 const support = z.enum(['supported', 'unsupported', 'unverified'])
@@ -128,6 +130,8 @@ export function defaultCapability(protocolId: ProtocolId): ModelCapability {
       return { ...base, media: 'audio', modes: { tts: 'supported' } }
     case 'openai-chat':
     case 'openai-responses':
+    case 'anthropic-messages':
+    case 'gemini-chat':
       return { ...base, media: 'audio', modes: {} }
     default:
       return {

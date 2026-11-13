@@ -1,4 +1,5 @@
 import { sendRequest } from './executor.ts'
+import { modelListRequest } from './model-list.ts'
 import type { ExecutorDeps } from './executor.ts'
 import { asRecord, authHeaders, joinUrl } from './http.ts'
 import type { ProviderConfig } from './types.ts'
@@ -36,6 +37,12 @@ export async function testProvider(
         headers['x-goog-api-key'] = apiKey
       }
       return probeList(joinUrl(config.baseUrl, '/v1beta/models'), headers, config.model, deps)
+    }
+    case 'anthropic-messages':
+    case 'gemini-chat': {
+      // 各自的鉴权头和列表地址（见 model-list.ts）
+      const req = modelListRequest(config.protocol, config.baseUrl, apiKey)!
+      return probeList(req.url, req.headers, config.model, deps)
     }
     default:
       return probeList(joinUrl(config.baseUrl, '/models'), authHeaders(apiKey), config.model, deps)
@@ -89,7 +96,14 @@ function extractModelList(data: unknown): string[] {
     if (typeof entry === 'string') out.push(entry)
     else {
       const e = asRecord(entry)
-      const id = typeof e?.id === 'string' ? e.id : typeof e?.name === 'string' ? e.name : ''
+      const id =
+        typeof e?.id === 'string'
+          ? e.id
+          : typeof e?.slug === 'string'
+            ? e.slug
+            : typeof e?.name === 'string'
+              ? e.name
+              : ''
       if (id) out.push(id)
     }
   }

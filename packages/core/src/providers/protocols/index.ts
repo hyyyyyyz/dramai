@@ -18,6 +18,8 @@ export {
 }
 export * from './openai-chat.ts'
 export * from './openai-responses.ts'
+export * from './anthropic-messages.ts'
+export * from './gemini-chat.ts'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MEDIA_PROTOCOLS: Partial<Record<ProtocolId, MediaProtocol<any>>> = {

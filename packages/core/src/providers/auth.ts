@@ -27,6 +27,8 @@ export const LOGIN_CHANNEL_ENDPOINTS: Record<
   { baseUrl: string; protocol: ProtocolId }
 > = {
   'openai-chatgpt': { baseUrl: 'https://api.openai.com/v1', protocol: 'openai-responses' },
+  // OpenRouter 登录换回的是用户自己的 OpenRouter API Key，之后按 openai-chat 调用，只发到 OpenRouter 官方地址
+  openrouter: { baseUrl: 'https://openrouter.ai/api/v1', protocol: 'openai-chat' },
 }
 
 /** 地址是不是这个通道允许的那一个（规范化后比较：https、主机、路径；不接受用户信息、端口、查询串）。 */

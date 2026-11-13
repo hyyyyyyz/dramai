@@ -1,3 +1,4 @@
+import { deepMerge } from '../../util/merge.ts'
 import { asRecord, joinUrl, jsonHeaders, jsonPost } from '../http.ts'
 import type { HttpRequestSpec, AuthContext } from '../types.ts'
 
@@ -40,7 +41,11 @@ export interface ChatResult {
   usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number }
 }
 
+/** extraBody 不能覆盖的字段。 */
+const CHAT_PROTECTED = ['model', 'messages', 'stream'] as const
+
 export function buildChatRequest(auth: AuthContext, input: ChatInput): HttpRequestSpec {
+  const dialect = auth.dialect
   const body: Record<string, unknown> = {
     model: auth.model,
     messages: input.messages,
@@ -48,13 +53,24 @@ export function buildChatRequest(auth: AuthContext, input: ChatInput): HttpReque
   }
   if (input.temperature !== undefined) body.temperature = input.temperature
   if (input.topP !== undefined) body.top_p = input.topP
-  if (input.maxTokens !== undefined) body.max_tokens = input.maxTokens
-  if (input.jsonMode) body.response_format = { type: 'json_object' }
-  return jsonPost(joinUrl(auth.baseUrl, '/chat/completions'), body, jsonHeaders(auth.apiKey))
+  // 输出长度字段名因服务商而异（OpenAI / Moonshot / MiniMax 用 max_completion_tokens，多数用 max_tokens）
+  if (input.maxTokens !== undefined) body[dialect?.maxTokensField ?? 'max_tokens'] = input.maxTokens
+  // 不支持 json_object 的服务商（prompt_only）：不发 response_format，靠提示词 + 解析重试
+  if (input.jsonMode && dialect?.jsonMode !== 'prompt_only') {
+    body.response_format = { type: 'json_object' }
+  }
+  return jsonPost(
+    joinUrl(auth.baseUrl, '/chat/completions'),
+    deepMerge(body, dialect?.extraBody, CHAT_PROTECTED),
+    jsonHeaders(auth.apiKey),
+  )
 }
 
 /**
- * 从一个 SSE chunk（或非流式响应）里抽取增量文本。容忍 OpenAI 标准与常见兼容服务的字段差异。
+ * 从一个 SSE chunk（或非流式响应）里抽取增量文本。容忍 OpenAI 标准与常见兼容服务的字段差异：
+ * - `delta.content` 是字符串，或内容块数组（Mistral）——只取 `type:'text'` 的块，`thinking` 等块忽略；
+ * - 思考字段（`reasoning_content`、`reasoning`、`reasoning_details`）一律不读，不会混进正文；
+ * - 没有 `choices` 或 `choices` 为空的 chunk（只带 usage）返回空增量。
  */
 export function extractContentDelta(chunk: unknown): {
   delta: string
