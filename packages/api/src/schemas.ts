@@ -715,6 +715,8 @@ export const providerDialect = z.object({
   jsonMode: z.enum(['json_object', 'prompt_only']).optional(),
   /** 额外请求头（如 Anthropic 的 anthropic-workspace-id）；不能覆盖鉴权头和内容类型头。 */
   extraHeaders: z.record(z.string(), z.string()).optional(),
+  /** 生图请求写法：auto（按模型名，认得 `openai/gpt-image-1` 这类带前缀的名字）/ openai 官方 / compat 兼容 / minimax。 */
+  imageStyle: z.enum(['auto', 'openai', 'compat', 'minimax']).optional(),
 })
 export type ProviderDialectDto = z.infer<typeof providerDialect>
 

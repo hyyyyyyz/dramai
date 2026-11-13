@@ -86,6 +86,15 @@ export interface ProviderDialect {
    * 不能覆盖鉴权头、内容类型头和协议的版本头。
    */
   extraHeaders?: Record<string, string>
+  /**
+   * 生图（`openai-images` 协议）的请求写法：
+   * - `auto`（缺省）：按模型名判断，会去掉 `openai/`、`vendor/` 这类前缀再认；
+   * - `openai`：OpenAI 官方写法（不发 `response_format` / `negative_prompt`，多参考图走 multipart `/images/edits`）；
+   * - `compat`：OpenAI 兼容写法（总要 `b64_json`，参考图填 `image` / `image_url` / `reference_images`）；
+   * - `minimax`：MiniMax H3 的写法。
+   * 经转发站使用 `gpt-image-*` 时，转发站未必支持 multipart 的 `/images/edits`，改成 `compat` 即可。
+   */
+  imageStyle?: 'auto' | 'openai' | 'compat' | 'minimax'
 }
 
 /**

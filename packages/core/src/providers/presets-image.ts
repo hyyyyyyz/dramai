@@ -27,6 +27,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: 'OpenAI GPT Image（API Key）',
       notes: `官方生图接口。没有参考图时走 /images/generations，有参考图走 /images/edits（最多 16 张，multipart）。${SIZE_NOTE_ZH}`,
       limits: [
+        '请求写法按模型名自动判断（认得 openai/gpt-image-1 这类带前缀的名字）：gpt-image 与 chatgpt-image 走官方写法。经转发站使用 gpt-image 模型时，转发站未必支持 multipart 的 /images/edits，可在方言选项里把“生图风格”改成“兼容”。',
         '官方：GPT image 系列不支持 response_format 和 negative_prompt，这里都不发；没有 seed，没有专用的角色参考字段，多参考图靠提示词说明每张图的作用。',
         '官方自述：重复角色跨次生成可能有差异；被审核拦截会返回 moderation_blocked，不要原样重试。',
         '按 token 计价（官方），这里没有预估价；复杂提示最长约 2 分钟；可能需要组织验证。',
@@ -37,6 +38,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: 'OpenAI GPT Image（API Key）',
       notes: `官方生圖介面。沒有參考圖時走 /images/generations，有參考圖走 /images/edits（最多 16 張，multipart）。${SIZE_NOTE_HANT}`,
       limits: [
+        '請求寫法依模型名稱自動判斷（認得 openai/gpt-image-1 這類帶前綴的名稱）：gpt-image 與 chatgpt-image 走官方寫法。經轉發站使用 gpt-image 模型時，轉發站未必支援 multipart 的 /images/edits，可在進階選項裡把「生圖風格」改成「相容」。',
         '官方：GPT image 系列不支援 response_format 和 negative_prompt，這裡都不傳；沒有 seed，沒有專用的角色參考欄位，多參考圖靠提示詞說明每張圖的作用。',
         '官方自述：重複角色跨次生成可能有差異；被審核攔截會回傳 moderation_blocked，不要原樣重試。',
         '依 token 計價（官方），這裡沒有預估價；複雜提示最長約 2 分鐘；可能需要組織驗證。',
@@ -47,6 +49,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: 'OpenAI GPT Image (API key)',
       notes: `The official image API. Without references it calls /images/generations; with references it calls /images/edits (up to 16, multipart). ${SIZE_NOTE_EN}`,
       limits: [
+        'The request style is chosen from the model name (prefixed names such as openai/gpt-image-1 are recognised): gpt-image and chatgpt-image use the official style. Through a relay, a gpt-image model may not support the multipart /images/edits; set the dialect option "image style" to "compatible" in that case.',
         'Per the official docs the GPT image models do not support response_format or negative_prompt, so neither is sent; there is no seed and no dedicated character-reference field, so say in the prompt what each image is for.',
         'The docs say repeating a character across generations can drift; a moderation block returns moderation_blocked and should not be retried as is.',
         'Pricing is per token (official); no estimate is shown here. Complex prompts can take about 2 minutes; organization verification may be required.',
@@ -65,7 +68,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
     source: 'https://www.volcengine.com/docs/82379/1541523',
     zh: {
       label: '火山方舟 · 即梦 Seedream（直连）',
-      notes: `方舟官方图片生成接口。参考图用 image 字段传 data URI（最多 10 张，5.0 lite / 4.5 最多 14 张）。${SIZE_NOTE_ZH}`,
+      notes: `方舟官方图片生成接口。参考图用 image 字段传 data URI（最多 10 张，5.0 lite / 4.5 最多 14 张）。填接入点 ID（ep-…）时无法从名字判断是哪个模型，最小像素数按默认值（92.16 万）处理；5.0 lite 和 4.5 的下限更高（368.64 万），请直接填模型名。${SIZE_NOTE_ZH}`,
       limits: [
         '这是方舟直连，和已实测的 302.AI Seedream 预设不是同一条路径：直连接受 data URI 参考图，302 的 /doubao 路径期望 URL。',
         '官方：不支持 n（一次一张），没有 quality / negative_prompt；水印默认开，这里显式关闭。',
@@ -75,7 +78,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
     },
     hant: {
       label: '火山方舟 · 即夢 Seedream（直連）',
-      notes: `方舟官方圖片生成介面。參考圖用 image 欄位傳 data URI（最多 10 張，5.0 lite / 4.5 最多 14 張）。${SIZE_NOTE_HANT}`,
+      notes: `方舟官方圖片生成介面。參考圖用 image 欄位傳 data URI（最多 10 張，5.0 lite / 4.5 最多 14 張）。填接入點 ID（ep-…）時無法從名稱判斷是哪個模型，最小像素數依預設值（92.16 萬）處理；5.0 lite 和 4.5 的下限更高（368.64 萬），請直接填模型名稱。${SIZE_NOTE_HANT}`,
       limits: [
         '這是方舟直連，和已實測的 302.AI Seedream 預設不是同一條路徑：直連接受 data URI 參考圖，302 的 /doubao 路徑期望網址。',
         '官方：不支援 n（一次一張），沒有 quality / negative_prompt；浮水印預設開啟，這裡明確關閉。',
@@ -85,7 +88,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
     },
     en: {
       label: 'Volcengine Ark · Seedream (direct)',
-      notes: `The official Ark image API. References go in the image field as data URIs (up to 10; up to 14 for 5.0 lite / 4.5). ${SIZE_NOTE_EN}`,
+      notes: `The official Ark image API. References go in the image field as data URIs (up to 10; up to 14 for 5.0 lite / 4.5). When you enter an endpoint ID (ep-…) the model cannot be told from the name, so the minimum pixel count uses the default (0.92 MP); 5.0 lite and 4.5 have a higher floor (3.69 MP), so enter the model name directly. ${SIZE_NOTE_EN}`,
       limits: [
         'This is the direct Ark route, not the tested 302.AI Seedream preset: direct accepts data-URI references, while the 302 /doubao path expects URLs.',
         'Official: no n (one image per call), no quality or negative_prompt; the watermark is on by default and is switched off here.',
@@ -107,6 +110,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: 'MiniMax H3 Image（国际站）',
       notes: `OpenAI 形态的 /images/generations 和 /images/edits（参考图最多 16 张，JSON）。${SIZE_NOTE_ZH}`,
       limits: [
+        '请求写法按模型名自动判断（名字最后一段以 MiniMax-H3-Image 开头走 MiniMax 写法）；也可以在方言选项里显式指定“生图风格”。',
         '官方：服务端最长等 600 秒；接口不幂等，断连或重试都会再次计费，所以失败后不要反复重试。',
         '提示词增强始终开启，改写后的提示词在响应的 revised_prompt 里；没有 seed 和 negative_prompt。',
         '只要有一张成功 HTTP 就是 200，每张图的失败原因要逐项看。',
@@ -117,6 +121,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: 'MiniMax H3 Image（國際站）',
       notes: `OpenAI 形態的 /images/generations 和 /images/edits（參考圖最多 16 張，JSON）。${SIZE_NOTE_HANT}`,
       limits: [
+        '請求寫法依模型名稱自動判斷（名稱最後一段以 MiniMax-H3-Image 開頭走 MiniMax 寫法）；也可以在進階選項裡明確指定「生圖風格」。',
         '官方：伺服器端最長等 600 秒；介面不具冪等性，斷線或重試都會再次計費，所以失敗後不要反覆重試。',
         '提示詞增強一律開啟，改寫後的提示詞在回應的 revised_prompt 裡；沒有 seed 和 negative_prompt。',
         '只要有一張成功 HTTP 就是 200，每張圖的失敗原因要逐項看。',
@@ -127,6 +132,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: 'MiniMax H3 Image (international site)',
       notes: `OpenAI-shaped /images/generations and /images/edits (up to 16 references, JSON). ${SIZE_NOTE_EN}`,
       limits: [
+        'The request style is chosen from the model name (a last path segment starting with MiniMax-H3-Image uses the MiniMax style); you can also set the dialect option "image style" explicitly.',
         'Official: the server may wait up to 600 seconds, and the endpoint is not idempotent (a dropped connection or a retry is billed again), so do not retry failures repeatedly.',
         'Prompt enhancement is always on (the rewritten prompt is in revised_prompt); there is no seed or negative_prompt.',
         "HTTP is 200 as soon as one image succeeds, so each image's failure reason must be checked.",
@@ -141,7 +147,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
     region: 'global',
     protocol: 'gemini-image',
     baseUrl: 'https://generativelanguage.googleapis.com',
-    suggestedModel: 'gemini-3.1-flash-image',
+    suggestedModel: 'gemini-nano-banana-2.1',
     source: 'https://aistudio.google.com/docs/image-generation',
     zh: {
       label: 'Google Gemini 生图（Nano Banana，官方直连）',
@@ -149,7 +155,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       limits: [
         '官方当前的生图指南只写了 Interactions API，generateContent 被称为 legacy 但"完全支持"；这里用 generateContent，图片请求的字段名在官方当前页面没有确认，是未验证的。',
         '输出带 SynthID 水印，输出张数可能与请求不符，没有 seed。',
-        '模型名取自官方模型页当天（gemini-nano-banana-2.1 是官方对新项目的推荐，gemini-3-pro-image 带思考）。',
+        '建议型号取自官方图像生成页（2026-11-13）：gemini-nano-banana-2.1 是官方对新项目的推荐；gemini-3.1-flash-image 是上一代，gemini-3-pro-image 带思考。',
         '已有的 302.AI Nano Banana 预设（已实测）不受影响。国内网络通常需要自备代理。',
       ],
     },
@@ -159,7 +165,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       limits: [
         '官方目前的生圖指南只寫了 Interactions API，generateContent 被稱為 legacy 但「完全支援」；這裡用 generateContent，圖片請求的欄位名稱在官方目前頁面沒有確認，是未驗證的。',
         '輸出帶 SynthID 浮水印，輸出張數可能與請求不符，沒有 seed。',
-        '模型名稱取自官方模型頁當天（gemini-nano-banana-2.1 是官方對新專案的建議，gemini-3-pro-image 帶思考）。',
+        '建議型號取自官方圖像生成頁（2026-11-13）：gemini-nano-banana-2.1 是官方對新專案的建議；gemini-3.1-flash-image 是上一代，gemini-3-pro-image 帶思考。',
         '已有的 302.AI Nano Banana 預設（已實測）不受影響。在部分地區可能需要自備代理。',
       ],
     },
@@ -169,7 +175,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       limits: [
         'The current official image guide only describes the Interactions API; generateContent is called legacy but "fully supported". This uses generateContent, and its image request field names are not confirmed on the current official pages, so they are unverified.',
         'Output carries a SynthID watermark, the number of images can differ from the request, and there is no seed.',
-        'Model names are from the official models page that day (gemini-nano-banana-2.1 is the official recommendation for new projects; gemini-3-pro-image thinks).',
+        'The suggested model comes from the official image-generation page (2026-11-13): gemini-nano-banana-2.1 is the official recommendation for new projects; gemini-3.1-flash-image is the previous generation and gemini-3-pro-image thinks.',
         'The existing tested 302.AI Nano Banana preset is unaffected. In some regions you may need your own proxy.',
       ],
     },

@@ -1,5 +1,6 @@
 import {
   asRecord,
+  jsonObjectOrFail,
   errorMessageOf,
   joinUrl,
   jsonHeaders,
@@ -51,8 +52,9 @@ export const dashscopeImage: MediaProtocol<ImageGenInput> = {
   },
 
   parseGenerateResponse(raw) {
-    const json = asRecord(raw.json)
-    if (!json) return { status: 'failed', message: '百炼返回的不是 JSON' }
+    const parsed = jsonObjectOrFail(raw, '百炼')
+    if (!parsed.ok) return parsed.result
+    const json = parsed.json
     const choices = asRecord(json.output)?.choices
     const outputs: OutputRef[] = []
     if (Array.isArray(choices)) {

@@ -3,6 +3,7 @@ import {
   authHeaders,
   base64ToBytes,
   errorMessageOf,
+  jsonObjectOrFail,
   joinUrl,
   jsonHeaders,
   jsonPost,
@@ -22,7 +23,7 @@ import type {
 /**
  * OpenAI 形态的图像接口：`POST {baseUrl}/images/generations`，带参考图时 `POST {baseUrl}/images/edits`。
  *
- * 写法按**模型名**分三种，没有额外配置：
+ * 写法有三种，缺省（方言选项 `imageStyle: 'auto'`）按**模型名**判断，可以在方言选项里显式指定：
  *
  * - **compat**（缺省，所有别的模型名）：以 OpenAI Images API 为最小公约数，容忍 302.AI 这类聚合平台的扩展——
  *   参考图以 data URL 同时填 `image` / `image_url` / `reference_images`，总是要 `b64_json`，会发 `negative_prompt`。
@@ -41,9 +42,20 @@ import type {
 
 export type OpenAiImageStyle = 'compat' | 'openai' | 'minimax'
 
-export function openAiImageStyle(model: string): OpenAiImageStyle {
-  if (/^(gpt-image|chatgpt-image)/i.test(model)) return 'openai'
-  if (/^minimax-h3-image/i.test(model)) return 'minimax'
+/**
+ * 写法：显式指定的优先；`auto`（缺省）按模型名判断。判断前先去掉 `openai/gpt-image-1`、`MiniMax/…` 这类
+ * 路径前缀，只看最后一段——聚合平台常用带前缀的名字。
+ * 注意：经转发站使用 `gpt-image-*` 时，自动判断仍会选 `openai`（multipart `/images/edits`），转发站是否支持未知；
+ * 不支持就显式指定 `compat`。
+ */
+export function openAiImageStyle(
+  model: string,
+  explicit?: 'auto' | OpenAiImageStyle,
+): OpenAiImageStyle {
+  if (explicit && explicit !== 'auto') return explicit
+  const name = model.split('/').pop() ?? model
+  if (/^(gpt-image|chatgpt-image)/i.test(name)) return 'openai'
+  if (/^minimax-h3-image/i.test(name)) return 'minimax'
   return 'compat'
 }
 
@@ -55,12 +67,12 @@ export const openaiImages: MediaProtocol<ImageGenInput> = {
 
   // 官方：复杂提示最长约 2 分钟；MiniMax：服务端最长等 600 秒，客户端超时至少 600 秒
   requestTimeoutMs: (auth) => {
-    const style = openAiImageStyle(auth.model)
+    const style = openAiImageStyle(auth.model, auth.dialect?.imageStyle)
     return style === 'minimax' ? 620_000 : style === 'openai' ? 300_000 : undefined
   },
 
   buildGenerateRequest(auth, input) {
-    switch (openAiImageStyle(auth.model)) {
+    switch (openAiImageStyle(auth.model, auth.dialect?.imageStyle)) {
       case 'openai':
         return buildOpenAi(auth, input)
       case 'minimax':
@@ -75,41 +87,40 @@ export const openaiImages: MediaProtocol<ImageGenInput> = {
 
 /** `data[]`（`b64_json` 或 `url`，`data[].error` 表示这一张失败）。OpenAI、MiniMax、火山方舟共用。 */
 export function parseImagesData(raw: RawResponse): GenerateParse {
-  {
-    const json = asRecord(raw.json)
-    if (!json) return { status: 'failed', message: 'Image API 返回的不是 JSON' }
-    const data = json.data
-    if (!Array.isArray(data) || data.length === 0) {
-      return { status: 'failed', message: errorMessageOf(json, 'Image API 没返回任何图片') }
-    }
-    const outputs: OutputRef[] = []
-    let firstError: string | undefined
-    for (const entry of data) {
-      const e = asRecord(entry)
-      if (!e) continue
-      const b64 = str(e.b64_json)
-      const url = str(e.url)
-      if (b64) {
-        const { mime, base64 } = splitDataUrl(b64)
-        outputs.push({ kind: 'bytes', bytes: base64ToBytes(base64), mime })
-      } else if (url) {
-        outputs.push({ kind: 'url', url })
-      } else {
-        // `data[].error`：这一张失败（其余成功的不受影响）
-        const err = asRecord(e.error)
-        firstError ??= str(err?.message) ?? str(err?.code)
-      }
-    }
-    if (outputs.length === 0) {
-      return {
-        status: 'failed',
-        message: firstError
-          ? `Image API 没有生成图片：${firstError}`
-          : 'Image API 返回结构无法识别：缺少 url 与 b64_json',
-      }
-    }
-    return { status: 'sync', outputs }
+  const parsed = jsonObjectOrFail(raw, 'Image API ')
+  if (!parsed.ok) return parsed.result
+  const json = parsed.json
+  const data = json.data
+  if (!Array.isArray(data) || data.length === 0) {
+    return { status: 'failed', message: errorMessageOf(json, 'Image API 没返回任何图片') }
   }
+  const outputs: OutputRef[] = []
+  let firstError: string | undefined
+  for (const entry of data) {
+    const e = asRecord(entry)
+    if (!e) continue
+    const b64 = str(e.b64_json)
+    const url = str(e.url)
+    if (b64) {
+      const { mime, base64 } = splitDataUrl(b64)
+      outputs.push({ kind: 'bytes', bytes: base64ToBytes(base64), mime })
+    } else if (url) {
+      outputs.push({ kind: 'url', url })
+    } else {
+      // `data[].error`：这一张失败（其余成功的不受影响）
+      const err = asRecord(e.error)
+      firstError ??= str(err?.message) ?? str(err?.code)
+    }
+  }
+  if (outputs.length === 0) {
+    return {
+      status: 'failed',
+      message: firstError
+        ? `Image API 没有生成图片：${firstError}`
+        : 'Image API 返回结构无法识别：缺少 url 与 b64_json',
+    }
+  }
+  return { status: 'sync', outputs }
 }
 
 // --- compat：原样保留 ---

@@ -1,5 +1,6 @@
 import {
   asRecord,
+  jsonObjectOrFail,
   errorMessageOf,
   joinUrl,
   jsonHeaders,
@@ -67,8 +68,9 @@ export const siliconflowImages: MediaProtocol<ImageGenInput> = {
   },
 
   parseGenerateResponse(raw) {
-    const json = asRecord(raw.json)
-    if (!json) return { status: 'failed', message: '硅基流动返回的不是 JSON' }
+    const parsed = jsonObjectOrFail(raw, '硅基流动')
+    if (!parsed.ok) return parsed.result
+    const json = parsed.json
     const images = json.images
     const outputs: OutputRef[] = []
     if (Array.isArray(images)) {

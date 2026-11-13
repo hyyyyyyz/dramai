@@ -571,3 +571,148 @@ describe('results are saved right away (URLs expire: 1 hour to 30 days)', () => 
     expect(res.outputs[0]!.bytes).toEqual(new Uint8Array([9, 9]))
   })
 })
+
+// --- regression pins: the two tested 302.AI image presets, whole requests with references ---
+// (URL, headers and body are pinned as literals; they are what the code produced before the image
+//  protocols were extended, which the independent review confirmed byte for byte.)
+
+describe('tested 302.AI presets: the whole request with two reference images never changes', () => {
+  const refs = input({ references: [ref(1), ref(2)] })
+
+  it('302-image-seedream (openai-images, compat style)', () => {
+    expect(
+      openaiImages.buildGenerateRequest(
+        auth('doubao-seedream-5-0-260128', 'https://api.302.ai/doubao'),
+        refs,
+      ),
+    ).toEqual({
+      method: 'POST',
+      url: 'https://api.302.ai/doubao/images/generations',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer sk-img' },
+      body: {
+        type: 'json',
+        value: {
+          model: 'doubao-seedream-5-0-260128',
+          prompt: 'a heroine',
+          n: 1,
+          response_format: 'b64_json',
+          size: '1024x1792',
+          image: 'data:image/png;base64,AQEB',
+          image_url: 'data:image/png;base64,AQEB',
+          reference_images: ['data:image/png;base64,AQEB', 'data:image/png;base64,AgIC'],
+        },
+      },
+    })
+  })
+
+  it('302-image-nano-banana (gemini-image through the relay: both auth headers)', () => {
+    expect(
+      geminiImage.buildGenerateRequest(auth('gemini-2.5-flash-image', 'https://api.302.ai'), refs),
+    ).toEqual({
+      method: 'POST',
+      url: 'https://api.302.ai/v1beta/models/gemini-2.5-flash-image:generateContent',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer sk-img',
+        'x-goog-api-key': 'sk-img',
+      },
+      body: {
+        type: 'json',
+        value: {
+          contents: [
+            {
+              parts: [
+                { text: 'a heroine' },
+                { inline_data: { mime_type: 'image/png', data: 'AQEB' } },
+                { inline_data: { mime_type: 'image/png', data: 'AgIC' } },
+              ],
+            },
+          ],
+          generationConfig: {
+            responseModalities: ['IMAGE'],
+            imageConfig: { aspectRatio: '9:16' },
+          },
+        },
+      },
+    })
+  })
+
+  it('the default dialect (no imageStyle) changes nothing for the tested Seedream request', () => {
+    const withDialect = {
+      ...auth('doubao-seedream-5-0-260128', 'https://api.302.ai/doubao'),
+      dialect: { imageStyle: 'auto' as const },
+    }
+    expect(openaiImages.buildGenerateRequest(withDialect, refs)).toEqual(
+      openaiImages.buildGenerateRequest(
+        auth('doubao-seedream-5-0-260128', 'https://api.302.ai/doubao'),
+        refs,
+      ),
+    )
+  })
+})
+
+describe('openai-images: the style can be named, and prefixed model names are recognised', () => {
+  it('auto understands vendor prefixes', () => {
+    for (const [m, s] of [
+      ['openai/gpt-image-1', 'openai'],
+      ['openai/gpt-image-2.5-sunburst', 'openai'],
+      ['azure/openai/chatgpt-image-latest', 'openai'],
+      ['minimax/MiniMax-H3-Image', 'minimax'],
+      ['ByteDance/doubao-seedream-5-0-260128', 'compat'],
+      ['my-gpt-image-proxy', 'compat'],
+    ] as const) {
+      expect(openAiImageStyle(m), m).toBe(s)
+      expect(openAiImageStyle(m, 'auto'), m).toBe(s)
+    }
+  })
+
+  it('an explicit style wins over the name, both ways', () => {
+    expect(openAiImageStyle('gpt-image-1', 'compat')).toBe('compat')
+    expect(openAiImageStyle('openai/gpt-image-1', 'compat')).toBe('compat')
+    expect(openAiImageStyle('dall-e-3', 'openai')).toBe('openai')
+    expect(openAiImageStyle('some-model', 'minimax')).toBe('minimax')
+  })
+
+  it('a prefixed gpt-image name on auto sends no response_format; forcing compat brings the compat body back', () => {
+    const base = auth('openai/gpt-image-1', 'https://relay.example/v1')
+    const auto = json(openaiImages.buildGenerateRequest(base, input()))
+    expect(auto).not.toHaveProperty('response_format')
+    const forced = json(
+      openaiImages.buildGenerateRequest({ ...base, dialect: { imageStyle: 'compat' } }, input()),
+    )
+    expect(forced).toMatchObject({ response_format: 'b64_json', model: 'openai/gpt-image-1' })
+    // forcing compat also keeps references on the JSON /images/generations path (relays often lack /images/edits)
+    const spec = openaiImages.buildGenerateRequest(
+      { ...base, dialect: { imageStyle: 'compat' } },
+      input({ references: [ref(1)] }),
+    )
+    expect(spec.url).toBe('https://relay.example/v1/images/generations')
+    expect(spec.body?.type).toBe('json')
+    // auto + references = the official multipart edit call
+    const edit = openaiImages.buildGenerateRequest(base, input({ references: [ref(1)] }))
+    expect(edit.url).toBe('https://relay.example/v1/images/edits')
+    expect(edit.body?.type).toBe('form')
+  })
+
+  it('the per-style request timeout follows the chosen style too', () => {
+    expect(openaiImages.requestTimeoutMs!(auth('gpt-image-1', 'https://x'))).toBe(300_000)
+    expect(
+      openaiImages.requestTimeoutMs!({
+        ...auth('gpt-image-1', 'https://x'),
+        dialect: { imageStyle: 'compat' },
+      }),
+    ).toBeUndefined()
+  })
+})
+
+describe('a body that is not JSON fails the same way in every synchronous image protocol', () => {
+  const notJson: RawResponse = { status: 200, headers: {}, text: '<html>oops</html>' }
+  it.each([
+    ['openai-images', openaiImages, 'Image API 返回的不是 JSON'],
+    ['volcengine-images', volcengineImages, 'Image API 返回的不是 JSON'],
+    ['dashscope-image', dashscopeImage, '百炼返回的不是 JSON'],
+    ['siliconflow-images', siliconflowImages, '硅基流动返回的不是 JSON'],
+  ] as const)('%s', (_id, protocol, message) => {
+    expect(protocol.parseGenerateResponse(notJson)).toEqual({ status: 'failed', message })
+  })
+})

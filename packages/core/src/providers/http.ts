@@ -1,4 +1,10 @@
-import type { AuthContext, BinaryImage, HttpRequestSpec } from './types.ts'
+import type {
+  AuthContext,
+  BinaryImage,
+  GenerateParse,
+  HttpRequestSpec,
+  RawResponse,
+} from './types.ts'
 
 export function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`
@@ -103,4 +109,20 @@ export function bodyError(json: unknown): string | undefined {
         ? (str(asRecord(err)?.message) ?? '上游返回错误')
         : undefined
   return fromCode(obj) ?? fromCode(asRecord(obj.output)) ?? fromError
+}
+
+/**
+ * 同步生图协议共用：响应必须是 JSON 对象，不是就给出统一的失败结果（`<who>返回的不是 JSON`）。
+ * 用法：`const r = jsonObjectOrFail(raw, '百炼'); if (!r.ok) return r.result`。
+ */
+export function jsonObjectOrFail(
+  raw: RawResponse,
+  who: string,
+):
+  | { ok: true; json: Record<string, unknown> }
+  | { ok: false; result: Extract<GenerateParse, { status: 'failed' }> } {
+  const json = asRecord(raw.json)
+  return json
+    ? { ok: true, json }
+    : { ok: false, result: { status: 'failed', message: `${who}返回的不是 JSON` } }
 }

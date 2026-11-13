@@ -161,3 +161,39 @@ describe('connection test for the image protocols', () => {
     }
   })
 })
+
+describe('review fixes: preset texts', () => {
+  const by = (id: string) => PROVIDER_PRESETS.find((p) => p.id === id)!
+
+  it('the Gemini direct preset suggests the model its own note calls the official recommendation', () => {
+    const p = by('gemini-image-direct')
+    expect(p.suggestedModel).toBe('gemini-nano-banana-2.1')
+    for (const text of [
+      p.knownLimitations.join(' '),
+      p.i18n!.en!.knownLimitations.join(' '),
+      p.i18n!['zh-Hant']!.knownLimitations.join(' '),
+    ]) {
+      expect(text).toContain('gemini-nano-banana-2.1')
+    }
+    // and a profile exists for it
+    expect(
+      catalog.models.lookup({ protocol: 'gemini-image', model: p.suggestedModel }).declared,
+    ).toBe(true)
+  })
+
+  it('the Volcengine direct preset warns that an endpoint ID (ep-…) gets the default minimum size, in every language', () => {
+    const p = by('volcengine-seedream')
+    for (const text of [p.notes, p.i18n!.en!.notes, p.i18n!['zh-Hant']!.notes]) {
+      expect(text).toContain('ep-')
+    }
+  })
+
+  it('image styles are explained where the name rule matters (OpenAI and MiniMax presets)', () => {
+    for (const id of ['openai-gpt-image', 'minimax-h3-image']) {
+      const p = by(id)
+      expect(p.knownLimitations.join(' ')).toContain('生图风格')
+      expect(p.i18n!.en!.knownLimitations.join(' ')).toContain('image style')
+      expect(p.i18n!['zh-Hant']!.knownLimitations.join(' ')).toContain('生圖風格')
+    }
+  })
+})
