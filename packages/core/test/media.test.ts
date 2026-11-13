@@ -37,7 +37,15 @@ if (!located) {
     '[media tests] SKIPPED: ffmpeg not found on PATH. Install ffmpeg or set DRAMAI_FFMPEG to run them.',
   )
 }
-const realFfmpeg = describe.skipIf(!located)
+
+// Every test in a group declared with `realFfmpeg` starts real ffmpeg/ffprobe processes, which is slow where
+// processes are slow to start: on the Windows CI runner a three-clip composeSequence went past vitest's default
+// 5 s although the same test takes about 0.6 s on a developer laptop. 60 s leaves a 100x margin over the laptop
+// and matches the budget this file's beforeAll already gives five encodes. Only these groups get it: a pure-logic
+// test that hangs should still fail fast. A test that passes its own timeout (the 60 s and 120 s ones) keeps it.
+const REAL_FFMPEG_TEST_TIMEOUT_MS = 60_000
+const realFfmpeg = (name: string, fn: () => void) =>
+  describe.skipIf(!located)(name, { timeout: REAL_FFMPEG_TEST_TIMEOUT_MS }, fn)
 
 describe('ffmpeg output parsing (no binary needed)', () => {
   it('parses ffprobe JSON', () => {

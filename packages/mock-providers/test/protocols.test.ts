@@ -207,7 +207,9 @@ describe('the mock answers real protocols', () => {
     } finally {
       await rm(dir, { recursive: true, force: true, maxRetries: 8, retryDelay: 100 })
     }
-  })
+    // The mock renders the mp4 with real ffmpeg and this test probes it with ffprobe: slow where processes are slow to
+    // start (the Windows CI runner). 60 s is the budget the other real-ffmpeg tests in this package use.
+  }, 60_000)
 })
 
 describe('control plane', () => {

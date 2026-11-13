@@ -263,5 +263,6 @@ describe('pnpm demo with relative paths', () => {
     expect(out.code).toBe(1)
     expect(out.err.trim().split(/\r?\n/)).toHaveLength(1)
     expect(out.err).toContain('--lang')
-  })
+    // A real node child process, slow to start on the Windows CI runner; the sibling tests that start one get 60-90 s.
+  }, 30_000)
 })

@@ -36,7 +36,9 @@ describe('dev entry', () => {
     expect(lines[0]).toMatch(/^dramai: 无法启动：数据目录已被另一个 dramai 实例占用/)
     expect(r.stderr).not.toMatch(/\n\s+at /)
     expect(r.stdout).toBe('')
-  })
+    // A real node child process: slow to start on the Windows CI runner. 30 s sits above the 20 s the child itself is
+    // given (see runDev), so a child that hangs fails with its own output instead of a bare vitest timeout.
+  }, 30_000)
 })
 
 describe('system info', () => {
