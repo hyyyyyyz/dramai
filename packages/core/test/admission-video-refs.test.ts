@@ -411,6 +411,35 @@ describe('review fix 3: prices belong to a site (the CNY price list is the China
     expect(intl.priced).toBe(false)
   })
 
+  it('only the addresses that were checked against the official docs are judged; every other address stays unpriced', async () => {
+    const { providerRegionOf } = await import('../src/providers/presets.ts')
+    const region = (baseUrl: string) => providerRegionOf({ baseUrl })
+    // verified (see the list in presets.ts)
+    expect(region('https://ws1.cn-beijing.maas.aliyuncs.com')).toBe('cn')
+    expect(region('https://ws1.ap-southeast-1.maas.aliyuncs.com')).toBe('global')
+    expect(region('https://ark.cn-beijing.volces.com/api/v3')).toBe('cn')
+    expect(region('https://ark.ap-southeast.bytepluses.com/api/v3')).toBe('global')
+    expect(region('https://api-beijing.klingai.com')).toBe('cn')
+    expect(region('https://api-singapore.klingai.com')).toBe('global')
+    // never checked: no guessing from the shape of the name
+    for (const other of [
+      'https://ws1.cn-hongkong.maas.aliyuncs.com',
+      'https://ws1.us-east-1.maas.aliyuncs.com',
+      'https://ws1.eu-central-1.maas.aliyuncs.com',
+      'https://ws1.cn-shanghai.maas.aliyuncs.com',
+      'https://ark.cn-shanghai.volces.com',
+      'https://other.volces.com',
+      'https://x.bytepluses.com',
+      'https://api.klingai.com',
+      'https://my-proxy.example.cn',
+      'not a url',
+    ])
+      expect(region(other), other).toBeUndefined()
+    // and the estimate follows: a cn-hongkong workspace gets no CNY price
+    const hk = await estimateOf(wan({ baseUrl: 'https://ws1.cn-hongkong.maas.aliyuncs.com' }))
+    expect(hk.priced).toBe(false)
+  })
+
   it('a hand-made config is judged by its address when that is obvious, otherwise it stays unpriced', async () => {
     expect(await estimateOf(wan({}))).toMatchObject({ priced: true, currency: 'CNY' }) // cn-beijing host
     expect(

@@ -358,8 +358,24 @@ export function localizeProviderConfig(
 
 /**
  * 服务商所在的站点，用来挑价目（国内站的价格不能套到国际站上）。优先看预设自己写的地区；
- * 没有预设（用户自填）时只在地址一眼能看出来时判断，其余 `undefined`（带地区的价目就不用，如实"未定价"）。
+ * 没有预设（用户自填）时**只认官方文档里核对过的地址**，其余一律 `undefined`（带地区的价目就不用，如实“未定价”）。
+ * 不按域名的形状去猜：比如百炼的 `cn-hongkong`、美国 / 欧洲地域是否存在、价目算哪一边，都没有核对过。
+ * 已核对的（2026-11-13）：
+ * - `*.cn-beijing.maas.aliyuncs.com` → 国内：百炼“万相 3.0 视频生成 API 参考”页的北京地域端点；
+ * - `*.ap-southeast-1.maas.aliyuncs.com` → 国际：百炼 Qwen-Image 页（新加坡）；
+ * - `ark.cn-beijing.volces.com` → 国内：方舟“创建视频生成任务”页；
+ * - `ark.ap-southeast.bytepluses.com` → 国际：BytePlus ModelArk 人像素材指南页的示例代码；
+ * - `api-beijing.klingai.com` → 国内、`api-singapore.klingai.com` → 国际：可灵“接口鉴权”页（国内站 / 国际站各一页）。
  */
+const VERIFIED_HOSTS: ReadonlyArray<readonly [RegExp, 'cn' | 'global']> = [
+  [/^[^.]+\.cn-beijing\.maas\.aliyuncs\.com$/, 'cn'],
+  [/^[^.]+\.ap-southeast-1\.maas\.aliyuncs\.com$/, 'global'],
+  [/^ark\.cn-beijing\.volces\.com$/, 'cn'],
+  [/^ark\.ap-southeast\.bytepluses\.com$/, 'global'],
+  [/^api-beijing\.klingai\.com$/, 'cn'],
+  [/^api-singapore\.klingai\.com$/, 'global'],
+]
+
 export function providerRegionOf(
   config: Pick<ProviderConfig, 'presetId' | 'baseUrl'>,
 ): 'cn' | 'global' | undefined {
@@ -367,18 +383,11 @@ export function providerRegionOf(
     ? PROVIDER_PRESETS.find((p) => p.id === config.presetId)
     : undefined
   if (preset?.region === 'cn' || preset?.region === 'global') return preset.region
-  let parsed: URL
+  let host: string
   try {
-    parsed = new URL(config.baseUrl)
+    host = new URL(config.baseUrl).hostname.toLowerCase()
   } catch {
     return undefined
   }
-  const host = parsed.hostname.toLowerCase()
-  if (/\.maas\.aliyuncs\.com$/.test(host))
-    return /\.cn-[a-z0-9-]+\.maas\./.test(host) ? 'cn' : 'global'
-  if (host.endsWith('.volces.com')) return 'cn'
-  if (host.endsWith('.bytepluses.com')) return 'global'
-  if (host === 'api-beijing.klingai.com') return 'cn'
-  if (host === 'api-singapore.klingai.com') return 'global'
-  return undefined
+  return VERIFIED_HOSTS.find(([re]) => re.test(host))?.[1]
 }
