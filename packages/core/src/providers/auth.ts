@@ -1,5 +1,5 @@
 import { ProviderError } from './errors.ts'
-import type { LoginChannelId, ProviderAuth, ProviderConfig } from './types.ts'
+import type { LoginChannelId, ProtocolId, ProviderAuth, ProviderConfig } from './types.ts'
 import { LOGIN_CHANNELS } from './types.ts'
 
 /**
@@ -17,6 +17,59 @@ export function effectiveAuth(config: Pick<ProviderConfig, 'auth' | 'secretRef'>
 
 export const isLoginChannel = (value: string): value is LoginChannelId =>
   (LOGIN_CHANNELS as readonly string[]).includes(value)
+
+/**
+ * 登录通道只能把令牌发到官方的公开接口：地址和协议是钉死的。这让"只调公开接口"成为代码保证——
+ * 不管配置里存了什么（创建、修改、旧数据），令牌都不会作为 Bearer 发到别处。
+ */
+export const LOGIN_CHANNEL_ENDPOINTS: Record<
+  LoginChannelId,
+  { baseUrl: string; protocol: ProtocolId }
+> = {
+  'openai-chatgpt': { baseUrl: 'https://api.openai.com/v1', protocol: 'openai-responses' },
+}
+
+/** 地址是不是这个通道允许的那一个（规范化后比较：https、主机、路径；不接受用户信息、端口、查询串）。 */
+export function isAllowedLoginBaseUrl(channel: LoginChannelId, baseUrl: string): boolean {
+  try {
+    const url = new URL(baseUrl.trim())
+    const allowed = new URL(LOGIN_CHANNEL_ENDPOINTS[channel].baseUrl)
+    return (
+      url.protocol === allowed.protocol &&
+      url.hostname.toLowerCase() === allowed.hostname &&
+      url.port === '' &&
+      url.username === '' &&
+      url.password === '' &&
+      url.search === '' &&
+      url.hash === '' &&
+      url.pathname.replace(/\/+$/, '') === allowed.pathname.replace(/\/+$/, '')
+    )
+  } catch {
+    return false
+  }
+}
+
+/** 登录方式的服务商配置哪里不合规（接口地址或协议不是通道指定的）；合规返回 undefined。 */
+export function loginEndpointProblem(
+  channel: LoginChannelId,
+  config: Pick<ProviderConfig, 'baseUrl' | 'protocol'>,
+): string | undefined {
+  const fixed = LOGIN_CHANNEL_ENDPOINTS[channel]
+  if (config.protocol !== fixed.protocol) {
+    return `账号登录只能用于 ${fixed.protocol} 协议`
+  }
+  if (!isAllowedLoginBaseUrl(channel, config.baseUrl)) {
+    return `账号登录的接口地址固定为 ${fixed.baseUrl}，令牌不会发到别的地址`
+  }
+  return undefined
+}
+
+/** 发请求前的最后一道核对（也保护已经存下来的数据）。 */
+export function assertLoginEndpoint(channel: LoginChannelId, config: ProviderConfig): void {
+  const problem = loginEndpointProblem(channel, config)
+  if (problem)
+    throw new ProviderError('capability', problem, { code: 'LOGIN_ENDPOINT_NOT_ALLOWED' })
+}
 
 export interface ResolvedCredential {
   method: ProviderAuth['type']
@@ -75,6 +128,7 @@ export function createCredentialResolver(deps: CredentialResolverDeps): Credenti
           `这个服务商用账号登录，但登录通道 ${auth.channel} 不可用`,
         )
       }
+      assertLoginEndpoint(auth.channel, config)
       return {
         method: 'account_login',
         channel: auth.channel,

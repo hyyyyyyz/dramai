@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import type { SecretStore } from '../../ports/index.ts'
-import { LoginRequiredError } from '../auth.ts'
+import { assertLoginEndpoint, LoginRequiredError } from '../auth.ts'
 import type { LoginChannel } from '../auth.ts'
 import { ProviderError } from '../errors.ts'
 import type { ProviderConfig } from '../types.ts'
@@ -58,6 +58,7 @@ export type OpenAiLoginErrorCode =
   | 'account_mismatch'
   | 'timeout'
   | 'cancelled'
+  | 'refresh_rejected'
 
 export class OpenAiLoginError extends Error {
   readonly code: OpenAiLoginErrorCode
@@ -78,7 +79,6 @@ export interface LoginRecord {
   issuer: string
   subject: string
   email?: string
-  idToken?: string
   accessToken?: string
   refreshToken?: string
   tokenType?: string
@@ -158,7 +158,6 @@ function withoutTokens(rec: LoginRecord): LoginRecord {
   const copy = { ...rec }
   delete copy.accessToken
   delete copy.refreshToken
-  delete copy.idToken
   delete copy.expiresAt
   return copy
 }
@@ -184,6 +183,7 @@ export class OpenAiLogin implements LoginChannel {
   private readonly lastError = new Map<string, NonNullable<LoginStatus['lastError']>>()
   private readonly refreshing = new Map<string, Promise<string>>()
   private jwks: { keys: Jwk[]; at: number } | undefined
+  private disco: { value: { jwksUrl: string; revokeUrl: string }; at: number } | undefined
 
   constructor(deps: OpenAiLoginDeps) {
     this.d = deps
@@ -257,7 +257,7 @@ export class OpenAiLogin implements LoginChannel {
       expiresAt: this.now() + timeoutMs,
       settled: false,
       timer: setTimeout(
-        () => this.fail(providerId, new OpenAiLoginError('timeout', '登录超时，请重新发起')),
+        () => this.fail(p, new OpenAiLoginError('timeout', '登录超时，请重新发起')),
         timeoutMs,
       ),
     }
@@ -305,9 +305,11 @@ export class OpenAiLogin implements LoginChannel {
     if (this.pending.get(p.providerId) === p) this.pending.delete(p.providerId)
   }
 
-  private fail(providerId: string, err: OpenAiLoginError): void {
-    const p = this.pending.get(providerId)
-    if (p) this.settle(p)
+  private fail(p: PendingLogin, err: OpenAiLoginError): void {
+    // 只结束"这一次"登录：用户可能已经发起了新的一次
+    if (p.settled) return
+    this.settle(p)
+    const providerId = p.providerId
     this.lastError.set(providerId, {
       code: err.code,
       message: err.message,
@@ -352,6 +354,12 @@ export class OpenAiLogin implements LoginChannel {
   ): Promise<{ ok: boolean; error?: OpenAiLoginErrorCode }> {
     const p = this.pending.get(providerId)
     if (!p || p.settled) return { ok: false, error: 'cancelled' }
+    // state 不符的请求不是这次登录的回调（登录期间浏览器里任何网页都能向回环地址发 GET）：
+    // 只拒绝这一个请求，不结束登录，继续等真正的回调或超时。
+    if (params.get('state') !== p.state) {
+      this.log({ event: 'login.callback_ignored', providerId, code: 'state_mismatch' })
+      return { ok: false, error: 'state_mismatch' }
+    }
     try {
       await this.complete(p, secretRef, params)
       this.settle(p)
@@ -359,11 +367,13 @@ export class OpenAiLogin implements LoginChannel {
       this.log({ event: 'login.completed', providerId })
       return { ok: true }
     } catch (err) {
+      // 换令牌的请求还在途中时登录被取消 / 超时了：这次登录已经结束，不记为失败
+      if (p.settled) return { ok: false, error: 'cancelled' }
       const e =
         err instanceof OpenAiLoginError
           ? err
           : new OpenAiLoginError('exchange_failed', '登录没有完成，请重试', { cause: err })
-      this.fail(providerId, e)
+      this.fail(p, e)
       return { ok: false, error: e.code }
     }
   }
@@ -437,6 +447,9 @@ export class OpenAiLogin implements LoginChannel {
     const scopes = typeof t.scope === 'string' ? t.scope.split(/\s+/).filter(Boolean) : []
     const planUsage = scopes.includes(OPENAI_LOGIN.planScope)
 
+    // 换令牌期间用户取消了、或登录超时了：不保存任何凭据
+    if (p.settled) throw new OpenAiLoginError('cancelled', '登录已取消')
+
     const hostId = p.existing?.hostId ?? (await this.hostId())
     const rec: LoginRecord = {
       v: 1,
@@ -446,7 +459,6 @@ export class OpenAiLogin implements LoginChannel {
       issuer: id.iss,
       subject: id.sub,
       email: id.email,
-      idToken: t.id_token,
       accessToken: t.access_token,
       refreshToken: typeof t.refresh_token === 'string' ? t.refresh_token : undefined,
       tokenType: typeof t.token_type === 'string' ? t.token_type : 'Bearer',
@@ -458,17 +470,56 @@ export class OpenAiLogin implements LoginChannel {
       savedAt: new Date(this.now()).toISOString(),
     }
     // 换了账号（重新注册）：先尽力撤销旧的刷新令牌，再替换
+    if (p.settled) throw new OpenAiLoginError('cancelled', '登录已取消')
     if (p.existing && p.registration && p.existing.refreshToken) {
       await this.revoke(p.existing).catch(() => {})
     }
+    if (p.settled) throw new OpenAiLoginError('cancelled', '登录已取消')
     await this.save(secretRef, rec)
   }
 
   // === ID token ===
 
+  /**
+   * 发现文档（缓存 1 小时）：JWKS 地址和撤销端点从这里取，签发方必须和已知的一致、地址必须是同一来源下的 https。
+   * 取不到或不合规就用文档里写明的固定地址回退。
+   */
+  private async discovery(): Promise<{ jwksUrl: string; revokeUrl: string }> {
+    if (this.disco && this.now() - this.disco.at < 60 * 60_000) return this.disco.value
+    const value: { jwksUrl: string; revokeUrl: string } = {
+      jwksUrl: OPENAI_LOGIN.jwksUrl,
+      revokeUrl: OPENAI_LOGIN.revokeUrl,
+    }
+    try {
+      const res = await this.doFetch(OPENAI_LOGIN.discoveryUrl)
+      if (res.ok) {
+        const doc = (await res.json()) as {
+          issuer?: string
+          jwks_uri?: string
+          revocation_endpoint?: string
+        }
+        const trusted = (url: string | undefined): string | undefined => {
+          if (!url || doc.issuer !== OPENAI_LOGIN.issuer) return undefined
+          try {
+            const u = new URL(url)
+            return u.protocol === 'https:' && u.origin === OPENAI_LOGIN.issuer ? url : undefined
+          } catch {
+            return undefined
+          }
+        }
+        value.jwksUrl = trusted(doc.jwks_uri) ?? value.jwksUrl
+        value.revokeUrl = trusted(doc.revocation_endpoint) ?? value.revokeUrl
+      }
+    } catch {
+      /* fall back to the documented addresses */
+    }
+    this.disco = { value, at: this.now() }
+    return value
+  }
+
   private async keys(refetch = false): Promise<Jwk[]> {
     if (!refetch && this.jwks && this.now() - this.jwks.at < 60 * 60_000) return this.jwks.keys
-    const res = await this.doFetch(OPENAI_LOGIN.jwksUrl)
+    const res = await this.doFetch((await this.discovery()).jwksUrl)
     if (!res.ok) throw new OpenAiLoginError('bad_signature', '取不到 OpenAI 的签名公钥（JWKS）')
     const body = (await res.json()) as { keys?: Jwk[] }
     this.jwks = { keys: body.keys ?? [], at: this.now() }
@@ -569,6 +620,8 @@ export class OpenAiLogin implements LoginChannel {
    * 并标记需要重新登录；网络错误 / 5xx 只是普通错误，凭据保留（文档：临时故障不要删凭据）。
    */
   async accessToken(config: ProviderConfig): Promise<string> {
+    // 令牌只发到官方的公开接口：这里再核对一次，保护已经存下来的配置
+    assertLoginEndpoint('openai-chatgpt', config)
     const ref = config.secretRef
     const rec = ref ? await this.load(ref) : undefined
     if (!ref || !rec || !rec.accessToken || !rec.refreshToken) {
@@ -589,12 +642,12 @@ export class OpenAiLogin implements LoginChannel {
     if (rec.expiresAt !== undefined && rec.expiresAt - this.now() > margin) return rec.accessToken
     const inflight = this.refreshing.get(ref)
     if (inflight) return inflight
-    const run = this.refresh(ref).finally(() => this.refreshing.delete(ref))
+    const run = this.refresh(ref, config.id).finally(() => this.refreshing.delete(ref))
     this.refreshing.set(ref, run)
     return run
   }
 
-  private async refresh(ref: string): Promise<string> {
+  private async refresh(ref: string, providerId: string): Promise<string> {
     const rec = await this.load(ref)
     if (!rec?.refreshToken) {
       throw new LoginRequiredError('openai-chatgpt', 'not_signed_in', '还没有登录 OpenAI 账号')
@@ -619,11 +672,26 @@ export class OpenAiLogin implements LoginChannel {
           },
         )
       }
-      if (r.error === 'invalid_client') {
-        throw new ProviderError('http', 'OpenAI 登录的客户端配置无效，请重新登录', {
-          status: r.status,
-          code: 'LOGIN_INVALID_CLIENT',
+      // 官方 errors-and-recovery 页：invalid_client 是客户端配置问题；不在"刷新令牌不可用"列表里的拒绝没有写处理办法。
+      // 这两种都不清凭据（也许只是暂时的），但如实提示"可以尝试重新登录"，并让登录状态带上这条提示。
+      const rejected = (code: string, message: string): ProviderError => {
+        this.lastError.set(providerId, {
+          code: 'refresh_rejected',
+          message,
+          at: new Date(this.now()).toISOString(),
         })
+        this.log({
+          event: 'login.refresh_rejected',
+          providerId,
+          code: r.error ?? `http_${r.status}`,
+        })
+        return new ProviderError('http', message, { status: r.status, code })
+      }
+      if (r.error === 'invalid_client') {
+        throw rejected(
+          'LOGIN_INVALID_CLIENT',
+          'OpenAI 登录的客户端配置被拒绝（invalid_client），可以尝试重新登录',
+        )
       }
       if (r.error && TERMINAL_REFRESH_ERRORS.has(r.error)) {
         // 刷新令牌不可用：清掉令牌，保留注册和账号用于重新授权
@@ -640,10 +708,10 @@ export class OpenAiLogin implements LoginChannel {
           '登录已失效，需要重新登录 OpenAI 账号',
         )
       }
-      throw new ProviderError('http', `刷新登录令牌被拒绝：${r.error ?? `HTTP ${r.status}`}`, {
-        status: r.status,
-        code: 'LOGIN_REFRESH_REJECTED',
-      })
+      throw rejected(
+        'LOGIN_REFRESH_REJECTED',
+        `刷新登录令牌被拒绝（${r.error ?? `HTTP ${r.status}`}），可以尝试重新登录`,
+      )
     }
     const t = r.body
     if (typeof t.access_token !== 'string') {
@@ -668,6 +736,7 @@ export class OpenAiLogin implements LoginChannel {
       savedAt: new Date(this.now()).toISOString(),
     }
     await this.save(ref, next)
+    this.lastError.delete(providerId)
     return next.accessToken!
   }
 
@@ -699,30 +768,9 @@ export class OpenAiLogin implements LoginChannel {
     return { revoked }
   }
 
-  private async revokeEndpoint(): Promise<string> {
-    try {
-      const res = await this.doFetch(OPENAI_LOGIN.discoveryUrl)
-      if (res.ok) {
-        const doc = (await res.json()) as { issuer?: string; revocation_endpoint?: string }
-        const url = doc.revocation_endpoint
-        // 只信任同一个签发方来源下的地址
-        if (
-          url &&
-          doc.issuer === OPENAI_LOGIN.issuer &&
-          new URL(url).origin === OPENAI_LOGIN.issuer
-        ) {
-          return url
-        }
-      }
-    } catch {
-      /* fall back to the documented one */
-    }
-    return OPENAI_LOGIN.revokeUrl
-  }
-
   /** POST 到撤销端点；返回 true = 收到 200（包括令牌本来就无效）。 */
   private async revoke(rec: LoginRecord): Promise<boolean> {
-    const url = await this.revokeEndpoint()
+    const url = (await this.discovery()).revokeUrl
     const sleep = this.d.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
     for (let attempt = 0; attempt < 3; attempt++) {
       try {

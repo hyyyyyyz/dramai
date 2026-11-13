@@ -720,6 +720,7 @@ export const loginErrorCode = z.enum([
   'account_mismatch',
   'timeout',
   'cancelled',
+  'refresh_rejected',
 ])
 /**
  * 账号登录的状态。**没有任何令牌**：只有登录与否、账号的显示标识（邮箱）、到期时间。

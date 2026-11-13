@@ -1,6 +1,10 @@
 import { createHash, createSign, generateKeyPairSync } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { LoginRequiredError } from '../src/providers/auth.ts'
+import {
+  assertLoginEndpoint,
+  isAllowedLoginBaseUrl,
+  LoginRequiredError,
+} from '../src/providers/auth.ts'
 import { ProviderError } from '../src/providers/errors.ts'
 import { OPENAI_LOGIN, OpenAiLogin } from '../src/providers/login/openai-chatgpt.ts'
 import type {
@@ -34,6 +38,11 @@ interface World {
   tokenReply: (form: URLSearchParams) => { status?: number; body: Record<string, unknown> }
   revokeStatus: number[]
   fetchLog: string[]
+  /** hold the token endpoint until this resolves */
+  tokenGate?: Promise<void>
+  discoveryDoc?: Record<string, unknown>
+  discoveryDown?: boolean
+  jwksPaths: string[]
 }
 
 function idToken(
@@ -68,6 +77,7 @@ function setup(options: { loginTimeoutMs?: number } = {}) {
     tokenReply: () => ({ body: {} }),
     revokeStatus: [],
     fetchLog: [],
+    jwksPaths: [],
   }
   const fetchFn = async (url: string, init?: RequestInit): Promise<Response> => {
     world.fetchLog.push(url)
@@ -76,8 +86,13 @@ function setup(options: { loginTimeoutMs?: number } = {}) {
         status,
         headers: { 'Content-Type': 'application/json' },
       })
-    if (url === OPENAI_LOGIN.jwksUrl) return json({ keys: [KEY.jwk] })
+    if (url.endsWith('jwks.json') || url.endsWith('/keys')) {
+      world.jwksPaths.push(url)
+      return json({ keys: [KEY.jwk] })
+    }
     if (url === OPENAI_LOGIN.discoveryUrl) {
+      if (world.discoveryDown) throw new Error('network down')
+      if (world.discoveryDoc) return json(world.discoveryDoc)
       return json({
         issuer: OPENAI_LOGIN.issuer,
         revocation_endpoint: OPENAI_LOGIN.revokeUrl,
@@ -87,6 +102,7 @@ function setup(options: { loginTimeoutMs?: number } = {}) {
     if (url === OPENAI_LOGIN.tokenUrl) {
       const form = new URLSearchParams(String(init?.body))
       world.tokenRequests.push(form)
+      if (world.tokenGate) await world.tokenGate
       const r = world.tokenReply(form)
       return json(r.body, r.status ?? 200)
     }
@@ -257,6 +273,8 @@ describe('OpenAI login: callback and token exchange', () => {
       planUsage: true,
     })
     expect(record.hostId).toMatch(/^urn:uuid:/)
+    expect(record).not.toHaveProperty('idToken') // the ID token is verified, then not kept
+    expect(t.store.get('provider:prov_1')).not.toContain('eyJ')
     for (const secret of ['ACCESS-1', 'REFRESH-1'])
       expect(JSON.stringify(status)).not.toContain(secret)
     expect(await t.login.accessToken(t.config)).toBe('ACCESS-1')
@@ -270,21 +288,9 @@ describe('OpenAI login: callback and token exchange', () => {
     exchanged: boolean
   }> = [
     {
-      name: 'state does not match',
-      code: 'state_mismatch',
-      params: () => ({ code: 'C', state: 'WRONG', client_id: CLIENT }),
-      exchanged: false,
-    },
-    {
       name: 'user denies consent',
       code: 'user_denied',
       params: (q) => ({ error: 'access_denied', state: q.get('state')! }),
-      exchanged: false,
-    },
-    {
-      name: 'user denies but state is wrong: state wins',
-      code: 'state_mismatch',
-      params: () => ({ error: 'access_denied', state: 'WRONG' }),
       exchanged: false,
     },
     {
@@ -423,6 +429,162 @@ describe('OpenAI login: callback and token exchange', () => {
     expect(status.state).toBe('signed_out')
     expect(status.lastError?.code).toBe('timeout')
     expect(t.listeners[0]!.closed).toBe(true)
+  })
+})
+
+describe('OpenAI login: a request that is not the real callback cannot end the login', () => {
+  it('a callback with the wrong state is refused with 400 only: the login keeps waiting, and the real callback still succeeds', async () => {
+    const t = setup()
+    const { q } = await begin(t)
+    expect(await t.callback({ code: 'FORGED', state: 'FORGED-STATE', client_id: CLIENT })).toEqual({
+      ok: false,
+      error: 'state_mismatch',
+    })
+    expect(await t.callback({ error: 'access_denied', state: 'FORGED-STATE' })).toEqual({
+      ok: false,
+      error: 'state_mismatch',
+    })
+    // nothing was exchanged, nothing ended
+    expect(t.world.tokenRequests).toHaveLength(0)
+    expect(t.listeners[0]!.closed).toBe(false)
+    const waiting = await t.login.status('prov_1', 'provider:prov_1')
+    expect(waiting.state).toBe('pending')
+    expect(waiting.lastError).toBeUndefined()
+    expect(t.events.some((e) => e.event === 'login.callback_ignored')).toBe(true)
+    // the real callback arrives afterwards
+    withNonce(t, q)
+    expect(await t.callback({ code: 'CODE', state: q.get('state')!, client_id: CLIENT })).toEqual({
+      ok: true,
+    })
+    expect((await t.login.status('prov_1', 'provider:prov_1')).state).toBe('signed_in')
+    expect(t.listeners[0]!.closed).toBe(true)
+  })
+
+  it('cancelling (or timing out) while the code exchange is in flight saves no credentials', async () => {
+    for (const how of ['cancel', 'timeout'] as const) {
+      const t = setup({ loginTimeoutMs: how === 'timeout' ? 30 : undefined })
+      const { q } = await begin(t)
+      withNonce(t, q)
+      let release!: () => void
+      t.world.tokenGate = new Promise<void>((r) => (release = r))
+      const pending = t.callback({ code: 'CODE', state: q.get('state')!, client_id: CLIENT })
+      await new Promise((r) => setTimeout(r, 5))
+      expect(t.world.tokenRequests).toHaveLength(1) // the exchange has started
+      if (how === 'cancel') t.login.cancel('prov_1')
+      else await new Promise((r) => setTimeout(r, 60))
+      release()
+      expect(await pending, how).toEqual({ ok: false, error: 'cancelled' })
+      expect(t.store.has('provider:prov_1'), how).toBe(false)
+      const status = await t.login.status('prov_1', 'provider:prov_1')
+      expect(status.state, how).toBe('signed_out')
+      // a cancelled attempt is not reported as an error; a timeout is
+      expect(status.lastError?.code, how).toBe(how === 'timeout' ? 'timeout' : undefined)
+    }
+  })
+
+  it('a stale attempt cannot end a newer one', async () => {
+    const t = setup()
+    const first = await begin(t)
+    withNonce(t, first.q)
+    let release!: () => void
+    t.world.tokenGate = new Promise<void>((r) => (release = r))
+    const stale = t.callback({ code: 'CODE', state: first.q.get('state')!, client_id: CLIENT })
+    await new Promise((r) => setTimeout(r, 5))
+    const second = await begin(t) // the user clicked again; this cancels the first
+    release()
+    expect(await stale).toEqual({ ok: false, error: 'cancelled' })
+    const status = await t.login.status('prov_1', 'provider:prov_1')
+    expect(status.state).toBe('pending') // the new attempt is untouched
+    expect(t.listeners[1]!.closed).toBe(false)
+    expect(second.q.get('state')).not.toBe(first.q.get('state'))
+  })
+})
+
+describe('OpenAI login: signing keys come from the discovery document', () => {
+  it('uses the jwks_uri it advertises (same origin, https), caching the document', async () => {
+    const t = setup()
+    t.world.discoveryDoc = {
+      issuer: OPENAI_LOGIN.issuer,
+      jwks_uri: 'https://auth.openai.com/rotated/keys',
+      revocation_endpoint: OPENAI_LOGIN.revokeUrl,
+    }
+    await signIn(t)
+    expect(t.world.jwksPaths).toEqual(['https://auth.openai.com/rotated/keys'])
+  })
+
+  it('falls back to the documented address when the document is untrustworthy: other issuer, http, another origin, unreachable', async () => {
+    const bad: Array<Record<string, unknown> | 'down'> = [
+      { issuer: 'https://evil.example', jwks_uri: 'https://auth.openai.com/rotated/keys' },
+      { issuer: OPENAI_LOGIN.issuer, jwks_uri: 'http://auth.openai.com/rotated/keys' },
+      { issuer: OPENAI_LOGIN.issuer, jwks_uri: 'https://evil.example/keys' },
+      { issuer: OPENAI_LOGIN.issuer, jwks_uri: 'not a url' },
+      { issuer: OPENAI_LOGIN.issuer },
+      'down',
+    ]
+    for (const doc of bad) {
+      const t = setup()
+      if (doc === 'down') t.world.discoveryDown = true
+      else t.world.discoveryDoc = doc
+      await signIn(t)
+      expect(t.world.jwksPaths, JSON.stringify(doc)).toEqual([OPENAI_LOGIN.jwksUrl])
+    }
+  })
+})
+
+describe('OpenAI login: the access token only ever goes to the public API', () => {
+  const login = { type: 'account_login' as const, channel: 'openai-chatgpt' as const }
+  const cfg = (extra: Partial<ProviderConfig> = {}): ProviderConfig => ({
+    ...setup().config,
+    auth: login,
+    ...extra,
+  })
+
+  it('accepts exactly https://api.openai.com/v1 (normalized) with the responses protocol', () => {
+    for (const ok of [
+      'https://api.openai.com/v1',
+      'https://api.openai.com/v1/',
+      'HTTPS://API.OPENAI.COM/v1',
+      ' https://api.openai.com/v1 ',
+    ]) {
+      expect(isAllowedLoginBaseUrl('openai-chatgpt', ok), ok).toBe(true)
+    }
+    for (const bad of [
+      'http://api.openai.com/v1',
+      'https://api.openai.com',
+      'https://api.openai.com/v2',
+      'https://api.openai.com/v1/evil',
+      'https://api.openai.com.evil.example/v1',
+      'https://evil.example/https://api.openai.com/v1',
+      'https://user:pw@api.openai.com/v1',
+      'https://api.openai.com@evil.example/v1',
+      'https://api.openai.com:8443/v1',
+      'https://api.openai.com/v1?x=1',
+      'https://api.openai.com/v1#x',
+      'https://127.0.0.1:8788',
+      'https://api.deepseek.com',
+      '',
+      'not a url',
+    ]) {
+      expect(isAllowedLoginBaseUrl('openai-chatgpt', bad), bad).toBe(false)
+    }
+  })
+
+  it('a stored provider that points anywhere else never gets a token: nothing is read, refreshed or sent', async () => {
+    const t = setup()
+    await signIn(t)
+    const before = t.world.tokenRequests.length
+    for (const evil of [
+      { baseUrl: 'https://evil.example/v1' },
+      { baseUrl: 'http://127.0.0.1:9/v1' },
+      { protocol: 'openai-chat' as const },
+    ]) {
+      const config = { ...t.config, ...evil }
+      const err = await t.login.accessToken(config).catch((e: unknown) => e)
+      expect((err as ProviderError).code, JSON.stringify(evil)).toBe('LOGIN_ENDPOINT_NOT_ALLOWED')
+      expect(() => assertLoginEndpoint('openai-chatgpt', config)).toThrow()
+    }
+    expect(t.world.tokenRequests).toHaveLength(before)
+    expect(cfg().baseUrl).toBe(OPENAI_LOGIN.resource) // the test fixture itself is valid
   })
 })
 
@@ -566,7 +728,39 @@ describe('OpenAI login: refresh', () => {
     t.world.tokenReply = () => ({ status: 401, body: { error: 'invalid_client' } })
     const err = await t.login.accessToken(t.config).catch((e: unknown) => e)
     expect((err as ProviderError).code).toBe('LOGIN_INVALID_CLIENT')
+    expect((err as ProviderError).message).toContain('重新登录')
     expect(JSON.parse(t.store.get('provider:prov_1')!).refreshToken).toBe('REFRESH-1')
+    expect((await t.login.status('prov_1', 'provider:prov_1')).lastError?.code).toBe(
+      'refresh_rejected',
+    )
+  })
+
+  it('a refusal that is neither temporary nor in the documented list keeps the credentials, but says plainly that signing in again may help, in the error and in the status', async () => {
+    const t = setup()
+    await signIn(t)
+    t.world.now = T0 + 3600_000
+    t.world.tokenReply = () => ({ status: 400, body: { error: 'some_new_error' } })
+    const err = await t.login.accessToken(t.config).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ProviderError)
+    expect(err).not.toBeInstanceOf(LoginRequiredError)
+    expect((err as ProviderError).code).toBe('LOGIN_REFRESH_REJECTED')
+    expect((err as ProviderError).message).toContain('可以尝试重新登录')
+    expect(JSON.parse(t.store.get('provider:prov_1')!).refreshToken).toBe('REFRESH-1') // not wiped
+    const status = await t.login.status('prov_1', 'provider:prov_1')
+    expect(status.state).toBe('signed_in')
+    expect(status.lastError).toMatchObject({ code: 'refresh_rejected' })
+    expect(status.lastError!.message).toContain('可以尝试重新登录')
+    // a later success clears the hint
+    t.world.tokenReply = () => ({
+      body: {
+        access_token: 'ACCESS-OK',
+        refresh_token: 'REFRESH-OK',
+        expires_in: 3600,
+        scope: OPENAI_LOGIN.scope,
+      },
+    })
+    expect(await t.login.accessToken(t.config)).toBe('ACCESS-OK')
+    expect((await t.login.status('prov_1', 'provider:prov_1')).lastError).toBeUndefined()
   })
 
   it('never signed in: login required (not_signed_in)', async () => {

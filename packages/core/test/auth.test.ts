@@ -68,8 +68,16 @@ describe('credential resolution', () => {
     })
     const config = cfg({
       protocol: 'openai-responses',
+      baseUrl: 'https://api.openai.com/v1',
       auth: { type: 'account_login', channel: 'openai-chatgpt' },
     })
+    // the pinned endpoint: the same provider pointed anywhere else gets no token at all
+    const elsewhere = { ...config, baseUrl: 'https://api.example.com/v1' }
+    const refused = await authFor({ secrets: secrets({}), credentials }, elsewhere).catch(
+      (e: unknown) => e,
+    )
+    expect((refused as ProviderError).code).toBe('LOGIN_ENDPOINT_NOT_ALLOWED')
+    expect(calls).toEqual([])
     expect(await authFor({ secrets: secrets({}), credentials }, config)).toMatchObject({
       apiKey: 'access-token-1',
       method: 'account_login',

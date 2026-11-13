@@ -153,15 +153,18 @@ describe('old data keeps working: providers without an auth field', () => {
       await h2.client.call('providers.test', { params: { providerId: 'old_local' } }),
     ).toMatchObject({ outcome: 'ok' })
     expect(upstream.map((u) => u.auth)).toEqual(['Bearer sk-old-key-1234567890', undefined])
-    // setting a key on the keyless one makes it api_key; clearing it makes it none
+    // setting a key on the keyless one makes it api_key
     const set = await h2.client.call('providers.setKey', {
       params: { providerId: 'old_local' },
       body: { apiKey: 'sk-new-key-abcdefghij' },
     })
     expect(set.auth).toEqual({ type: 'api_key' })
-    expect(
-      (await h2.client.call('providers.clearKey', { params: { providerId: 'old_local' } })).auth,
-    ).toEqual({ type: 'none' })
+    // clearing a key leaves "API key, key missing", never "no authentication" (only an explicit choice gives none)
+    for (const id of ['old_local', 'old_keyed']) {
+      const cleared = await h2.client.call('providers.clearKey', { params: { providerId: id } })
+      expect(cleared).toMatchObject({ auth: { type: 'api_key' }, hasKey: false })
+      expect(cleared.keyMask).toBeUndefined()
+    }
   })
 })
 
@@ -292,30 +295,32 @@ describe('login providers: the whole flow over a real loopback listener (fake Op
     )
   })
 
-  it('callback failures: wrong state is refused with a 400 page and nothing is saved; the user can retry', async () => {
+  it('a request with the wrong state (any web page can send one to 127.0.0.1) is refused with 400 and does not end the login; the real callback then succeeds', async () => {
     const b = await boot()
     const p = await createLoginProvider(b)
-    const { started } = await startLogin(b, p.id)
-    const res = await browserCallback(b, started.redirectUri, {
+    const { started, q } = await startLogin(b, p.id)
+    const forged = await browserCallback(b, started.redirectUri, {
       code: 'C',
       state: 'FORGED',
       client_id: CLIENT_ID,
     })
-    expect(res.status).toBe(400)
-    const status = await b.h.client.call('providers.login.status', { params: { providerId: p.id } })
-    expect(status).toMatchObject({ state: 'signed_out', lastError: { code: 'state_mismatch' } })
+    expect(forged.status).toBe(400)
+    const waiting = await b.h.client.call('providers.login.status', {
+      params: { providerId: p.id },
+    })
+    expect(waiting.state).toBe('pending')
+    expect(waiting.lastError).toBeUndefined()
     expect(b.openai.requests.some((r) => r.url.includes('/oauth/token'))).toBe(false)
-    // retry works
-    const again = await startLogin(b, p.id)
+    // the listener is still there and the genuine callback completes the sign-in
+    const real = await browserCallback(b, started.redirectUri, {
+      code: 'C',
+      state: q.get('state')!,
+      client_id: CLIENT_ID,
+    })
+    expect(real.status).toBe(200)
     expect(
-      (
-        await browserCallback(b, again.started.redirectUri, {
-          code: 'C',
-          state: again.q.get('state')!,
-          client_id: CLIENT_ID,
-        })
-      ).status,
-    ).toBe(200)
+      (await b.h.client.call('providers.login.status', { params: { providerId: p.id } })).state,
+    ).toBe('signed_in')
   })
 
   it('the user denies: no code exchange, a clear error; cancel closes the listener', async () => {
@@ -444,6 +449,94 @@ describe('login providers: the whole flow over a real loopback listener (fake Op
     expect(
       openai.requests.filter((r) => r.form?.get('grant_type') === 'refresh_token'),
     ).toHaveLength(1)
+  })
+})
+
+describe('login providers only ever talk to the public OpenAI API', () => {
+  const evil = [
+    { baseUrl: 'https://evil.example/v1' },
+    { baseUrl: 'http://api.openai.com/v1' },
+    { baseUrl: 'https://api.openai.com.evil.example/v1' },
+    { baseUrl: 'https://api.openai.com:8443/v1' },
+  ]
+
+  it('creating one with another address, protocol or kind is refused', async () => {
+    const { h } = await boot()
+    const base = {
+      label: 'x',
+      kind: 'llm' as const,
+      protocol: 'openai-responses' as const,
+      baseUrl: 'https://api.openai.com/v1',
+      model: 'm',
+      auth: { type: 'account_login' as const, channel: 'openai-chatgpt' as const },
+    }
+    for (const patch of [
+      ...evil,
+      { protocol: 'openai-chat' as const },
+      { kind: 'image' as const },
+    ]) {
+      await expect(
+        h.client.call('providers.create', { body: { ...base, ...patch } }),
+        JSON.stringify(patch),
+      ).rejects.toMatchObject({ code: 'AUTH_NOT_ALLOWED', status: 400 })
+    }
+    // the exact address (also with a trailing slash) is fine
+    const ok = await h.client.call('providers.create', {
+      body: { ...base, baseUrl: 'https://api.openai.com/v1/' },
+    })
+    expect(ok.auth.type).toBe('account_login')
+  })
+
+  it('updating one cannot move it: address, protocol and kind stay; harmless edits still work', async () => {
+    const { h } = await boot()
+    const p = await createLoginProvider({ h } as Boot)
+    for (const patch of [
+      ...evil,
+      { protocol: 'openai-chat' as const },
+      { kind: 'image' as const },
+    ]) {
+      await expect(
+        h.client.call('providers.update', { params: { providerId: p.id }, body: patch }),
+        JSON.stringify(patch),
+      ).rejects.toMatchObject({ code: 'AUTH_NOT_ALLOWED' })
+    }
+    const renamed = await h.client.call('providers.update', {
+      params: { providerId: p.id },
+      body: { label: '我的 OpenAI', model: 'another-model' },
+    })
+    expect(renamed).toMatchObject({
+      label: '我的 OpenAI',
+      model: 'another-model',
+      baseUrl: 'https://api.openai.com/v1',
+    })
+    // a provider that is not a login provider cannot be turned into one through update
+    const ds = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'deepseek-llm', apiKey: 'sk-deepseek-1234567890' },
+    })
+    const moved = await h.client.call('providers.update', {
+      params: { providerId: ds.id },
+      body: { baseUrl: 'https://example.com/v1' },
+    })
+    expect(moved.auth).toEqual({ type: 'api_key' })
+  })
+
+  it('data that is already stored with another address never gets the token: models, test and generation all refuse, and nothing reaches the network', async () => {
+    const b = await boot()
+    const p = await signIn(b)
+    const stored = (await b.h.server.ctx.store.providers.get(p.id))!
+    await b.h.server.ctx.store.providers.put({ ...stored, baseUrl: 'https://evil.example/v1' })
+    const before = b.upstream.length
+    await expect(
+      b.h.client.call('providers.models', { params: { providerId: p.id } }),
+    ).rejects.toMatchObject({ code: 'AUTH_NOT_ALLOWED' })
+    expect(await b.h.client.call('providers.test', { params: { providerId: p.id } })).toMatchObject(
+      { outcome: 'failed' },
+    )
+    await b.h.server.ctx.settings.patchActive('llm', p.id)
+    await expect(
+      b.h.server.ctx.deps.llm.complete({ task: 't', messages: [{ role: 'user', content: 'u' }] }),
+    ).rejects.toMatchObject({ code: 'LOGIN_ENDPOINT_NOT_ALLOWED' })
+    expect(b.upstream.length).toBe(before) // not a single request went out, with or without a token
   })
 })
 

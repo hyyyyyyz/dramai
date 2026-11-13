@@ -4,8 +4,10 @@ import {
   effectiveAuth,
   joinUrl,
   localizeProviderConfig,
+  loginEndpointProblem,
   parseResponsesModels,
   PROVIDER_PRESETS,
+  ProviderError,
   sendRequest,
   testProvider,
 } from '@dramai/core'
@@ -123,13 +125,12 @@ export class ProviderService {
     const id = this.d.ids.next('prov')
     const auth = input.auth ?? (apiKey ? { type: 'api_key' as const } : { type: 'none' as const })
     if (auth.type === 'account_login') {
-      if (input.protocol !== 'openai-responses') {
-        throw new HttpError(
-          400,
-          'AUTH_NOT_ALLOWED',
-          '账号登录目前只覆盖文本（openai-responses 协议），不能用于这个协议',
-        )
-      }
+      // 令牌只发到官方的公开接口：协议和接口地址是钉死的
+      const problem =
+        input.kind !== 'llm'
+          ? '账号登录目前只覆盖文本（大模型）服务商'
+          : loginEndpointProblem(auth.channel, input)
+      if (problem) throw new HttpError(400, 'AUTH_NOT_ALLOWED', problem)
       if (apiKey) throw badRequest('账号登录的服务商不需要 API Key')
     }
     const cfg: ProviderConfig = {
@@ -180,6 +181,15 @@ export class ProviderService {
   async update(id: string, patch: Partial<Omit<ProviderConfig, 'id' | 'secretRef'>>) {
     const cur = await this.require(id)
     const next: ProviderConfig = { ...cur, ...patch }
+    // 登录方式的服务商：接口地址、协议、类型不能改成别的（否则令牌会发到别处）
+    const auth = effectiveAuth(cur)
+    if (auth.type === 'account_login') {
+      const problem =
+        next.kind !== 'llm'
+          ? '账号登录目前只覆盖文本（大模型）服务商'
+          : loginEndpointProblem(auth.channel, next)
+      if (problem) throw new HttpError(400, 'AUTH_NOT_ALLOWED', problem)
+    }
     await this.d.store.providers.put(next)
     return next
   }
@@ -220,7 +230,8 @@ export class ProviderService {
     const cfg = await this.require(id)
     this.assertNotLogin(cfg)
     if (cfg.secretRef) await this.d.secrets.delete(cfg.secretRef)
-    const next = { ...cfg, secretRef: undefined, auth: { type: 'none' as const } }
+    // 清掉 Key 的服务商是「API Key 方式、Key 缺失」，不是「无需鉴权」；none 只在用户明确选择时出现
+    const next = { ...cfg, secretRef: undefined, auth: { type: 'api_key' as const } }
     await this.d.store.providers.put(next)
     return next
   }
@@ -288,7 +299,15 @@ export class ProviderService {
     if (cfg.protocol !== 'openai-responses' && cfg.protocol !== 'openai-chat') {
       throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
     }
-    const bearer = (await this.credential(cfg)).bearer
+    let bearer: string | undefined
+    try {
+      bearer = (await this.credential(cfg)).bearer
+    } catch (err) {
+      if (err instanceof ProviderError && err.code === 'LOGIN_ENDPOINT_NOT_ALLOWED') {
+        throw new HttpError(400, 'AUTH_NOT_ALLOWED', err.message)
+      }
+      throw err
+    }
     const raw = await sendRequest(
       {
         method: 'GET',
