@@ -9,3 +9,6 @@ public
 
 # desktop installer output
 apps/desktop/release
+
+# Astro generated types and cache
+.astro

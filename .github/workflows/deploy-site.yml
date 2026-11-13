@@ -1,0 +1,72 @@
+name: Deploy site to GitHub Pages
+
+# 把宣传页 apps/site（Astro 静态站，中文默认、英文在 /en/）发布到 GitHub Pages：
+# https://hyyyyyyz.github.io/dramai/ 。base 和 site 在 apps/site/astro.config.mjs 里。
+# 构建后先跑 apps/site 的检查（链接和锚点、中英对等、没有第三方请求等），检查不过不部署。
+#
+# 现在只能手动触发（Actions → Deploy site to GitHub Pages → Run workflow）。第一次部署会替换 Pages 上
+# 线上的旧版应用，要先得到仓库所有者的同意。以后想在 main 上 apps/site 有变更时自动部署，
+# 把下面 `push:` 那几行的注释去掉即可（再保留 workflow_dispatch，方便手动重发）。
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'apps/site/**'
+  #     - 'pnpm-lock.yaml'
+  #     - '.github/workflows/deploy-site.yml'
+
+# 默认只读；只有 deploy 这个 job 需要写 Pages 和换取 OIDC 令牌。
+permissions:
+  contents: read
+
+# 同一时间只部署一次，不取消正在进行的部署。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build and check the site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+
+      - name: Build
+        run: pnpm build:site
+
+      # 单元测试加构建后的检查（scripts/check-dist.mjs）：每个内部链接和锚点都能解析、
+      # 中英两个语言的章节和内容量一致、输出里没有任何第三方请求、hreflang / canonical / sitemap 一致。
+      # 它会再构建一次，所以上传的就是被检查过的那一份。
+      - name: Test and check the build output
+        run: pnpm --filter @dramai/site test
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: apps/site/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write # 发布到 Pages
+      id-token: write # 证明这次部署来自本工作流（OIDC）
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

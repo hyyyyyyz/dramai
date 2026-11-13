@@ -38,3 +38,6 @@ coverage
 # Test artifacts
 playwright-report
 test-results
+
+# Astro generated types and cache
+.astro
