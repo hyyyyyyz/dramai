@@ -7,7 +7,7 @@
 
 [English](./README.md) · **简体中文**
 
-[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![CI](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/hyyyyyyz/dramai?include_prereleases&label=release&color=DF500C)](https://github.com/hyyyyyyz/dramai/releases)
+[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![CI](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/hyyyyyyz/dramai?include_prereleases&label=release&color=DF500C)](https://github.com/hyyyyyyz/dramai/releases) [![Stars](https://img.shields.io/github/stars/hyyyyyyz/dramai?color=DF500C)](https://github.com/hyyyyyyz/dramai/stargazers) [![Forks](https://img.shields.io/github/forks/hyyyyyyz/dramai?color=DF500C)](https://github.com/hyyyyyyz/dramai/forks)
 
 </div>
 
