@@ -124,7 +124,12 @@ describe('the video artifact basis is unchanged (what makes a video stale)', () 
     const exp = buildExpectations(await w.reload())
     const e = exp.get(`shot_video:${w.shot.id}`)!
     expect(e.kind).toBe('shot_video')
-    expect(Object.keys(e.basis as object).sort()).toEqual(['aspect', 'durationSec', 'movement', 'prompt'])
+    expect(Object.keys(e.basis as object).sort()).toEqual([
+      'aspect',
+      'durationSec',
+      'movement',
+      'prompt',
+    ])
     expect(e.basis).toMatchObject({
       prompt: '镜头缓慢推近，她转身看向窗外',
       durationSec: 5,

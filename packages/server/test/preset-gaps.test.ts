@@ -392,3 +392,65 @@ describe('dialect: the image style is stored and returned', () => {
     ).rejects.toThrow(/imageStyle/) // the typed client refuses it before sending
   })
 })
+
+describe('video presets through the API', () => {
+  it('are listed with kind video, vendor and region, in every language; documented ones never become the current choice', async () => {
+    const { h } = await boot()
+    const video = (await h.client.call('presets.list')).items.filter((p) => p.kind === 'video')
+    expect(video.map((p) => p.id).sort()).toEqual([
+      '302-i2v-wan-flash',
+      'aliyun-wan3-cn',
+      'aliyun-wan3-intl',
+      'byteplus-seedance',
+      'kling-video-cn',
+      'kling-video-global',
+      'volcengine-seedance',
+    ])
+    expect(video.find((p) => p.id === 'byteplus-seedance')).toMatchObject({
+      vendor: { id: 'byteplus', label: 'BytePlus' },
+      region: 'global',
+      protocol: 'ark-video',
+      verification: { status: 'documented' },
+    })
+    const en = (await as(h, 'en').call('presets.list')).items.filter((p) => p.kind === 'video')
+    for (const p of en)
+      expect(CJK.test(p.label + p.notes + p.knownLimitations.join('')), p.id).toBe(false)
+
+    const made = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'kling-video-cn', apiKey: 'kl-1234567890' },
+    })
+    expect(made).toMatchObject({ protocol: 'kling-contents', model: 'kling-4.0' })
+    expect((await h.client.call('settings.get')).activeProviders.video).toBeUndefined()
+    // the Wan 3.0 presets need the workspace ID filled in at creation
+    await expect(
+      h.client.call('providers.fromPreset', {
+        body: { presetId: 'aliyun-wan3-cn', apiKey: 'sk-1234567890' },
+      }),
+    ).rejects.toMatchObject({ code: 'BASE_URL_PLACEHOLDER_UNFILLED' })
+    const wan = await h.client.call('providers.fromPreset', {
+      body: {
+        presetId: 'aliyun-wan3-cn',
+        apiKey: 'sk-1234567890',
+        baseUrl: 'https://ws1.cn-beijing.maas.aliyuncs.com',
+      },
+    })
+    expect(wan.protocol).toBe('dashscope-video')
+  })
+
+  it('the capability endpoint carries the new fields (claimed, not verified)', async () => {
+    const { h } = await boot()
+    const made = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'volcengine-seedance', apiKey: 'ark-1234567890' },
+    })
+    const cap = await h.client.call('providers.capability', { params: { providerId: made.id } })
+    expect(cap).toMatchObject({
+      declared: true,
+      capability: {
+        firstFrameWithRefs: 'unsupported',
+        audioToggle: 'unverified',
+        refImages: { support: 'unverified', value: 9 },
+        modes: { omni_ref: 'unverified' },
+      },
+    })
+  })
+})

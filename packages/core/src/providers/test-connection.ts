@@ -32,6 +32,9 @@ export async function testProvider(
     case 'volcengine-video':
     case 'kling-video':
     case 'generic-video':
+    case 'ark-video':
+    case 'kling-contents':
+    case 'dashscope-video':
     case 'kling-image':
     case 'dashscope-image':
     case 'volcengine-images':

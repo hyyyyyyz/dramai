@@ -1,5 +1,6 @@
 import type { Locale, TranslatedLocale } from '../i18n.ts'
 import { IMAGE_PRESETS } from './presets-image.ts'
+import { VIDEO_PRESETS } from './presets-video.ts'
 import { TEXT_PRESETS } from './presets-text.ts'
 import type {
   ProviderAuth,
@@ -50,6 +51,7 @@ export const PROVIDER_VENDORS: readonly ProviderVendor[] = [
   { id: 'moonshot', name: 'Moonshot AI（Kimi）' },
   { id: 'minimax', name: 'MiniMax' },
   { id: 'kling', name: '可灵', i18n: { 'zh-Hant': '可靈', en: 'Kling AI' } },
+  { id: 'byteplus', name: 'BytePlus', i18n: { 'zh-Hant': 'BytePlus', en: 'BytePlus' } },
   { id: 'siliconflow', name: '硅基流动', i18n: { 'zh-Hant': '矽基流動', en: 'SiliconFlow' } },
   { id: 'openrouter', name: 'OpenRouter' },
   { id: '302ai', name: '302.AI' },
@@ -279,6 +281,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
   ...CORE_PRESETS,
   ...TEXT_PRESETS,
   ...IMAGE_PRESETS,
+  ...VIDEO_PRESETS,
 ]
 
 export const PROVIDER_KIND_LABEL: Record<ProviderKind, string> = {
