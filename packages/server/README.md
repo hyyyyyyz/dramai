@@ -71,6 +71,16 @@ WebUI / 容器场景没有系统加密可用，靠文件权限和数据目录隔
 
 **Preset verification.** Every preset carries `verification`: `{ status: 'tested', testedAt }` or `{ status: 'documented', source }` (connected from official documentation, not tested). Documented presets never become the current choice automatically. The four v0.4 presets stay `tested` (2026-05-04). The OpenAI preset (`openai-responses-login`) is `documented`, text only, and its limitations say so.
 
+## Text providers, dialect options and OpenRouter sign-in (English)
+
+**Protocols.** Text providers use one of `openai-chat`, `openai-responses`, `anthropic-messages` (`POST /v1/messages`, `x-api-key` + `Authorization`, `anthropic-version`, `max_tokens` always set, no temperature/top_p) and `gemini-chat` (`:streamGenerateContent?alt=sse`, `x-goog-api-key`; the official reference does not describe the stream format, so a plain JSON array is accepted too). All stream; all fail on interruption, error events, blocked output and an empty output cut by the length limit (`EMPTY_OUTPUT_TRUNCATED`). Model lists and connection tests are per protocol (`providers.models`; image, video and speech protocols answer `MODEL_LIST_UNSUPPORTED`).
+
+**Dialect.** A provider config carries `dialect` (copied from the preset, editable through `providers.create/update`): `extraBody` (deep-merged into the request body; cannot replace `model`, `messages`, `input`, `contents`, `stream`, `store`) — presets use it to switch thinking off where a model thinks by default and the docs allow it; `maxTokensField` (`max_tokens` or `max_completion_tokens`); `jsonMode` (`json_object`, or `prompt_only` for services without `response_format`). `openai-chat` ignores `reasoning_content` / `reasoning` / `reasoning_details`, reads array `content` (Mistral) and skips SSE comment lines; `<think>…</think>` inlined in content is stripped.
+
+**Presets.** `vendor` (grouping, localized name), `region` (`cn` / `global` / `local`), `baseUrlPlaceholders`, `dialect`, `auth`, `verification`. The fifteen text presets added in this batch are all "documented" (official source, not tested) and never auto-selected; local models (Ollama, LM Studio) use `auth: none`.
+
+**OpenRouter sign-in** (`channel: 'openrouter'`, same `providers.login.*` routes). From the official OAuth page: no registration or secret; `callback_url` is `http://localhost:<port>/callback` (the only form the docs mention; the listener also binds `::1`); PKCE `S256`; the code is exchanged at `POST /api/v1/auth/keys` and the response is the user's own API key, stored in the `SecretStore` and used as a plain Bearer (provider pinned to `https://openrouter.ai/api/v1`, `openai-chat`). There is no refresh and no revocation endpoint: logout clears the local key and answers `revoked: 'unconfirmed'` with `manageUrl`, the official key page (`/keys/<SHA-256 of the key>`). A denial carries no `state`, so it is ignored like any request with the wrong state and the attempt waits for the timeout or cancel. Login status is generic: `credential: { kind: 'api_key', mask }` and `manageUrl` replace OpenAI's account label, expiry and `planUsage`.
+
 ## 安全（计划 4.2）
 
 - 默认只监听 `127.0.0.1`；非回环地址没有 token 直接拒绝启动。
