@@ -224,6 +224,11 @@ export interface MediaProtocol<Input> {
    * 不实现 = 沿用 `HTTP_<状态>` 和响应文本，行为不变。
    */
   parseHttpError?(raw: RawResponse): { code?: string; message?: string; recoverable?: boolean }
+  /**
+   * 协议自己必须设置、缺了或被改了请求就会出错的头（如百炼的 `X-DashScope-Async`）。用户的"额外请求头"
+   * 不能覆盖它们；和全局保护名单（鉴权头、内容类型头、传输层头…）一起生效，比较不分大小写。
+   */
+  protectedHeaders?: readonly string[]
 }
 
 export interface ImageGenInput {

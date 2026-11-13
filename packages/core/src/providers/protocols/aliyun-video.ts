@@ -29,6 +29,8 @@ const DEFAULT_DURATIONS = [3, 4, 5, 10, 15]
 export const aliyunVideo: MediaProtocol<ImageToVideoInput> = {
   id: 'aliyun-video',
   media: 'video',
+  // 只是声明：请求的构造和以前逐字相同，只是用户的额外请求头不能再把它改掉
+  protectedHeaders: ['X-DashScope-Async'],
 
   buildGenerateRequest(auth, input) {
     const body = {

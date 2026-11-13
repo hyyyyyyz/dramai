@@ -50,6 +50,8 @@ const url = (media: MediaPayload, kind: 'image' | 'video' | 'audio'): string => 
 export const dashscopeVideo: MediaProtocol<VideoGenInput> = {
   id: 'dashscope-video',
   media: 'video',
+  // 缺了或被改成别的值，提交会被百炼拒绝（"does not support synchronous calls"）
+  protectedHeaders: ['X-DashScope-Async'],
 
   buildGenerateRequest(auth, input) {
     const mode = videoModeOf(input)

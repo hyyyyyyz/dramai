@@ -236,10 +236,14 @@ export async function downloadOutput(
  * 保护名单（鉴权头、内容类型头、传输层头…）由 `mergeHeaders` 统一把关。
  * **不**用于下载成品：结果地址常在别的主机上（对象存储 / CDN），不能把用户填的头带过去。
  */
-function withExtraHeaders(spec: HttpRequestSpec, auth: AuthContext): HttpRequestSpec {
+function withExtraHeaders(
+  spec: HttpRequestSpec,
+  auth: AuthContext,
+  protocolProtected?: readonly string[],
+): HttpRequestSpec {
   const extra = auth.dialect?.extraHeaders
   if (!extra) return spec
-  return { ...spec, headers: mergeHeaders(spec.headers, extra) }
+  return { ...spec, headers: mergeHeaders(spec.headers, extra, protocolProtected) }
 }
 
 async function submit<I>(
@@ -249,7 +253,11 @@ async function submit<I>(
   deps: ExecutorDeps,
   options: GenerateOptions,
 ): Promise<GenerateParse> {
-  const spec = withExtraHeaders(protocol.buildGenerateRequest(auth, input), auth)
+  const spec = withExtraHeaders(
+    protocol.buildGenerateRequest(auth, input),
+    auth,
+    protocol.protectedHeaders,
+  )
   let raw: RawResponse
   try {
     raw = await sendRequest(spec, deps, {
@@ -328,7 +336,7 @@ async function pollUntilDone<I>(
     if (options.signal?.aborted) throw abortError()
     try {
       const raw = await sendRequest(
-        withExtraHeaders(protocol.buildPollRequest(auth, taskId), auth),
+        withExtraHeaders(protocol.buildPollRequest(auth, taskId), auth, protocol.protectedHeaders),
         deps,
         {
           signal: options.signal,

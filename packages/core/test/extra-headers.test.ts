@@ -162,3 +162,70 @@ describe('extra request headers on media protocols (one merge point in the execu
     expect(seen.Authorization).toBe('Bearer sk-secret')
   })
 })
+
+describe('review fix 5: headers the protocol itself requires are protected too', () => {
+  const image = { bytes: new Uint8Array([1, 2, 3]), mime: 'image/png' }
+  const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 })
+
+  it('mergeHeaders: the caller can add its own protected names, case-insensitively; the global list is unchanged', () => {
+    expect(
+      mergeHeaders({ 'X-Req': 'enable' }, { 'x-req': 'disable', 'X-Other': '1' }, ['X-REQ']),
+    ).toEqual({ 'X-Req': 'enable', 'X-Other': '1' })
+    // without the declaration the user's header is added next to it (this is what the protocol declaration prevents)
+    expect(mergeHeaders({ 'X-Req': 'enable' }, { 'x-req': 'disable' })).toEqual({
+      'X-Req': 'enable',
+      'x-req': 'disable',
+    })
+  })
+
+  it.each(['dashscope-video', 'aliyun-video'] as const)(
+    '%s: a user header cannot turn off X-DashScope-Async, on submit and on poll',
+    async (id) => {
+      const { runGeneration } = await import('../src/providers/executor.ts')
+      const { getMediaProtocol } = await import('../src/providers/protocols/index.ts')
+      const protocol = getMediaProtocol(id)
+      expect(protocol.protectedHeaders).toEqual(['X-DashScope-Async'])
+      const calls: Array<Record<string, string>> = []
+      const fetch = async (url: string, init?: RequestInit) => {
+        calls.push({ ...(init?.headers as Record<string, string>) })
+        if (url.includes('video-synthesis')) return json({ output: { task_id: 't1' } })
+        if (url.includes('/tasks/'))
+          return json({ output: { task_status: 'SUCCEEDED', video_url: 'https://cdn/v.mp4' } })
+        return new Response(new Uint8Array([1]), { headers: { 'content-type': 'video/mp4' } })
+      }
+      await runGeneration(
+        protocol,
+        auth({ 'x-dashscope-async': 'disable', 'X-Team': 't' }),
+        { prompt: 'p', image },
+        { fetch, sleep: async () => {} },
+      )
+      expect(calls[0]!['X-DashScope-Async']).toBe('enable')
+      expect(
+        Object.keys(calls[0]!).filter((k) => k.toLowerCase() === 'x-dashscope-async'),
+      ).toHaveLength(1)
+      expect(calls[0]!['X-Team']).toBe('t') // other extra headers still go through
+      expect(calls[1]!['X-Team']).toBe('t')
+    },
+  )
+
+  it('the global list did not change in this fix (the front end keeps a copy of it, synced by a test)', async () => {
+    const { PROTECTED_HEADERS } = await import('../src/util/merge.ts')
+    expect([...PROTECTED_HEADERS].sort()).toEqual(
+      [
+        'anthropic-version',
+        'api-key',
+        'authorization',
+        'connection',
+        'content-length',
+        'content-type',
+        'cookie',
+        'host',
+        'proxy-authorization',
+        'transfer-encoding',
+        'x-api-key',
+        'x-goog-api-key',
+        'x-key',
+      ].sort(),
+    )
+  })
+})

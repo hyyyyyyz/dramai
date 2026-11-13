@@ -49,13 +49,17 @@ export const PROTECTED_HEADERS: ReadonlySet<string> = new Set([
 export function mergeHeaders(
   base: Record<string, string>,
   extra: Record<string, string> | undefined,
+  /** 调用方（协议）额外声明的受保护头，与全局保护名单一起生效。 */
+  alsoProtected: readonly string[] = [],
 ): Record<string, string> {
   const out = { ...base }
   if (!extra) return out
+  const extraProtected = new Set(alsoProtected.map((h) => h.toLowerCase()))
   for (const [name, value] of Object.entries(extra)) {
     if (typeof value !== 'string' || !/^[A-Za-z0-9-]+$/.test(name)) continue
     if (/[\r\n]/.test(value)) continue
-    if (PROTECTED_HEADERS.has(name.toLowerCase())) continue
+    if (PROTECTED_HEADERS.has(name.toLowerCase()) || extraProtected.has(name.toLowerCase()))
+      continue
     out[name] = value
   }
   return out
