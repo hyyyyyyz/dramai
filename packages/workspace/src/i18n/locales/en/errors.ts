@@ -60,6 +60,13 @@ export default {
   AUTH_NOT_ALLOWED:
     'This protocol doesn’t support the chosen sign-in method (account sign-in covers text only and its address is fixed)',
   MODEL_LIST_UNSUPPORTED: 'This provider has no model list. Type the model name yourself',
+  BASE_URL_PLACEHOLDER_UNFILLED:
+    'The address still has placeholders that haven’t been replaced. Fill them all in, then add it',
+  BASE_URL_INVALID:
+    'That isn’t a valid base URL: it must be an http or https address with no username, password or spaces (put the key in the API key field)',
+  BASE_URL_INSECURE:
+    'Use https for a public address (http is fine for a service on this machine or your local network)',
+  BASE_URL_NOT_OVERRIDABLE: 'The base URL for account sign-in is fixed and can’t be changed',
   NO_LLM_PROVIDER: 'No language-model provider is selected. Set one up in Settings first',
   FFMPEG_MISSING: 'ffmpeg wasn’t found. Please install it',
   FFMPEG_INCOMPATIBLE: 'This ffmpeg lacks capabilities needed for composing',

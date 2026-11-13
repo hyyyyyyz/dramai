@@ -4,11 +4,19 @@ export type Auth = ProviderConfigDto['auth']
 
 /** "API key not filled in yet" and "needs no authentication" are different states; so is "signed in". */
 export type AuthState = 'key_saved' | 'key_missing' | 'none' | 'login'
+export type ChipState = Exclude<AuthState, 'login'>
 
 export function authState(p: Pick<ProviderConfigDto, 'auth' | 'hasKey'>): AuthState {
   if (p.auth.type === 'account_login') return 'login'
   if (p.auth.type === 'none') return 'none'
   return p.hasKey ? 'key_saved' : 'key_missing'
+}
+
+/** The sign-in channel of an account-login provider (undefined for the other methods). */
+export function loginChannelOf(
+  p: Pick<ProviderConfigDto, 'auth'>,
+): LoginStatusDto['channel'] | undefined {
+  return p.auth.type === 'account_login' ? p.auth.channel : undefined
 }
 
 /** Whether "test connection" makes sense: a key is saved, nothing is needed, or the account is signed in with plan usage. */
@@ -37,17 +45,6 @@ export function verificationView(
   if (v?.status === 'documented')
     return { kind: 'documented', source: v.source, link: /^https?:\/\//i.test(v.source) }
   return legacyVerifiedAt ? { kind: 'tested', date: legacyVerifiedAt } : undefined
-}
-
-/** Documented-only presets are never the default recommendation: sort them after the tested ones. */
-export function sortPresets<T extends { verification: { status: 'tested' | 'documented' } }>(
-  list: readonly T[],
-): T[] {
-  return [...list].sort(
-    (a, b) =>
-      Number(a.verification.status === 'documented') -
-      Number(b.verification.status === 'documented'),
-  )
 }
 
 /** Which sign-in screen to show. */
@@ -131,10 +128,40 @@ export const PROVIDER_ERROR_CODES = [
   'INVALID_ARGUMENT',
   'RESOURCE_EXHAUSTED',
   'PERMISSION_DENIED',
+  // the server's own codes (connection test and task failures share them)
+  'NETWORK',
+  'TIMEOUT',
+  'UNREADABLE_RESPONSE',
+  'BASE_URL_INVALID',
+  // `HTTP_<status>` grouped by what the user can do about it (see `httpClassOf`)
+  'HTTP_AUTH',
+  'HTTP_NOT_FOUND',
+  'HTTP_RATE_LIMIT',
+  'HTTP_SERVER',
 ] as const
 export type ProviderErrorCode = (typeof PROVIDER_ERROR_CODES)[number]
+
+/** `HTTP_401` and `HTTP_403` → auth; 404 → address/model; 429 → rate limit; 5xx → server; 400/422 → bad request. */
+function httpClassOf(code: string): ProviderErrorCode | undefined {
+  const m = /^HTTP_(\d{3})$/.exec(code)
+  if (!m) return undefined
+  const status = Number(m[1])
+  if (status === 401 || status === 403) return 'HTTP_AUTH'
+  if (status === 404) return 'HTTP_NOT_FOUND'
+  if (status === 429) return 'HTTP_RATE_LIMIT'
+  if (status >= 500) return 'HTTP_SERVER'
+  if (status === 400 || status === 422) return 'invalid_request_error'
+  return undefined
+}
+
+/** The explained form of an error code, or nothing when the generic failure text should stay. */
+export function providerErrorOf(code: string | undefined): ProviderErrorCode | undefined {
+  if (code === undefined) return undefined
+  if ((PROVIDER_ERROR_CODES as readonly string[]).includes(code)) return code as ProviderErrorCode
+  return httpClassOf(code)
+}
 export const isProviderErrorCode = (code: string | undefined): code is ProviderErrorCode =>
-  code !== undefined && (PROVIDER_ERROR_CODES as readonly string[]).includes(code)
+  providerErrorOf(code) === code && code !== undefined
 
 export const PROVIDER_ERROR_ACTION: Record<ProviderErrorCode, 'manage' | 'settings' | undefined> = {
   LOGIN_REQUIRED: 'settings',
@@ -161,6 +188,14 @@ export const PROVIDER_ERROR_ACTION: Record<ProviderErrorCode, 'manage' | 'settin
   INVALID_ARGUMENT: undefined,
   RESOURCE_EXHAUSTED: undefined,
   PERMISSION_DENIED: 'settings',
+  NETWORK: undefined,
+  TIMEOUT: undefined,
+  UNREADABLE_RESPONSE: 'settings',
+  BASE_URL_INVALID: 'settings',
+  HTTP_AUTH: 'settings',
+  HTTP_NOT_FOUND: 'settings',
+  HTTP_RATE_LIMIT: undefined,
+  HTTP_SERVER: undefined,
 }
 
 /**
@@ -169,4 +204,3 @@ export const PROVIDER_ERROR_ACTION: Record<ProviderErrorCode, 'manage' | 'settin
  * a clickable link from a loaded resource, and the bundler would otherwise inline this constant right after `href`.
  */
 export const MANAGE_USAGE_URL = new URL('https://chatgpt.com/settings/usage').href
-export const WELCOME_FLAG = 'dramai.openai.welcomed'

@@ -2,13 +2,14 @@ import { useTranslation } from 'react-i18next'
 import { Check, CircleHelp, X } from 'lucide-react'
 import type { CallOutput } from '@dramai/api'
 import { iconProps, cn } from '@dramai/ui/v2'
+import { ProviderErrorNotice } from '@/features/jobs/ProviderErrorNotice'
 
 type Result = CallOutput<'providers.test'>
 
 /**
  * “测试连接”的三种结果：
  * - ok：连上了（可能还带模型数；没在列表里找到所选模型要提醒）；
- * - failed：失败，附状态码；
+ * - failed：失败，附状态码；有错误码时给出和任务失败时相同的解释与下一步；
  * - unverifiable：这个协议没有标准的列表接口，无法自动验证——这不是失败，要如实说。
  * 服务端给的 error / reason 是原文，只作为可展开的技术细节，主文案走翻译。
  */
@@ -43,6 +44,7 @@ export function TestResult({ result }: { result: Result }) {
             <span className="font-mono text-xs">HTTP {result.status}</span>
           )}
         </span>
+        <ProviderErrorNotice code={result.code} where="settings" />
         <details className="text-xs text-muted-foreground">
           <summary className="cursor-pointer">{t('providers.test.details')}</summary>
           <code className="mt-1 block font-mono break-words">{result.error}</code>

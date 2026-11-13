@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { ExternalLink } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { LoginStatusDto, ProviderConfigDto } from '@dramai/api'
-import { Button, Hint, Notice, Progress, iconProps } from '@dramai/ui/v2'
+import { Button, Hint, Notice, Progress, Skeleton, iconProps } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall, useProviderLogin } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
+import { ExternalA } from '@/features/common/ExternalA'
 import { useFormat } from '@/i18n/format'
 import { CHANNELS, type Revoked } from './login-channels'
+import { safeHttpUrl } from '@/lib/safe-url'
 import { loginErrorKind, loginView, type LoginErrorKind } from './provider-model'
 
 const wasWelcomed = (flag: string) => {
@@ -52,21 +54,21 @@ export function LoginPanel({
         (provider.auth.type === 'account_login' ? provider.auth.channel : 'openai-chatgpt')
     ]
   const [url, setUrl] = useState<string>()
-  const [loggedOutNote, setLoggedOutNote] = useState<{ revoked: Revoked; status: LoginStatusDto }>()
+  const [loggedOutNote, setLoggedOutNote] = useState<{ revoked: Revoked; manageUrl?: string }>()
+  const [unsafeUrl, setUnsafeUrl] = useState(false)
   const [welcome, setWelcome] = useState(false)
-  // OpenRouter only shows the management link while signed in; keep it for the sign-out message
-  const [lastManageUrl, setLastManageUrl] = useState<string>()
-  if (status?.manageUrl && status.manageUrl !== lastManageUrl) setLastManageUrl(status.manageUrl)
-
   const setStatus = (s: LoginStatusDto) => qc.setQueryData(qk.providerLogin(provider.id), s)
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: qk.providers })
   }
   const start = useCall('providers.login.start', {
     onSuccess: (r) => {
-      setUrl(r.authorizationUrl)
       setLoggedOutNote(undefined)
-      window.open(r.authorizationUrl, '_blank', 'noopener,noreferrer')
+      // the address comes from the server: only http(s) is ever opened
+      const safe = safeHttpUrl(r.authorizationUrl)
+      setUnsafeUrl(!safe)
+      setUrl(safe)
+      if (safe) window.open(safe, '_blank', 'noopener,noreferrer')
       void qc.invalidateQueries({ queryKey: qk.providerLogin(provider.id) })
     },
   })
@@ -80,10 +82,7 @@ export function LoginPanel({
   const logout = useCall('providers.login.logout', {
     onSuccess: (r) => {
       setUrl(undefined)
-      setLoggedOutNote({
-        revoked: r.revoked,
-        status: { ...r.status, manageUrl: r.status.manageUrl ?? lastManageUrl },
-      })
+      setLoggedOutNote({ revoked: r.revoked, manageUrl: r.manageUrl })
       setStatus(r.status)
       refresh()
     },
@@ -120,7 +119,21 @@ export function LoginPanel({
     setWelcome(false)
   }
 
-  if (!status) return null
+  if (!status) {
+    // the status could not be read: say so and offer a retry, instead of the whole panel vanishing
+    return login.isError ? (
+      <div className="flex flex-col gap-2" data-testid="login-panel-error">
+        <ErrorNotice error={login.error} />
+        <div>
+          <Button size="sm" variant="secondary" onClick={() => void login.refetch()}>
+            {t('common.retry')}
+          </Button>
+        </div>
+      </div>
+    ) : (
+      <Skeleton className="h-16" aria-busy />
+    )
+  }
   const view = loginView(status)
   const startPending = start.isPending
   const time = (iso?: string) =>
@@ -157,7 +170,7 @@ export function LoginPanel({
   const relogin = spec.relogin(t as never, status)
   const loggedOut =
     loggedOutNote && view !== 'signed_in'
-      ? spec.loggedOut(t as never, loggedOutNote.revoked, loggedOutNote.status)
+      ? spec.loggedOut(t as never, loggedOutNote.revoked, loggedOutNote.manageUrl)
       : undefined
 
   return (
@@ -273,19 +286,14 @@ export function LoginPanel({
         <Notice tone={loggedOut.tone} role="status">
           <div>{loggedOut.text}</div>
           {loggedOut.link && (
-            <a
-              href={loggedOut.link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 inline-flex items-center gap-1 underline underline-offset-2"
-            >
-              {loggedOut.link.label}
-              <ExternalLink {...iconProps} size={12} aria-hidden />
-            </a>
+            <div className="mt-1">
+              <ExternalA href={loggedOut.link.href}>{loggedOut.link.label}</ExternalA>
+            </div>
           )}
         </Notice>
       )}
 
+      {unsafeUrl && <Notice tone="warn">{t('providerLogin.unsafeUrl')}</Notice>}
       {start.isError && <ErrorNotice error={start.error} />}
       {cancel.isError && <ErrorNotice error={cancel.error} />}
       {logout.isError && <ErrorNotice error={logout.error} />}

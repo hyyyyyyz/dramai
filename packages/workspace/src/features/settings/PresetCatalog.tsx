@@ -7,9 +7,11 @@ import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall, usePresets } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
+import { errorInfo } from '@/data/errors'
 import {
   groupPresets,
   inputProblems,
+  type InputProblem,
   needsInput,
   resolveBaseUrl,
   type Preset,
@@ -36,7 +38,6 @@ export function PresetCatalog({
   const { t } = useTranslation()
   const presets = usePresets()
   const fromPreset = useCall('providers.fromPreset', { invalidate: [qk.providers] })
-  const update = useCall('providers.update', { invalidate: [qk.providers] })
   const [query, setQuery] = useState('')
   const [picked, setPicked] = useState<Preset>()
   const [values, setValues] = useState<Record<string, string>>({})
@@ -47,26 +48,24 @@ export function PresetCatalog({
   const all = (presets.data?.items ?? []).filter((p) => p.kind === kind)
   const groups = groupPresets(all, query)
 
+  /**
+   * One call creates the provider: the address (when the user filled placeholders in) and the model (when the user
+   * typed one) go along with the preset, so a failure leaves nothing behind and a retry cannot create a second one.
+   * An account-login preset has a fixed address and never gets one sent.
+   */
   const create = async (p: Preset, extra?: { baseUrl: string; model: string }) => {
     setError(undefined)
-    let made: ProviderConfigDto | undefined
+    const locked = p.auth.type === 'account_login'
+    const baseUrl = extra && !locked && extra.baseUrl !== p.baseUrl ? extra.baseUrl : undefined
+    const model = extra?.model.trim() ? extra.model.trim() : undefined
     try {
-      made = await fromPreset.mutateAsync({ body: { presetId: p.id } })
-      if (extra) {
-        made = await update.mutateAsync({
-          params: { providerId: made.id },
-          body: {
-            ...(extra.baseUrl !== p.baseUrl ? { baseUrl: extra.baseUrl } : {}),
-            ...(extra.model.trim() ? { model: extra.model.trim() } : {}),
-          },
-        })
-      }
+      const made = await fromPreset.mutateAsync({
+        body: { presetId: p.id, ...(baseUrl ? { baseUrl } : {}), ...(model ? { model } : {}) },
+      })
       onClose()
       onAdded(made)
     } catch (e) {
       setError(e)
-      // the provider exists (only the second step failed): open it so the user can fix the field there
-      if (made) onAdded(made)
     }
   }
 
@@ -82,10 +81,18 @@ export function PresetCatalog({
 
   if (picked) {
     const problems = inputProblems(picked, values, model)
-    const problemOf = (field: string) =>
-      tried ? problems.find((x) => x.field === field) : undefined
+    const info = error === undefined ? undefined : errorInfo(error)
+    const unfilled =
+      info?.code === 'BASE_URL_PLACEHOLDER_UNFILLED'
+        ? ((info.details as { placeholders?: string[] } | undefined)?.placeholders ?? [])
+        : []
+    // what is wrong with each field: what we can see ourselves, plus what the server says is still unfilled
+    const problemOf = (field: string): InputProblem | undefined =>
+      (tried ? problems.find((x) => x.field === field) : undefined) ??
+      (unfilled.includes(field) ? { field, kind: 'missing' } : undefined)
     return (
       <Modal
+        key="fill"
         open
         onClose={onClose}
         title={t('providerCatalog.fill.title', { name: picked.label })}
@@ -98,7 +105,7 @@ export function PresetCatalog({
             </Button>
             <Button
               variant="primary"
-              loading={fromPreset.isPending || update.isPending}
+              loading={fromPreset.isPending}
               onClick={() => {
                 setTried(true)
                 if (problems.length > 0) return
@@ -137,7 +144,7 @@ export function PresetCatalog({
           ))}
           {picked.suggestedModel.trim() === '' && (
             <Field
-              label="Model"
+              label={t('providerCatalog.fill.model')}
               hint={t('providerCatalog.fill.modelHint')}
               error={problemOf('model') ? t('providerCatalog.fill.model_missing') : undefined}
               required
@@ -154,6 +161,7 @@ export function PresetCatalog({
 
   return (
     <Modal
+      key="list"
       open
       onClose={onClose}
       size="lg"
@@ -187,7 +195,9 @@ export function PresetCatalog({
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        {presets.isPending && <p className="text-sm text-muted-foreground">…</p>}
+        {presets.isPending && (
+          <p className="text-sm text-muted-foreground">{t('providerCatalog.loading')}</p>
+        )}
         {presets.isError && <ErrorNotice error={presets.error} />}
         {groups.length === 0 && !presets.isPending && (
           <p className="text-sm text-muted-foreground">

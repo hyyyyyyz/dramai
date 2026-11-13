@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LoginStatusDto } from '@dramai/api'
 import { LoginPanel } from '@/features/settings/LoginPanel'
-import { WELCOME_FLAG } from '@/features/settings/provider-model'
+import { CHANNELS } from '@/features/settings/login-channels'
 import { fakeServer } from './fixtures'
 import { makeLogin, makeLoginProvider } from './fixtures-providers'
 import { renderApp, useLocale } from './render'
@@ -212,7 +212,7 @@ describe('the sign-in flow', () => {
     expect(within(dialog).getByText(/可以在 ChatGPT 设置中管理用量/)).toBeInTheDocument()
     await userEvent.click(within(dialog).getByRole('button', { name: '知道了' }))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(localStorage.getItem(WELCOME_FLAG)).toBe('1')
+    expect(localStorage.getItem(CHANNELS['openai-chatgpt'].welcome!.flag)).toBe('1')
     first.unmount()
 
     const second = setup(pending())

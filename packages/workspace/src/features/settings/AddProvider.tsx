@@ -129,7 +129,7 @@ function CustomProviderDialog({
             placeholder="https://api.example.com/v1"
           />
         </Field>
-        <Field label="Model" required>
+        <Field label={t('providerCatalog.fill.model')} required>
           <Input mono value={model} onChange={(e) => setModel(e.target.value)} />
         </Field>
         <Field label={t('providerAuth.custom.auth')}>

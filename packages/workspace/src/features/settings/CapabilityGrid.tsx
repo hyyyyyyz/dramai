@@ -52,12 +52,18 @@ function Cap({ label, children }: { label: string; children: React.ReactNode }) 
 export function CapabilityGrid({ capability: c }: { capability: Capability }) {
   const { t } = useTranslation()
   const fmt = useFormat()
-  const claimText = (s: Support, value: string | undefined) =>
-    s === 'supported' ? (
-      <CapabilityValue support={s}>{value ?? t('capability.state.supported')}</CapabilityValue>
-    ) : (
-      <CapabilityValue support={s} />
-    )
+  // A claim may carry the server's note (for example "the vendor says so; not verified"). It is shown under the value,
+  // in the server's words, because it qualifies the value and the three states cannot say that.
+  const claimText = (s: Support, value: string | undefined, note?: string) => (
+    <>
+      {s === 'supported' ? (
+        <CapabilityValue support={s}>{value ?? t('capability.state.supported')}</CapabilityValue>
+      ) : (
+        <CapabilityValue support={s} />
+      )}
+      {note && <span className="block text-xs text-subtle">{note}</span>}
+    </>
+  )
 
   const rows: React.ReactNode[] = []
   const modes = Object.entries(c.modes)
@@ -79,6 +85,7 @@ export function CapabilityGrid({ capability: c }: { capability: Capability }) {
           c.refImages.value !== undefined
             ? t('capability.upTo', { n: c.refImages.value })
             : undefined,
+          c.refImages.note,
         )}
       </Cap>,
     )
@@ -103,7 +110,7 @@ export function CapabilityGrid({ capability: c }: { capability: Capability }) {
         : undefined
     rows.push(
       <Cap key="dur" label={t('capability.durations')}>
-        {claimText(c.durations.support, durationText)}
+        {claimText(c.durations.support, durationText, c.durations.note)}
       </Cap>,
     )
   }
@@ -115,10 +122,11 @@ export function CapabilityGrid({ capability: c }: { capability: Capability }) {
           c.resolutions.value
             ?.map((v) => (v === 'none' ? t('capability.resolutionNone') : v))
             .join(' · '),
+          c.resolutions.note,
         )}
       </Cap>,
       <Cap key="ar" label={t('capability.aspectRatios')}>
-        {claimText(c.aspectRatios.support, c.aspectRatios.value?.join(' · '))}
+        {claimText(c.aspectRatios.support, c.aspectRatios.value?.join(' · '), c.aspectRatios.note)}
       </Cap>,
     )
   }

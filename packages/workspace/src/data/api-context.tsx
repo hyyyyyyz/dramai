@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { createClient, type DramaiClient } from '@dramai/api'
+import { apiLocaleOf } from './api-locale'
 import { ApiContext } from './contexts'
 
 /**
@@ -12,7 +13,7 @@ import { ApiContext } from './contexts'
 export function ApiProvider({ client, children }: { client?: DramaiClient; children: ReactNode }) {
   const { i18n } = useTranslation()
   const queryClient = useQueryClient()
-  const lang = i18n.language.startsWith('zh') ? 'zh' : 'en'
+  const lang = apiLocaleOf(i18n.language)
   const value = useMemo(() => client ?? createClient({ locale: lang }), [client, lang])
   const first = useRef(true)
   useEffect(() => {

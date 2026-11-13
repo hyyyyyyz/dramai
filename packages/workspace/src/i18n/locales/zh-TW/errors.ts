@@ -50,6 +50,11 @@ export default {
   KEY_NOT_APPLICABLE: '帳號登入的服務商沒有 API Key，不需要也不能設定或清除',
   AUTH_NOT_ALLOWED: '這個協定不支援所選的驗證方式（帳號登入只涵蓋文字，介面位址也是固定的）',
   MODEL_LIST_UNSUPPORTED: '這個服務商沒有模型清單，請手動填寫模型名稱',
+  BASE_URL_PLACEHOLDER_UNFILLED: '位址裡還有沒替換的佔位符，把它們都填上再新增',
+  BASE_URL_INVALID:
+    '介面位址不合法：要是 http 或 https 網址，不能帶使用者名稱密碼或空白（Key 請填在 API Key 裡）',
+  BASE_URL_INSECURE: '公網位址請用 https（本機或區域網路的服務可以用 http）',
+  BASE_URL_NOT_OVERRIDABLE: '帳號登入的介面位址是固定的，不能修改',
   NO_LLM_PROVIDER: '還沒有選中可用的大模型服務商，請先到設定裡配置',
   FFMPEG_MISSING: '沒有找到 ffmpeg，請先安裝',
   FFMPEG_INCOMPATIBLE: '當前的 ffmpeg 缺少合成所需的能力',

@@ -11,7 +11,7 @@ export default {
     general: {
       language: {
         title: 'Language',
-        hint: 'Takes effect at once and is remembered on this computer. Built-in names (style presets, provider notes) switch too; what you typed yourself doesn’t change. Traditional Chinese translates the interface only; built-in names stay in Simplified Chinese',
+        hint: 'Takes effect at once and is remembered on this computer. Built-in names (style presets, provider notes) switch too; what you typed yourself doesn’t change',
       },
       theme: {
         title: 'Theme',
@@ -145,6 +145,10 @@ export default {
     'openai-tts': 'OpenAI-compatible (speech)',
     'openai-responses': 'OpenAI Responses (text)',
     'anthropic-messages': 'Anthropic Messages (text)',
+    'volcengine-images': 'Volcengine Seedream (image)',
+    'dashscope-image': 'Alibaba Qwen-Image (image)',
+    'siliconflow-images': 'SiliconFlow (image)',
+    'kling-image': 'Kling (image)',
     'gemini-chat': 'Gemini generateContent (text)',
   },
   providers: {
@@ -209,7 +213,10 @@ export default {
       'You accepted {{count}} unverified capabilities, so they aren’t confirmed separately when generating',
     testSaveFirst: 'Save your changes before testing the connection',
     testNeedsKey: 'Save an API key before testing the connection',
-    testNeedsLogin: 'Sign in with ChatGPT before testing the connection',
+    testNeedsLoginChannels: {
+      'openai-chatgpt': 'Sign in with ChatGPT before testing the connection',
+      openrouter: 'Sign in with OpenRouter before testing the connection',
+    },
     test: {
       action: 'Test connection',
       ok: 'Connected',

@@ -69,7 +69,11 @@ export function needsInput(p: Preset): boolean {
   return (p.baseUrlPlaceholders?.length ?? 0) > 0 || p.suggestedModel.trim() === ''
 }
 
-const VALUE = /^[A-Za-z0-9._~-]+$/
+/**
+ * A value that is safe inside a host name or a path segment: letters, digits and . _ ~ -, starting and ending with a letter
+ * or digit. That refuses `.`, `..`, and values with a leading or trailing dot or hyphen (a bad host label, or a path trick).
+ */
+const VALUE = /^[A-Za-z0-9](?:[A-Za-z0-9._~-]*[A-Za-z0-9])?$/
 
 export type InputProblem = { field: string; kind: 'missing' | 'invalid' }
 

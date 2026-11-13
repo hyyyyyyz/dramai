@@ -13,7 +13,9 @@ import {
 import {
   dialectChanged,
   dialectOf,
+  dialectSupport,
   draftOf,
+  headerProblems,
   parseExtraBody,
 } from '@/features/settings/dialect-model'
 import { LoginPanel } from '@/features/settings/LoginPanel'
@@ -66,7 +68,7 @@ const catalog: Preset[] = [
     label: 'Aliyun CN',
     vendor: { id: 'aliyun', label: '阿里云' },
     region: 'cn',
-    baseUrl: 'https://dashscope.aliyuncs.com/api/v2/apps/{WorkspaceId}/v1',
+    baseUrl: 'https://{WorkspaceId}.dashscope.aliyuncs.com/compatible-mode/v1',
     baseUrlPlaceholders: ['WorkspaceId'],
     suggestedModel: 'qwen-plus',
     verification: { status: 'documented', source: 'https://help.aliyun.com/x' },
@@ -148,7 +150,7 @@ describe('catalog model', () => {
     expect(inputProblems(aliyun, { WorkspaceId: 'ws-123' }, '')).toEqual([])
     expect(inputProblems(catalog[4]!, {}, ' ')).toEqual([{ field: 'model', kind: 'missing' }])
     expect(resolveBaseUrl(aliyun.baseUrl, { WorkspaceId: ' ws-123 ' })).toBe(
-      'https://dashscope.aliyuncs.com/api/v2/apps/ws-123/v1',
+      'https://ws-123.dashscope.aliyuncs.com/compatible-mode/v1',
     )
     expect(resolveBaseUrl(aliyun.baseUrl, {})).toContain('{WorkspaceId}')
   })
@@ -165,16 +167,98 @@ describe('dialect model', () => {
     expect(parseExtraBody('{oops')).toEqual({ ok: false, kind: 'invalid' })
     expect(parseExtraBody('[1]')).toEqual({ ok: false, kind: 'notObject' })
     expect(parseExtraBody('"x"')).toEqual({ ok: false, kind: 'notObject' })
+    const chat = dialectSupport('openai-chat')!
     const saved = { extraBody: { b: 1, a: { y: 1, x: 2 } }, jsonMode: 'prompt_only' as const }
     const draft = draftOf(saved)
-    expect(dialectChanged(draft, saved)).toBe(false)
-    expect(dialectChanged({ ...draft, extraBody: '{"a":{"x":2,"y":1},"b":1}' }, saved)).toBe(false)
-    expect(dialectChanged({ ...draft, jsonMode: '' }, saved)).toBe(true)
-    expect(dialectChanged({ ...draft, extraBody: '{' }, saved)).toBe(true)
-    expect(dialectOf({ ...draft, extraBody: '{' })).toBeUndefined()
+    expect(dialectChanged(draft, saved, chat)).toBe(false)
+    expect(dialectChanged({ ...draft, extraBody: '{"a":{"x":2,"y":1},"b":1}' }, saved, chat)).toBe(
+      false,
+    )
+    expect(dialectChanged({ ...draft, jsonMode: '' }, saved, chat)).toBe(true)
+    expect(dialectChanged({ ...draft, extraBody: '{' }, saved, chat)).toBe(true)
+    expect(dialectOf({ ...draft, extraBody: '{' }, chat)).toBeUndefined()
     expect(
-      dialectOf({ extraBody: '', maxTokensField: 'max_completion_tokens', jsonMode: '' }),
+      dialectOf(
+        { extraBody: '', maxTokensField: 'max_completion_tokens', jsonMode: '', headers: [] },
+        chat,
+      ),
     ).toEqual({ maxTokensField: 'max_completion_tokens' })
+  })
+
+  it('what each protocol reads (from the request builders): chat all, Anthropic and Gemini body + headers, Responses headers only', () => {
+    expect(dialectSupport('openai-chat')).toMatchObject({
+      extraBody: true,
+      maxTokensField: true,
+      jsonMode: true,
+      extraHeaders: true,
+      protectedBody: ['model', 'messages', 'stream'],
+    })
+    expect(dialectSupport('anthropic-messages')).toMatchObject({
+      extraBody: true,
+      maxTokensField: false,
+      jsonMode: false,
+      extraHeaders: true,
+    })
+    expect(dialectSupport('gemini-chat')).toMatchObject({
+      extraBody: true,
+      extraHeaders: true,
+      protectedBody: ['contents'],
+    })
+    expect(dialectSupport('openai-responses')).toMatchObject({
+      extraBody: false,
+      maxTokensField: false,
+      jsonMode: false,
+      extraHeaders: true,
+    })
+    expect(dialectSupport('openai-images')).toBeUndefined()
+  })
+
+  it('only sends what the protocol reads, and a leftover from another protocol is not a change', () => {
+    const anthropic = dialectSupport('anthropic-messages')!
+    const saved = { jsonMode: 'prompt_only' as const, extraBody: { x: 1 } }
+    const draft = draftOf(saved)
+    expect(dialectChanged(draft, saved, anthropic)).toBe(false)
+    expect(dialectOf({ ...draft, maxTokensField: 'max_tokens' }, anthropic)).toEqual({
+      extraBody: { x: 1 },
+    })
+  })
+
+  it('extra headers: names, protected names, duplicates, line breaks, empty values', () => {
+    expect(headerProblems([{ name: '', value: '' }])).toEqual([])
+    expect(headerProblems([{ name: 'anthropic-workspace-id', value: 'ws_1' }])).toEqual([])
+    expect(headerProblems([{ name: 'bad name', value: 'x' }])).toEqual([{ index: 0, kind: 'name' }])
+    expect(headerProblems([{ name: 'Authorization', value: 'x' }])).toEqual([
+      { index: 0, kind: 'protected' },
+    ])
+    expect(headerProblems([{ name: 'X-API-Key', value: 'x' }])).toEqual([
+      { index: 0, kind: 'protected' },
+    ])
+    expect(
+      headerProblems([
+        { name: 'a', value: '1' },
+        { name: 'A', value: '2' },
+      ]),
+    ).toEqual([{ index: 1, kind: 'duplicate' }])
+    expect(headerProblems([{ name: 'a', value: 'x\ny' }])).toEqual([{ index: 0, kind: 'value' }])
+    expect(headerProblems([{ name: 'a', value: ' ' }])).toEqual([{ index: 0, kind: 'empty' }])
+    const chat = dialectSupport('openai-chat')!
+    expect(
+      dialectOf(
+        { extraBody: '', maxTokensField: '', jsonMode: '', headers: [{ name: 'x-a', value: '1' }] },
+        chat,
+      ),
+    ).toEqual({ extraHeaders: { 'x-a': '1' } })
+    expect(
+      dialectOf(
+        {
+          extraBody: '',
+          maxTokensField: '',
+          jsonMode: '',
+          headers: [{ name: 'Authorization', value: '1' }],
+        },
+        chat,
+      ),
+    ).toBeUndefined()
   })
 })
 
@@ -249,14 +333,13 @@ describe('the catalog dialog', () => {
     const created = makeKeyProvider({
       id: 'prov_new',
       label: 'Aliyun CN',
-      baseUrl: 'https://dashscope.aliyuncs.com/api/v2/apps/{WorkspaceId}/v1',
+      baseUrl: 'https://{WorkspaceId}.dashscope.aliyuncs.com/compatible-mode/v1',
       verification: { status: 'documented', source: 'x' },
     })
     const { server } = page({
       providers: [],
       routes: {
         'POST /api/providers/from-preset': () => created,
-        'PATCH /api/providers/prov_new': ({ body }) => ({ ...created, ...(body as object) }),
       },
     })
     const dialog = await openCatalog()
@@ -270,13 +353,12 @@ describe('the catalog dialog', () => {
     await userEvent.type(within(fill).getByRole('textbox', { name: /WorkspaceId/ }), 'ws-42')
     await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
     await waitFor(() =>
-      expect(server.calls.find((c) => c.method === 'PATCH')?.body).toEqual({
-        baseUrl: 'https://dashscope.aliyuncs.com/api/v2/apps/ws-42/v1',
+      expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
+        presetId: 'al-cn',
+        baseUrl: 'https://ws-42.dashscope.aliyuncs.com/compatible-mode/v1',
       }),
     )
-    expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
-      presetId: 'al-cn',
-    })
+    expect(server.calls.some((c) => c.method === 'PATCH')).toBe(false) // one call, not two
   })
 
   it('a bad placeholder value is refused with a reason', async () => {
@@ -301,7 +383,6 @@ describe('the catalog dialog', () => {
       providers: [],
       routes: {
         'POST /api/providers/from-preset': () => created,
-        'PATCH /api/providers/prov_new': ({ body }) => ({ ...created, ...(body as object) }),
       },
     })
     const dialog = await openCatalog()
@@ -310,10 +391,13 @@ describe('the catalog dialog', () => {
     expect(within(fill).getByText(/先在这台电脑上启动它/)).toBeInTheDocument()
     await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
     expect(await within(fill).findByText('要填写模型名')).toBeInTheDocument()
-    await userEvent.type(within(fill).getByRole('textbox', { name: /Model/ }), 'llama-3')
+    await userEvent.type(within(fill).getByRole('textbox', { name: /模型/ }), 'llama-3')
     await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
     await waitFor(() =>
-      expect(server.calls.find((c) => c.method === 'PATCH')?.body).toEqual({ model: 'llama-3' }),
+      expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
+        presetId: 'lm',
+        model: 'llama-3',
+      }),
     )
   })
 
@@ -605,21 +689,6 @@ describe('OpenRouter sign-in', () => {
     })
     await screen.findByText('已用 OpenRouter 账号登录')
     expect(screen.queryByRole('dialog')).toBeNull()
-  })
-
-  it('signing out only clears this computer: says so and links to where the key can be deleted', async () => {
-    setup({
-      state: 'signed_in',
-      credential: { kind: 'api_key', mask: 'sk-or-…ab12' },
-      manageUrl: OR_MANAGE,
-    })
-    await userEvent.click(await screen.findByRole('button', { name: '登出' }))
-    expect(await screen.findByText(/OpenRouter 没有提供撤销接口/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /去管理页删除这把 Key/ })).toHaveAttribute(
-      'href',
-      OR_MANAGE,
-    )
-    expect(screen.queryByText(/已撤销/)).toBeNull()
   })
 
   it('from another machine: no button, the reason', async () => {

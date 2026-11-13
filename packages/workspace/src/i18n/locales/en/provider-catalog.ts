@@ -1,6 +1,7 @@
 export default {
   providerCatalog: {
     title: 'Add a provider',
+    loading: 'Loading the presets…',
     search: 'Search providers',
     empty: 'There are no presets for this kind yet. You can add a custom provider',
     noMatch: 'No preset matches “{{query}}”. Try another word, or add a custom provider',
@@ -18,16 +19,36 @@ export default {
       invalid: '{{name}} can only contain letters, digits and . _ ~ -',
       modelHint:
         'This provider has no default model: enter the name of the model you loaded locally. You can also pick it from a list after adding',
+      model: 'Model',
       model_missing: 'The model name is required',
     },
   },
   providerDialect: {
     title: 'Advanced settings',
+    listSeparator: ', ',
+    fixToSave: 'Something in the advanced settings needs fixing before you can save',
+    onlyHeaders:
+      'This protocol only reads extra headers; the extra body, output length field and JSON output mode don’t apply to it',
+    headers: {
+      label: 'Extra request headers',
+      hint: 'Sent with every request, for example the anthropic-workspace-id header Anthropic asks for with a key that isn’t limited to one workspace. Authorization, x-api-key, x-goog-api-key, x-key, api-key, Content-Type and anthropic-version are managed by dramai and can’t be overridden',
+      name: 'Name',
+      value: 'Value',
+      add: 'Add a header',
+      remove: 'Remove header {{name}}',
+      invalid: 'A header name can only contain letters, digits and hyphens',
+      protected: 'dramai manages this header; it can’t be overridden',
+      duplicate: 'This name is already used',
+      empty: 'A value is required',
+      valueNewline: 'The value can’t contain a line break',
+    },
     intro:
       'You usually don’t need these. Some providers’ APIs differ slightly from OpenAI’s, and this is where to adjust for that',
     extraBody: {
       label: 'Extra request body (JSON)',
-      hint: 'Merged into every request body. A typical use: turn thinking off for a model that thinks by default, for example {"enable_thinking": false}. Core fields such as model, messages and stream are never overridden',
+      hint: 'Merged into every request body. A typical use: turn thinking off for a model that thinks by default, for example {"enable_thinking": false}.',
+      protectedMany: 'The core fields {{fields}} are never overridden',
+      protectedOne: 'The core field {{fields}} is never overridden',
       invalid: 'That isn’t valid JSON. Fix it to be able to save',
       notObject: 'Write it as a JSON object, for example {"key": "value"}',
     },

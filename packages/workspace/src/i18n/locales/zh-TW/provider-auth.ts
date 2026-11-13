@@ -5,11 +5,11 @@ export default {
       key_saved: 'API Key',
       key_missing: '還沒有 API Key',
       none: '無需鑑權',
-      login: 'ChatGPT 賬號登入',
+      channels: { 'openai-chatgpt': 'ChatGPT 帳號登入', openrouter: 'OpenRouter 帳號登入' },
     },
     noneNote: '這個服務商不需要鑑權（比如本機執行的模型），請求不帶任何憑據，所以沒有 Key 要填',
     keyMissingNote: '這個服務商用 API Key，但還沒有填。填了才能測試和使用',
-    loginFixed: '賬號登入的介面地址和協議是固定的，不能修改',
+    loginFixed: '帳號登入的介面地址和協議是固定的，不能修改',
     verification: {
       tested: '已實測 · {{date}}',
       documented: '按官方文件接入，未實測',
@@ -36,13 +36,15 @@ export default {
   },
   providerLogin: {
     again: '重新登入',
-    newAccount: '換賬號',
+    newAccount: '換帳號',
     signOut: '登出',
     cancel: '取消登入',
-    lastAccount: '上次登入的賬號：{{account}}',
+    unsafeUrl:
+      '服務端給的授權地址不是 http 或 https 網址，沒有開啟。請重試；如果一直這樣，請回饋給我們',
+    lastAccount: '上次登入的帳號：{{account}}',
     unavailable: {
       remote_access:
-        '現在是從別的機器訪問的，登入授權的回撥到不了這裡，所以不能登入。請在執行 dramai 的那臺電腦上操作',
+        '現在是從別的機器訪問的，登入授權的回呼到不了這裡，所以不能登入。請在執行 dramai 的那臺電腦上操作',
     },
     pending: {
       title: '請在瀏覽器裡完成授權',
@@ -57,7 +59,7 @@ export default {
     errors: {
       denied: '你在授權頁拒絕了登入。想用的話，可以再試一次',
       timeout: '登入超時了（授權要在 10 分鐘內完成）。再試一次',
-      account_mismatch: '這次登入的賬號和之前儲存的不是同一個。要換賬號的話，請選“換賬號”',
+      account_mismatch: '這次登入的帳號和之前儲存的不是同一個。要換帳號的話，請選“換帳號”',
       cancelled: '登入已取消',
       failed: '登入沒有完成，請重試',
       details: '技術詳情',
@@ -77,9 +79,9 @@ export default {
         continue: 'Continue with ChatGPT',
         title: '使用你的 ChatGPT 套餐',
         intro:
-          '用 ChatGPT 賬號登入後，符合條件的文本請求會用你自己的 ChatGPT 套餐，不需要 API Key。這和 dramai 無關，dramai 不收費',
+          '用 ChatGPT 帳號登入後，符合條件的文字請求會用你自己的 ChatGPT 套餐，不需要 API Key。這和 dramai 無關，dramai 不收費',
         textOnly:
-          '只覆蓋文本（規劃分集、拆分鏡頭、寫提示詞）。生成圖片、影片和配音仍然要用各自的 API Key',
+          '只覆蓋文字（規劃分集、拆分鏡頭、寫提示詞）。生成圖片、影片和配音仍然要用各自的 API Key',
         needsPlan: '需要 ChatGPT 訂閱，並受套餐用量上限限制',
         signedAs: '已登入：{{account}}',
         expiresAt: '訪問令牌約在 {{time}} 到期（會自動重新整理，僅供參考）',
@@ -103,11 +105,11 @@ export default {
         },
       },
       openrouter: {
-        continue: '用 OpenRouter 賬號登入',
-        title: '用 OpenRouter 賬號登入',
+        continue: '用 OpenRouter 帳號登入',
+        title: '用 OpenRouter 帳號登入',
         intro:
-          '登入後，OpenRouter 會給 dramai 一把屬於你自己的 API Key，之後的使用和填 Key 完全一樣。用量和費用記在你的 OpenRouter 賬號上，dramai 不收費',
-        signedIn: '已用 OpenRouter 賬號登入',
+          '登入後，OpenRouter 會給 dramai 一把屬於你自己的 API Key，之後的使用和填 Key 完全一樣。用量和費用記在你的 OpenRouter 帳號上，dramai 不收費',
+        signedIn: '已用 OpenRouter 帳號登入',
         keyNote: '這把 Key 是登入得到的：{{mask}}',
         manage: '管理這把 Key',
         relogin: '重新登入（換一把新 Key）',
@@ -140,7 +142,7 @@ export default {
     },
     rate_limit_error: {
       title: '請求太頻繁，被服務商限流了',
-      body: '等一會兒再重試；如果經常這樣，檢查這個服務商賬號的用量限額',
+      body: '等一會兒再重試；如果經常這樣，檢查這個服務商帳號的用量限額',
     },
     authentication_error: {
       title: '服務商沒有接受這個 Key',
@@ -164,7 +166,7 @@ export default {
     },
     GEMINI_IMAGE_URL_UNSUPPORTED: {
       title: 'Gemini 的圖片輸入只接受圖片資料本身',
-      body: '這不應該發生。請把這個任務和這條提示一起反饋給我們',
+      body: '這不應該發生。請把這個任務和這條提示一起回饋給我們',
     },
     INVALID_ARGUMENT: {
       title: '服務商認為這次請求的引數不對',
@@ -176,15 +178,49 @@ export default {
     },
     PERMISSION_DENIED: {
       title: '服務商拒絕了這次請求',
-      body: '多半是 Key 沒有許可權，或者這個模型還沒對你的賬號開放。檢查 Key 和模型後再試',
+      body: '多半是 Key 沒有權限，或者這個模型還沒對你的帳號開放。檢查 Key 和模型後再試',
     },
     LOGIN_REQUIRED: {
-      title: '需要重新登入服務商賬號',
-      body: '這個服務商用賬號登入，而登入已經失效或還沒完成。到設定裡重新登入後，再重試這個任務',
+      title: '需要重新登入服務商帳號',
+      body: '這個服務商用帳號登入，而登入已經失效或還沒完成。到設定裡重新登入後，再重試這個任務',
+      bodyHere:
+        '這個服務商用帳號登入，而登入已經失效或還沒完成。請在這張卡片的登入區域重新登入，再測試一次',
+    },
+    NETWORK: {
+      title: '沒能連上服務商',
+      body: '檢查這臺電腦的網路、代理，以及介面地址是否寫對（網域名稱、連接埠、https）。服務商那邊臨時不可達時，過一會兒再試',
+    },
+    TIMEOUT: {
+      title: '服務商太久沒有回應',
+      body: '可能是網路慢，也可能是服務商正忙。過一會兒再試；如果一直這樣，檢查介面地址和網路',
+    },
+    UNREADABLE_RESPONSE: {
+      title: '服務商回傳的內容不是預期的格式',
+      body: '多半是介面地址指到了一個網頁或別的服務，而不是這個服務商的 API。檢查介面地址是否帶有正確的路徑',
+    },
+    BASE_URL_INVALID: {
+      title: '介面地址不可用',
+      body: '地址是空的或寫法不對。填寫完整的地址，例如 https://api.example.com/v1',
+    },
+    HTTP_AUTH: {
+      title: '服務商沒有接受這個 Key，或者這個 Key 沒有權限',
+      body: '檢查 API Key 是否正確、是否還有效、有沒有開通這個模型的權限，重新儲存後再試',
+    },
+    HTTP_NOT_FOUND: {
+      title: '服務商找不到這個介面或模型',
+      body: '多半是介面地址的路徑不對，或者模型名寫錯了。對照服務商的文件檢查介面地址和模型',
+    },
+    HTTP_RATE_LIMIT: {
+      title: '請求太頻繁，或者額度用完了',
+      body: '等一會兒再試；如果一直這樣，到服務商的控制台看看這個帳號的用量和餘額',
+    },
+    HTTP_SERVER: {
+      title: '服務商那邊出錯了',
+      body: '這是服務商的問題，不是你的設定。過一會兒再試',
     },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: '介面地址不合規，登入令牌沒有發出',
-      body: '賬號登入的介面地址是固定的。請在設定裡刪掉這個服務商，重新用預設新增',
+      body: '帳號登入的介面地址是固定的。請在設定裡刪掉這個服務商，重新用預設新增',
     },
     subscription_sharing_usage_limit_exceeded: {
       title: '已達到用量上限',
@@ -192,24 +228,24 @@ export default {
       note: '可能是你的套餐用量到了上限，也可能只是這個應用的上限。dramai 不會猜什麼時候重置',
     },
     subscription_sharing_user_not_eligible: {
-      title: '這個賬號不能把訂閱用量給第三方應用',
-      body: '重試也沒用。請換一個賬號登入，或者改用 API Key',
+      title: '這個帳號不能把訂閱用量給第三方應用',
+      body: '重試也沒用。請換一個帳號登入，或者改用 API Key',
     },
     subscription_sharing_usage_unavailable: {
       title: '用量服務暫時不可用',
       body: '登入憑據仍然有效，過一會兒再重試這個任務',
     },
     subscription_sharing_user_unavailable: {
-      title: '賬號服務暫時不可用',
+      title: '帳號服務暫時不可用',
       body: '登入憑據仍然有效，過一會兒再重試這個任務',
     },
     subscription_sharing_unsupported_capability: {
-      title: '這次請求用了賬號登入不支援的能力',
-      body: '這不應該發生。請把這個任務和這條提示一起反饋給我們',
+      title: '這次請求用了帳號登入不支援的能力',
+      body: '這不應該發生。請把這個任務和這條提示一起回饋給我們',
     },
     subscription_sharing_route_not_supported: {
-      title: '賬號登入不支援這個介面',
-      body: '賬號登入只支援文本請求。請檢查這個服務商的介面地址',
+      title: '帳號登入不支援這個介面',
+      body: '帳號登入只支援文字請求。請檢查這個服務商的介面地址',
     },
     subscription_sharing_invalid_user: {
       title: '登入身份沒有被接受',
@@ -221,7 +257,7 @@ export default {
     },
     chatpass_v2_invalid_authorization_context: {
       title: '登入的授權上下文無效',
-      body: '重試沒用。請重新登入；如果一直這樣，請反饋給我們',
+      body: '重試沒用。請重新登入；如果一直這樣，請回饋給我們',
     },
   },
 }

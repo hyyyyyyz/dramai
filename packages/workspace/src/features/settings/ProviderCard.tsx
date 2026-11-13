@@ -26,10 +26,10 @@ import { ErrorNotice } from '@/features/common/error-text'
 import { CapabilityGrid, PriceTable } from './CapabilityGrid'
 import { capabilitySummary } from './capability-summary'
 import { DialectSettings } from './DialectSettings'
-import { dialectChanged, dialectOf, draftOf, parseExtraBody } from './dialect-model'
+import { dialectChanged, dialectOf, dialectSupport, draftOf, draftValid } from './dialect-model'
 import { LoginPanel } from './LoginPanel'
 import { AuthChip, VerificationChip, VerificationNote } from './ProviderBadges'
-import { authState, canTest } from './provider-model'
+import { authState, canTest, loginChannelOf } from './provider-model'
 import { TestResult } from './TestConnection'
 import { LISTS_MODELS, PROTOCOLS_BY_KIND, protocolLabel, type ProtocolId } from './protocols'
 
@@ -130,7 +130,10 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
   const [baseUrl, setBaseUrl] = useState(provider.baseUrl)
   const [model, setModel] = useState(provider.model)
   const [dialect, setDialect] = useState(() => draftOf(provider.dialect))
-  const showDialect = provider.kind === 'llm'
+  // the advanced options this protocol really reads (none for protocols that read none of them)
+  const support = dialectSupport(protocol)
+  const dialectDirty = dialectChanged(dialect, provider.dialect, support)
+  const dialectOk = draftValid(dialect, support)
   const login = provider.auth.type === 'account_login'
   const state = authState(provider)
   const [replacing, setReplacing] = useState(!provider.hasKey)
@@ -142,14 +145,19 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
     protocol !== provider.protocol ||
     baseUrl !== provider.baseUrl ||
     model !== provider.model ||
-    (showDialect && dialectChanged(dialect, provider.dialect))
+    dialectDirty
   // JSON that does not parse can never be saved
-  const valid =
-    label.trim() !== '' &&
-    baseUrl.trim() !== '' &&
-    model.trim() !== '' &&
-    (!showDialect || parseExtraBody(dialect.extraBody).ok)
+  const valid = label.trim() !== '' && baseUrl.trim() !== '' && model.trim() !== '' && dialectOk
   const protocols = PROTOCOLS_BY_KIND[provider.kind]
+  // why "test connection" is unavailable; shown as visible text, not only as a tooltip
+  const channel = loginChannelOf(provider)
+  const testBlocked = dirty
+    ? t('providers.testSaveFirst')
+    : !canTest(provider)
+      ? channel
+        ? t(`providers.testNeedsLoginChannels.${channel}`)
+        : t('providers.testNeedsKey')
+      : undefined
 
   const save = async () => {
     try {
@@ -161,9 +169,7 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
           protocol,
           baseUrl: baseUrl.trim(),
           model: model.trim(),
-          ...(showDialect && dialectChanged(dialect, provider.dialect)
-            ? { dialect: dialectOf(dialect) ?? {} }
-            : {}),
+          ...(dialectDirty && support ? { dialect: dialectOf(dialect, support) ?? {} } : {}),
         },
       })
     } catch {
@@ -283,7 +289,12 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
         )}
       </div>
 
-      {showDialect && <DialectSettings draft={dialect} onChange={setDialect} />}
+      {support && <DialectSettings draft={dialect} support={support} onChange={setDialect} />}
+      {support && !dialectOk && (
+        <p className="text-sm text-danger" role="alert">
+          {t('providerDialect.fixToSave')}
+        </p>
+      )}
       <VerificationNote verification={provider.verification} />
       {cap.isPending && <Skeleton className="h-24" />}
       {cap.isError && <ErrorNotice error={cap.error} />}
@@ -333,19 +344,19 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
           size="sm"
           variant="secondary"
           loading={test.isPending}
-          disabled={dirty || !canTest(provider)}
-          title={
-            dirty
-              ? t('providers.testSaveFirst')
-              : !canTest(provider)
-                ? t(login ? 'providers.testNeedsLogin' : 'providers.testNeedsKey')
-                : undefined
-          }
+          disabled={Boolean(testBlocked)}
+          aria-describedby={testBlocked ? `test-why-${provider.id}` : undefined}
+          title={testBlocked}
           onClick={() => test.mutate({ params: { providerId: provider.id } })}
         >
           <FlaskConical {...iconProps} aria-hidden />
           {t('providers.test.action')}
         </Button>
+        {testBlocked && (
+          <span id={`test-why-${provider.id}`} className="text-xs text-muted-foreground">
+            {testBlocked}
+          </span>
+        )}
         <span className="flex-1" />
         <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
           <Trash2 {...iconProps} aria-hidden />
@@ -464,7 +475,7 @@ function ModelField({
             ? t('providerLogin.models.fetchHint')
             : undefined
   return (
-    <Field className="col-span-full" label="Model" hint={hint}>
+    <Field className="col-span-full" label={t('providerCatalog.fill.model')} hint={hint}>
       <div className="flex gap-2">
         <Input
           mono

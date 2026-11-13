@@ -5,7 +5,7 @@ export default {
       key_saved: 'API Key',
       key_missing: '还没有 API Key',
       none: '无需鉴权',
-      login: 'ChatGPT 账号登录',
+      channels: { 'openai-chatgpt': 'ChatGPT 账号登录', openrouter: 'OpenRouter 账号登录' },
     },
     noneNote: '这个服务商不需要鉴权（比如本机运行的模型），请求不带任何凭据，所以没有 Key 要填',
     keyMissingNote: '这个服务商用 API Key，但还没有填。填了才能测试和使用',
@@ -39,6 +39,8 @@ export default {
     newAccount: '换账号',
     signOut: '登出',
     cancel: '取消登录',
+    unsafeUrl:
+      '服务端给的授权地址不是 http 或 https 网址，没有打开。请重试；如果一直这样，请反馈给我们',
     lastAccount: '上次登录的账号：{{account}}',
     unavailable: {
       remote_access:
@@ -181,6 +183,40 @@ export default {
     LOGIN_REQUIRED: {
       title: '需要重新登录服务商账号',
       body: '这个服务商用账号登录，而登录已经失效或还没完成。到设置里重新登录后，再重试这个任务',
+      bodyHere:
+        '这个服务商用账号登录，而登录已经失效或还没完成。请在这张卡片的登录区域重新登录，再测试一次',
+    },
+    NETWORK: {
+      title: '没能连上服务商',
+      body: '检查这台电脑的网络、代理，以及接口地址是否写对（域名、端口、https）。服务商那边临时不可达时，过一会儿再试',
+    },
+    TIMEOUT: {
+      title: '服务商太久没有响应',
+      body: '可能是网络慢，也可能是服务商正忙。过一会儿再试；如果一直这样，检查接口地址和网络',
+    },
+    UNREADABLE_RESPONSE: {
+      title: '服务商返回的内容不是预期的格式',
+      body: '多半是接口地址指到了一个网页或别的服务，而不是这个服务商的 API。检查接口地址是否带有正确的路径',
+    },
+    BASE_URL_INVALID: {
+      title: '接口地址不可用',
+      body: '地址是空的或写法不对。填写完整的地址，例如 https://api.example.com/v1',
+    },
+    HTTP_AUTH: {
+      title: '服务商没有接受这个 Key，或者这个 Key 没有权限',
+      body: '检查 API Key 是否正确、是否还有效、有没有开通这个模型的权限，重新保存后再试',
+    },
+    HTTP_NOT_FOUND: {
+      title: '服务商找不到这个接口或模型',
+      body: '多半是接口地址的路径不对，或者模型名写错了。对照服务商的文档检查接口地址和模型',
+    },
+    HTTP_RATE_LIMIT: {
+      title: '请求太频繁，或者额度用完了',
+      body: '等一会儿再试；如果一直这样，到服务商的控制台看看这个账号的用量和余额',
+    },
+    HTTP_SERVER: {
+      title: '服务商那边出错了',
+      body: '这是服务商的问题，不是你的设置。过一会儿再试',
     },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: '接口地址不合规，登录令牌没有发出',

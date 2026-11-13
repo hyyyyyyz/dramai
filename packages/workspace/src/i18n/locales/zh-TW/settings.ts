@@ -11,7 +11,7 @@ export default {
     general: {
       language: {
         title: '介面語言',
-        hint: '切換後立即生效，並記在這臺電腦上。內建的名稱（風格預設、服務商備註）也會跟著換，你自己填的內容不會變。繁體中文目前只翻譯了介面文字，內建名稱仍是簡體',
+        hint: '切換後立即生效，並記在這臺電腦上。內建的名稱（風格預設、服務商備註）也會跟著換，你自己填的內容不會變',
       },
       theme: {
         title: '主題',
@@ -138,6 +138,10 @@ export default {
     'openai-tts': 'OpenAI 相容（語音）',
     'openai-responses': 'OpenAI Responses（文字）',
     'anthropic-messages': 'Anthropic Messages（文字）',
+    'volcengine-images': '火山方舟 Seedream（生圖）',
+    'dashscope-image': '阿里雲百煉 Qwen-Image（生圖）',
+    'siliconflow-images': '矽基流動（生圖）',
+    'kling-image': '可靈（生圖）',
     'gemini-chat': 'Gemini generateContent（文字）',
   },
   providers: {
@@ -192,7 +196,10 @@ export default {
     acceptedUnverified: '你已接受 {{count}} 項未驗證的能力，生成時不再為它們單獨確認',
     testSaveFirst: '先儲存修改，再測試連線',
     testNeedsKey: '先儲存 API Key，再測試連線',
-    testNeedsLogin: '先用 ChatGPT 帳號登入，再測試連線',
+    testNeedsLoginChannels: {
+      'openai-chatgpt': '先用 ChatGPT 帳號登入，再測試連線',
+      openrouter: '先用 OpenRouter 帳號登入，再測試連線',
+    },
     test: {
       action: '測試連線',
       ok: '連線成功',

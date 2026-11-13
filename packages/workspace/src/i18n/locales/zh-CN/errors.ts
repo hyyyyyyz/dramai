@@ -50,6 +50,11 @@ export default {
   KEY_NOT_APPLICABLE: '账号登录的服务商没有 API Key，不需要也不能设置或清除',
   AUTH_NOT_ALLOWED: '这个协议不支持所选的鉴权方式（账号登录只覆盖文本，接口地址也是固定的）',
   MODEL_LIST_UNSUPPORTED: '这个服务商没有模型列表，请手动填写模型名',
+  BASE_URL_PLACEHOLDER_UNFILLED: '地址里还有没替换的占位符，把它们都填上再添加',
+  BASE_URL_INVALID:
+    '接口地址不合法：要是 http 或 https 网址，不能带用户名密码或空格（Key 请填在 API Key 里）',
+  BASE_URL_INSECURE: '公网地址请用 https（本机或局域网的服务可以用 http）',
+  BASE_URL_NOT_OVERRIDABLE: '账号登录的接口地址是固定的，不能修改',
   NO_LLM_PROVIDER: '还没有选中可用的大模型服务商，请先到设置里配置',
   FFMPEG_MISSING: '没有找到 ffmpeg，请先安装',
   FFMPEG_INCOMPATIBLE: '当前的 ffmpeg 缺少合成所需的能力',

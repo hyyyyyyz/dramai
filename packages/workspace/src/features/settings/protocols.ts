@@ -18,6 +18,10 @@ const KIND_OF: Record<ProtocolId, ProviderKind> = {
   'gemini-chat': 'llm',
   'openai-images': 'image',
   'gemini-image': 'image',
+  'volcengine-images': 'image',
+  'dashscope-image': 'image',
+  'siliconflow-images': 'image',
+  'kling-image': 'image',
   'aliyun-video': 'video',
   'volcengine-video': 'video',
   'kling-video': 'video',
@@ -28,7 +32,14 @@ const KIND_OF: Record<ProtocolId, ProviderKind> = {
 /** Protocols a custom provider of each kind can pick, in the order shown. */
 export const PROTOCOLS_BY_KIND: Record<ProviderKind, readonly ProtocolId[]> = {
   llm: ['openai-chat', 'openai-responses', 'anthropic-messages', 'gemini-chat'],
-  image: ['openai-images', 'gemini-image'],
+  image: [
+    'openai-images',
+    'gemini-image',
+    'volcengine-images',
+    'dashscope-image',
+    'siliconflow-images',
+    'kling-image',
+  ],
   video: ['aliyun-video', 'volcengine-video', 'kling-video', 'generic-video'],
   tts: ['openai-tts'],
 }

@@ -5,7 +5,10 @@ export default {
       key_saved: 'API key',
       key_missing: 'No API key yet',
       none: 'No authentication',
-      login: 'ChatGPT account sign-in',
+      channels: {
+        'openai-chatgpt': 'ChatGPT account sign-in',
+        openrouter: 'OpenRouter account sign-in',
+      },
     },
     noneNote:
       'This provider needs no authentication (a model running on your own machine, for example). Requests carry no credentials, so there is no key to enter',
@@ -41,6 +44,8 @@ export default {
     newAccount: 'Use another account',
     signOut: 'Sign out',
     cancel: 'Cancel sign-in',
+    unsafeUrl:
+      'The authorization address the server gave isn’t an http or https address, so it wasn’t opened. Try again; if it keeps happening, please report it',
     lastAccount: 'Last signed in as {{account}}',
     unavailable: {
       remote_access:
@@ -185,8 +190,42 @@ export default {
       body: 'Most likely the key lacks permission, or the model isn’t open to your account yet. Check the key and the model, then try again',
     },
     LOGIN_REQUIRED: {
-      title: 'Sign in to the provider account again',
-      body: 'This provider uses account sign-in, and the sign-in has expired or was never finished. Sign in again in Settings, then retry this task',
+      title: 'Sign in to this provider again',
+      body: 'This provider uses account sign-in, and the sign-in has expired or was never completed. Sign in again in Settings, then retry this task',
+      bodyHere:
+        'This provider uses account sign-in, and the sign-in has expired or was never completed. Sign in again in the sign-in area of this card, then test again',
+    },
+    NETWORK: {
+      title: 'Could not reach the provider',
+      body: 'Check this computer’s network and proxy, and whether the address is right (host, port, https). If the provider is temporarily unreachable, try again in a moment',
+    },
+    TIMEOUT: {
+      title: 'The provider took too long to answer',
+      body: 'The network may be slow or the provider busy. Try again in a moment; if it keeps happening, check the address and the network',
+    },
+    UNREADABLE_RESPONSE: {
+      title: 'The provider answered in an unexpected format',
+      body: 'The address most likely points at a web page or another service instead of this provider’s API. Check that the address has the right path',
+    },
+    BASE_URL_INVALID: {
+      title: 'The address cannot be used',
+      body: 'It is empty or malformed. Enter the full address, for example https://api.example.com/v1',
+    },
+    HTTP_AUTH: {
+      title: 'The provider rejected this key, or the key lacks permission',
+      body: 'Check that the API key is correct and still valid and that it may use this model, save it again, then retry',
+    },
+    HTTP_NOT_FOUND: {
+      title: 'The provider cannot find this endpoint or model',
+      body: 'The path in the address is probably wrong, or the model name is. Check both against the provider’s documentation',
+    },
+    HTTP_RATE_LIMIT: {
+      title: 'Too many requests, or the quota is used up',
+      body: 'Wait a moment and try again. If it keeps happening, check this account’s usage and balance in the provider’s console',
+    },
+    HTTP_SERVER: {
+      title: 'The provider had an error',
+      body: 'This is on the provider’s side, not your settings. Try again in a moment',
     },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: 'The base URL isn’t allowed, so no sign-in token was sent',

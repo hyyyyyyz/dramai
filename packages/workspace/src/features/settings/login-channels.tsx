@@ -29,7 +29,7 @@ export interface ChannelSpec {
   loggedOut: (
     t: TFunction,
     revoked: Revoked,
-    s: LoginStatusDto,
+    manageUrl: string | undefined,
   ) => { tone: 'info' | 'warn'; text: string; link?: { href: string; label: string } }
   /** Extra text while waiting for the browser, and whether Cancel is the main action there. */
   pending?: { hint?: (t: TFunction) => string; cancelIsPrimary?: boolean }
@@ -129,16 +129,18 @@ export const CHANNELS: Record<LoginChannel, ChannelSpec> = {
       label: c(t, OPENROUTER, 'relogin'),
       note: c(t, OPENROUTER, 'reloginNote'),
     }),
-    loggedOut: (t, revoked, s) => ({
+    // the link is the one the logout response carries; nothing to revoke means nothing to point at
+    loggedOut: (t, revoked, manageUrl) => ({
       tone: 'warn',
       text: c(
         t,
         OPENROUTER,
         revoked === 'nothing_to_revoke' ? 'loggedOut.nothing' : 'loggedOut.unconfirmed',
       ),
-      link: s.manageUrl
-        ? { href: s.manageUrl, label: c(t, OPENROUTER, 'loggedOut.manage') }
-        : undefined,
+      link:
+        manageUrl && revoked !== 'nothing_to_revoke'
+          ? { href: manageUrl, label: c(t, OPENROUTER, 'loggedOut.manage') }
+          : undefined,
     }),
     pending: { hint: (t) => c(t, OPENROUTER, 'pendingHint'), cancelIsPrimary: true },
   },

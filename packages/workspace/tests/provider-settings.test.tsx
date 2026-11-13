@@ -201,8 +201,19 @@ describe('when a task fails because of the account sign-in', () => {
   })
 
   it('an unrelated error code gets no extra block', () => {
-    item('HTTP_500')
+    item('HTTP_418')
     expect(screen.queryByTestId('provider-error')).toBeNull()
+  })
+
+  it('a failed task with an HTTP status gets the same explanation as a failed connection test', () => {
+    item('HTTP_429')
+    expect(screen.getByTestId('provider-error')).toHaveTextContent('请求太频繁，或者额度用完了')
+  })
+
+  it('a rejected key says so and, in a task, points to Settings', () => {
+    item('HTTP_401')
+    expect(screen.getByTestId('provider-error')).toHaveTextContent('服务商没有接受这个 Key')
+    expect(screen.getByRole('link', { name: '去设置服务商' })).toBeInTheDocument()
   })
 })
 
