@@ -80,6 +80,10 @@ const providerWritable = z.object({
   label: z.string().min(1).max(120),
   kind: S.providerKind,
   protocol: S.protocolId,
+  /**
+   * 接口地址（创建 / 改地址时校验，400 + `BASE_URL_*`）：http(s)；不带查询串和片段；不留 `{占位符}`（含 `%7B…%7D`）；
+   * 明文 http 只能发往本机 / 局域网（链路本地地址如 169.254.x 不算）。已存在的旧配置不受影响。
+   */
   baseUrl: z.string().min(1),
   model: z.string().min(1),
   enabled: z.boolean().optional(),

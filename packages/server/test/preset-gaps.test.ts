@@ -285,3 +285,87 @@ describe('knownLimitations follow the request language', () => {
     )
   })
 })
+
+describe('address validation covers every way to write an address (only on write)', () => {
+  const create = (h: Harness, baseUrl: string) =>
+    h.client.call('providers.create', {
+      body: { label: 'mine', kind: 'llm', protocol: 'openai-chat', baseUrl, model: 'm' },
+    })
+
+  it('providers.create: same rules as fromPreset, trimmed address stored', async () => {
+    const { h } = await boot()
+    for (const [bad, code] of [
+      ['https://a.example.com/v1?x=1', 'BASE_URL_INVALID'],
+      ['https://a.example.com/v1#x', 'BASE_URL_INVALID'],
+      ['https://%7BWorkspaceId%7D.example.com/v1', 'BASE_URL_PLACEHOLDER_UNFILLED'],
+      ['https://{WorkspaceId}.example.com/v1', 'BASE_URL_PLACEHOLDER_UNFILLED'],
+      ['http://api.example.com/v1', 'BASE_URL_INSECURE'],
+      ['http://169.254.169.254/v1', 'BASE_URL_INSECURE'],
+      ['ftp://x.example.com', 'BASE_URL_INVALID'],
+    ] as const) {
+      await expect(create(h, bad), bad).rejects.toMatchObject({ status: 400, code })
+    }
+    const ok = await create(h, '  http://localhost:11434/v1  ')
+    expect(ok.baseUrl).toBe('http://localhost:11434/v1')
+    expect((await h.client.call('providers.list')).items).toHaveLength(1)
+  })
+
+  it('providers.update: a changed address is checked; an unchanged one is never re-checked, and old rows stay readable', async () => {
+    const { h } = await boot()
+    // a row that was saved before the rules tightened (written straight to the store)
+    await h.server.ctx.store.providers.put({
+      id: 'prov_legacy',
+      label: 'old',
+      kind: 'llm',
+      protocol: 'openai-chat',
+      baseUrl: 'https://legacy.example.com/v1?key=1',
+      model: 'm',
+      enabled: true,
+    } as never)
+    // readable
+    expect(
+      (await h.client.call('providers.get', { params: { providerId: 'prov_legacy' } })).baseUrl,
+    ).toBe('https://legacy.example.com/v1?key=1')
+    expect((await h.client.call('providers.list')).items.map((p) => p.id)).toContain('prov_legacy')
+    // editing something else, even sending the same old address back, still works
+    const renamed = await h.client.call('providers.update', {
+      params: { providerId: 'prov_legacy' },
+      body: { label: 'renamed', baseUrl: 'https://legacy.example.com/v1?key=1' },
+    })
+    expect(renamed.label).toBe('renamed')
+    // changing the address runs the checks
+    await expect(
+      h.client.call('providers.update', {
+        params: { providerId: 'prov_legacy' },
+        body: { baseUrl: 'http://api.example.com/v1' },
+      }),
+    ).rejects.toMatchObject({ status: 400, code: 'BASE_URL_INSECURE' })
+    await expect(
+      h.client.call('providers.update', {
+        params: { providerId: 'prov_legacy' },
+        body: { baseUrl: 'https://other.example.com/v1?x=1' },
+      }),
+    ).rejects.toMatchObject({ code: 'BASE_URL_INVALID' })
+    const moved = await h.client.call('providers.update', {
+      params: { providerId: 'prov_legacy' },
+      body: { baseUrl: ' https://new.example.com/v1 ' },
+    })
+    expect(moved.baseUrl).toBe('https://new.example.com/v1')
+  })
+
+  it('a login provider still answers AUTH_NOT_ALLOWED first for a wrong address', async () => {
+    const { h } = await boot()
+    await expect(
+      h.client.call('providers.create', {
+        body: {
+          label: 'x',
+          kind: 'llm',
+          protocol: 'openai-responses',
+          baseUrl: 'https://evil.example.com/v1',
+          model: 'm',
+          auth: { type: 'account_login', channel: 'openai-chatgpt' },
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'AUTH_NOT_ALLOWED' })
+  })
+})

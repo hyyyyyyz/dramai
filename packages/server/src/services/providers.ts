@@ -119,6 +119,23 @@ export class ProviderService {
     return cfg
   }
 
+  /**
+   * 写入前校验接口地址（创建、按预设创建、改地址三处共用同一套规则，见 core 的 `checkBaseUrl`）。
+   * 只在写入时做：库里已有的旧配置不会因为规则收紧而读不出来。返回去掉首尾空白的地址。
+   */
+  private checkedBaseUrl(url: string): string {
+    const checked = checkBaseUrl(url)
+    if (checked.ok) return checked.url
+    throw new HttpError(
+      400,
+      checked.code,
+      checked.message,
+      checked.code === 'BASE_URL_PLACEHOLDER_UNFILLED'
+        ? { placeholders: checked.placeholders }
+        : undefined,
+    )
+  }
+
   async create(
     input: Omit<ProviderConfig, 'id' | 'secretRef' | 'enabled'> & { enabled?: boolean },
     apiKey?: string,
@@ -134,8 +151,10 @@ export class ProviderService {
       if (problem) throw new HttpError(400, 'AUTH_NOT_ALLOWED', problem)
       if (apiKey) throw badRequest('账号登录的服务商不需要 API Key')
     }
+    const baseUrl = this.checkedBaseUrl(input.baseUrl)
     const cfg: ProviderConfig = {
       ...input,
+      baseUrl,
       id,
       auth,
       enabled: input.enabled ?? true,
@@ -168,17 +187,7 @@ export class ProviderService {
       )
     }
     const baseUrl = override || preset.baseUrl
-    const checked = checkBaseUrl(baseUrl)
-    if (!checked.ok) {
-      throw new HttpError(
-        400,
-        checked.code,
-        checked.message,
-        checked.code === 'BASE_URL_PLACEHOLDER_UNFILLED'
-          ? { placeholders: checked.placeholders }
-          : undefined,
-      )
-    }
+    const checked = { url: this.checkedBaseUrl(baseUrl) }
     const id = this.d.ids.next('prov')
     const cfg = configFromPreset(preset, {
       id,
@@ -217,6 +226,10 @@ export class ProviderService {
           ? '账号登录目前只覆盖文本（大模型）服务商'
           : loginEndpointProblem(auth.channel, next)
       if (problem) throw new HttpError(400, 'AUTH_NOT_ALLOWED', problem)
+    }
+    // 只有这次真的改了地址才校验：没动地址的更新不会因为旧地址不符合新规则而失败
+    if (patch.baseUrl !== undefined && patch.baseUrl !== cur.baseUrl) {
+      next.baseUrl = this.checkedBaseUrl(patch.baseUrl)
     }
     await this.d.store.providers.put(next)
     return next
