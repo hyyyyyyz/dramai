@@ -367,12 +367,13 @@ export function providerRegionOf(
     ? PROVIDER_PRESETS.find((p) => p.id === config.presetId)
     : undefined
   if (preset?.region === 'cn' || preset?.region === 'global') return preset.region
-  let host = ''
+  let parsed: URL
   try {
-    host = new URL(config.baseUrl).hostname.toLowerCase()
+    parsed = new URL(config.baseUrl)
   } catch {
     return undefined
   }
+  const host = parsed.hostname.toLowerCase()
   if (/\.maas\.aliyuncs\.com$/.test(host))
     return /\.cn-[a-z0-9-]+\.maas\./.test(host) ? 'cn' : 'global'
   if (host.endsWith('.volces.com')) return 'cn'
