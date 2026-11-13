@@ -52,6 +52,15 @@ export type ProviderAuth =
   | { type: 'account_login'; channel: LoginChannelId }
   | { type: 'none' }
 
+/**
+ * 预设（和由它创建的配置）的验证状态。
+ * - `tested`：端到端实测过，带日期；
+ * - `documented`：按官方文档接入，没有实测，带文档出处。**不自动成为当前选择。**
+ */
+export type ProviderVerification =
+  | { status: 'tested'; testedAt: string }
+  | { status: 'documented'; source: string }
+
 /** 持久化的服务商配置。**不含 API Key**；Key 通过 `secretRef` 从 SecretStore 取。 */
 export interface ProviderConfig {
   id: string
@@ -72,6 +81,8 @@ export interface ProviderConfig {
   notes?: string
   /** 最近一次验证通过的日期（ISO，yyyy-mm-dd）。 */
   verifiedAt?: string
+  /** 由预设创建时的验证状态。没有 = 用户自己加的配置，不声称验证过。 */
+  verification?: ProviderVerification
   knownLimitations?: string[]
   /** 用户对某个模型能力的覆盖（自定义模型时用）。 */
   capabilityOverrides?: Partial<ModelCapability>

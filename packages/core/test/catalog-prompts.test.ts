@@ -216,6 +216,31 @@ describe('prompt library: data files loaded at runtime', () => {
     expect(catalog.styles.presets).toHaveLength(20)
   })
 
+  it('the model data schema accepts the openai-responses protocol, and unknown models on it get the conservative text default', async () => {
+    const dir = await tmp()
+    const base = catalog.models.all()[0]!
+    await writeFile(
+      join(dir, 'responses.json'),
+      JSON.stringify({
+        schemaVersion: 1,
+        models: [
+          {
+            ...base,
+            id: 'openai-responses-x',
+            protocol: 'openai-responses',
+            apiModel: 'gpt-x',
+            displayName: 'GPT X',
+          },
+        ],
+      }),
+    )
+    const registry = loadModelRegistryFromDir(dir)
+    expect(registry.lookup({ protocol: 'openai-responses', model: 'gpt-x' }).declared).toBe(true)
+    const unknown = catalog.models.lookup({ protocol: 'openai-responses', model: 'whatever' })
+    expect(unknown.declared).toBe(false)
+    expect(unknown.capability.modes).toEqual({}) // text model: no image / video modes
+  })
+
   it('rejects malformed model data with a readable path', async () => {
     const dir = await tmp()
     await writeFile(
@@ -713,13 +738,14 @@ describe('model profiles, capabilities and price table', () => {
 })
 
 describe('provider presets', () => {
-  it('keeps exactly the four verified v0.4 presets, with their notes intact', () => {
-    expect(PROVIDER_PRESETS.map((p) => p.id)).toEqual([
-      'deepseek-llm',
-      '302-image-seedream',
-      '302-image-nano-banana',
-      '302-i2v-wan-flash',
-    ])
+  it('keeps the four v0.4 presets, tested, with their notes intact', () => {
+    expect(
+      PROVIDER_PRESETS.filter((p) => p.verification.status === 'tested').map((p) => p.id),
+    ).toEqual(['deepseek-llm', '302-image-seedream', '302-image-nano-banana', '302-i2v-wan-flash'])
+    for (const p of PROVIDER_PRESETS.filter((x) => x.verification.status === 'tested')) {
+      expect(p.verification).toEqual({ status: 'tested', testedAt: '2026-05-04' })
+      expect(p.auth).toEqual({ type: 'api_key' })
+    }
     const byId = Object.fromEntries(PROVIDER_PRESETS.map((p) => [p.id, p]))
     expect(byId['302-image-seedream'].notes).toContain('locked character 参考图当前不通')
     expect(byId['302-image-nano-banana'].notes).toContain('base URL 不带 /v1')
@@ -733,11 +759,34 @@ describe('provider presets', () => {
     })
   })
 
-  it('every preset has a verification date and known limitations', () => {
+  it('every preset has a verification status (tested with a date, or documented with a source) and known limitations', () => {
     for (const p of PROVIDER_PRESETS) {
-      expect(p.verifiedAt, p.id).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      if (p.verification.status === 'tested') {
+        expect(p.verification.testedAt, p.id).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+        expect(p.verifiedAt, p.id).toBe(p.verification.testedAt)
+      } else {
+        expect(p.verification.source, p.id).toMatch(/^https:\/\//)
+        expect(p.verifiedAt, p.id).toBeUndefined() // an untested preset never carries a test date
+      }
       expect(p.knownLimitations.length, p.id).toBeGreaterThan(0)
     }
+  })
+
+  it('the OpenAI sign-in preset is documented-only, text-only, and says what it does not cover', () => {
+    const p = PROVIDER_PRESETS.find((x) => x.id === 'openai-responses-login')!
+    expect(p).toMatchObject({
+      kind: 'llm',
+      protocol: 'openai-responses',
+      baseUrl: 'https://api.openai.com/v1',
+      auth: { type: 'account_login', channel: 'openai-chatgpt' },
+      verification: { status: 'documented' },
+    })
+    expect(p.knownLimitations[0]).toContain('只覆盖文本，不含生图、视频和语音')
+    expect(p.knownLimitations.join('')).toContain('ChatGPT 订阅')
+    const cfg = configFromPreset(p, { id: 'c1' })
+    expect(cfg).toMatchObject({ auth: p.auth, verification: p.verification })
+    expect(cfg.verifiedAt).toBeUndefined()
+    expect(cfg.secretRef).toBeUndefined()
   })
 
   it('every media preset points at a model that has a profile', () => {

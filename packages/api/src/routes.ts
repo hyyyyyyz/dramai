@@ -86,7 +86,11 @@ const providerWritable = z.object({
   notes: z.string().optional(),
   capabilityOverrides: z.record(z.string(), z.unknown()).optional(),
 })
-export const providerCreate = providerWritable.extend({ apiKey: z.string().min(1).optional() })
+export const providerCreate = providerWritable.extend({
+  apiKey: z.string().min(1).optional(),
+  /** 缺省 = 有 apiKey 按 api_key，否则 none。account_login 只允许 openai-responses 协议。 */
+  auth: S.providerAuth.optional(),
+})
 export const providerUpdate = providerWritable.partial()
 
 export const shotUpdate = z.object({
@@ -205,6 +209,34 @@ export const routes = {
   }),
   'providers.test': route('POST', '/api/providers/:providerId/test', {
     response: S.testConnectionResult,
+  }),
+  /**
+   * 账号登录（OpenAI）。发起 → 返回要在浏览器里打开的地址，回调由服务端临时监听 127.0.0.1；
+   * 再用 `providers.login.status` 查结果。令牌只在服务端，任何响应里都没有。
+   */
+  'providers.login.start': route('POST', '/api/providers/:providerId/login/start', {
+    body: z.object({ account: z.enum(['same', 'new']).optional() }),
+    response: z.object({
+      authorizationUrl: z.string(),
+      redirectUri: z.string(),
+      expiresAt: z.string(),
+    }),
+  }),
+  'providers.login.status': route('GET', '/api/providers/:providerId/login', {
+    response: S.loginStatus,
+  }),
+  'providers.login.cancel': route('POST', '/api/providers/:providerId/login/cancel', {
+    response: S.loginStatus,
+  }),
+  /** 撤销刷新令牌（尽力而为）并清掉本地令牌；`revoked: 'unconfirmed'` = 没能确认撤销，界面要如实告诉用户。 */
+  'providers.login.logout': route('POST', '/api/providers/:providerId/login/logout', {
+    response: z.object({
+      status: S.loginStatus,
+      revoked: z.enum(['confirmed', 'unconfirmed', 'nothing_to_revoke']),
+    }),
+  }),
+  'providers.models': route('GET', '/api/providers/:providerId/models', {
+    response: items(S.providerModel),
   }),
   'providers.capability': route('GET', '/api/providers/:providerId/capability', {
     response: S.providerCapabilityView,
