@@ -611,6 +611,12 @@ export const timelineRevision = z.object({
   content: timelineContent,
   changedClipIds: z.array(z.string()).optional(),
   restoredFrom: z.number().optional(),
+  /**
+   * 只有系统自动追加的修订才有的原因码，界面据此显示本地化的说明（不要靠 `summary` 的中文文字，也不要靠 `author`）。
+   * 现在只有 `native_audio_default`：这个镜头第一次拿到生成的视频，模型无法关闭自带音频而镜头没有使用原生人声，
+   * 所以这个片段的原声默认音量被设为 0（`changedClipIds` 是被改的片段）。旧修订和用户的修改没有这个字段。
+   */
+  reason: z.enum(['native_audio_default']).optional(),
 })
 
 export const timelineIssue = z.object({

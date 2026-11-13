@@ -176,7 +176,12 @@ describe('follow-up 1: the default volume does not depend on the order', () => {
         expect(r.author.kind).toBe('agent')
         expect(r.changedClipIds!.length).toBeGreaterThan(0)
         expect(r.summary).toContain('默认音量')
+        expect(r.reason).toBe('native_audio_default') // machine-readable; the summary is only for reading
       }
+      // every other revision (the initial one, sync, the user's) has no reason
+      const others = docAfter.revisions.slice(0, docBefore.revisions.length)
+      expect(others.length).toBeGreaterThan(0)
+      for (const r of others) expect(r).not.toHaveProperty('reason')
       expect(b.env.ports.events.ofType('timeline.changed').length).toBe(autos.length)
     },
   )
@@ -204,6 +209,15 @@ describe('follow-up 1: the default volume does not depend on the order', () => {
       await edit(restored.id, 0.9)
       await edit(restored.id, 0.3) // back to the original number: the history still shows it was touched
       await gen(w.env, KLING, [raised.id, restored.id, plain.id])
+      // the user's own revisions never carry the reason; only the app's automatic ones do
+      const reasons = doc.revisions.map((r) => r.reason)
+      expect(reasons.filter(Boolean)).toEqual([])
+      const latest = await ensureTimeline(w.env.deps, w.ep.id)
+      const autoRevs = latest.revisions.filter((r) => r.reason)
+      expect(autoRevs.length).toBeGreaterThan(0)
+      expect(
+        autoRevs.every((r) => r.reason === 'native_audio_default' && r.author.kind === 'agent'),
+      ).toBe(true)
       const v = await volumes(w.env, w.ep.id)
       expect(v[raised.id]).toBe(0.8)
       expect(v[restored.id]).toBe(0.3)

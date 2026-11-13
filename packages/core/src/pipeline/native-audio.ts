@@ -126,6 +126,7 @@ export async function applyNativeAudioDefaultOnFirstVideo(
     author: { kind: 'agent' },
     now: deps.clock.now(),
     changedClipIds: [...ids],
+    reason: 'native_audio_default',
   })
   await tx.timelines.put(next)
   return { episodeId: doc.episodeId, clipIds: [...ids] }

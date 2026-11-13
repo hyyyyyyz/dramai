@@ -99,6 +99,8 @@ export function appendRevision(
     now: number
     changedClipIds?: string[]
     restoredFrom?: number
+    /** 系统自动追加的修订的原因码（用户的修改不写）。 */
+    reason?: TimelineRevision['reason']
     nextClipNumber?: number
     nextBgmNumber?: number
   },
@@ -113,6 +115,7 @@ export function appendRevision(
     content: structuredClone(input.content),
     changedClipIds: input.changedClipIds,
     restoredFrom: input.restoredFrom,
+    ...(input.reason ? { reason: input.reason } : {}),
   }
   return {
     ...doc,

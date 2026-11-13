@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { ApiError } from '@dramai/api'
 import {
+  appendRevision,
   createEpisode,
   createProject,
   createScene,
   createShot,
+  headRevision,
   SCHEMA_VERSIONS,
 } from '@dramai/core'
 import type { EntityCandidate } from '@dramai/core'
@@ -691,6 +693,59 @@ describe('timeline', () => {
         )
       ).status,
     ).toBe(404)
+  })
+
+  it('exec 21: an automatic revision carries a machine-readable reason in the list and on the revision; others never do', async () => {
+    const h = await startServer()
+    await seed(h)
+    const v1 = await h.client.call('timeline.get', { params: { episodeId: 'e1' } })
+    const store = h.server.ctx.store
+    const doc = (await store.timelines.listByProject('p1')).find((d) => d.episodeId === 'e1')!
+    const clip = v1.revision.content.clips[0]!
+    // what the pipeline appends when a shot first gets a video it cannot mute
+    await store.timelines.put(
+      appendRevision(doc, {
+        content: {
+          ...headRevision(doc).content,
+          clips: headRevision(doc).content.clips.map((c) =>
+            c.id === clip.id ? { ...c, sourceVolume: 0 } : c,
+          ),
+        },
+        summary: '默认音量：测试',
+        author: { kind: 'agent' },
+        now: 5,
+        changedClipIds: [clip.id],
+        reason: 'native_audio_default',
+      }),
+    )
+    const v2 = await h.client.call('timeline.get', { params: { episodeId: 'e1' } })
+    expect(v2.head).toBe(2)
+    expect(v2.revision.reason).toBe('native_audio_default')
+    expect(v2.revision.author.kind).toBe('agent')
+    expect(v2.revisions.map((r) => r.reason)).toEqual([undefined, 'native_audio_default'])
+    expect(v2.revisions[0]).not.toHaveProperty('reason') // the old revision is read as before
+    // the user's own edit on top has no reason, and so does a rollback
+    const c = v2.revision.content.clips
+    const v3 = await h.client.call('timeline.update', {
+      params: { episodeId: 'e1' },
+      body: {
+        content: { clips: [{ ...c[0]!, sourceVolume: 0.7 }, ...c.slice(1)], bgm: [] },
+        summary: '调音量',
+        baseRevision: 2,
+      },
+    })
+    expect(v3.revision).not.toHaveProperty('reason')
+    const rolled = await h.client.call('timeline.rollback', {
+      params: { episodeId: 'e1' },
+      body: { revision: 2 },
+    })
+    expect(rolled.revision).not.toHaveProperty('reason')
+    expect(rolled.revisions.map((r) => r.reason)).toEqual([
+      undefined,
+      'native_audio_default',
+      undefined,
+      undefined,
+    ])
   })
 
   it('validates updates', async () => {

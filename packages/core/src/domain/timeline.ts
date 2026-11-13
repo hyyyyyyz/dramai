@@ -61,6 +61,15 @@ export interface TimelineBgmClip {
   fadeOutUs: number
 }
 
+/**
+ * 系统自动追加的修订的机器可读原因（只写在这类修订上；用户的修改、回滚、初始时间线、同步镜头顺序没有）。
+ * 界面据此显示本地化的说明，不要靠摘要文字（摘要是中文，给人看的）。以后新增原因码是加法。
+ * - `native_audio_default`：这个镜头第一次拿到生成的视频，而模型无法关闭自带音频、镜头又没有使用原生人声，
+ *   片段原声的默认音量被设为 0。
+ */
+export const TIMELINE_REVISION_REASONS = ['native_audio_default'] as const
+export type TimelineRevisionReason = (typeof TIMELINE_REVISION_REASONS)[number]
+
 export interface TimelineRevision {
   /** 从 1 连续编号。 */
   number: number
@@ -71,6 +80,8 @@ export interface TimelineRevision {
   content: { clips: TimelineClip[]; bgm: TimelineBgmClip[] }
   changedClipIds?: string[]
   restoredFrom?: number
+  /** 只有系统自动追加的修订才有，见 `TimelineRevisionReason`。 */
+  reason?: TimelineRevisionReason
 }
 
 export interface TimelineDocument {

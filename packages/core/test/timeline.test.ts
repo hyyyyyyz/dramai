@@ -105,6 +105,34 @@ describe('timeline document: append-only revisions', () => {
     expect(next.revisions[1].content.clips[0].holdUs).toBe(S)
   })
 
+  it('exec 21: only a revision appended with a reason carries one; initial, user and rollback revisions never do', () => {
+    let doc = mk()
+    expect(doc.revisions[0]).not.toHaveProperty('reason')
+    doc = appendRevision(doc, {
+      content: updateClip(headRevision(doc).content, 'c1', { sourceVolume: 0 }),
+      summary: '默认音量：测试',
+      author: { kind: 'agent' },
+      now: 2,
+      changedClipIds: ['c1'],
+      reason: 'native_audio_default',
+    })
+    doc = appendRevision(doc, {
+      content: updateClip(headRevision(doc).content, 'c1', { sourceVolume: 0.5 }),
+      summary: 'user',
+      author: { kind: 'creator' },
+      now: 3,
+    })
+    doc = rollbackTo(doc, 2, { author: { kind: 'creator' }, now: 4 })
+    expect(doc.revisions.map((r) => r.reason)).toEqual([
+      undefined,
+      'native_audio_default',
+      undefined,
+      undefined,
+    ])
+    expect(doc.revisions[0]).not.toHaveProperty('reason') // no key at all, not `reason: undefined`
+    expect(doc.revisions[2]).not.toHaveProperty('reason')
+  })
+
   it('rollback appends the old content as a new revision (history is kept)', () => {
     let doc = mk()
     doc = appendRevision(doc, {
