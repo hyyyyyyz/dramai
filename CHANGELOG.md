@@ -6,8 +6,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **Video providers (not tested against the real services).** Three new video protocols, connected from
+  the official documentation only: Volcengine Ark / BytePlus ModelArk Seedance (`ark-video`), Kling 4.0 and
+  4.0 Flash (`kling-contents`) and Tongyi Wanxiang 3.0 (`dashscope-video`), with six presets
+  (documented, never selected automatically) and ten model profiles whose capabilities are all marked
+  "unverified". The existing video protocols and the tested 302.AI Wan2.2 Flash preset are unchanged.
+- **Reference images for video (off by default).** A task option sends the shot's character, scene and prop
+  sheets to the video model. Where the official docs make first frame and reference images mutually exclusive
+  (Seedance, Wan 3.0) the shot image becomes reference image no. 1 and the strict first frame is given up; the
+  pre-flight result says so before any money is spent. A video made this way is not marked outdated when a
+  character sheet changes later (known gap).
+- Video versions made with reference images record which references were used.
+- New clips on the timeline start silent when the video's model cannot switch its own audio off (Kling 4.0)
+  and the shot does not use native voice; the volume can be raised on the timeline. Existing clips and the
+  way a cut is composed are unchanged.
+
 ### Changed
 
+- A price list now belongs to a site: the China-site CNY prices of Wan 3.0 no longer price the international
+  preset.
+- Protocols can declare request headers that user-supplied extra headers must not override.
 - Once the landing page workflow is run, GitHub Pages serves the landing page (`apps/site`) instead of the old
   browser-only workspace, which is taken down and not kept. Links into the old app land on the landing page's 404 page. Data the old workspace stored in a
   browser can no longer be opened or exported from anywhere, so export a backup from the old app before the switch
