@@ -6,9 +6,11 @@ import {
   PROVIDER_PRESETS,
 } from '@dramai/core'
 import { SERVER_EVENT_TYPES } from '@dramai/api'
+import type { Context } from 'hono'
 import type { ServerContext } from '../context.ts'
 import { badRequest } from '../errors.ts'
 import { localeOf } from '../locale.ts'
+import type { LoginRequestOrigin } from '../services/providers.ts'
 import type { RouteRegistry } from '../handle.ts'
 import { OK } from './common.ts'
 
@@ -86,7 +88,9 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
         protocol: p.protocol,
         baseUrl: p.baseUrl,
         suggestedModel: p.suggestedModel,
-        verifiedAt: p.verifiedAt,
+        auth: p.auth,
+        verification: p.verification,
+        ...(p.verifiedAt ? { verifiedAt: p.verifiedAt } : {}),
         knownLimitations: [...localizeProviderPreset(p, locale).knownLimitations],
       })),
     }
@@ -94,11 +98,18 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
 
   // --- 服务商 ---
 
+  /** 登录的回调只到得了浏览器所在机器的 127.0.0.1：从别的机器访问时不能发起登录。 */
+  const originOf = (c: Context): LoginRequestOrigin => ({
+    host: c.req.header('host'),
+    remoteAddress: (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)
+      ?.incoming?.socket?.remoteAddress,
+  })
+
   r.handle('providers.list', async ({ c }) => {
     const locale = await localeOf(ctx, c)
     return {
       items: await Promise.all(
-        (await ctx.providers.list()).map((p) => ctx.providers.toDto(p, locale)),
+        (await ctx.providers.list()).map((p) => ctx.providers.toDto(p, locale, originOf(c))),
       ),
     }
   })
@@ -109,15 +120,19 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
       apiKey,
     )
     ctx.bus.changed('provider', { ids: [cfg.id], op: 'created' })
-    return ctx.providers.toDto(cfg, await localeOf(ctx, c))
+    return ctx.providers.toDto(cfg, await localeOf(ctx, c), originOf(c))
   })
   r.handle('providers.fromPreset', async ({ body, c }) => {
     const cfg = await ctx.providers.createFromPreset(body.presetId, body)
     ctx.bus.changed('provider', { ids: [cfg.id], op: 'created' })
-    return ctx.providers.toDto(cfg, await localeOf(ctx, c))
+    return ctx.providers.toDto(cfg, await localeOf(ctx, c), originOf(c))
   })
   r.handle('providers.get', async ({ params, c }) =>
-    ctx.providers.toDto(await ctx.providers.require(params.providerId), await localeOf(ctx, c)),
+    ctx.providers.toDto(
+      await ctx.providers.require(params.providerId),
+      await localeOf(ctx, c),
+      originOf(c),
+    ),
   )
   r.handle('providers.update', async ({ params, body, c }) => {
     const cfg = await ctx.providers.update(params.providerId, {
@@ -125,7 +140,7 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
       capabilityOverrides: body.capabilityOverrides as never,
     })
     ctx.bus.changed('provider', { ids: [cfg.id], op: 'updated' })
-    return ctx.providers.toDto(cfg, await localeOf(ctx, c))
+    return ctx.providers.toDto(cfg, await localeOf(ctx, c), originOf(c))
   })
   r.handle('providers.delete', async ({ params }) => {
     await ctx.providers.delete(params.providerId)
@@ -136,13 +151,30 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
   r.handle('providers.setKey', async ({ params, body, c }) => {
     const cfg = await ctx.providers.setKey(params.providerId, body.apiKey)
     ctx.bus.changed('provider', { ids: [cfg.id], op: 'updated' })
-    return ctx.providers.toDto(cfg, await localeOf(ctx, c))
+    return ctx.providers.toDto(cfg, await localeOf(ctx, c), originOf(c))
   })
   r.handle('providers.clearKey', async ({ params, c }) => {
     const cfg = await ctx.providers.clearKey(params.providerId)
     ctx.bus.changed('provider', { ids: [cfg.id], op: 'updated' })
-    return ctx.providers.toDto(cfg, await localeOf(ctx, c))
+    return ctx.providers.toDto(cfg, await localeOf(ctx, c), originOf(c))
   })
+  r.handle('providers.login.start', async ({ params, body, c }) =>
+    ctx.providers.loginStart(params.providerId, body, originOf(c)),
+  )
+  r.handle('providers.login.status', async ({ params, c }) =>
+    ctx.providers.loginStatus(await ctx.providers.require(params.providerId), originOf(c)),
+  )
+  r.handle('providers.login.cancel', async ({ params, c }) =>
+    ctx.providers.loginCancel(params.providerId, originOf(c)),
+  )
+  r.handle('providers.login.logout', async ({ params, c }) => {
+    const res = await ctx.providers.logout(params.providerId, originOf(c))
+    ctx.bus.changed('provider', { ids: [params.providerId], op: 'updated' })
+    return res
+  })
+  r.handle('providers.models', async ({ params }) => ({
+    items: await ctx.providers.models(params.providerId),
+  }))
   r.handle('providers.test', async ({ params }) => ctx.providers.test(params.providerId))
   r.handle('providers.capability', async ({ params }) =>
     ctx.providers.capability(await ctx.providers.require(params.providerId)),
@@ -150,6 +182,6 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
   r.handle('providers.acceptUnverified', async ({ params, body, c }) => {
     const cfg = await ctx.providers.update(params.providerId, { acceptedUnverified: body.keys })
     ctx.bus.changed('provider', { ids: [cfg.id], op: 'updated' })
-    return ctx.providers.toDto(cfg, await localeOf(ctx, c))
+    return ctx.providers.toDto(cfg, await localeOf(ctx, c), originOf(c))
   })
 }

@@ -21,6 +21,7 @@ export type ProtocolId =
   | 'kling-video'
   | 'generic-video'
   | 'openai-tts'
+  | 'openai-responses'
 
 /**
  * 同步返回结果的协议：请求发出后直接拿到成品，根本没有上游任务号可查。
@@ -31,7 +32,34 @@ export const SYNC_PROTOCOLS: readonly ProtocolId[] = [
   'openai-images',
   'gemini-image',
   'openai-tts',
+  'openai-responses',
 ]
+
+/** 账号登录通道。现在只有 OpenAI 一种；加通道 = 在这里加一项，并在 CredentialResolver 里注册。 */
+export type LoginChannelId = 'openai-chatgpt'
+
+export const LOGIN_CHANNELS: readonly LoginChannelId[] = ['openai-chatgpt']
+
+/**
+ * 服务商的鉴权方式。
+ * - `api_key`：Key 在 SecretStore（`secretRef`）。
+ * - `account_login`：厂商官方的账号登录（令牌在 SecretStore，由登录通道负责刷新）。
+ * - `none`：不需要鉴权（本地模型）。
+ * 旧数据没有这个字段：见 `effectiveAuth`（有 Key 按 API Key，否则按无需鉴权）。
+ */
+export type ProviderAuth =
+  | { type: 'api_key' }
+  | { type: 'account_login'; channel: LoginChannelId }
+  | { type: 'none' }
+
+/**
+ * 预设（和由它创建的配置）的验证状态。
+ * - `tested`：端到端实测过，带日期；
+ * - `documented`：按官方文档接入，没有实测，带文档出处。**不自动成为当前选择。**
+ */
+export type ProviderVerification =
+  | { status: 'tested'; testedAt: string }
+  | { status: 'documented'; source: string }
 
 /** 持久化的服务商配置。**不含 API Key**；Key 通过 `secretRef` 从 SecretStore 取。 */
 export interface ProviderConfig {
@@ -41,6 +69,11 @@ export interface ProviderConfig {
   protocol: ProtocolId
   baseUrl: string
   model: string
+  /** 缺省 = 旧数据，按 `effectiveAuth` 推断。 */
+  auth?: ProviderAuth
+  /**
+   * API Key（`api_key`）或登录凭据（`account_login`）在 SecretStore 里的键。
+   */
   secretRef?: string
   enabled: boolean
   /** 来自预设时的预设 id。 */
@@ -48,6 +81,8 @@ export interface ProviderConfig {
   notes?: string
   /** 最近一次验证通过的日期（ISO，yyyy-mm-dd）。 */
   verifiedAt?: string
+  /** 由预设创建时的验证状态。没有 = 用户自己加的配置，不声称验证过。 */
+  verification?: ProviderVerification
   knownLimitations?: string[]
   /** 用户对某个模型能力的覆盖（自定义模型时用）。 */
   capabilityOverrides?: Partial<ModelCapability>
@@ -62,7 +97,14 @@ export interface ProviderConfig {
 export interface AuthContext {
   baseUrl: string
   model: string
+  /**
+   * Bearer 凭据：`api_key` 时是 API Key，`account_login` 时是当前有效的访问令牌（调用前已由
+   * CredentialResolver 刷新），`none` 时为空。适配器只管放进 Authorization 头。
+   */
   apiKey?: string
+  /** 鉴权方式；缺省 = `api_key`。协议层据此处理登录方式下的额外要求（例如 openai-responses）。 */
+  method?: ProviderAuth['type']
+  channel?: LoginChannelId
 }
 
 export interface BinaryImage {

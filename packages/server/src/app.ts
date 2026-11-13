@@ -9,12 +9,14 @@ import { createAdaptorServer } from '@hono/node-server'
 import {
   bundledDataDir,
   createPipelineHandlers,
+  createCredentialResolver,
   createProviderLlm,
   JobFailure,
   JobQueue,
   JobWorker,
   loadCatalog,
   locateFfmpeg,
+  OpenAiLogin,
   probeCapabilities,
   recoverRunningJobs,
 } from '@dramai/core'
@@ -24,6 +26,7 @@ import type {
   IdGenerator,
   JobHandler,
   LlmClient,
+  ListenerFactory,
   Localized,
   LocateOptions,
   PipelineDeps,
@@ -37,6 +40,7 @@ import { fromDomainError, HttpError, notFound } from './errors.ts'
 import { EnrichingEventSink } from './events/enriching-sink.ts'
 import { EventBus } from './events/event-bus.ts'
 import { RouteRegistry, stubMissing } from './handle.ts'
+import { createLoopbackListenerFactory } from './login/loopback.ts'
 import { staticFiles } from './http/static.ts'
 import { acquireDataDirLock } from './lock.ts'
 import { registerAssetRoutes } from './routes/assets.ts'
@@ -94,6 +98,12 @@ export interface CreateServerOptions {
   lanes?: ConstructorParameters<typeof JobWorker>[0]['lanes']
   sseHeartbeatMs?: number
   logger?: { error(...args: unknown[]): void; info?(...args: unknown[]): void }
+  /** 账号登录（OpenAI）的可注入部分（测试）：对 OpenAI 的 fetch、回调监听器、时钟。 */
+  login?: {
+    fetch?: (url: string, init?: RequestInit) => Promise<Response>
+    listen?: ListenerFactory
+    now?: () => number
+  }
 }
 
 export interface DramaiServer {
@@ -170,6 +180,19 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
     const targets = createTargetResolver(store)
     const events = new EnrichingEventSink(bus, (job) => targets.resolve(job))
     const settings = new SettingsService(store)
+    // 账号登录：令牌只在 SecretStore；日志只收不含凭据的事件
+    const login = new OpenAiLogin({
+      secrets,
+      listen: options.login?.listen ?? createLoopbackListenerFactory(),
+      fetch: options.login?.fetch,
+      now: options.login?.now,
+      appName: 'dramai',
+      log: (e) => logger.info?.('[login]', e),
+    })
+    const credentials = createCredentialResolver({
+      secrets,
+      channels: { 'openai-chatgpt': login },
+    })
     const providers = new ProviderService({
       store,
       secrets,
@@ -178,6 +201,8 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       ids,
       clock,
       executor: options.executor,
+      login,
+      credentials,
     })
     const config = {
       dataDir,
@@ -208,6 +233,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
       store,
       files,
       secrets,
+      credentials,
       clock,
       ids,
       events,
@@ -235,7 +261,19 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
               recoverable: false,
             })
           }
-          const inner = createProviderLlm(deps, cfg)
+          const inner = createProviderLlm(
+            {
+              ...deps,
+              // 协议层因为鉴权方式不支持而丢弃了参数：记下参数名（不含内容和凭据）
+              onDropped: (info) =>
+                logger.info?.('[llm] dropped unsupported parameters', {
+                  protocol: info.protocol,
+                  providerId: cfg.id,
+                  params: info.dropped.map((d) => d.param),
+                }),
+            },
+            cfg,
+          )
           let chars = 0
           return inner.complete({
             ...req,
@@ -395,6 +433,7 @@ export async function createServer(options: CreateServerOptions): Promise<Dramai
         })
         await worker!.stop({ waitForActive: closeOptions.graceful !== false })
         await events.idle()
+        login.dispose()
         bus!.dispose()
         store!.close()
         await lock.release()

@@ -63,6 +63,15 @@ export const ERROR_CODES = {
   UNKNOWN_VERSION: { status: 404, summary: '媒体版本不存在' },
 
   // —— LLM / ffmpeg / 合成 ——
+  PROVIDER_REQUEST_FAILED: { status: 502, summary: '向服务商发请求失败；details 是上游状态' },
+  LOGIN_NOT_SUPPORTED: { status: 409, summary: '这个服务商不是账号登录方式' },
+  LOGIN_UNAVAILABLE_REMOTE: {
+    status: 409,
+    summary: '当前访问方式下不能登录：授权回调只能到达服务所在机器的 127.0.0.1',
+  },
+  KEY_NOT_APPLICABLE: { status: 409, summary: '账号登录的服务商没有 API Key，不能设置或清除' },
+  AUTH_NOT_ALLOWED: { status: 400, summary: '这个协议不支持所选的鉴权方式（账号登录只覆盖文本）' },
+  MODEL_LIST_UNSUPPORTED: { status: 409, summary: '这个服务商的协议没有模型列表' },
   NO_LLM_PROVIDER: { status: 409, summary: '还没有选中可用的大模型服务商，先到设置里配置' },
   FFMPEG_MISSING: { status: 409, summary: '没有找到 ffmpeg；details 里有安装建议' },
   FFMPEG_INCOMPATIBLE: { status: 409, summary: 'ffmpeg 缺少合成所需的能力' },

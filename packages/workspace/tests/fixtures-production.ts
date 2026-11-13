@@ -190,6 +190,7 @@ export const makeProvider = (patch: Record<string, unknown> = {}) => ({
   baseUrl: 'http://127.0.0.1:8788',
   model: 'wan2.2-i2v-flash',
   enabled: true,
+  auth: { type: 'api_key' as const },
   hasKey: true,
   keyMask: 'moc…cret',
   ...patch,

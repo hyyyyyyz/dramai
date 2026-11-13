@@ -32,6 +32,7 @@ const protocol = z.enum([
   'kling-video',
   'generic-video',
   'openai-tts',
+  'openai-responses',
 ])
 
 const support = z.enum(['supported', 'unsupported', 'unverified'])
@@ -126,6 +127,7 @@ export function defaultCapability(protocolId: ProtocolId): ModelCapability {
     case 'openai-tts':
       return { ...base, media: 'audio', modes: { tts: 'supported' } }
     case 'openai-chat':
+    case 'openai-responses':
       return { ...base, media: 'audio', modes: {} }
     default:
       return {

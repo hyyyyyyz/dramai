@@ -6,7 +6,7 @@ import {
   useQueryClient,
   type UseMutationOptions,
 } from '@tanstack/react-query'
-import type { CallInput, CallOutput, GenerateItem, RouteName } from '@dramai/api'
+import type { CallInput, CallOutput, GenerateItem, ProviderConfigDto, RouteName } from '@dramai/api'
 import { useApi } from './use-api'
 import { qk } from './keys'
 
@@ -43,6 +43,38 @@ export function usePresets() {
 export function useProviders() {
   const api = useApi()
   return useQuery({ queryKey: qk.providers, queryFn: () => api.call('providers.list') })
+}
+
+/**
+ * 账号登录的状态。等浏览器里的授权（pending）时每 1.5 秒查一次，其余状态不轮询；
+ * 组件卸载、取消、状态变了都会停（react-query 的 refetchInterval 跟着查询的观察者走）。
+ */
+export const LOGIN_POLL_MS = 1500
+export function useProviderLogin(
+  provider: Pick<ProviderConfigDto, 'id' | 'login'>,
+  pollMs: number = LOGIN_POLL_MS,
+) {
+  const api = useApi()
+  return useQuery({
+    queryKey: qk.providerLogin(provider.id),
+    queryFn: () => api.call('providers.login.status', { params: { providerId: provider.id } }),
+    initialData: provider.login,
+    // 列表里带的那份够新就不立刻重查，但轮询和手动刷新照常
+    staleTime: 10_000,
+    refetchInterval: (q) => (q.state.data?.state === 'pending' ? pollMs : false),
+  })
+}
+
+/** 这个服务商能用的模型清单（登录方式要先登录；没有清单的协议会 409，界面退回手填）。 */
+export function useProviderModels(providerId: string, enabled: boolean) {
+  const api = useApi()
+  return useQuery({
+    queryKey: qk.providerModels(providerId),
+    queryFn: () => api.call('providers.models', { params: { providerId } }),
+    enabled,
+    retry: false,
+    staleTime: 60_000,
+  })
 }
 
 export function useProviderCapability(providerId: string, enabled = true) {

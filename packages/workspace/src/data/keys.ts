@@ -5,6 +5,8 @@ export const qk = {
   styles: ['styles'] as const,
   presets: ['presets'] as const,
   providers: ['providers'] as const,
+  providerLogin: (id: string) => ['providers', 'login', id] as const,
+  providerModels: (id: string) => ['providers', 'models', id] as const,
   providerCapability: (id: string) => ['providers', 'capability', id] as const,
   projects: ['projects'] as const,
   project: (id: string) => ['project', id] as const,

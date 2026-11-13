@@ -30,6 +30,7 @@ import { useJobOps } from '@/features/jobs/job-ops-context'
 import { StreamedText } from '@/features/jobs/StreamedText'
 import { ErrorNotice } from '@/features/common/error-text'
 import { PageHead } from '@/features/common/PageHead'
+import { PlanUsageNote } from '@/features/common/PlanUsageNote'
 import { useShell } from '@/layout/shell-context'
 import { useFormat } from '@/i18n/format'
 import { BatchConfirmDialog } from './BatchConfirmDialog'
@@ -549,6 +550,7 @@ function EpisodeTools({
         />
       </summary>
       <div className="flex flex-col gap-4 border-t border-border p-4">
+        <PlanUsageNote />
         <div className="flex flex-col gap-2">
           <div className="text-sm font-medium">{t('storyboard.tools.prompts')}</div>
           <p className="text-sm text-muted-foreground">{t('storyboard.tools.promptsHint')}</p>
@@ -660,10 +662,11 @@ function FirstBreakdown({
           onChange={(e) => setText(e.target.value)}
         />
       </Field>
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <Button variant="primary" loading={loading} onClick={() => onRun(text.trim())}>
           {t('storyboard.empty.action')}
         </Button>
+        <PlanUsageNote />
       </div>
     </div>
   )

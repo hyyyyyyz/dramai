@@ -16,6 +16,7 @@ import {
 import type { JobListItem } from '@dramai/api'
 import { Button, IconButton, Progress, iconProps, cn } from '@dramai/ui/v2'
 import { useFormat } from '@/i18n/format'
+import { ProviderErrorNotice } from './ProviderErrorNotice'
 import { failureKind, isKnownOperation, jobActions } from './job-model'
 
 const LANE_ICON: Record<JobListItem['type'], LucideIcon> = {
@@ -188,6 +189,7 @@ export function TaskItem({
                 {t('jobs.failureUnknownNote')}
               </div>
             )}
+            <ProviderErrorNotice code={job.error?.code} />
             {job.error?.code && (
               <div className="font-mono text-xs text-subtle" title={job.error.message}>
                 {job.error.code}

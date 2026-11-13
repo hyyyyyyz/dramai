@@ -685,8 +685,66 @@ export const protocolId = z.enum([
   'kling-video',
   'generic-video',
   'openai-tts',
+  'openai-responses',
 ])
 export const support = z.enum(['supported', 'unsupported', 'unverified'])
+
+/** 账号登录通道（现在只有 OpenAI）。 */
+export const loginChannelId = z.enum(['openai-chatgpt'])
+/** 服务商的鉴权方式；永远是推断后的结果（旧数据没有这个字段时：有 Key = api_key，否则 none）。 */
+export const providerAuth = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('api_key') }),
+  z.object({ type: z.literal('account_login'), channel: loginChannelId }),
+  z.object({ type: z.literal('none') }),
+])
+/** 验证状态：已实测（带日期）或按官方文档接入、未实测（带出处）。 */
+export const providerVerification = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('tested'), testedAt: z.string() }),
+  z.object({ status: z.literal('documented'), source: z.string() }),
+])
+export const loginErrorCode = z.enum([
+  'user_denied',
+  'authorization_error',
+  'state_mismatch',
+  'no_code',
+  'registration_incomplete',
+  'client_mismatch',
+  'invalid_grant',
+  'exchange_failed',
+  'bad_signature',
+  'issuer_mismatch',
+  'audience_mismatch',
+  'expired',
+  'nonce_mismatch',
+  'bad_id_token',
+  'account_mismatch',
+  'timeout',
+  'cancelled',
+  'refresh_rejected',
+])
+/**
+ * 账号登录的状态。**没有任何令牌**：只有登录与否、账号的显示标识（邮箱）、到期时间。
+ * - `signed_out`：没登录（`account` 在时表示之前登录过的账号，可以重新登录）；
+ * - `pending`：正在等浏览器里的授权；
+ * - `signed_in`：已登录（`planUsage: false` = 登录了但没有授予使用 ChatGPT 用量的范围，不能调用）；
+ * - `needs_relogin`：刷新令牌已失效，需要重新登录。
+ */
+export const loginStatus = z.object({
+  channel: loginChannelId,
+  state: z.enum(['signed_out', 'pending', 'signed_in', 'needs_relogin']),
+  account: z.object({ label: z.string() }).optional(),
+  expiresAt: z.string().optional(),
+  planUsage: z.boolean().optional(),
+  pending: z.object({ expiresAt: z.string() }).optional(),
+  lastError: z.object({ code: loginErrorCode, message: z.string(), at: z.string() }).optional(),
+  /** 当前的访问方式下能不能发起登录（回调只到得了服务所在机器的 127.0.0.1）。 */
+  availability: z.object({
+    available: z.boolean(),
+    reason: z.enum(['remote_access']).optional(),
+    message: z.string().optional(),
+  }),
+})
+export type LoginStatusDto = z.infer<typeof loginStatus>
 
 const claim = <T extends z.ZodType>(v: T) =>
   z.object({ support, value: v.optional(), note: z.string().optional() })
@@ -735,16 +793,24 @@ export const providerConfig = z.object({
   baseUrl: z.string(),
   model: z.string(),
   enabled: z.boolean(),
+  auth: providerAuth,
   presetId: z.string().optional(),
   notes: z.string().optional(),
   verifiedAt: z.string().optional(),
+  verification: providerVerification.optional(),
   knownLimitations: z.array(z.string()).optional(),
   acceptedUnverified: z.array(z.string()).optional(),
   capabilityOverrides: z.record(z.string(), z.unknown()).optional(),
+  /** 只对 `api_key` 有意义；账号登录永远是 false（令牌不是 Key）。 */
   hasKey: z.boolean(),
   keyMask: z.string().optional(),
+  /** 账号登录的服务商才有：登录状态（没有令牌）。 */
+  login: loginStatus.optional(),
 })
 export type ProviderConfigDto = z.infer<typeof providerConfig>
+
+/** `GET /providers/:id/models`：这个服务商当前能用的模型。 */
+export const providerModel = z.object({ id: z.string(), label: z.string() })
 
 export const providerCapabilityView = z.object({
   /** 模型画像是否存在；false = 用户自填型号，能力是保守默认。 */
@@ -773,8 +839,12 @@ export const providerPreset = z.object({
   protocol: protocolId,
   baseUrl: z.string(),
   suggestedModel: z.string(),
+  auth: providerAuth,
   notes: z.string(),
-  verifiedAt: z.string(),
+  /** 已实测（带日期）或按官方文档接入、未实测（带出处）。未实测的不会自动成为当前选择。 */
+  verification: providerVerification,
+  /** 只有已实测的预设才有。 */
+  verifiedAt: z.string().optional(),
   knownLimitations: z.array(z.string()),
 })
 

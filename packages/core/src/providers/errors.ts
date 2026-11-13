@@ -10,6 +10,7 @@ export type ProviderErrorKind =
   | 'download_failed' // 上游成功但取不到成品
   | 'capability' // 模型缺少所需能力
   | 'cancelled'
+  | 'auth' // 登录凭据不可用（需要重新登录）
 
 /**
  * 提交请求是否可能已被上游受理（从而可能计费）。
@@ -82,6 +83,9 @@ export function toJobError(err: unknown): JobError {
         message: err.message,
         recoverable: true,
       }
+    }
+    if (err.kind === 'auth') {
+      return { category: 'invalid_input', code: err.code, message: err.message, recoverable: false }
     }
     if (err.kind === 'capability') {
       return { category: 'invalid_input', code: err.code, message: err.message, recoverable: false }

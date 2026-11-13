@@ -17,6 +17,7 @@ import {
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
 import { useCall } from '@/data/queries'
+import { PlanUsageNote } from '@/features/common/PlanUsageNote'
 import { Block } from '@/features/common/PageHead'
 import { ErrorNotice } from '@/features/common/error-text'
 import { failureKind } from '@/features/jobs/job-model'
@@ -136,6 +137,7 @@ export function EpisodePlanBlock({
           <Plus {...iconProps} aria-hidden />
           {t('materials.plan.addEpisode')}
         </Button>
+        <PlanUsageNote className="basis-full" />
       </div>
       <div className="flex flex-col gap-3 p-4 empty:hidden">
         {textMaterials.length === 0 && (

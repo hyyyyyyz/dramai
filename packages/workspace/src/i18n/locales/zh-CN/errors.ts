@@ -43,6 +43,13 @@ export default {
   IMAGE_TOO_LARGE: '图片超过 20 MB',
   UNKNOWN_VERSION: '这个版本不存在',
 
+  PROVIDER_REQUEST_FAILED: '向服务商发请求失败了。检查接口地址、网络和服务商的状态后再试',
+  LOGIN_NOT_SUPPORTED: '这个服务商不是账号登录方式，没有登录可做',
+  LOGIN_UNAVAILABLE_REMOTE:
+    '现在是从别的机器访问的，授权回调到不了这里，不能登录。请在运行 dramai 的那台电脑上操作',
+  KEY_NOT_APPLICABLE: '账号登录的服务商没有 API Key，不需要也不能设置或清除',
+  AUTH_NOT_ALLOWED: '这个协议不支持所选的鉴权方式（账号登录只覆盖文本，接口地址也是固定的）',
+  MODEL_LIST_UNSUPPORTED: '这个服务商没有模型列表，请手动填写模型名',
   NO_LLM_PROVIDER: '还没有选中可用的大模型服务商，请先到设置里配置',
   FFMPEG_MISSING: '没有找到 ffmpeg，请先安装',
   FFMPEG_INCOMPATIBLE: '当前的 ffmpeg 缺少合成所需的能力',
