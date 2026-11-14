@@ -57,8 +57,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Timeline revisions made by the system (the first timeline of an episode, synchronising with the shot order, a
   rollback) carry a machine-readable reason, like the automatic mute does; older revisions are read as before.
 - `@dramai/api` exports the list of request headers that cannot be overridden by a provider's extra headers.
+- A speech provider's capability now says which optional inputs it takes (a style instruction with its official
+  limit and how it is counted, a language hint); the over-long text and over-long instruction reasons carry the
+  limit, the actual length and the counting method as numbers. When a video is saved but the automatic mute could
+  not finish, clients get a `job.notice` event with a stable code instead of an executor error. A timeline
+  revision reason the client does not know no longer makes the whole response fail.
 
 ### Fixed
+
+- A narration whose audio the probe tool clearly cannot decode (not audio, no audio stream, no duration, decode
+  errors such as a cut-off wav) now fails with `AUDIO_UNREADABLE` instead of being saved as a finished version; a
+  retry asks for confirmation because the service may have charged. Nothing changes when the probe tool is missing
+  or broken. Videos and images are not checked.
 
 - After a restart that interrupted a finished job just before it was marked succeeded, the shot no longer gets a
   second copy of the same version (this happened in 0.5.0-beta.1 as well). It covers every task that resumes a
