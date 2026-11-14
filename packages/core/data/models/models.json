@@ -2146,6 +2146,1787 @@
         "官方：模型、地址、API Key 必须属于同一地域，跨地域调用失败。"
       ],
       "provenance": "能力项来自百炼\"万相 3.0 视频生成 API 参考\"页（help.aliyun.com/zh/model-studio/wan3-video-generation-api-reference，2026-11-13 核对），本项目未验证。价格来自百炼价格页。"
+    },
+    {
+      "id": "gpt-4o-mini-tts",
+      "protocol": "openai-tts",
+      "apiModel": "gpt-4o-mini-tts",
+      "displayName": "OpenAI gpt-4o-mini-tts",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 4096,
+        "voices": {
+          "support": "supported",
+          "value": [
+            {
+              "id": "alloy"
+            },
+            {
+              "id": "ash"
+            },
+            {
+              "id": "ballad"
+            },
+            {
+              "id": "coral"
+            },
+            {
+              "id": "echo"
+            },
+            {
+              "id": "fable"
+            },
+            {
+              "id": "onyx"
+            },
+            {
+              "id": "nova"
+            },
+            {
+              "id": "sage"
+            },
+            {
+              "id": "shimmer"
+            },
+            {
+              "id": "verse"
+            },
+            {
+              "id": "marin"
+            },
+            {
+              "id": "cedar"
+            }
+          ],
+          "note": "官方列出 13 个内置音色；自定义音色（{id}）只对受限开通的账号开放，这一版不支持。"
+        },
+        "defaultVoice": "alloy"
+      },
+      "pricing": [],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：input 最多 4096 字符；instructions（风格指令）最多 4096 字符，只有这个型号支持。",
+        "官方：按 token 计价（文本输入 $0.60 / 1M，音频输出 $12.00 / 1M），不按字符，这里不估价。",
+        "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 及其快照已弃用，计划 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；新接入请考虑这一点。"
+      ],
+      "provenance": "官方 speech 参考页 developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "speech-2.8-hd",
+      "protocol": "minimax-t2a",
+      "apiModel": "speech-2.8-hd",
+      "displayName": "MiniMax Speech 2.8 HD",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 9999,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "Chinese (Mandarin)_Reliable_Executive",
+              "label": "Reliable Executive",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_News_Anchor",
+              "label": "News Anchor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Unrestrained_Young_Man",
+              "label": "Unrestrained Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Mature_Woman",
+              "label": "Mature Woman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Arrogant_Miss",
+              "label": "Arrogant Miss",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Robot_Armor",
+              "label": "Robot Armor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Kind-hearted_Antie",
+              "label": "Kind-hearted Antie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_HK_Flight_Attendant",
+              "label": "HK Flight Attendant",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Humorous_Elder",
+              "label": "Humorous Elder",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Gentleman",
+              "label": "Gentleman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Warm_Bestie",
+              "label": "Warm Bestie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Stubborn_Friend",
+              "label": "Stubborn Friend",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Sweet_Lady",
+              "label": "Sweet Lady",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Southern_Young_Man",
+              "label": "Southern Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Wise_Women",
+              "label": "Wise Women",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "English_expressive_narrator",
+              "label": "Expressive Narrator",
+              "lang": "English"
+            },
+            {
+              "id": "English_radiant_girl",
+              "label": "Radiant Girl",
+              "lang": "English"
+            },
+            {
+              "id": "English_magnetic_voiced_man",
+              "label": "Magnetic-voiced Male",
+              "lang": "English"
+            },
+            {
+              "id": "English_compelling_lady1",
+              "label": "Compelling Lady",
+              "lang": "English"
+            },
+            {
+              "id": "English_Aussie_Bloke",
+              "label": "Aussie Bloke",
+              "lang": "English"
+            }
+          ],
+          "note": "官方系统音色页共 332 个、24 种语言（2026-11-13），这里只列了常用的 20 个；其他系统音色、复刻音色、设计音色直接手填 voice_id。"
+        },
+        "defaultVoice": "Chinese (Mandarin)_News_Anchor"
+      },
+      "pricing": [
+        {
+          "currency": "USD",
+          "unit": "per_1k_chars",
+          "amount": 0.1,
+          "dimensions": {
+            "region": "global"
+          },
+          "note": "国际站 $100 / 1M 字符（同步与异步同价）；国际站页面没写字符怎么数。"
+        },
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.35,
+          "range": [0.35, 0.7],
+          "dimensions": {
+            "region": "cn"
+          },
+          "note": "国内站 3.50 元 / 万字符；官方：1 个汉字计 2 个字符，其余字符计 1 个。区间下限 = 全是非汉字，上限 = 全是汉字；估价按字数 × 单价，纯中文旁白看上限。"
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：text 须小于 10000 字符（3000 以上建议流式；这里不用流式）；语速 0.5–2，超出会被夹到范围内；有 pronunciation_dict、情绪枚举等，这一版不发。",
+        "官方：HTTP 200 的响应也可能是失败，看 base_resp.status_code（0 才成功）；音频默认是十六进制字符串，这里解码成字节。",
+        "官方：风格指令（instructions）没有对应字段，会被丢弃并记录；情绪只有固定枚举，这一版不发。",
+        "国内（api.minimax.cn）和国际（api.minimax.io）按两套账号处理，Key 是否互通官方没写。"
+      ],
+      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "speech-2.8-turbo",
+      "protocol": "minimax-t2a",
+      "apiModel": "speech-2.8-turbo",
+      "displayName": "MiniMax Speech 2.8 Turbo",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 9999,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "Chinese (Mandarin)_Reliable_Executive",
+              "label": "Reliable Executive",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_News_Anchor",
+              "label": "News Anchor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Unrestrained_Young_Man",
+              "label": "Unrestrained Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Mature_Woman",
+              "label": "Mature Woman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Arrogant_Miss",
+              "label": "Arrogant Miss",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Robot_Armor",
+              "label": "Robot Armor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Kind-hearted_Antie",
+              "label": "Kind-hearted Antie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_HK_Flight_Attendant",
+              "label": "HK Flight Attendant",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Humorous_Elder",
+              "label": "Humorous Elder",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Gentleman",
+              "label": "Gentleman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Warm_Bestie",
+              "label": "Warm Bestie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Stubborn_Friend",
+              "label": "Stubborn Friend",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Sweet_Lady",
+              "label": "Sweet Lady",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Southern_Young_Man",
+              "label": "Southern Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Wise_Women",
+              "label": "Wise Women",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "English_expressive_narrator",
+              "label": "Expressive Narrator",
+              "lang": "English"
+            },
+            {
+              "id": "English_radiant_girl",
+              "label": "Radiant Girl",
+              "lang": "English"
+            },
+            {
+              "id": "English_magnetic_voiced_man",
+              "label": "Magnetic-voiced Male",
+              "lang": "English"
+            },
+            {
+              "id": "English_compelling_lady1",
+              "label": "Compelling Lady",
+              "lang": "English"
+            },
+            {
+              "id": "English_Aussie_Bloke",
+              "label": "Aussie Bloke",
+              "lang": "English"
+            }
+          ],
+          "note": "官方系统音色页共 332 个、24 种语言（2026-11-13），这里只列了常用的 20 个；其他系统音色、复刻音色、设计音色直接手填 voice_id。"
+        },
+        "defaultVoice": "Chinese (Mandarin)_News_Anchor"
+      },
+      "pricing": [
+        {
+          "currency": "USD",
+          "unit": "per_1k_chars",
+          "amount": 0.06,
+          "dimensions": {
+            "region": "global"
+          },
+          "note": "国际站 $60 / 1M 字符（同步与异步同价）；国际站页面没写字符怎么数。"
+        },
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.2,
+          "range": [0.2, 0.4],
+          "dimensions": {
+            "region": "cn"
+          },
+          "note": "国内站 2.00 元 / 万字符；官方：1 个汉字计 2 个字符，其余字符计 1 个。区间下限 = 全是非汉字，上限 = 全是汉字；估价按字数 × 单价，纯中文旁白看上限。"
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：text 须小于 10000 字符（3000 以上建议流式；这里不用流式）；语速 0.5–2，超出会被夹到范围内；有 pronunciation_dict、情绪枚举等，这一版不发。",
+        "官方：HTTP 200 的响应也可能是失败，看 base_resp.status_code（0 才成功）；音频默认是十六进制字符串，这里解码成字节。",
+        "官方：风格指令（instructions）没有对应字段，会被丢弃并记录；情绪只有固定枚举，这一版不发。",
+        "国内（api.minimax.cn）和国际（api.minimax.io）按两套账号处理，Key 是否互通官方没写。"
+      ],
+      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "speech-2.6-hd",
+      "protocol": "minimax-t2a",
+      "apiModel": "speech-2.6-hd",
+      "displayName": "MiniMax Speech 2.6 HD（历史型号）",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 9999,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "Chinese (Mandarin)_Reliable_Executive",
+              "label": "Reliable Executive",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_News_Anchor",
+              "label": "News Anchor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Unrestrained_Young_Man",
+              "label": "Unrestrained Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Mature_Woman",
+              "label": "Mature Woman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Arrogant_Miss",
+              "label": "Arrogant Miss",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Robot_Armor",
+              "label": "Robot Armor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Kind-hearted_Antie",
+              "label": "Kind-hearted Antie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_HK_Flight_Attendant",
+              "label": "HK Flight Attendant",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Humorous_Elder",
+              "label": "Humorous Elder",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Gentleman",
+              "label": "Gentleman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Warm_Bestie",
+              "label": "Warm Bestie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Stubborn_Friend",
+              "label": "Stubborn Friend",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Sweet_Lady",
+              "label": "Sweet Lady",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Southern_Young_Man",
+              "label": "Southern Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Wise_Women",
+              "label": "Wise Women",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "English_expressive_narrator",
+              "label": "Expressive Narrator",
+              "lang": "English"
+            },
+            {
+              "id": "English_radiant_girl",
+              "label": "Radiant Girl",
+              "lang": "English"
+            },
+            {
+              "id": "English_magnetic_voiced_man",
+              "label": "Magnetic-voiced Male",
+              "lang": "English"
+            },
+            {
+              "id": "English_compelling_lady1",
+              "label": "Compelling Lady",
+              "lang": "English"
+            },
+            {
+              "id": "English_Aussie_Bloke",
+              "label": "Aussie Bloke",
+              "lang": "English"
+            }
+          ],
+          "note": "官方系统音色页共 332 个、24 种语言（2026-11-13），这里只列了常用的 20 个；其他系统音色、复刻音色、设计音色直接手填 voice_id。"
+        },
+        "defaultVoice": "Chinese (Mandarin)_News_Anchor"
+      },
+      "pricing": [
+        {
+          "currency": "USD",
+          "unit": "per_1k_chars",
+          "amount": 0.1,
+          "dimensions": {
+            "region": "global"
+          },
+          "note": "国际站 $100 / 1M 字符（同步与异步同价）；国际站页面没写字符怎么数。"
+        },
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.35,
+          "range": [0.35, 0.7],
+          "dimensions": {
+            "region": "cn"
+          },
+          "note": "国内站 3.50 元 / 万字符；官方：1 个汉字计 2 个字符，其余字符计 1 个。区间下限 = 全是非汉字，上限 = 全是汉字；估价按字数 × 单价，纯中文旁白看上限。"
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：text 须小于 10000 字符（3000 以上建议流式；这里不用流式）；语速 0.5–2，超出会被夹到范围内；有 pronunciation_dict、情绪枚举等，这一版不发。",
+        "官方：HTTP 200 的响应也可能是失败，看 base_resp.status_code（0 才成功）；音频默认是十六进制字符串，这里解码成字节。",
+        "官方：风格指令（instructions）没有对应字段，会被丢弃并记录；情绪只有固定枚举，这一版不发。",
+        "国内（api.minimax.cn）和国际（api.minimax.io）按两套账号处理，Key 是否互通官方没写。"
+      ],
+      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "speech-2.6-turbo",
+      "protocol": "minimax-t2a",
+      "apiModel": "speech-2.6-turbo",
+      "displayName": "MiniMax Speech 2.6 Turbo（历史型号）",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 9999,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "Chinese (Mandarin)_Reliable_Executive",
+              "label": "Reliable Executive",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_News_Anchor",
+              "label": "News Anchor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Unrestrained_Young_Man",
+              "label": "Unrestrained Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Mature_Woman",
+              "label": "Mature Woman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Arrogant_Miss",
+              "label": "Arrogant Miss",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Robot_Armor",
+              "label": "Robot Armor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Kind-hearted_Antie",
+              "label": "Kind-hearted Antie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_HK_Flight_Attendant",
+              "label": "HK Flight Attendant",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Humorous_Elder",
+              "label": "Humorous Elder",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Gentleman",
+              "label": "Gentleman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Warm_Bestie",
+              "label": "Warm Bestie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Stubborn_Friend",
+              "label": "Stubborn Friend",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Sweet_Lady",
+              "label": "Sweet Lady",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Southern_Young_Man",
+              "label": "Southern Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Wise_Women",
+              "label": "Wise Women",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "English_expressive_narrator",
+              "label": "Expressive Narrator",
+              "lang": "English"
+            },
+            {
+              "id": "English_radiant_girl",
+              "label": "Radiant Girl",
+              "lang": "English"
+            },
+            {
+              "id": "English_magnetic_voiced_man",
+              "label": "Magnetic-voiced Male",
+              "lang": "English"
+            },
+            {
+              "id": "English_compelling_lady1",
+              "label": "Compelling Lady",
+              "lang": "English"
+            },
+            {
+              "id": "English_Aussie_Bloke",
+              "label": "Aussie Bloke",
+              "lang": "English"
+            }
+          ],
+          "note": "官方系统音色页共 332 个、24 种语言（2026-11-13），这里只列了常用的 20 个；其他系统音色、复刻音色、设计音色直接手填 voice_id。"
+        },
+        "defaultVoice": "Chinese (Mandarin)_News_Anchor"
+      },
+      "pricing": [
+        {
+          "currency": "USD",
+          "unit": "per_1k_chars",
+          "amount": 0.06,
+          "dimensions": {
+            "region": "global"
+          },
+          "note": "国际站 $60 / 1M 字符（同步与异步同价）；国际站页面没写字符怎么数。"
+        },
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.2,
+          "range": [0.2, 0.4],
+          "dimensions": {
+            "region": "cn"
+          },
+          "note": "国内站 2.00 元 / 万字符；官方：1 个汉字计 2 个字符，其余字符计 1 个。区间下限 = 全是非汉字，上限 = 全是汉字；估价按字数 × 单价，纯中文旁白看上限。"
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：text 须小于 10000 字符（3000 以上建议流式；这里不用流式）；语速 0.5–2，超出会被夹到范围内；有 pronunciation_dict、情绪枚举等，这一版不发。",
+        "官方：HTTP 200 的响应也可能是失败，看 base_resp.status_code（0 才成功）；音频默认是十六进制字符串，这里解码成字节。",
+        "官方：风格指令（instructions）没有对应字段，会被丢弃并记录；情绪只有固定枚举，这一版不发。",
+        "国内（api.minimax.cn）和国际（api.minimax.io）按两套账号处理，Key 是否互通官方没写。"
+      ],
+      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "speech-02-hd",
+      "protocol": "minimax-t2a",
+      "apiModel": "speech-02-hd",
+      "displayName": "MiniMax Speech 02 HD（历史型号）",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 9999,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "Chinese (Mandarin)_Reliable_Executive",
+              "label": "Reliable Executive",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_News_Anchor",
+              "label": "News Anchor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Unrestrained_Young_Man",
+              "label": "Unrestrained Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Mature_Woman",
+              "label": "Mature Woman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Arrogant_Miss",
+              "label": "Arrogant Miss",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Robot_Armor",
+              "label": "Robot Armor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Kind-hearted_Antie",
+              "label": "Kind-hearted Antie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_HK_Flight_Attendant",
+              "label": "HK Flight Attendant",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Humorous_Elder",
+              "label": "Humorous Elder",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Gentleman",
+              "label": "Gentleman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Warm_Bestie",
+              "label": "Warm Bestie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Stubborn_Friend",
+              "label": "Stubborn Friend",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Sweet_Lady",
+              "label": "Sweet Lady",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Southern_Young_Man",
+              "label": "Southern Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Wise_Women",
+              "label": "Wise Women",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "English_expressive_narrator",
+              "label": "Expressive Narrator",
+              "lang": "English"
+            },
+            {
+              "id": "English_radiant_girl",
+              "label": "Radiant Girl",
+              "lang": "English"
+            },
+            {
+              "id": "English_magnetic_voiced_man",
+              "label": "Magnetic-voiced Male",
+              "lang": "English"
+            },
+            {
+              "id": "English_compelling_lady1",
+              "label": "Compelling Lady",
+              "lang": "English"
+            },
+            {
+              "id": "English_Aussie_Bloke",
+              "label": "Aussie Bloke",
+              "lang": "English"
+            }
+          ],
+          "note": "官方系统音色页共 332 个、24 种语言（2026-11-13），这里只列了常用的 20 个；其他系统音色、复刻音色、设计音色直接手填 voice_id。"
+        },
+        "defaultVoice": "Chinese (Mandarin)_News_Anchor"
+      },
+      "pricing": [
+        {
+          "currency": "USD",
+          "unit": "per_1k_chars",
+          "amount": 0.1,
+          "dimensions": {
+            "region": "global"
+          },
+          "note": "国际站 $100 / 1M 字符（同步与异步同价）；国际站页面没写字符怎么数。"
+        },
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.35,
+          "range": [0.35, 0.7],
+          "dimensions": {
+            "region": "cn"
+          },
+          "note": "国内站 3.50 元 / 万字符；官方：1 个汉字计 2 个字符，其余字符计 1 个。区间下限 = 全是非汉字，上限 = 全是汉字；估价按字数 × 单价，纯中文旁白看上限。"
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：text 须小于 10000 字符（3000 以上建议流式；这里不用流式）；语速 0.5–2，超出会被夹到范围内；有 pronunciation_dict、情绪枚举等，这一版不发。",
+        "官方：HTTP 200 的响应也可能是失败，看 base_resp.status_code（0 才成功）；音频默认是十六进制字符串，这里解码成字节。",
+        "官方：风格指令（instructions）没有对应字段，会被丢弃并记录；情绪只有固定枚举，这一版不发。",
+        "国内（api.minimax.cn）和国际（api.minimax.io）按两套账号处理，Key 是否互通官方没写。"
+      ],
+      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "speech-02-turbo",
+      "protocol": "minimax-t2a",
+      "apiModel": "speech-02-turbo",
+      "displayName": "MiniMax Speech 02 Turbo（历史型号）",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 9999,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "Chinese (Mandarin)_Reliable_Executive",
+              "label": "Reliable Executive",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_News_Anchor",
+              "label": "News Anchor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Unrestrained_Young_Man",
+              "label": "Unrestrained Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Mature_Woman",
+              "label": "Mature Woman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Arrogant_Miss",
+              "label": "Arrogant Miss",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Robot_Armor",
+              "label": "Robot Armor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Kind-hearted_Antie",
+              "label": "Kind-hearted Antie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_HK_Flight_Attendant",
+              "label": "HK Flight Attendant",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Humorous_Elder",
+              "label": "Humorous Elder",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Gentleman",
+              "label": "Gentleman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Warm_Bestie",
+              "label": "Warm Bestie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Stubborn_Friend",
+              "label": "Stubborn Friend",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Sweet_Lady",
+              "label": "Sweet Lady",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Southern_Young_Man",
+              "label": "Southern Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Wise_Women",
+              "label": "Wise Women",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "English_expressive_narrator",
+              "label": "Expressive Narrator",
+              "lang": "English"
+            },
+            {
+              "id": "English_radiant_girl",
+              "label": "Radiant Girl",
+              "lang": "English"
+            },
+            {
+              "id": "English_magnetic_voiced_man",
+              "label": "Magnetic-voiced Male",
+              "lang": "English"
+            },
+            {
+              "id": "English_compelling_lady1",
+              "label": "Compelling Lady",
+              "lang": "English"
+            },
+            {
+              "id": "English_Aussie_Bloke",
+              "label": "Aussie Bloke",
+              "lang": "English"
+            }
+          ],
+          "note": "官方系统音色页共 332 个、24 种语言（2026-11-13），这里只列了常用的 20 个；其他系统音色、复刻音色、设计音色直接手填 voice_id。"
+        },
+        "defaultVoice": "Chinese (Mandarin)_News_Anchor"
+      },
+      "pricing": [
+        {
+          "currency": "USD",
+          "unit": "per_1k_chars",
+          "amount": 0.06,
+          "dimensions": {
+            "region": "global"
+          },
+          "note": "国际站 $60 / 1M 字符（同步与异步同价）；国际站页面没写字符怎么数。"
+        },
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.2,
+          "range": [0.2, 0.4],
+          "dimensions": {
+            "region": "cn"
+          },
+          "note": "国内站 2.00 元 / 万字符；官方：1 个汉字计 2 个字符，其余字符计 1 个。区间下限 = 全是非汉字，上限 = 全是汉字；估价按字数 × 单价，纯中文旁白看上限。"
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：text 须小于 10000 字符（3000 以上建议流式；这里不用流式）；语速 0.5–2，超出会被夹到范围内；有 pronunciation_dict、情绪枚举等，这一版不发。",
+        "官方：HTTP 200 的响应也可能是失败，看 base_resp.status_code（0 才成功）；音频默认是十六进制字符串，这里解码成字节。",
+        "官方：风格指令（instructions）没有对应字段，会被丢弃并记录；情绪只有固定枚举，这一版不发。",
+        "国内（api.minimax.cn）和国际（api.minimax.io）按两套账号处理，Key 是否互通官方没写。"
+      ],
+      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "cosyvoice-v3-flash",
+      "protocol": "dashscope-cosyvoice",
+      "apiModel": "cosyvoice-v3-flash",
+      "displayName": "通义 CosyVoice v3 Flash",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "longanyang",
+              "label": "龙安洋",
+              "lang": "中文（普通话）、英文 / 社交陪伴"
+            },
+            {
+              "id": "longanhuan_v3",
+              "label": "龙安欢（V3）",
+              "lang": "中文（普通话及多种方言）、英文 / 社交陪伴"
+            },
+            {
+              "id": "longanhuan",
+              "label": "龙安欢",
+              "lang": "中文（普通话）、英文 / 社交陪伴"
+            },
+            {
+              "id": "longhuhu_v3",
+              "label": "龙呼呼",
+              "lang": "中文（普通话）、英文 / 童声"
+            },
+            {
+              "id": "longpaopao_v3",
+              "label": "龙泡泡",
+              "lang": "中文（普通话）、英文 / 智能玩具、儿童故事机"
+            },
+            {
+              "id": "longjielidou_v3",
+              "label": "龙杰力豆",
+              "lang": "中文（普通话）、英文 / 智能玩具、儿童故事机"
+            },
+            {
+              "id": "longxian_v3",
+              "label": "龙仙",
+              "lang": "中文（普通话）、英文 / 智能玩具、儿童故事机"
+            },
+            {
+              "id": "longling_v3",
+              "label": "龙铃",
+              "lang": "中文（普通话）、英文 / 智能玩具、儿童故事机"
+            },
+            {
+              "id": "longshanshan_v3",
+              "label": "龙闪闪",
+              "lang": "中文（普通话）、英文 / 消费电子-儿童有声书"
+            },
+            {
+              "id": "longniuniu_v3",
+              "label": "龙牛牛",
+              "lang": "中文（普通话）、英文 / 消费电子-儿童有声书"
+            },
+            {
+              "id": "longjiaxin_v3",
+              "label": "龙嘉欣",
+              "lang": "中文（粤语）、英文 / 方言"
+            },
+            {
+              "id": "longjiayi_v3",
+              "label": "龙嘉怡",
+              "lang": "中文（粤语）、英文 / 方言"
+            },
+            {
+              "id": "longanyue_v3",
+              "label": "龙安粤",
+              "lang": "中文（粤语）、英文 / 方言"
+            },
+            {
+              "id": "longlaotie_v3",
+              "label": "龙老铁",
+              "lang": "中文（东北话）、英文 / 方言"
+            },
+            {
+              "id": "longshange_v3",
+              "label": "龙陕哥",
+              "lang": "中文（陕西话）、英文 / 方言"
+            },
+            {
+              "id": "longanmin_v3",
+              "label": "龙安闽",
+              "lang": "中文（闽南话）、英文 / 方言"
+            }
+          ],
+          "note": "官方音色列表页共有更多，这里只列了前 16 个（普通话 / 方言）；其他系统音色、复刻 / 设计音色直接手填 voice 值。"
+        },
+        "defaultVoice": "longanyang"
+      },
+      "pricing": [
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.1,
+          "dimensions": {
+            "region": "cn"
+          },
+          "note": "北京 1 元 / 万字符（官方 cosyvoice-v3-flash 价格页）；页面没写汉字怎么计数。"
+        }
+      ],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方 HTTP 页只写了北京地域（华北2）的接口 https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer；模型、地址、Key 必须同一地域。",
+        "官方：成品是 24 小时有效的链接，成功后会立即下载保存。",
+        "官方：风格 / 方言 / 情绪指令（instruction）最多 100 个字符，汉字算 2 个；语速 rate 0.5–2。",
+        "官方页面没有写单次文本长度上限，这里不填，不猜。",
+        "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
+        "官方：单价 1 元 / 万字符（北京），RPM 180。"
+      ],
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "cosyvoice-v3-plus",
+      "protocol": "dashscope-cosyvoice",
+      "apiModel": "cosyvoice-v3-plus",
+      "displayName": "通义 CosyVoice v3 Plus",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "longanyang",
+              "label": "龙安洋",
+              "lang": "中文（普通话）、英文 / 社交陪伴"
+            },
+            {
+              "id": "longanhuan",
+              "label": "龙安欢",
+              "lang": "中文（普通话）、英文 / 社交陪伴"
+            }
+          ],
+          "note": "官方音色列表页里这个型号只列了这两个系统音色；也可以手填复刻 / 设计音色。"
+        },
+        "defaultVoice": "longanyang"
+      },
+      "pricing": [],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方 HTTP 页只写了北京地域（华北2）的接口 https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer；模型、地址、Key 必须同一地域。",
+        "官方：成品是 24 小时有效的链接，成功后会立即下载保存。",
+        "官方：风格 / 方言 / 情绪指令（instruction）最多 100 个字符，汉字算 2 个；语速 rate 0.5–2。",
+        "官方页面没有写单次文本长度上限，这里不填，不猜。",
+        "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
+        "单价只在检索摘要里见过（北京 2 元 / 万字符），没有在官方页面核对，这里不填。"
+      ],
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "cosyvoice-v3.5-plus",
+      "protocol": "dashscope-cosyvoice",
+      "apiModel": "cosyvoice-v3.5-plus",
+      "displayName": "通义 CosyVoice v3.5 Plus",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "voices": {
+          "support": "unsupported",
+          "value": [],
+          "note": "官方：v3.5 系列没有系统音色，只能用声音复刻或声音设计得到的音色（音色与合成型号绑定，不能跨型号）；这一版没有创建音色的通道，需要先在百炼控制台创建，再把 voice 值手填进来。"
+        }
+      },
+      "pricing": [],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方 HTTP 页只写了北京地域（华北2）的接口 https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer；模型、地址、Key 必须同一地域。",
+        "官方：成品是 24 小时有效的链接，成功后会立即下载保存。",
+        "官方：风格 / 方言 / 情绪指令（instruction）最多 100 个字符，汉字算 2 个；语速 rate 0.5–2。",
+        "官方页面没有写单次文本长度上限，这里不填，不猜。",
+        "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
+        "单价只在检索摘要里见过，没有在官方页面核对，这里不填。"
+      ],
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "cosyvoice-v3.5-flash",
+      "protocol": "dashscope-cosyvoice",
+      "apiModel": "cosyvoice-v3.5-flash",
+      "displayName": "通义 CosyVoice v3.5 Flash",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "voices": {
+          "support": "unsupported",
+          "value": [],
+          "note": "官方：v3.5 系列没有系统音色，只能用声音复刻或声音设计得到的音色（音色与合成型号绑定，不能跨型号）；这一版没有创建音色的通道，需要先在百炼控制台创建，再把 voice 值手填进来。"
+        }
+      },
+      "pricing": [],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方 HTTP 页只写了北京地域（华北2）的接口 https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer；模型、地址、Key 必须同一地域。",
+        "官方：成品是 24 小时有效的链接，成功后会立即下载保存。",
+        "官方：风格 / 方言 / 情绪指令（instruction）最多 100 个字符，汉字算 2 个；语速 rate 0.5–2。",
+        "官方页面没有写单次文本长度上限，这里不填，不猜。",
+        "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
+        "单价只在检索摘要里见过，没有在官方页面核对，这里不填。"
+      ],
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "cosyvoice-v2",
+      "protocol": "dashscope-cosyvoice",
+      "apiModel": "cosyvoice-v2",
+      "displayName": "通义 CosyVoice v2",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "longjixin"
+            },
+            {
+              "id": "longgaoseng"
+            },
+            {
+              "id": "longbaizhi"
+            },
+            {
+              "id": "longanshuo"
+            },
+            {
+              "id": "longxiaocheng_v2"
+            },
+            {
+              "id": "longshao_v2"
+            },
+            {
+              "id": "kabuleshen_v2"
+            },
+            {
+              "id": "longanpei"
+            },
+            {
+              "id": "longwangwang"
+            },
+            {
+              "id": "longyingcui"
+            },
+            {
+              "id": "longyingda"
+            },
+            {
+              "id": "longyingyan"
+            },
+            {
+              "id": "longyingtian"
+            },
+            {
+              "id": "longyingbing"
+            },
+            {
+              "id": "longanchong"
+            },
+            {
+              "id": "longanping"
+            },
+            {
+              "id": "longke_v2"
+            },
+            {
+              "id": "longtao_v2"
+            },
+            {
+              "id": "libai_v2"
+            },
+            {
+              "id": "longjin_v2"
+            },
+            {
+              "id": "longxiaobai_v2"
+            },
+            {
+              "id": "longjing_v2"
+            },
+            {
+              "id": "loongstella_v2"
+            },
+            {
+              "id": "loongeva_v2"
+            },
+            {
+              "id": "loongbrian_v2"
+            }
+          ],
+          "note": "官方音色列表页里 v2 的音色很多，这里只列了没有 _v3 同名版本的 25 个；与 v3 同名的音色在 v2 也可用但没有逐个核对。"
+        }
+      },
+      "pricing": [],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方 HTTP 页只写了北京地域（华北2）的接口 https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer；模型、地址、Key 必须同一地域。",
+        "官方：成品是 24 小时有效的链接，成功后会立即下载保存。",
+        "官方：风格 / 方言 / 情绪指令（instruction）最多 100 个字符，汉字算 2 个；语速 rate 0.5–2。",
+        "官方页面没有写单次文本长度上限，这里不填，不猜。",
+        "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
+        "没有可靠的默认音色，需要先设置旁白音色。"
+      ],
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "FunAudioLLM/CosyVoice2-0.5B",
+      "protocol": "openai-tts",
+      "apiModel": "FunAudioLLM/CosyVoice2-0.5B",
+      "displayName": "硅基流动 CosyVoice2-0.5B",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 128000,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:alex",
+              "label": "沉稳男声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:benjamin",
+              "label": "低沉男声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:charles",
+              "label": "磁性男声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:david",
+              "label": "欢快男声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:anna",
+              "label": "沉稳女声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:bella",
+              "label": "激情女声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:claire",
+              "label": "温柔女声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:diana",
+              "label": "欢快女声"
+            }
+          ],
+          "note": "官方列出 8 个系统预置音色，音色写作“模型名:音色名”；上传参考音频得到的 speech:… 地址也可以手填。"
+        },
+        "defaultVoice": "FunAudioLLM/CosyVoice2-0.5B:alex"
+      },
+      "pricing": [],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：input 长度 1–128000；voice 写作“模型名:音色名”；speed 0.25–4；响应是二进制音频（chunked）。",
+        "官方：按输入文本的 UTF-8 字节数计费，页面没有单价，这里不估价。",
+        "官方提醒：支持的型号会变化，以平台“语音”标签下的型号列表为准。",
+        "官方：情绪 / 方言指令要写在输入文本前面，用 <|endofprompt|> 隔开（如“用四川话说<|endofprompt|>……”）；支持 [laughter]、[breath] 等标签。这一版不自动拼接。"
+      ],
+      "provenance": "官方：docs.siliconflow.cn/docs/api/audio-speech-post 与 docs.siliconflow.com/en/userguide/capabilities/text-to-speech（2026-11-13 核对）。未实测。"
+    },
+    {
+      "id": "fnlp/MOSS-TTSD-v0.5",
+      "protocol": "openai-tts",
+      "apiModel": "fnlp/MOSS-TTSD-v0.5",
+      "displayName": "硅基流动 MOSS-TTSD v0.5",
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 128000,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "fnlp/MOSS-TTSD-v0.5:alex",
+              "label": "沉稳男声"
+            },
+            {
+              "id": "fnlp/MOSS-TTSD-v0.5:benjamin",
+              "label": "低沉男声"
+            },
+            {
+              "id": "fnlp/MOSS-TTSD-v0.5:charles",
+              "label": "磁性男声"
+            },
+            {
+              "id": "fnlp/MOSS-TTSD-v0.5:david",
+              "label": "欢快男声"
+            },
+            {
+              "id": "fnlp/MOSS-TTSD-v0.5:anna",
+              "label": "沉稳女声"
+            },
+            {
+              "id": "fnlp/MOSS-TTSD-v0.5:bella",
+              "label": "激情女声"
+            },
+            {
+              "id": "fnlp/MOSS-TTSD-v0.5:claire",
+              "label": "温柔女声"
+            },
+            {
+              "id": "fnlp/MOSS-TTSD-v0.5:diana",
+              "label": "欢快女声"
+            }
+          ],
+          "note": "官方列出 8 个系统预置音色，音色写作“模型名:音色名”；上传参考音频得到的 speech:… 地址也可以手填。"
+        },
+        "defaultVoice": "fnlp/MOSS-TTSD-v0.5:alex"
+      },
+      "pricing": [],
+      "prompt": {
+        "lang": "zh",
+        "negative": "none"
+      },
+      "quirks": [
+        "官方：input 长度 1–128000；voice 写作“模型名:音色名”；speed 0.25–4；响应是二进制音频（chunked）。",
+        "官方：按输入文本的 UTF-8 字节数计费，页面没有单价，这里不估价。",
+        "官方提醒：支持的型号会变化，以平台“语音”标签下的型号列表为准。",
+        "官方：这个型号用 [S1] [S2] 标记不同说话人，适合双人对话；旁白用不到。"
+      ],
+      "provenance": "官方：docs.siliconflow.cn/docs/api/audio-speech-post 与 docs.siliconflow.com/en/userguide/capabilities/text-to-speech（2026-11-13 核对）。未实测。"
     }
   ]
 }

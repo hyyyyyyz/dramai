@@ -1,6 +1,7 @@
 import type { Locale, TranslatedLocale } from '../i18n.ts'
 import { IMAGE_PRESETS } from './presets-image.ts'
 import { VIDEO_PRESETS } from './presets-video.ts'
+import { AUDIO_PRESETS } from './presets-audio.ts'
 import { TEXT_PRESETS } from './presets-text.ts'
 import type {
   ProviderAuth,
@@ -282,6 +283,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
   ...TEXT_PRESETS,
   ...IMAGE_PRESETS,
   ...VIDEO_PRESETS,
+  ...AUDIO_PRESETS,
 ]
 
 export const PROVIDER_KIND_LABEL: Record<ProviderKind, string> = {
@@ -365,7 +367,9 @@ export function localizeProviderConfig(
  * - `*.ap-southeast-1.maas.aliyuncs.com` → 国际：百炼 Qwen-Image 页（新加坡）；
  * - `ark.cn-beijing.volces.com` → 国内：方舟“创建视频生成任务”页；
  * - `ark.ap-southeast.bytepluses.com` → 国际：BytePlus ModelArk 人像素材指南页的示例代码；
- * - `api-beijing.klingai.com` → 国内、`api-singapore.klingai.com` → 国际：可灵“接口鉴权”页（国内站 / 国际站各一页）。
+ * - `api-beijing.klingai.com` → 国内、`api-singapore.klingai.com` → 国际：可灵“接口鉴权”页（国内站 / 国际站各一页）；
+ * - `api.minimax.cn` → 国内：MiniMax 国内站“同步语音合成”页的 server；`api.minimax.io` → 国际：国际站同一页的接口地址；
+ * - `api.siliconflow.cn` → 国内：硅基流动 `audio-speech-post` 页（docs.siliconflow.cn）；`api.siliconflow.com` → 国际：国际站语音指南页。
  */
 const VERIFIED_HOSTS: ReadonlyArray<readonly [RegExp, 'cn' | 'global']> = [
   [/^[^.]+\.cn-beijing\.maas\.aliyuncs\.com$/, 'cn'],
@@ -374,6 +378,10 @@ const VERIFIED_HOSTS: ReadonlyArray<readonly [RegExp, 'cn' | 'global']> = [
   [/^ark\.ap-southeast\.bytepluses\.com$/, 'global'],
   [/^api-beijing\.klingai\.com$/, 'cn'],
   [/^api-singapore\.klingai\.com$/, 'global'],
+  [/^api\.minimax\.cn$/, 'cn'],
+  [/^api\.minimax\.io$/, 'global'],
+  [/^api\.siliconflow\.cn$/, 'cn'],
+  [/^api\.siliconflow\.com$/, 'global'],
 ]
 
 export function providerRegionOf(

@@ -35,6 +35,8 @@ export async function testProvider(
     case 'ark-video':
     case 'kling-contents':
     case 'dashscope-video':
+    case 'minimax-t2a':
+    case 'dashscope-cosyvoice':
     case 'kling-image':
     case 'dashscope-image':
     case 'volcengine-images':

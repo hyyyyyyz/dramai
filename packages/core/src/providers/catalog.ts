@@ -320,7 +320,8 @@ function pickPrice(entries: PriceEntry[], query: CostQuery): PriceEntry | undefi
     (e) => e.dimensions?.resolution && e.dimensions.resolution === query.resolution,
   )
   if (exact) return exact
-  const wildcard = entries.find((e) => !e.dimensions || Object.keys(e.dimensions).length === 0)
+  // 没有分辨率维度的条目对所有分辨率通用（站点维度 `region` 已在上面筛过，不算分档）
+  const wildcard = entries.find((e) => !e.dimensions || e.dimensions.resolution === undefined)
   if (wildcard) return wildcard
   // 价目只按分辨率分档，而调用没指定分辨率：不猜。
   return undefined
