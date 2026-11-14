@@ -242,6 +242,11 @@ export interface MediaProtocol<Input> {
    * （`ignoredInputs`），不静默丢弃。不实现 = 没有被丢弃的字段。
    */
   ignoredInputs?(auth: AuthContext, input: Input): string[]
+  /**
+   * 这个输入这个协议 / 型号肯定发不出去（写法不对、超出协议自己的限制）时的原因，纯函数。准入据此在花钱之前拦下，
+   * 任务入口用同一个函数兜底。不实现 = 没有协议级的输入限制。
+   */
+  inputProblem?(auth: AuthContext, input: Input): { code: string; message: string } | undefined
 }
 
 export interface ImageGenInput {

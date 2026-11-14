@@ -10,6 +10,7 @@ import { klingImage } from './kling-image.ts'
 import { openaiImages } from './openai-images.ts'
 import { siliconflowImages } from './siliconflow-images.ts'
 import { volcengineImages } from './volcengine-images.ts'
+import { dashscopeCosyvoice } from './dashscope-cosyvoice.ts'
 import { minimaxT2a } from './minimax-t2a.ts'
 import { openaiTts } from './openai-tts.ts'
 import { arkVideo } from './ark-video.ts'
@@ -29,11 +30,13 @@ export {
   klingVideo,
   openaiImages,
   minimaxT2a,
+  dashscopeCosyvoice,
   openaiTts,
   volcengineVideo,
 }
 export * from './content-array.ts'
 export { hexToBytes } from './minimax-t2a.ts'
+export { instructionLength } from './dashscope-cosyvoice.ts'
 export * from './openai-chat.ts'
 export { openAiImageStyle, parseImagesData } from './openai-images.ts'
 export { seedreamMinPixels } from './volcengine-images.ts'
@@ -55,6 +58,7 @@ const MEDIA_PROTOCOLS: Partial<Record<ProtocolId, MediaProtocol<any>>> = {
   'generic-video': genericVideo,
   'openai-tts': openaiTts,
   'minimax-t2a': minimaxT2a,
+  'dashscope-cosyvoice': dashscopeCosyvoice,
   'volcengine-images': volcengineImages,
   'dashscope-image': dashscopeImage,
   'siliconflow-images': siliconflowImages,
