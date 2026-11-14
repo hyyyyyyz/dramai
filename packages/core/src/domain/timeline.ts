@@ -62,12 +62,20 @@ export interface TimelineBgmClip {
 }
 
 /**
- * 系统自动追加的修订的机器可读原因（只写在这类修订上；用户的修改、回滚、初始时间线、同步镜头顺序没有）。
+ * 系统追加的修订的机器可读原因（用户自己的修改没有；以前创建的修订也没有）。
  * 界面据此显示本地化的说明，不要靠摘要文字（摘要是中文，给人看的）。以后新增原因码是加法。
  * - `native_audio_default`：这个镜头第一次拿到生成的视频，而模型无法关闭自带音频、镜头又没有使用原生人声，
- *   片段原声的默认音量被设为 0。
+ *   片段原声的默认音量被设为 0；
+ * - `initial`：一集的第一份时间线（按镜头顺序一镜头一片段）；
+ * - `sync_shots`：镜头新增 / 删除 / 重排后，把时间线同步成当前的镜头顺序；
+ * - `rollback`：回滚到旧修订（`restoredFrom` 是旧修订号）。
  */
-export const TIMELINE_REVISION_REASONS = ['native_audio_default'] as const
+export const TIMELINE_REVISION_REASONS = [
+  'native_audio_default',
+  'initial',
+  'sync_shots',
+  'rollback',
+] as const
 export type TimelineRevisionReason = (typeof TIMELINE_REVISION_REASONS)[number]
 
 export interface TimelineRevision {

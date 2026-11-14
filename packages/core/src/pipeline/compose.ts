@@ -144,6 +144,7 @@ export async function syncTimelineWithShots(
       author: { kind: 'creator' },
       now: deps.clock.now(),
       nextClipNumber: next,
+      reason: 'sync_shots',
     })
     await tx.timelines.put(updated)
     return updated

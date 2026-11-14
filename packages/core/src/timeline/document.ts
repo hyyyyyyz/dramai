@@ -84,6 +84,7 @@ export function createTimeline(input: {
         summary: input.summary ?? '初始时间线',
         createdAt: input.now,
         content: structuredClone(input.content),
+        reason: 'initial',
       },
     ],
   }
@@ -144,6 +145,7 @@ export function rollbackTo(
     author: input.author,
     now: input.now,
     restoredFrom: revisionNumber,
+    reason: 'rollback',
   })
 }
 

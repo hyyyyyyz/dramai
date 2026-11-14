@@ -190,7 +190,7 @@ describe('automatic mute on the real server', () => {
     // no mute happened and nothing half-written is left in the stored timeline
     const after = (await store.timelines.listByProject('p1')).find((d) => d.episodeId === 'e1')!
     expect(after.revisions.map((r) => r.number)).toEqual([1, 2])
-    expect(after.revisions.some((r) => r.reason)).toBe(false)
+    expect(after.revisions.some((r) => r.reason === 'native_audio_default')).toBe(false)
   })
 
   it('many shots finishing together: every mute lands, revision numbers are consecutive, nothing is lost or repeated', async () => {

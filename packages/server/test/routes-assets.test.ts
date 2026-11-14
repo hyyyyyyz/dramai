@@ -722,9 +722,8 @@ describe('timeline', () => {
     expect(v2.head).toBe(2)
     expect(v2.revision.reason).toBe('native_audio_default')
     expect(v2.revision.author.kind).toBe('agent')
-    expect(v2.revisions.map((r) => r.reason)).toEqual([undefined, 'native_audio_default'])
-    expect(v2.revisions[0]).not.toHaveProperty('reason') // the old revision is read as before
-    // the user's own edit on top has no reason, and so does a rollback
+    expect(v2.revisions.map((r) => r.reason)).toEqual(['initial', 'native_audio_default'])
+    // the user's own edit on top has no reason; the rollback is a system revision with its own
     const c = v2.revision.content.clips
     const v3 = await h.client.call('timeline.update', {
       params: { episodeId: 'e1' },
@@ -739,13 +738,36 @@ describe('timeline', () => {
       params: { episodeId: 'e1' },
       body: { revision: 2 },
     })
-    expect(rolled.revision).not.toHaveProperty('reason')
+    expect(rolled.revision).toMatchObject({ reason: 'rollback', restoredFrom: 2 })
     expect(rolled.revisions.map((r) => r.reason)).toEqual([
-      undefined,
+      'initial',
       'native_audio_default',
       undefined,
-      undefined,
+      'rollback',
     ])
+  })
+
+  it('a timeline stored before the reason codes existed reads as before: no reason on any revision', async () => {
+    const h = await startServer()
+    await seed(h)
+    const store = h.server.ctx.store
+    await h.client.call('timeline.get', { params: { episodeId: 'e1' } })
+    const doc = (await store.timelines.listByProject('p1')).find((d) => d.episodeId === 'e1')!
+    // what the old code stored: the same revisions without the reason key
+    const legacy = {
+      ...doc,
+      revisions: doc.revisions.map((r) => {
+        const rest = { ...r }
+        delete rest.reason
+        return rest
+      }),
+    }
+    await store.timelines.put(legacy)
+    const v = await h.client.call('timeline.get', { params: { episodeId: 'e1' } })
+    expect(v.revisions).toHaveLength(1)
+    expect(v.revisions[0]).not.toHaveProperty('reason')
+    expect(v.revision).not.toHaveProperty('reason')
+    expect(v.revision.summary).toBe('初始时间线')
   })
 
   it('validates updates', async () => {
@@ -820,6 +842,8 @@ describe('timeline', () => {
     await store.shots.delete(shots[1]!.id)
     const synced = await h.client.call('timeline.sync', { params: { episodeId: 'e1' } })
     expect(synced.head).toBe(2)
+    expect(synced.revision).toMatchObject({ reason: 'sync_shots', summary: '同步镜头顺序' })
+    expect(synced.revisions.map((r) => r.reason)).toEqual(['initial', 'sync_shots'])
     expect(synced.revision.content.clips.map((c) => c.shotId)).toEqual(['sh3', 'sh1', 'sh4'])
     // 已有片段 id 保留，新增的不撞号
     const ids = synced.revision.content.clips.map((c) => c.id)

@@ -621,11 +621,15 @@ export const timelineRevision = z.object({
   changedClipIds: z.array(z.string()).optional(),
   restoredFrom: z.number().optional(),
   /**
-   * 只有系统自动追加的修订才有的原因码，界面据此显示本地化的说明（不要靠 `summary` 的中文文字，也不要靠 `author`）。
-   * 现在只有 `native_audio_default`：这个镜头第一次拿到生成的视频，模型无法关闭自带音频而镜头没有使用原生人声，
-   * 所以这个片段的原声默认音量被设为 0（`changedClipIds` 是被改的片段）。旧修订和用户的修改没有这个字段。
+   * 系统追加的修订才有的原因码，界面据此显示本地化的说明（不要靠 `summary` 的中文文字，也不要靠 `author`）：
+   * - `native_audio_default`：这个镜头第一次拿到生成的视频，模型无法关闭自带音频而镜头没有使用原生人声，
+   *   所以这个片段的原声默认音量被设为 0（`changedClipIds` 是被改的片段）；
+   * - `initial`：一集的第一份时间线；
+   * - `sync_shots`：镜头新增 / 删除 / 重排后同步成当前的镜头顺序；
+   * - `rollback`：回滚到旧修订（`restoredFrom` 是旧修订号）。
+   * 用户自己的修改没有这个字段；这个字段加上之前创建的修订也没有，读取和显示照常。遇到不认识的值，退回显示 `summary`。
    */
-  reason: z.enum(['native_audio_default']).optional(),
+  reason: z.enum(['native_audio_default', 'initial', 'sync_shots', 'rollback']).optional(),
 })
 
 export const timelineIssue = z.object({
