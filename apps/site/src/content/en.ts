@@ -97,7 +97,7 @@ export const en: Content = {
       {
         icon: 'alert',
         title: 'Checks before paid generation',
-        text: 'Shots that refer to an unregistered asset, or one without a reference image, are blocked. A batch runs completely or not at all, and a cost estimate is shown before you confirm.',
+        text: 'Shots that refer to an unregistered asset, or one without a reference image, are blocked. A batch runs completely or not at all, and models with a price list get a cost estimate before you confirm.',
       },
       {
         icon: 'tasks',
@@ -119,6 +119,7 @@ export const en: Content = {
       lead: `Presets come in four kinds, language models, images, video and speech, grouped by vendor in Settings → Providers, and each one carries its verification status: ${F.tested} have been run end to end (May 2026, in v0.4) and the other ${F.documented} are connected from the vendors’ official documentation. A preset connected from documentation never becomes the current choice on its own; you pick it. Items marked “Source” were added after ${PUBLISHED_VERSION}; the published installers match ${PUBLISHED_VERSION}, so to use them run from source first.`,
       testedLabel: 'Run end to end',
       untestedLabel: 'From official docs',
+      kindCount: '{n} presets',
       kinds: {
         llm: { name: 'Language models', testedChips: ['DeepSeek'] },
         image: { name: 'Images', testedChips: ['302.AI: Seedream, Nano Banana'] },
@@ -126,7 +127,7 @@ export const en: Content = {
         speech: { name: 'Speech', testedChips: [] },
       },
       kindsNote:
-        'A vendor’s China site and international site count as one preset each, so there are more presets than vendors. Ollama and LM Studio run models on your own machine and need no authentication.',
+        'A vendor can have several presets (for example one for the China site and one for the international site, or one for an API key and one for account sign-in), so there are more presets than vendors. Ollama and LM Studio run models on your own machine and need no authentication.',
       accountTitle: `Account sign-in (${F.accountSignIn} presets)`,
       accountLead:
         'Instead of pasting a key. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.',
@@ -148,7 +149,7 @@ export const en: Content = {
         },
         {
           title: 'Narration voice',
-          text: 'A project’s narration voice can be chosen, and where the provider takes them it can carry a style instruction and a language hint. The check before generating stops a voice that does not exist on the chosen provider and a text that is too long.',
+          text: 'A project’s narration voice can be chosen, and where the provider takes them it can carry a style instruction and a language hint. Before generating, the voice and the text length are checked.',
         },
       ],
     },
@@ -249,7 +250,7 @@ export const en: Content = {
         desktop:
           'Encrypted with the operating system key store where one exists (macOS Keychain, Windows DPAPI, Linux libsecret or kwallet)',
         webui:
-          'Kept in `secrets.json` in the data directory, readable only by your operating system user',
+          'Kept in `secrets.json` in the data directory; on macOS and Linux the file permissions limit it to you',
       },
       {
         label: 'Network access',
@@ -270,9 +271,9 @@ export const en: Content = {
         webui: '`~/.dramai` by default; set it with `--data-dir`',
       },
       {
-        label: 'What has been verified',
+        label: 'Build and checks',
         desktop:
-          'Started on a real macOS Apple silicon machine; the macOS Intel, Windows and Linux installers are built by CI, with an install self-check on Windows and Linux',
+          'The macOS Apple silicon installer has been started on a real machine; CI builds the desktop app on macOS, Windows and Linux and runs one sandboxed install, start-up check and uninstall on each',
         webui: 'Browser tests cover the whole workflow (in demo mode)',
       },
     ],
@@ -282,7 +283,7 @@ export const en: Content = {
     lead: 'dramai itself is free and open source under Apache-2.0. The cost comes only from the AI providers you connect, at their prices.',
     headline: 'The cost follows the providers you choose',
     headlineText:
-      'A total depends on the models you pick, the number of shots and their length, so there is no fixed figure here. Before a batch runs, dramai gives an estimate from the model’s price table, and nothing is ordered until you confirm.',
+      'A total depends on the models you pick, the number of shots and their length, so there is no fixed figure here. For models with a price list, dramai gives an estimate before a batch runs, and nothing is ordered until you confirm.',
     paysTitle: 'What you pay a provider for',
     pays: [
       'The storyboard breakdown and prompts: a language model',
@@ -297,14 +298,14 @@ export const en: Content = {
     guards: [
       {
         title: 'An estimate before you confirm',
-        text: 'Before a batch runs, you see an estimate from the model’s price table, and nothing is ordered from a provider until you confirm. It is an estimate, not a bill; prices are whatever the provider’s page says today. With reference images for video turned on, the dialog also says what is given up first.',
+        text: 'For models with a price list, you see an estimated amount before a batch runs, and nothing is ordered from a provider until you confirm. It is an estimate, not a bill; prices are whatever the provider’s page says today. With reference images for video turned on, the dialog also says what is given up first.',
       },
       {
         title: 'Complete batches or none',
-        text: 'Shots that refer to an unregistered asset, or one without a reference image, are blocked. A shot has at most one video task in flight. A narration voice that does not exist, or a text that is too long, is also stopped before anything is ordered.',
+        text: 'Shots that refer to an unregistered asset, or one without a reference image, are blocked. A shot has at most one video task in flight. The narration voice and text length are also checked before generating.',
       },
       {
-        title: 'No quiet double charges',
+        title: 'Nothing is resubmitted automatically',
         text: 'A video task cut off before the provider confirmed it is marked “submission unconfirmed”. dramai asks you to check the provider’s dashboard and never resubmits on its own.',
       },
     ],
@@ -325,32 +326,26 @@ export const en: Content = {
           name: 'macOS · Apple silicon',
           detail: '`.dmg` disk image, or `.zip`',
           files: ['dramai-{version}-mac-arm64.dmg', 'dramai-{version}-mac-arm64.zip'],
-          tested: true,
         },
         {
           name: 'macOS · Intel',
           detail: '`.dmg` disk image, or `.zip`',
           files: ['dramai-{version}-mac-x64.dmg', 'dramai-{version}-mac-x64.zip'],
-          tested: false,
         },
         {
           name: 'Windows · x64',
           detail: '`.exe` installer, or a portable `.zip`',
           files: ['dramai-{version}-win-x64.exe', 'dramai-{version}-win-x64.zip'],
-          tested: false,
         },
         {
           name: 'Linux · x64',
           detail: '`.AppImage`, or `.tar.gz`',
           files: ['dramai-{version}-linux-x64.AppImage', 'dramai-{version}-linux-x64.tar.gz'],
-          tested: false,
         },
       ],
-      testedLabel: 'Started on a real machine',
-      untestedLabel: 'Built by CI',
       releases: 'Download from GitHub Releases',
       releasesTag: 'Release notes for this version',
-      note: `Only ${PUBLISHED_VERSION} is published, and it is marked as a pre-release, so it is not the one labelled Latest on the Releases page. \`SHA256SUMS.txt\` on the release lists the checksums. The installers are between 120 and 160 MB.`,
+      note: `Only ${PUBLISHED_VERSION} is published, and it is marked as a Pre-release on the Releases page. \`SHA256SUMS.txt\` on the release lists the checksums. The installers are about 115 to 150 MB.`,
       snapshotTitle: `The installers match ${PUBLISHED_VERSION}`,
       snapshot:
         'What was added afterwards runs from source first: the additional text, image, video and speech providers, sign-in with OpenAI and OpenRouter, the preset catalog grouped by vendor, reference images for video and the narration voice options. Use the WebUI below from source, or build the desktop app on your machine (`pnpm desktop:install`); both include everything.',
@@ -416,7 +411,7 @@ export const en: Content = {
       install: {
         title: 'Ways to install',
         items: [
-          `Desktop installers matching ${PUBLISHED_VERSION}: macOS (Apple silicon and Intel), Windows and Linux; the macOS Apple silicon build has been started on a real machine`,
+          `Desktop installers matching ${PUBLISHED_VERSION}: macOS (Apple silicon and Intel), Windows and Linux; the macOS Apple silicon installer has been started on a real machine; CI builds the app on macOS, Windows and Linux and runs an install and start-up check on each`,
           'The desktop app and the WebUI can both run from source with everything included; `pnpm desktop:install` builds and installs on your machine without download warnings',
           'Demo mode, `pnpm demo`: no account and no key',
         ],
@@ -427,7 +422,7 @@ export const en: Content = {
     legacy: {
       title: 'Used the v0.4 web app?',
       text: 'It kept your projects inside the browser, so the new version cannot see them. The old web app is gone from this site, so you can no longer export a backup here, and because browsers keep data per address, running v0.4.1 on your own machine cannot read what was stored under the old address. If you already exported a JSON backup, import it in the new version under Settings → Data & backup. The last browser-only version is v0.4.1',
-      link: 'See the v0.4.1 release',
+      link: 'See the v0.4.1 tag',
     },
   },
   faq: {
@@ -442,7 +437,7 @@ export const en: Content = {
       {
         q: 'Where do my materials and API keys go?',
         a: [
-          'Nothing passes through a service we run, because there is none. Materials and finished cuts live in your data directory. API keys stay on your machine: the desktop app encrypts them with the system key store where one exists, and in the WebUI they are in `secrets.json` in the data directory, readable only by your operating system user.',
+          'Nothing passes through a service we run, because there is none. Materials and finished cuts live in your data directory. API keys stay on your machine: the desktop app encrypts them with the system key store where one exists, and in the WebUI they are in `secrets.json` in the data directory (on macOS and Linux the file permissions limit it to you).',
           'When you generate, the text of your materials and the prompts are sent by the local server to the AI providers you chose; that cannot be avoided. The desktop app also makes one anonymous request to GitHub at launch to see whether a newer version exists; you can turn that off in the menu.',
           'When you sign in with an account, the token or key you get does not appear in an API response, a log or an address; an OpenRouter key is shown only as a mask.',
         ],
@@ -454,7 +449,7 @@ export const en: Content = {
         ],
       },
       {
-        q: 'Which providers are supported?',
+        q: 'Which providers are built in?',
         a: [
           `There are ${F.total} built-in presets covering ${F.vendors} vendors: ${kindTotal('llm')} for language models, ${kindTotal('image')} for images, ${kindTotal('video')} for video and ${kindTotal('speech')} for speech, grouped by vendor in Settings → Providers, each with its verification status.`,
           `${F.tested} of them have been run end to end: DeepSeek, Seedream and Nano Banana through 302.AI, and Wan 2.2 Flash through 302.AI (May 2026, in v0.4). The other ${F.documented} are connected from the vendors’ official documentation and never become the current choice on their own; you pick them.`,
@@ -464,7 +459,7 @@ export const en: Content = {
       {
         q: 'How do characters stay consistent between shots?',
         a: [
-          'dramai makes one reference sheet per asset and then generates shot images from several reference images, so every shot that uses an asset is generated from the same sheet.',
+          'dramai’s approach is to make one reference sheet per asset and then generates shot images from several reference images, so every shot that uses an asset is generated from the same sheet.',
           'Whether reference images can be used depends on the image model, and Settings shows each model’s reference-image support. When a model lacks a capability the task fails with an explanation; it never switches models quietly.',
           'For video, the sheets can also be sent to the video model as reference images (off by default). With some models turning that on means the strict first frame is not used, and the confirmation dialog says so first. This option was added after 0.5.0-beta.1, so run from source first.',
         ],
@@ -480,7 +475,7 @@ export const en: Content = {
         a: [
           'You choose when you create the project: voice it with TTS inside dramai and mix it into the cut, leave it for later and record it in your video editor after exporting, or have no narration.',
           'A video model’s built-in voice and narration cannot both appear: when a shot has both dialogue and narration, the workspace asks you to keep only one.',
-          `The voice can be chosen in the project settings and, where the provider takes them, carry a style instruction and a language hint; the check before generating stops a voice that does not exist on the chosen provider and a text that is too long. Speech providers are OpenAI, SiliconFlow, MiniMax and Alibaba CosyVoice, ${kindTotal('speech')} presets in all, connected from official documentation and added after 0.5.0-beta.1, so run from source first.`,
+          `The voice can be chosen in the project settings and, where the provider takes them, carry a style instruction and a language hint; before generating, the voice and the text length are checked. Speech providers are OpenAI, SiliconFlow, MiniMax and Alibaba CosyVoice, ${kindTotal('speech')} presets in all, connected from official documentation and added after 0.5.0-beta.1, so run from source first.`,
         ],
       },
       {

@@ -56,7 +56,7 @@ test('localStorage is only touched inside try/catch', () => {
 const corePresets = pathToFileURL(path.join(repo, 'packages/core/src/providers/presets.ts')).href
 const siteFacts = pathToFileURL(path.join(repo, 'apps/site/src/content/facts.ts')).href
 const { PROVIDER_PRESETS, PROVIDER_VENDORS, localizeVendor } = await import(corePresets)
-const { PROVIDER_FACTS, VENDOR_NAMES, STYLE_PRESET_COUNT } = await import(siteFacts)
+const { PROVIDER_FACTS, VENDOR_NAMES, STYLE_PRESET_COUNT, kindTotal } = await import(siteFacts)
 
 const kindOf = { llm: 'llm', image: 'image', video: 'video', speech: 'tts' }
 const sorted = (list) => [...new Set(list)].sort()
@@ -96,6 +96,11 @@ test('the per-kind provider numbers and vendors on the page are the ones in pack
     const tested = ofKind.filter((p) => p.verification.status === 'tested')
     const documented = ofKind.filter((p) => p.verification.status === 'documented')
     const facts = PROVIDER_FACTS.kinds[kind]
+    assert.equal(
+      kindTotal(kind),
+      ofKind.length,
+      `${kind}: number of presets shown in the kind header`,
+    )
     assert.equal(facts.tested, tested.length, `${kind}: tested`)
     assert.equal(facts.documented, documented.length, `${kind}: not tested`)
     assert.deepEqual(

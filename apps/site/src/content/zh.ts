@@ -95,7 +95,7 @@ export const zh: Content = {
       {
         icon: 'alert',
         title: '花钱之前先检查',
-        text: '引用了未登记资产或没有设定图的镜头会被拦下。一批任务要么整批执行，要么都不执行，确认之前会给出费用预估。',
+        text: '引用了未登记资产或没有设定图的镜头会被拦下。一批任务要么整批执行，要么都不执行；有价目的模型会在确认前给出费用预估。',
       },
       {
         icon: 'tasks',
@@ -116,6 +116,7 @@ export const zh: Content = {
       lead: `预设分大模型、图片、视频和配音四类，在 设置 → 服务商 里按厂商分组，每个都标明验证状态：${F.tested} 个经过端到端实测（2026 年 5 月，在 v0.4 中跑通），其余 ${F.documented} 个按各厂商的官方文档接入。按官方文档接入的预设不会自动成为当前选择，由你自己选。标着「源码」的内容是 ${PUBLISHED_VERSION} 之后加入的，已发布的安装包对应 ${PUBLISHED_VERSION}，要用它们先从源码运行。`,
       testedLabel: '端到端实测',
       untestedLabel: '按官方文档接入',
+      kindCount: '{n} 个预设',
       kinds: {
         llm: { name: '大模型', testedChips: ['DeepSeek'] },
         image: { name: '图片', testedChips: ['302.AI：Seedream、Nano Banana'] },
@@ -123,7 +124,7 @@ export const zh: Content = {
         speech: { name: '配音', testedChips: [] },
       },
       kindsNote:
-        '同一厂商的国内站和国际站各是一个预设，所以预设数比厂商数多。Ollama 和 LM Studio 在你自己的机器上跑模型，不需要认证。',
+        '同一厂商可以有多个预设（例如国内站和国际站、API Key 和账号登录各算一个），所以预设数比厂商数多。Ollama 和 LM Studio 在你自己的机器上跑模型，不需要认证。',
       accountTitle: `账号登录（${F.accountSignIn} 个预设）`,
       accountLead:
         '代替粘贴 Key。登录要在运行 dramai 的那台电脑上操作，因为授权结果会回到一个本地地址。',
@@ -145,7 +146,7 @@ export const zh: Content = {
         },
         {
           title: '旁白音色',
-          text: '项目的旁白音色可以选，服务商支持时还能带风格指令和语言提示。生成前的检查会拦下所选服务商上不存在的音色和过长的文本。',
+          text: '项目的旁白音色可以选，服务商支持时还能带风格指令和语言提示。生成前会检查音色和文本长度。',
         },
       ],
     },
@@ -222,7 +223,7 @@ export const zh: Content = {
         label: 'API Key',
         desktop:
           '有系统密钥库时用它加密保存（macOS 钥匙串、Windows DPAPI、Linux libsecret 或 kwallet）',
-        webui: '保存在数据目录的 `secrets.json` 里，只有你的系统用户可读',
+        webui: '保存在数据目录的 `secrets.json` 里；macOS 和 Linux 上文件权限设为仅本人可读',
       },
       {
         label: '网络访问',
@@ -240,9 +241,9 @@ export const zh: Content = {
         webui: '默认是 `~/.dramai`，用 `--data-dir` 指定',
       },
       {
-        label: '已验证的范围',
+        label: '构建和检查',
         desktop:
-          'macOS Apple 芯片已在真机上启动验证；macOS Intel、Windows 和 Linux 的安装包由 CI 构建，Windows 和 Linux 上跑了安装自检',
+          'macOS Apple 芯片的安装包在真机上启动过；CI 在 macOS、Windows 和 Linux 上构建桌面应用，并各跑一次沙箱里的安装、启动检查和卸载',
         webui: '浏览器测试覆盖了完整流程（演示模式）',
       },
     ],
@@ -252,7 +253,7 @@ export const zh: Content = {
     lead: 'dramai 本身免费开源（Apache-2.0）。费用只来自你自己接入的 AI 服务商，按它们的计价收取。',
     headline: '费用跟着你选的服务商走',
     headlineText:
-      '总价取决于你选的模型、镜头数和时长，所以这里不给固定的数字。批量生成之前，dramai 会按模型价目表给出预估，你确认之后才会下单。',
+      '总价取决于你选的模型、镜头数和时长，所以这里不给固定的数字。有价目的模型，批量生成之前会给出预估金额，你确认之后才会下单。',
     paysTitle: '要付费的部分',
     pays: [
       '分镜拆解和提示词：大模型',
@@ -267,14 +268,14 @@ export const zh: Content = {
     guards: [
       {
         title: '确认之前先看预估',
-        text: '批量生成前会按模型价目表给出费用预估，你确认之后才向服务商下单。预估是估算，不是账单，价格以服务商当前页面为准。开启视频参考图时，对话框还会先说明放弃了什么。',
+        text: '批量生成前，有价目的模型会给出预估金额，你确认之后才向服务商下单。预估是估算，不是账单，价格以服务商当前页面为准。开启视频参考图时，对话框还会先说明放弃了什么。',
       },
       {
         title: '整批通过，或整批不跑',
-        text: '引用了未登记资产或没有设定图的镜头会被拦下。一个镜头同一时间最多只有一个视频任务。旁白的音色不存在、或文本过长，也会在下单之前被拦下。',
+        text: '引用了未登记资产或没有设定图的镜头会被拦下。一个镜头同一时间最多只有一个视频任务。旁白的音色和文本长度也会在生成前检查。',
       },
       {
-        title: '不会悄悄重复扣费',
+        title: '不会自动重新提交',
         text: '没拿到上游任务号的视频任务，在断线或重启后标为「提交结果待确认」，请你去服务商后台核对，dramai 不会自己重新提交',
       },
     ],
@@ -294,32 +295,26 @@ export const zh: Content = {
           name: 'macOS · Apple 芯片',
           detail: '`.dmg` 安装镜像，或 `.zip`',
           files: ['dramai-{version}-mac-arm64.dmg', 'dramai-{version}-mac-arm64.zip'],
-          tested: true,
         },
         {
           name: 'macOS · Intel',
           detail: '`.dmg` 安装镜像，或 `.zip`',
           files: ['dramai-{version}-mac-x64.dmg', 'dramai-{version}-mac-x64.zip'],
-          tested: false,
         },
         {
           name: 'Windows · x64',
           detail: '`.exe` 安装程序，或免安装的 `.zip`',
           files: ['dramai-{version}-win-x64.exe', 'dramai-{version}-win-x64.zip'],
-          tested: false,
         },
         {
           name: 'Linux · x64',
           detail: '`.AppImage`，或 `.tar.gz`',
           files: ['dramai-{version}-linux-x64.AppImage', 'dramai-{version}-linux-x64.tar.gz'],
-          tested: false,
         },
       ],
-      testedLabel: '已在真机上启动',
-      untestedLabel: 'CI 构建',
       releases: '到 GitHub Releases 下载',
       releasesTag: '查看这个版本的发布说明',
-      note: `目前只发布了 ${PUBLISHED_VERSION}，它标为预发布，所以不是 Releases 里标着 Latest 的那个。发布页上的 \`SHA256SUMS.txt\` 是校验和。安装包的体积在 120 到 160 MB 之间。`,
+      note: `目前只发布了 ${PUBLISHED_VERSION}，它在 Releases 里标为预发布（Pre-release）。发布页上的 \`SHA256SUMS.txt\` 是校验和。安装包的体积约 115 到 150 MB。`,
       snapshotTitle: `安装包对应 ${PUBLISHED_VERSION}`,
       snapshot:
         '之后加入的内容先从源码运行：新增的文本、图片、视频和配音服务商，OpenAI 和 OpenRouter 账号登录，按厂商分组的预设目录，视频的参考图，以及旁白音色选项。可以用下面的 WebUI 从源码运行，也可以在本机编译桌面端（`pnpm desktop:install`），两种都包含全部内容。',
@@ -382,7 +377,7 @@ export const zh: Content = {
       install: {
         title: '安装方式',
         items: [
-          `桌面版安装包，对应 ${PUBLISHED_VERSION}：macOS（Apple 芯片和 Intel）、Windows、Linux；macOS Apple 芯片已在真机上启动验证`,
+          `桌面版安装包，对应 ${PUBLISHED_VERSION}：macOS（Apple 芯片和 Intel）、Windows、Linux；macOS Apple 芯片的安装包在真机上启动过；CI 在 macOS、Windows 和 Linux 上构建应用，并各跑一次安装和启动检查`,
           '桌面版和 WebUI 都可以从源码运行，包含全部内容；`pnpm desktop:install` 在本机编译安装，没有下载警告',
           '演示模式 `pnpm demo`：不需要账号和 Key',
         ],
@@ -393,7 +388,7 @@ export const zh: Content = {
     legacy: {
       title: '用过 v0.4 的网页版？',
       text: '旧版把项目存在浏览器里，新版读不到。旧版网页已经下线，不能再在这个网站上导出备份；浏览器按网址隔离数据，本机运行 v0.4.1 也读不到旧网址下的数据。如果你已经导出过一份 JSON 备份，可以在新版的 设置 → 数据与备份 里导入。最后一个纯浏览器版本是 v0.4.1',
-      link: '查看 v0.4.1 的发布页',
+      link: '查看 v0.4.1 标签',
     },
   },
   faq: {
@@ -408,7 +403,7 @@ export const zh: Content = {
       {
         q: '我的素材和 API Key 会被上传到哪里？',
         a: [
-          '不会经过由我们运营的任何服务，因为没有这样的服务。素材和成片在你的数据目录里；API Key 保存在本机，桌面版有系统密钥库时用它加密，WebUI 下是数据目录里只有你的系统用户可读的 `secrets.json`。',
+          '不会经过由我们运营的任何服务，因为没有这样的服务。素材和成片在你的数据目录里；API Key 保存在本机，桌面版有系统密钥库时用它加密，WebUI 下是数据目录里的 `secrets.json`（macOS 和 Linux 上文件权限设为仅本人可读）。',
           '生成时，素材内容和提示词会由本机的服务按你的配置发给你选的 AI 服务商，这一步无法避免。桌面版启动时还会匿名查询一次 GitHub 上有没有新版本，可以在菜单里关掉。',
           '用账号登录时，登录得到的令牌或 Key 不会出现在接口响应、日志和地址里，只有 OpenRouter 的 Key 会以遮罩的形式显示。',
         ],
@@ -420,7 +415,7 @@ export const zh: Content = {
         ],
       },
       {
-        q: '支持哪些服务商？',
+        q: '内置了哪些服务商？',
         a: [
           `内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商，分大模型（${kindTotal('llm')}）、图片（${kindTotal('image')}）、视频（${kindTotal('video')}）和配音（${kindTotal('speech')}）四类，在 设置 → 服务商 里按厂商分组，每个都标明验证状态。`,
           `其中 ${F.tested} 个经过端到端实测：DeepSeek，302.AI 上的 Seedream 和 Nano Banana，以及 302.AI 上的 Wan 2.2 Flash（2026 年 5 月，在 v0.4 中跑通）。其余 ${F.documented} 个按各厂商的官方文档接入，不会自动成为当前选择，由你自己选。`,
@@ -430,8 +425,8 @@ export const zh: Content = {
       {
         q: '角色怎么在镜头之间保持一致？',
         a: [
-          'dramai 先为每个资产出一张设定图，再用多张参考图生成镜头图，同一个资产的所有镜头都以它为参考。',
-          '能不能用参考图取决于生图模型，设置页里每个模型都标明了参考图的支持情况。模型缺少某项能力时，任务会失败并说明原因，不会悄悄换模型。',
+          'dramai 的做法是：先为每个资产出一张设定图，再用多张参考图生成镜头图，同一个资产的所有镜头都以它为参考。',
+          '能不能用参考图取决于生图模型，设置页标明了每个模型的参考图支持情况。模型缺少某项能力时，任务会失败并说明原因，不会悄悄换模型。',
           '视频这边，也可以把设定图作为参考图一起发给视频模型，默认关闭。有的模型开启后不再严格使用首帧，确认对话框会先说明。这个选项在 0.5.0-beta.1 之后加入，先从源码运行。',
         ],
       },
@@ -446,7 +441,7 @@ export const zh: Content = {
         a: [
           '建项目时选一种：在 dramai 里用 TTS 配音并合进成片；留到后期，导出后在剪辑软件里配；或者不要旁白。',
           '视频模型自带的人声和旁白不能同时出现：一个镜头既有台词又有旁白时，工作台会提示只保留一个。',
-          `音色可以在项目设置里选，服务商支持时还能带风格指令和语言提示；生成前的检查会拦下所选服务商上不存在的音色和过长的文本。配音服务商有 OpenAI、硅基流动、MiniMax 和阿里 CosyVoice，共 ${kindTotal('speech')} 个预设，按官方文档接入，在 0.5.0-beta.1 之后加入，先从源码运行。`,
+          `音色可以在项目设置里选，服务商支持时还能带风格指令和语言提示；生成前会检查音色和文本长度。配音服务商有 OpenAI、硅基流动、MiniMax 和阿里 CosyVoice，共 ${kindTotal('speech')} 个预设，按官方文档接入，在 0.5.0-beta.1 之后加入，先从源码运行。`,
         ],
       },
       {

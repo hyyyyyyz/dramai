@@ -32,10 +32,6 @@ const allCommands = w.commands.map((x) => `# ${x.comment}\n${x.command}`).join('
             <li>
               <div class="pn-head">
                 <b>{p.name}</b>
-                <span class={`pill ${p.tested ? 'ok' : ''}`}>
-                  <span class="dot" aria-hidden="true" />
-                  {p.tested ? d.testedLabel : d.untestedLabel}
-                </span>
               </div>
               <small set:html={rich(p.detail)} />
               <small class="mono files">

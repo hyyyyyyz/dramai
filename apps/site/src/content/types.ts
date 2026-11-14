@@ -57,7 +57,6 @@ export interface PlatformRow {
   detail: string
   /** File name pattern with {version} replaced at build time. */
   files: string[]
-  tested: boolean
 }
 
 export interface FaqItem {
@@ -112,6 +111,8 @@ export interface Content {
       lead: string
       testedLabel: string
       untestedLabel: string
+      /** Header of a kind, `{n}` is replaced by the number of presets of that kind. */
+      kindCount: string
       kinds: Record<ProviderKindId, { name: string; testedChips: string[] }>
       kindsNote: string
       accountTitle: string
@@ -156,8 +157,6 @@ export interface Content {
       name: string
       blurb: string
       platforms: PlatformRow[]
-      testedLabel: string
-      untestedLabel: string
       releases: string
       releasesTag: string
       note: string

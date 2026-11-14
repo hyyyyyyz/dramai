@@ -732,8 +732,9 @@ code {
 }
 .term pre {
   margin: 0;
-  padding: 16px 56px 16px 16px;
-  overflow-x: auto;
+  padding: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -741,7 +742,7 @@ code {
   padding: 0;
   background: none;
   font-size: inherit;
-  overflow-wrap: normal;
+  overflow-wrap: inherit;
 }
 .term .copy {
   position: absolute;

@@ -117,7 +117,22 @@ for (const p of pages) {
     javaScriptEnabled: false,
   })
   const page = await context.newPage()
+  const finished = []
+  page.on('requestfinished', (r) => finished.push(r.url()))
   await page.goto(server.url + p.path, { waitUntil: 'load' })
+  // No script can run here, so scroll with the mouse wheel: lazy images load as they come near the viewport.
+  // Then go back to the top and let the network settle.
+  for (let i = 0; i < 40; i++) {
+    await page.mouse.wheel(0, 800)
+    await page.waitForTimeout(120)
+  }
+  await page.keyboard.press('Home')
+  await page.waitForTimeout(800)
+  // page.evaluate cannot be used while scripts are off, so check through the network: every screenshot
+  // shown on the page (hero, four in the gallery, one in the cost section) must have been fetched.
+  const shots = new Set(finished.filter((u) => u.endsWith('.webp')))
+  console.log(`nojs ${p.lang}: screenshots loaded = ${shots.size} (expected at least 6)`)
+  if (shots.size < 6) failures++
   await page.screenshot({
     path: path.join(outDir, `${prefix}${p.lang}-1280-dark-nojs.png`),
     fullPage: true,
