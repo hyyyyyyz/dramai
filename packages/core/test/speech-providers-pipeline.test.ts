@@ -9,7 +9,7 @@ import { requestGeneration } from '../src/pipeline/request.ts'
 import type { ProviderConfig } from '../src/providers/types.ts'
 import { locateMedia, makePipelineEnv, PROVIDERS } from './fakes.ts'
 import type { MediaEnv, PipelineEnv } from './fakes.ts'
-import { prepareEpisode, runAll } from './helpers-pipeline.ts'
+import { makeWorker, prepareEpisode, runAll } from './helpers-pipeline.ts'
 
 /**
  * P3d: narration voice-over through the four speech providers, the whole way from shot to audio version, with the
@@ -426,6 +426,82 @@ describe('the backstop and the basis', () => {
       // removing it again returns to the original basis
       await setVoice({ providerConfigId: 'minimax', voice: 'Chinese (Mandarin)_News_Anchor' })
       expect((await basisOf())!.get(`shot_audio:${shot.id}`)!.status).toBe('current')
+    },
+  )
+})
+
+describe('restart between "version saved" and "job marked succeeded" (voice-over)', () => {
+  const crashed = async (jobId: string) => {
+    await env.deps.store.jobs.patch(jobId, {
+      status: 'running',
+      finishedAt: undefined,
+      result: undefined,
+      stage: 'processing',
+    })
+    await makeWorker(env).reconcileOrphans()
+    return (await runAll(env)).find((j) => j.id === jobId)!
+  }
+
+  real(
+    'CosyVoice (a sync protocol whose result is a link): the restart resumes the download, and the job finishes with the version it saved - no second audio version, no second download',
+    async () => {
+      mode.cosy = 'ok'
+      await setVoice({ providerConfigId: 'cosy', voice: 'longanyang' })
+      const shot = narr[0]!
+      const { job, version } = await narrate(COSY, shot)
+      expect(job.status, JSON.stringify(job.error)).toBe('succeeded')
+      expect((await env.deps.store.jobs.get(job.id))!.resultUrl).toContain('oss.example.com')
+      calls.length = 0
+      const versions = async () =>
+        (await env.deps.store.shots.get(shot.id))!.narrationAudio.versions.map((v) => v.id)
+      const before = await versions()
+      const after = await crashed(job.id)
+      expect(after.status, JSON.stringify(after.error)).toBe('succeeded')
+      expect(after.result).toMatchObject({ versionId: version!.id, alreadySaved: true })
+      expect(await versions()).toEqual(before)
+      expect(calls).toEqual([]) // not downloaded again, not submitted again
+    },
+  )
+
+  real(
+    "CosyVoice, the paid retry of a job whose first attempt had saved a version: killed before saving, the restart downloads the retry's audio",
+    async () => {
+      mode.cosy = 'ok'
+      await setVoice({ providerConfigId: 'cosy', voice: 'longanyang' })
+      const shot = narr[1] ?? narr[0]!
+      const { job } = await narrate(COSY, shot)
+      expect(job.status).toBe('succeeded')
+      const versions = async () =>
+        (await env.deps.store.shots.get(shot.id))!.narrationAudio.versions.map((v) => v.id)
+      const old = await versions()
+      // pretend attempt 1 ended failed and the user confirmed a paid retry: attempt 2 has a result link, killed before saving
+      const j = (await env.deps.store.jobs.get(job.id))!
+      await env.deps.store.jobs.patch(job.id, { attempt: j.attempt + 1 })
+      calls.length = 0
+      const after = await crashed(job.id)
+      expect(after.status, JSON.stringify(after.error)).toBe('succeeded')
+      const now = await versions()
+      expect(now).toHaveLength(old.length + 1)
+      expect(calls.map((c) => c.method)).toEqual(['GET']) // the link of the retry was downloaded
+      expect(after.result).not.toHaveProperty('alreadySaved')
+    },
+  )
+
+  real(
+    'a byte-response protocol has no task number or link: the restart still marks the job failed (unchanged), no second version',
+    async () => {
+      mode.minimax = 'ok'
+      await setVoice({ providerConfigId: 'minimax', voice: 'Chinese (Mandarin)_News_Anchor' })
+      const shot = narr[2] ?? narr[0]!
+      const { job } = await narrate(MINIMAX, shot)
+      expect(job.status).toBe('succeeded')
+      const n = async () =>
+        (await env.deps.store.shots.get(shot.id))!.narrationAudio.versions.length
+      const before = await n()
+      const after = await crashed(job.id)
+      expect(after.status).toBe('failed')
+      expect(after.error).toMatchObject({ code: 'SYNC_CALL_INTERRUPTED' })
+      expect(await n()).toBe(before)
     },
   )
 })

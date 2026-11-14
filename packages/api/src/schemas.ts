@@ -59,6 +59,8 @@ export const mediaVersion = z.object({
   source: z.enum(['generated', 'uploaded', 'image_edit']),
   createdAt: z.number(),
   jobId: z.string().optional(),
+  /** 产生这个版本的那一次尝试（任务的 `attempt`）；较早的版本没有。恢复流程据此区分“这次尝试已经保存”和“上一次留下的旧版本”。 */
+  attempt: z.number().optional(),
   prompt: z.string().optional(),
   provider: providerSnapshot.optional(),
   facts: mediaFacts.optional(),

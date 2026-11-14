@@ -7,6 +7,7 @@ import { requestGeneration } from '../src/pipeline/request.ts'
 import { locateMedia, makePipelineEnv } from './fakes.ts'
 import type { MediaEnv, PipelineEnv } from './fakes.ts'
 import { SCHEMA_VERSIONS } from '../src/domain/index.ts'
+import { JobQueue } from '../src/jobs/index.ts'
 import { makeWorker, prepareEpisode, runAll } from './helpers-pipeline.ts'
 
 /**
@@ -130,6 +131,122 @@ describe('restart after the version was saved but before the job was marked succ
   )
 
   real(
+    "review scenario: an earlier attempt saved a version and failed; the paid retry is killed before it saves - the retry's product is downloaded (both versions stay)",
+    async () => {
+      const shot = shots[3] ?? shots[0]!
+      await requestGeneration(env.deps, env.projectId, [video(shot)], { confirmUnverified: true })
+      const first = (await runAll(env))
+        .filter((j) => j.shotId === shot.id && j.operation === 'shot_video')
+        .at(-1)!
+      expect(first.status).toBe('succeeded')
+      const v1 = (await versions(shot.id)).at(-1)!
+      const stored = (await env.deps.store.shots.get(shot.id))!.video.versions.find(
+        (v) => v.id === v1,
+      )!
+      expect(stored).toMatchObject({ jobId: first.id, attempt: first.attempt })
+      // attempt 1 saved the version but the job ended up failed (e.g. the stage write after the save failed)
+      await env.deps.store.jobs.patch(first.id, {
+        status: 'failed',
+        error: {
+          category: 'generation_failed',
+          code: 'LATE_FAILURE',
+          message: 'x',
+          recoverable: false,
+        },
+        finishedAt: env.deps.clock.now(),
+      })
+      // the user confirms and retries: same job id, attempt + 1, a new upstream task
+      const retried = await new JobQueue({
+        jobs: env.deps.store.jobs,
+        clock: env.deps.clock,
+        ids: env.deps.ids,
+      }).retry(first.id, { confirmRecharge: true })
+      expect(retried.ok).toBe(true)
+      expect((await env.deps.store.jobs.get(first.id))!.attempt).toBe(first.attempt + 1)
+      // the second attempt submitted and got a result address, then the process was killed before saving
+      await env.deps.store.jobs.patch(first.id, {
+        status: 'running',
+        startedAt: env.deps.clock.now(),
+        providerJobId: first.providerJobId,
+        resultUrl: first.resultUrl,
+        stage: 'downloading',
+      })
+      const requestsBefore = env.providers.requests.length
+      const after = await resume(first.id)
+      expect(after.status, JSON.stringify(after.error)).toBe('succeeded')
+      const all = await versions(shot.id)
+      expect(all).toHaveLength(2) // the old one and the product of the second attempt
+      expect(all).toContain(v1)
+      expect(after.result).not.toHaveProperty('alreadySaved')
+      expect(env.providers.requests.slice(requestsBefore).some((r) => r.method === 'GET')).toBe(
+        true,
+      ) // it was downloaded
+      const second = (await env.deps.store.shots.get(shot.id))!.video.versions.find(
+        (v) => v.id !== v1,
+      )!
+      expect(second).toMatchObject({ jobId: first.id, attempt: first.attempt + 1 })
+    },
+  )
+
+  real(
+    'a version saved before versions carried an attempt number cannot be confirmed: the product is downloaded again (the safe direction)',
+    async () => {
+      const shot = shots[4] ?? shots[0]!
+      await requestGeneration(env.deps, env.projectId, [video(shot)], { confirmUnverified: true })
+      const first = (await runAll(env))
+        .filter((j) => j.shotId === shot.id && j.operation === 'shot_video')
+        .at(-1)!
+      const sh = (await env.deps.store.shots.get(shot.id))!
+      await env.deps.store.shots.put({
+        ...sh,
+        video: {
+          ...sh.video,
+          versions: sh.video.versions.map((v) => {
+            const rest = { ...v }
+            delete rest.attempt
+            return rest
+          }),
+        },
+      })
+      const before = (await versions(shot.id)).length
+      await crashBeforeSuccess(first.id)
+      const after = await resume(first.id)
+      expect(after.status).toBe('succeeded')
+      expect(after.result).not.toHaveProperty('alreadySaved')
+      expect(await versions(shot.id)).toHaveLength(before + 1) // one too many is acceptable, one too few is not
+    },
+  )
+
+  real(
+    'a result the user chose to ignore (not the current version) is still recognised; two shots never mix up their jobs',
+    async () => {
+      const [a, b] = [shots[0]!, shots[1] ?? shots[0]!]
+      expect(a.id).not.toBe(b.id)
+      const ja = (await env.deps.store.jobs.list()).filter(
+        (j) => j.shotId === a.id && j.operation === 'shot_video',
+      )[0]!
+      const jb = (await env.deps.store.jobs.list()).filter(
+        (j) => j.shotId === b.id && j.operation === 'shot_video',
+      )[0]!
+      // shot a: the saved version is not current (as if the result had been ignored)
+      const sa = (await env.deps.store.shots.get(a.id))!
+      await env.deps.store.shots.put({ ...sa, video: { ...sa.video, currentVersionId: null } })
+      const beforeA = await versions(a.id)
+      const beforeB = await versions(b.id)
+      const requestsBefore = env.providers.requests.length
+      await crashBeforeSuccess(ja.id)
+      await crashBeforeSuccess(jb.id)
+      await makeWorker(env).reconcileOrphans()
+      const done = await runAll(env)
+      expect(done.find((j) => j.id === ja.id)!.result).toMatchObject({ alreadySaved: true })
+      expect(done.find((j) => j.id === jb.id)!.result).toMatchObject({ alreadySaved: true })
+      expect(await versions(a.id)).toEqual(beforeA)
+      expect(await versions(b.id)).toEqual(beforeB)
+      expect(env.providers.requests.length).toBe(requestsBefore)
+    },
+  )
+
+  real(
     'IMAGE (a resumed job whose version is already saved) finishes with it; an asset sheet and its variant too',
     async () => {
       const shot = shots[2] ?? shots[0]!
@@ -167,7 +284,7 @@ describe('restart after the version was saved but before the job was marked succ
         image: {
           ...sh.image,
           versions: sh.image.versions.map((v) =>
-            v.id === saved.id ? { ...v, jobId: 'job_img_saved' } : v,
+            v.id === saved.id ? { ...v, jobId: 'job_img_saved', attempt: 0 } : v,
           ),
         },
       })
@@ -180,7 +297,7 @@ describe('restart after the version was saved but before the job was marked succ
         sheet: {
           ...a.sheet,
           versions: a.sheet.versions.map((v) =>
-            v.id === sheetSaved.id ? { ...v, jobId: 'job_sheet_saved' } : v,
+            v.id === sheetSaved.id ? { ...v, jobId: 'job_sheet_saved', attempt: 0 } : v,
           ),
         },
       })
@@ -201,6 +318,54 @@ describe('restart after the version was saved but before the job was marked succ
       expect((await env.deps.store.assets.get(asset.id))!.sheet.versions).toHaveLength(
         a.sheet.versions.length,
       )
+    },
+  )
+
+  real(
+    "an asset sheet whose extra view (not the main sheet) carries the job's version is recognised too",
+    async () => {
+      const asset = (await env.deps.store.assets.listByProject(env.projectId))[1]!
+      const a = (await env.deps.store.assets.get(asset.id))!
+      const base = a.sheet.versions.at(-1)!
+      await env.deps.store.assets.put({
+        ...a,
+        sheetViews: {
+          ...(a.sheetViews ?? {}),
+          side: {
+            currentVersionId: 'v_side',
+            versions: [{ ...base, id: 'v_side', jobId: 'job_view_saved', attempt: 3 }],
+          },
+        },
+      })
+      const now = env.deps.clock.now()
+      await env.deps.store.jobs.insert({
+        schemaVersion: SCHEMA_VERSIONS.job,
+        id: 'job_view_saved',
+        type: 'image',
+        operation: 'asset_sheet',
+        projectId: env.projectId,
+        params: { target: { kind: 'asset_sheet', assetId: asset.id } },
+        paid: true,
+        status: 'running',
+        attempt: 3,
+        previousProviderJobIds: [],
+        providerJobId: 'up-9',
+        resultUrl: 'https://cdn.fake/y.png',
+        createdAt: now,
+        updatedAt: now,
+        providerSnapshot: {
+          providerConfigId: 'img',
+          protocol: env.provider('img').protocol,
+          baseUrl: env.provider('img').baseUrl,
+          model: env.provider('img').model,
+        },
+      })
+      const requestsBefore = env.providers.requests.length
+      await makeWorker(env).reconcileOrphans()
+      const job = (await runAll(env)).find((j) => j.id === 'job_view_saved')!
+      expect(job.status, JSON.stringify(job.error)).toBe('succeeded')
+      expect(job.result).toMatchObject({ versionId: 'v_side', alreadySaved: true })
+      expect(env.providers.requests.length).toBe(requestsBefore)
     },
   )
 
