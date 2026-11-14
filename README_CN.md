@@ -7,7 +7,7 @@
 
 [English](./README.md) · **简体中文** · [介绍页](https://hyyyyyyz.github.io/dramai/)
 
-[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![CI](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/hyyyyyyz/dramai?include_prereleases&label=release&color=DF500C)](https://github.com/hyyyyyyz/dramai/releases) [![Stars](https://img.shields.io/github/stars/hyyyyyyz/dramai?color=DF500C)](https://github.com/hyyyyyyz/dramai/stargazers) [![Forks](https://img.shields.io/github/forks/hyyyyyyz/dramai?color=DF500C)](https://github.com/hyyyyyyz/dramai/forks)
+[![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![CI](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/hyyyyyyz/dramai?include_prereleases&label=release&color=DF500C)](https://github.com/hyyyyyyz/dramai/releases) [![Stars](https://img.shields.io/github/stars/hyyyyyyz/dramai?color=DF500C)](https://github.com/hyyyyyyz/dramai) [![Forks](https://img.shields.io/github/forks/hyyyyyyz/dramai?color=DF500C)](https://github.com/hyyyyyyz/dramai/forks)
 
 </div>
 
@@ -70,7 +70,7 @@ pnpm webui
 - **Windows**：`.exe` 安装程序或免安装的 `.zip`。
 - **Linux**：`.AppImage` 或 `.tar.gz`。
 
-`SHA256SUMS.txt` 里是校验和。安装包不签名，所以 macOS 和 Windows 第一次打开时会给出警告；它们也不带 ffmpeg，不会自动更新。macOS Apple 芯片的安装包在真机上试过；macOS Intel、Windows 和 Linux 的安装包由 CI 在各自的系统上构建，其中 Windows 和 Linux 还会跑安装自检。未签名的应用在各系统上怎么打开，见 [apps/desktop](./apps/desktop/README.md)。
+`SHA256SUMS.txt` 里是校验和。安装包不签名，所以 macOS 和 Windows 第一次打开时会给出警告；它们也不带 ffmpeg，不会自动更新。macOS Apple 芯片的安装包在真机上试过；CI 在 macOS（Apple 芯片）、Windows 和 Linux 上构建桌面端应用，并在各自的系统上跑一次沙箱里的安装、启动检查和卸载；发布工作流构建各系统的安装包，包括 macOS Intel。未签名的应用在各系统上怎么打开，见 [apps/desktop](./apps/desktop/README.md)。
 
 **安装包对应 `0.5.0-beta.1`。** 那之后新增的文本、图片、视频和配音服务商，OpenAI 和 OpenRouter 账号登录，按厂商分组的预设目录，视频的参考图，以及旁白音色选项，目前从源码运行：走第 1 或第 2 种方式，或者从源码构建桌面端（见下）。参见[动态](#动态)。
 
@@ -99,7 +99,7 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 按时间倒序。标为**源码**的在仓库里，从源码运行；标为**发布**的在已发布的 `0.5.0-beta.1` 安装包里。完整清单见[更新日志](./CHANGELOG.md)。
 
 - **2026-11-14 · 介绍页。** <https://hyyyyyyz.github.io/dramai/> 是项目的介绍页，中文在根路径，英文在 [`/en/`](https://hyyyyyyz.github.io/dramai/en/)。它取代了此前托管在这个地址上的 v0.4 网页应用。源码在 `apps/site`，见 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
-- **2026-11-13 · 源码 · 配音服务商和旁白音色。** 旁白可以用 OpenAI、硅基流动、MiniMax 或阿里 CosyVoice，共六个预设，按各厂商的官方文档接入。项目的旁白音色在服务商支持时可以带风格指令和语言提示；生成前的检查会拦下所选服务商上不存在的音色和过长的文本。见[更新日志](./CHANGELOG.md#unreleased)。
+- **2026-11-13 · 源码 · 配音服务商和旁白音色。** 旁白可以用 OpenAI、硅基流动、MiniMax 或阿里 CosyVoice，共六个预设，按各厂商的官方文档接入。项目的旁白音色在服务商支持时可以带风格指令和语言提示；生成前的检查会核对音色和文本长度。见[更新日志](./CHANGELOG.md#unreleased)。
 - **2026-11-13 · 源码 · 视频服务商和参考图。** 火山方舟与 BytePlus 的 Seedance、可灵 4.0、通义万相 3.0，共六个预设，按官方文档接入。一个默认关闭的任务选项，会把镜头引用的角色、场景和道具设定图作为参考图交给视频模型；文档里参考图与首帧互斥的模型，确认对话框会在下单之前说明放弃了什么。见[更新日志](./CHANGELOG.md#unreleased)。
 - **2026-11-13 · 源码 · 更多文本和图片服务商、账号登录、按厂商分组的预设目录。** 新增大模型和图片的预设，按官方文档接入，在 设置 → 服务商 里按厂商分组，每个都标明状态。可以用 ChatGPT 账号（只覆盖文本）或 OpenRouter 账号登录，不必再粘贴 Key。见[服务商](#服务商)和[更新日志](./CHANGELOG.md#unreleased)。
 - **2026-11-12 · 发布 · [`v0.5.0-beta.1`](https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0-beta.1) 作为预发布公开。** 重写后的版本：本地服务加工作台、桌面端，以及 macOS、Windows 和 Linux 的未签名安装包。见[更新日志](./CHANGELOG.md#050-beta1---2026-11-12)。
@@ -110,7 +110,7 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 - **长文本和连载。** 一个项目包含集，集包含场，场包含镜头。长文本按章节切分成集。
 - **可复用的资产库。** 角色、地点、道具和服装是资产，镜头通过引用使用它们。每个资产有一张设定图，所有用到它的镜头都以它为参考生成。画风在建项目时选定一次。
 - **服务商多，每个都标明来源。** 大模型、图片、视频和配音服务商是来自十六个厂商的预设；四个端到端跑过，其余按厂商的官方文档接入，设置里标明哪个是哪个。按文档接入的预设不会被自动选上。
-- **花钱之前先检查。** 引用了未登记资产、或没有参考图的资产的镜头会被拦下；一批任务要么整批执行，要么都不执行；一个镜头同一时间最多只有一个视频任务；确认之前会按模型价目表给出费用预估。
+- **花钱之前先检查。** 引用了未登记资产、或没有参考图的资产的镜头会被拦下；一批任务要么整批执行，要么都不执行；一个镜头同一时间最多只有一个视频任务；有价目的模型在确认之前会给出费用预估。
 - **重启后不丢的任务队列。** 关掉浏览器不会中断工作。重启之后，有上游任务号的视频任务会继续轮询；没有的会标成“提交结果待确认”，**不会被自动重新提交**。取消只作用于还在排队的任务。
 - **保留版本。** 重新生成会新增一个版本，不覆盖旧的。上游内容变了，依赖它的产物会标为过期，但不会自动重新生成。
 - **原生 ffmpeg 合成。** 成片由你电脑上的 ffmpeg 渲染，支持 9:16、16:9、1:1，带旁白配音、软字幕或烧录字幕、SRT 和 VTT，还能导出素材包到别的软件里继续剪。
@@ -192,8 +192,8 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 
 - 端到端跑完整条流程：上传文本、规划分集、拆分镜头、确认角色和地点、生成图片和视频、合成、导出。演示模式不需要 Key；WebUI 和桌面端用你接入的服务商（见[服务商](#服务商)）。
 - 从 16 个厂商的 40 个服务商预设里选，覆盖大模型、图片、视频和配音，还可以用 ChatGPT 或 OpenRouter 账号登录。四个预设端到端跑过，其余按厂商的官方文档接入，设置 → 服务商 里每个都标明了。见[服务商](#服务商)。
-- 用你自己的 ffmpeg 渲染成片，支持 9:16、16:9、1:1，带旁白、软字幕或烧录字幕、SRT 和 VTT，以及配乐。转场是硬切，配乐一条；时间线预览播放画面和旁白，渲染出的成片再加上字幕、配乐和转场。
-- 桌面端有 `0.5.0-beta.1` 预发布的 macOS、Windows 和 Linux 安装包，也可以从源码编译安装，或者运行 WebUI。macOS Apple 芯片的安装包在真机上试过（窗口能加载，服务健康，鉴权通过）；其余系统的安装包由 CI 构建，其中 Windows 和 Linux 的还会跑安装自检。
+- 用你自己的 ffmpeg 渲染成片，支持 9:16、16:9、1:1，带旁白、软字幕或烧录字幕、SRT 和 VTT，以及配乐。转场是硬切，配乐一条；时间线预览播放画面和旁白，渲染出的成片再加上字幕和配乐。
+- 桌面端有 `0.5.0-beta.1` 预发布的 macOS、Windows 和 Linux 安装包，也可以从源码编译安装，或者运行 WebUI。macOS Apple 芯片的安装包在真机上试过（窗口能加载，服务健康，鉴权通过）；CI 在 macOS（Apple 芯片）、Windows 和 Linux 上构建桌面端应用，并在各自的系统上跑一次沙箱里的安装、启动检查和卸载。
 - 浏览器测试（Playwright）覆盖了这条路径、失败任务的恢复、英文界面和纯键盘操作；服务商协议、登录流程和生成前的检查有自动化测试。
 
 **接下来**
