@@ -190,10 +190,10 @@ In words: source text → episodes → scenes → shots → shot images → shot
 
 **What you can do today**
 
-- Run the whole workflow end to end: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export. Demo mode does it with no key; the WebUI and the desktop app do it with the providers you connect.
+- Run the whole workflow end to end: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export. Demo mode does it with no key; the WebUI and the desktop app do it with the providers you connect (see [Providers](#providers)).
 - Choose from 40 provider presets from 16 vendors, covering language models, images, video and speech, and sign in with a ChatGPT or OpenRouter account. Four presets were run end to end; the rest are set up from the vendors' official documentation, and Settings → Providers labels each one. See [Providers](#providers).
 - Render the cut with your own ffmpeg in 9:16, 16:9 or 1:1, with narration, soft or burned-in subtitles, SRT and VTT, and music. Transitions are hard cuts and there is one music track; the timeline preview plays picture and narration, and the rendered cut adds subtitles, music and transitions.
-- Install the desktop app as a `0.5.0-beta.1` pre-release on macOS, Windows and Linux, build and install it from source, or run the WebUI. The macOS Apple silicon installer has been tried on a real machine (the window loads, the server is healthy and authentication works); CI builds and checks the others on Linux, macOS and Windows.
+- Install the desktop app as a `0.5.0-beta.1` pre-release on macOS, Windows and Linux, build and install it from source, or run the WebUI. The macOS Apple silicon installer has been tried on a real machine (the window loads, the server is healthy and authentication works); CI builds the installers for the other systems, and the Windows and Linux builds also run an install self-check.
 - Rely on browser tests (Playwright) for that path, resuming a failed task, the English interface and keyboard-only use, and on automated tests for the provider protocols, the sign-in flows and the checks before generating.
 
 **Coming next**
