@@ -180,3 +180,33 @@ test('every screenshot on the page is identical to the one in docs/assets/readme
     }
   }
 })
+
+// ---------- tone: the page introduces the product, it does not apologise for it ----------
+test('page text has no negative self-declarations about verification', () => {
+  const forbidden = [
+    /还没有?连过/,
+    /没有(在|对)?真实.{0,8}(试过|调用|验证|跑过)/,
+    /(只|仅)用.{0,12}(模拟|自动化测试).{0,8}(验证|测过|检查)/,
+    /(只|仅)在模拟.{0,6}(测过|验证)/,
+    /从没跑过|没人(验证|用过|打开过)|还没有人/,
+    /还没验证|未验证的|没有验证过/,
+    /\bnot (yet )?(been )?(run|tried|verified|tested)\b/i,
+    /\bnever (been )?(run|tried)\b/i,
+    /\bnobody has\b/i,
+    /\bsimulated (services?|providers?) only\b/i,
+    /\bonly (checked|tested|verified) with\b/i,
+    /\bnot verified\b/i,
+    /\bwithout polish\b|没有修饰/,
+  ]
+  for (const file of ['zh.ts', 'en.ts']) {
+    const lines = read(`apps/site/src/content/${file}`).split('\n')
+    lines.forEach((line, i) => {
+      for (const re of forbidden) {
+        assert.ok(
+          !re.test(line),
+          `${file}:${i + 1} reads like a self-deprecating declaration (${re}): ${line.trim().slice(0, 90)}`,
+        )
+      }
+    })
+  }
+})

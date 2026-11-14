@@ -182,9 +182,12 @@ export interface Content {
     status: {
       title: string
       lead: string
-      works: StatusColumn
-      unverified: StatusColumn
-      notReleased: StatusColumn
+      can: StatusColumn
+      providers: StatusColumn
+      install: StatusColumn
+      /** Roadmap: what is being worked on. Only things the changelog lists as in progress. */
+      nextTitle: string
+      next: string
     }
     legacy: { title: string; text: string; link: string }
   }

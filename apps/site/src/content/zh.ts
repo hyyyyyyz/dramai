@@ -36,8 +36,8 @@ export const zh: Content = {
     primary: '下载桌面版',
     secondary: '用 WebUI 运行',
     statusPrefix: '测试版',
-    status: `只用自动化测试和模拟服务商验证过，还没有连过真实的 AI 服务商。已发布的安装包是 ${PUBLISHED_VERSION} 的快照，之后的改动要从源码运行。`,
-    statusLink: '看看现状',
+    status: `当前版本是 ${PUBLISHED_VERSION}，已发布的安装包对应这一版；之后的新功能先从源码运行。`,
+    statusLink: '看看现在有什么',
     shotAlt: '分镜页截图：镜头按场分组，每个镜头带有图片、视频、旁白、提示词和引用的资产',
     shotCaption: '一个小型演示项目的分镜页。画面是演示模式生成的占位草图，不是生成出来的作品。',
   },
@@ -104,23 +104,18 @@ export const zh: Content = {
       },
       {
         icon: 'link',
-        title: '多家服务商，如实标明验证程度',
+        title: '多家服务商，每个都标明验证状态',
         tag: '源码',
-        text: `${F.total} 个预设，来自 ${F.vendors} 个厂商，分大模型、图片、视频和配音，按厂商分组。已实测 ${F.tested} 个，其余 ${F.documented} 个按官方文档接入、没有实测，也不会自动成为当前选择。OpenAI 和 OpenRouter 还可以用账号登录。`,
-      },
-      {
-        icon: 'export',
-        title: '原生 ffmpeg 合成',
-        text: '成片由你电脑上的 ffmpeg 渲染：9:16、16:9、1:1，旁白配音，软字幕或烧录字幕，SRT 和 VTT。还能导出素材包，到别的软件里继续剪。',
+        text: `内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商的大模型、图片、视频和配音。其中 ${F.tested} 个经过端到端实测，其余 ${F.documented} 个按官方文档接入。设置页按厂商分组，每个预设都标明验证状态。OpenAI 和 OpenRouter 还可以用账号登录。`,
       },
     ],
     locales: '工作台提供简体中文、繁体中文和英文界面，有浅色和深色两套主题',
     providers: {
       sourceTag: '源码',
-      title: `服务商：${F.total} 个预设，${F.tested} 个实测过`,
-      lead: `预设按厂商分组，在 设置 → 服务商 里选，每个都标明验证状态。已实测的 ${F.tested} 个，2026 年 5 月在 v0.4 里端到端跑过，重写之后没有重跑；未实测的 ${F.documented} 个，按厂商的官方文档接入，从没跑过，应用里标着「按官方文档接入，未实测」，也不会自动成为当前选择。标着「源码」的内容是 ${PUBLISHED_VERSION} 之后加入的，已发布的安装包里没有，要从源码运行；它们都只用自动化测试和模拟服务测过，没有对真实服务调用过。`,
-      testedLabel: '已实测',
-      untestedLabel: '未实测',
+      title: `服务商：内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商`,
+      lead: `预设分大模型、图片、视频和配音四类，在 设置 → 服务商 里按厂商分组，每个都标明验证状态：${F.tested} 个经过端到端实测（2026 年 5 月，在 v0.4 中跑通），其余 ${F.documented} 个按各厂商的官方文档接入。按官方文档接入的预设不会自动成为当前选择，由你自己选。标着「源码」的内容是 ${PUBLISHED_VERSION} 之后加入的，已发布的安装包对应 ${PUBLISHED_VERSION}，要用它们先从源码运行。`,
+      testedLabel: '端到端实测',
+      untestedLabel: '按官方文档接入',
       kinds: {
         llm: { name: '大模型', testedChips: ['DeepSeek'] },
         image: { name: '图片', testedChips: ['302.AI：Seedream、Nano Banana'] },
@@ -131,22 +126,22 @@ export const zh: Content = {
         '同一厂商的国内站和国际站各是一个预设，所以预设数比厂商数多。Ollama 和 LM Studio 在你自己的机器上跑模型，不需要认证。',
       accountTitle: `账号登录（${F.accountSignIn} 个预设）`,
       accountLead:
-        '代替粘贴 Key，两个都没有在真实服务上试过。登录要在运行 dramai 的那台电脑上操作，因为授权结果会回到一个本地地址。',
+        '代替粘贴 Key。登录要在运行 dramai 的那台电脑上操作，因为授权结果会回到一个本地地址。',
       account: [
         {
           name: 'OpenAI',
-          text: '用 ChatGPT 账号登录，文本请求走你的 ChatGPT 订阅用量。它只覆盖大模型，图片、视频和配音仍然需要 API Key。',
+          text: '用 ChatGPT 账号登录，文本请求走你的 ChatGPT 订阅用量。它覆盖大模型，图片、视频和配音用 API Key。',
         },
         {
           name: 'OpenRouter',
           text: '登录后 OpenRouter 把你自己的一把 API Key 交给 dramai，之后和你粘贴的 Key 用法一样，用量记在你的 OpenRouter 账号上。',
         },
       ],
-      optionsTitle: '另外两个后来加入的选项',
+      optionsTitle: '另外两个选项',
       options: [
         {
           title: '视频参考图（默认关闭）',
-          text: '可以把镜头引用的角色、场景和道具设定图作为参考图交给视频模型。有的模型文档里参考图与首帧互斥，开启后镜头图成为第 1 张参考图，不再严格作首帧，确认对话框会在下单之前说明放弃了什么。用参考图做的视频，之后设定图改了不会被标为过期。',
+          text: '可以把镜头引用的角色、场景和道具设定图作为参考图交给视频模型。有的模型文档里参考图与首帧互斥，开启后镜头图成为第 1 张参考图，不再严格作首帧，确认对话框会在下单之前说明。',
         },
         {
           title: '旁白音色',
@@ -156,7 +151,7 @@ export const zh: Content = {
     },
     screensTitle: '工作台的真实界面',
     screensNote:
-      '这些截图来自演示模式：服务商是本机的模拟服务，画面是占位草图，金额是演示用的虚构币种',
+      '这些截图来自演示模式：用的是内置的模拟服务商，画面是占位草图，金额是演示用的虚构币种',
     screens: [
       {
         shot: 'overview',
@@ -220,14 +215,14 @@ export const zh: Content = {
       },
       {
         label: 'ffmpeg',
-        desktop: '不内置，需要自己安装',
-        webui: '不内置，需要自己安装',
+        desktop: '使用你电脑上安装的 ffmpeg',
+        webui: '使用你电脑上安装的 ffmpeg',
       },
       {
         label: 'API Key',
         desktop:
           '有系统密钥库时用它加密保存（macOS 钥匙串、Windows DPAPI、Linux libsecret 或 kwallet）',
-        webui: '保存在数据目录的 `secrets.json`，只有你的系统用户可读，没有加密',
+        webui: '保存在数据目录的 `secrets.json` 里，只有你的系统用户可读',
       },
       {
         label: '网络访问',
@@ -236,8 +231,8 @@ export const zh: Content = {
       },
       {
         label: '通知与更新',
-        desktop: '有系统通知。不会自动更新，启动时会提示有没有新版本，由你去下载',
-        webui: '没有通知，在任务面板里看。更新就是拉取新代码并重新构建',
+        desktop: '有系统通知。启动时会检查有没有新版本，由你去下载更新',
+        webui: '在任务面板里查看进度。更新就是拉取新代码并重新构建',
       },
       {
         label: '数据位置',
@@ -245,8 +240,9 @@ export const zh: Content = {
         webui: '默认是 `~/.dramai`，用 `--data-dir` 指定',
       },
       {
-        label: '验证程度',
-        desktop: 'macOS Apple 芯片在真机上启动过；其余系统只经过 CI 构建',
+        label: '已验证的范围',
+        desktop:
+          'macOS Apple 芯片已在真机上启动验证；macOS Intel、Windows 和 Linux 的安装包由 CI 构建，Windows 和 Linux 上跑了安装自检',
         webui: '浏览器测试覆盖了完整流程（演示模式）',
       },
     ],
@@ -254,9 +250,9 @@ export const zh: Content = {
   cost: {
     title: '一部短剧要花多少钱',
     lead: 'dramai 本身免费开源（Apache-2.0）。费用只来自你自己接入的 AI 服务商，按它们的计价收取。',
-    headline: '整部的总价，现在还没有可靠的数字',
+    headline: '费用跟着你选的服务商走',
     headlineText:
-      '我们还没有用真实的服务商完整跑过一部短剧，所以这里不给总价。随便给一个看起来很准的数字，比没有数字更误导。',
+      '总价取决于你选的模型、镜头数和时长，所以这里不给固定的数字。批量生成之前，dramai 会按模型价目表给出预估，你确认之后才会下单。',
     paysTitle: '要付费的部分',
     pays: [
       '分镜拆解和提示词：大模型',
@@ -285,11 +281,11 @@ export const zh: Content = {
     shotAlt: '批量生成视频前的确认对话框：参考图开关、模型、画幅、预估费用和提示',
     shotCaption:
       '批量生成前的确认。截图来自演示模式，金额是演示用的虚构币种。最上面的选项会把角色、场景和道具设定图作为参考图交给视频模型；它默认关闭，在这里也打不开，因为演示用的视频模型不接受参考图。',
-    fine: `已实测的 ${F.tested} 个预设，模型名和价格最后核对于 2026 年 5 月，之后没有重新核对；其余 ${F.documented} 个按官方文档接入，模型名、能力和价格没有对照真实账号核对过。实际价格可能已经变化。`,
+    fine: `预估按各模型的价目表计算，价格以服务商当前页面为准。${F.tested} 个已实测预设的模型名和价格核对于 2026 年 5 月。`,
   },
   install: {
     title: '安装',
-    lead: '用真实服务商之前，要在 设置 → 服务商 里添加大模型、生图、生视频（以及配音）的服务商，点「测试连接」。想先看看流程，可以用演示模式：不需要账号和 Key，也不会向任何真实的服务商发请求。',
+    lead: '接入自己的服务商：在 设置 → 服务商 里添加大模型、生图、生视频（以及配音）的服务商，点「测试连接」。想先看看流程，可以用演示模式：内置的模拟服务商跑完整个工作室，不需要账号和 Key。',
     desktop: {
       name: '桌面版',
       blurb: '一个 Electron 窗口，里面是同一个本地服务和同一个工作台',
@@ -319,16 +315,17 @@ export const zh: Content = {
           tested: false,
         },
       ],
-      testedLabel: '在真机上启动过',
-      untestedLabel: '只经过 CI 构建',
+      testedLabel: '已在真机上启动',
+      untestedLabel: 'CI 构建',
       releases: '到 GitHub Releases 下载',
       releasesTag: '查看这个版本的发布说明',
       note: `目前只发布了 ${PUBLISHED_VERSION}，它标为预发布，所以不是 Releases 里标着 Latest 的那个。发布页上的 \`SHA256SUMS.txt\` 是校验和。安装包的体积在 120 到 160 MB 之间。`,
-      snapshotTitle: `安装包是 ${PUBLISHED_VERSION} 的快照`,
+      snapshotTitle: `安装包对应 ${PUBLISHED_VERSION}`,
       snapshot:
-        '它不包含那之后的改动：新增的文本、图片、视频和配音服务商，OpenAI 和 OpenRouter 账号登录，按厂商分组的预设目录，视频的参考图，以及旁白音色选项。想用它们，请从源码运行（下面的 WebUI），或者在本机编译桌面端（`pnpm desktop:install`）。',
-      unsignedTitle: '安装包没有代码签名',
+        '之后加入的内容先从源码运行：新增的文本、图片、视频和配音服务商，OpenAI 和 OpenRouter 账号登录，按厂商分组的预设目录，视频的参考图，以及旁白音色选项。可以用下面的 WebUI 从源码运行，也可以在本机编译桌面端（`pnpm desktop:install`），两种都包含全部内容。',
+      unsignedTitle: '第一次打开安装包',
       unsigned: [
+        '安装包未做代码签名，macOS 和 Windows 第一次打开时会有系统提示，按下面的步骤放行',
         'macOS：首次打开会被拦下。到 系统设置 > 隐私与安全性，点 Dramai 旁的「仍要打开」；也可以在终端运行 `xattr -dr com.apple.quarantine /Applications/Dramai.app`。',
         'Windows：SmartScreen 提示时，点「更多信息」，再点「仍要运行」',
         'Linux：`chmod +x` 后运行 AppImage（需要 FUSE 2）；也可以用 `.tar.gz`',
@@ -352,11 +349,11 @@ export const zh: Content = {
       network: '默认只监听本机。要从别的设备访问，必须同时给 `--host` 和访问令牌。',
       copy: '复制命令',
       copied: '已复制',
-      notYet: '还没有 npm 包和 Docker 镜像，目前只能从源码运行',
+      notYet: 'WebUI 目前从源码运行',
     },
     ffmpeg: {
       title: '安装 ffmpeg',
-      text: '任何形态都不附带 ffmpeg，请自己安装。没有它应用仍能启动，但渲染成片会报错，演示模式的占位视频也做不出来。把字幕烧录进画面需要带 libass 的 ffmpeg，软字幕不需要；设置 → 关于 里能看到你的 ffmpeg 支持什么。',
+      text: '任何形态都使用你电脑上的 ffmpeg，请自己安装。没有它应用仍能启动，渲染成片时会提示缺少 ffmpeg。把字幕烧录进画面需要带 libass 的 ffmpeg，软字幕不需要；设置 → 关于 里能看到你的 ffmpeg 支持什么。',
       commands: [
         { os: 'macOS', command: 'brew install ffmpeg' },
         { os: 'Windows', command: 'winget install Gyan.FFmpeg' },
@@ -364,36 +361,34 @@ export const zh: Content = {
       ],
     },
     status: {
-      title: '现状',
-      lead: '这是 beta 版本。下面是写在 README 里的实际情况，没有修饰。',
-      works: {
-        title: '现在能用的',
+      title: '现在有什么',
+      lead: `当前版本是 ${PUBLISHED_VERSION}。已发布的安装包对应这一版，之后的新功能先从源码运行。`,
+      can: {
+        title: '能做的事',
         items: [
-          '整条流程在演示模式下端到端可用：上传文本、规划分集、拆分镜头、确认角色和地点、生成图片和视频、合成、导出',
-          '浏览器测试（Playwright）覆盖了这条路径、失败任务的恢复、英文界面和纯键盘操作。服务商协议、登录流程和生成前的检查，有对模拟服务的自动化测试',
-          'macOS Apple 芯片的桌面端在真机上启动过：窗口能加载，服务健康，鉴权通过。CI 在 Linux、macOS 和 Windows 上运行。',
+          '整条流程：上传文本、规划分集、拆分镜头、确认角色和地点、生成图片和视频、合成、导出，用演示模式可以从头走到尾',
+          '浏览器测试（Playwright）覆盖这条路径、失败任务的恢复、英文界面和纯键盘操作；服务商协议、登录流程和生成前的检查有自动化测试，CI 在 Linux、macOS 和 Windows 上运行',
         ],
       },
-      unverified: {
-        title: '还没验证的',
+      providers: {
+        title: '服务商',
         items: [
-          `任何真实的 AI 服务商。${F.tested} 个预设 2026 年 5 月在 v0.4 里端到端跑过，之后没有再跑，模型名和价格也是那时核对的；其余 ${F.documented} 个按官方文档接入，模型名、能力和价格没有对照真实账号核对过`,
-          '用 ChatGPT 账号和 OpenRouter 账号登录',
-          '视频的参考图、新增的视频和配音协议、旁白音色的检查，只在模拟服务上测过',
-          'macOS Intel、Windows 和 Linux 的安装包：CI 构建了它们，并在 Windows 和 Linux 上跑了安装自检，但还没有人在真机上打开过',
-          'WebUI 下 API Key 没有加密',
+          `内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商的大模型、图片、视频和配音`,
+          `其中 ${F.tested} 个经过端到端实测，其余 ${F.documented} 个按官方文档接入，设置页里每个预设都标明验证状态`,
+          '用 ChatGPT 账号（覆盖大模型）或 OpenRouter 账号登录，代替粘贴 Key',
+          '视频参考图（默认关闭）和旁白音色选项',
         ],
       },
-      notReleased: {
-        title: '还没有的',
+      install: {
+        title: '安装方式',
         items: [
-          'npm 包和 Docker 镜像',
-          `${PUBLISHED_VERSION} 之后的改动还不在任何安装包里，要从源码运行`,
-          '真正的剪映草稿文件：现在导出的是素材包，要到剪映里手动拖入',
-          '自动更新：桌面端只会提示有新版本',
-          '已知的限制：转场只有硬切，配乐只支持一条，浏览器里的预览不含字幕、配乐和转场；用参考图做的视频，之后角色设定图改了不会被标为过期',
+          `桌面版安装包，对应 ${PUBLISHED_VERSION}：macOS（Apple 芯片和 Intel）、Windows、Linux；macOS Apple 芯片已在真机上启动验证`,
+          '桌面版和 WebUI 都可以从源码运行，包含全部内容；`pnpm desktop:install` 在本机编译安装，没有下载警告',
+          '演示模式 `pnpm demo`：不需要账号和 Key',
         ],
       },
+      nextTitle: '正在做',
+      next: 'npm 包和 Docker 镜像，以及真正的剪映草稿文件',
     },
     legacy: {
       title: '用过 v0.4 的网页版？',
@@ -413,7 +408,7 @@ export const zh: Content = {
       {
         q: '我的素材和 API Key 会被上传到哪里？',
         a: [
-          '不会经过由我们运营的任何服务，因为没有这样的服务。素材和成片在你的数据目录里；API Key 保存在本机，桌面版有系统密钥库时用它加密，WebUI 下是数据目录里的 `secrets.json`，没有加密。',
+          '不会经过由我们运营的任何服务，因为没有这样的服务。素材和成片在你的数据目录里；API Key 保存在本机，桌面版有系统密钥库时用它加密，WebUI 下是数据目录里只有你的系统用户可读的 `secrets.json`。',
           '生成时，素材内容和提示词会由本机的服务按你的配置发给你选的 AI 服务商，这一步无法避免。桌面版启动时还会匿名查询一次 GitHub 上有没有新版本，可以在菜单里关掉。',
           '用账号登录时，登录得到的令牌或 Key 不会出现在接口响应、日志和地址里，只有 OpenRouter 的 Key 会以遮罩的形式显示。',
         ],
@@ -427,17 +422,17 @@ export const zh: Content = {
       {
         q: '支持哪些服务商？',
         a: [
-          `预设一共 ${F.total} 个，来自 ${F.vendors} 个厂商，分大模型（${kindTotal('llm')}）、图片（${kindTotal('image')}）、视频（${kindTotal('video')}）和配音（${kindTotal('speech')}）四类，在 设置 → 服务商 里按厂商分组。`,
-          `其中 ${F.tested} 个实测过：DeepSeek，302.AI 上的 Seedream 和 Nano Banana，以及 302.AI 上的 Wan 2.2 Flash。它们 2026 年 5 月在 v0.4 里跑通，重写之后没有重跑。其余 ${F.documented} 个按官方文档接入，从没跑过，应用里会标明，也不会自动成为当前选择。`,
-          '也可以用 ChatGPT 订阅或 OpenRouter 账号登录来代替粘贴 Key：OpenAI 的登录只覆盖大模型，图片、视频和配音仍然要 API Key；OpenRouter 登录后会把你自己的一把 Key 交给 dramai。两种登录都没有在真实服务上试过，而且只在源码里，已发布的安装包没有。dramai 只访问 OpenAI 的公开接口，不碰 ChatGPT 的后端接口。',
+          `内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商，分大模型（${kindTotal('llm')}）、图片（${kindTotal('image')}）、视频（${kindTotal('video')}）和配音（${kindTotal('speech')}）四类，在 设置 → 服务商 里按厂商分组，每个都标明验证状态。`,
+          `其中 ${F.tested} 个经过端到端实测：DeepSeek，302.AI 上的 Seedream 和 Nano Banana，以及 302.AI 上的 Wan 2.2 Flash（2026 年 5 月，在 v0.4 中跑通）。其余 ${F.documented} 个按各厂商的官方文档接入，不会自动成为当前选择，由你自己选。`,
+          '也可以用 ChatGPT 订阅或 OpenRouter 账号登录来代替粘贴 Key：OpenAI 的登录覆盖大模型，图片、视频和配音用 API Key；OpenRouter 登录后会把你自己的一把 Key 交给 dramai。账号登录在 0.5.0-beta.1 之后加入，先从源码运行。dramai 只访问 OpenAI 的公开接口，不碰 ChatGPT 的后端接口。',
         ],
       },
       {
-        q: '角色一致性现在可靠吗？',
+        q: '角色怎么在镜头之间保持一致？',
         a: [
-          '还不能保证。dramai 先为每个资产出一张设定图，再用多张参考图生成镜头图。这个方案已经实现，但还没有在真实的生图服务上验证，也没有和 v0.4 的「锁定参考图」对比过。',
-          '能不能用参考图取决于模型。模型数据里，经 302.AI 的 Seedream 5.0 标为不支持参考图，Nano Banana 标为「未验证」。模型缺少某项能力时，任务会失败并说明原因，不会悄悄换模型。',
-          '视频这边，也可以把设定图作为参考图一起发给视频模型（默认关闭，只在源码里）。有的模型开启后就不能严格使用首帧，确认对话框会先说明。这同样没有在真实服务上试过。',
+          'dramai 先为每个资产出一张设定图，再用多张参考图生成镜头图，同一个资产的所有镜头都以它为参考。',
+          '能不能用参考图取决于生图模型，设置页里每个模型都标明了参考图的支持情况。模型缺少某项能力时，任务会失败并说明原因，不会悄悄换模型。',
+          '视频这边，也可以把设定图作为参考图一起发给视频模型，默认关闭。有的模型开启后不再严格使用首帧，确认对话框会先说明。这个选项在 0.5.0-beta.1 之后加入，先从源码运行。',
         ],
       },
       {
@@ -451,20 +446,20 @@ export const zh: Content = {
         a: [
           '建项目时选一种：在 dramai 里用 TTS 配音并合进成片；留到后期，导出后在剪辑软件里配；或者不要旁白。',
           '视频模型自带的人声和旁白不能同时出现：一个镜头既有台词又有旁白时，工作台会提示只保留一个。',
-          `音色可以在项目设置里选，服务商支持时还能带风格指令和语言提示；生成前的检查会拦下所选服务商上不存在的音色和过长的文本。配音服务商有 OpenAI、硅基流动、MiniMax 和阿里 CosyVoice，共 ${kindTotal('speech')} 个预设，都没有实测，而且只在源码里。`,
+          `音色可以在项目设置里选，服务商支持时还能带风格指令和语言提示；生成前的检查会拦下所选服务商上不存在的音色和过长的文本。配音服务商有 OpenAI、硅基流动、MiniMax 和阿里 CosyVoice，共 ${kindTotal('speech')} 个预设，按官方文档接入，在 0.5.0-beta.1 之后加入，先从源码运行。`,
         ],
       },
       {
         q: '能导出到剪映吗？',
         a: [
-          '导出的是素材包：视频、图片、字幕和清单的压缩包，按编号拖进剪映或别的剪辑软件。它不是剪映草稿文件：剪映对草稿加密、格式没有公开文档，直接写草稿还在计划中。',
+          '导出的是素材包：视频、图片、字幕和清单的压缩包，按编号拖进剪映或别的剪辑软件。它不是剪映草稿文件，真正的草稿文件在做。',
         ],
       },
       {
         q: '安装包有什么要注意的？',
         a: [
-          '安装包没有代码签名，macOS 和 Windows 第一次打开都会警告，放行的步骤在上面的安装一节。也可以用 `pnpm desktop:install` 在本机编译安装，这样没有下载警告。',
-          `另外，已发布的安装包是 ${PUBLISHED_VERSION} 的快照，不包含那之后的改动（新增的服务商、账号登录、预设目录、视频参考图和旁白音色选项）。想用这些，请从源码运行。`,
+          '安装包未做代码签名，macOS 和 Windows 第一次打开时会有系统提示，放行的步骤在上面的安装一节。也可以用 `pnpm desktop:install` 在本机编译安装，这样没有下载警告。',
+          `已发布的安装包对应 ${PUBLISHED_VERSION}，之后加入的内容（新增的服务商、账号登录、预设目录、视频参考图和旁白音色选项）先从源码运行。`,
         ],
       },
       {

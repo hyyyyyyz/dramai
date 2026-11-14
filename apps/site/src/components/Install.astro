@@ -112,17 +112,21 @@ const allCommands = w.commands.map((x) => `# ${x.comment}\n${x.command}`).join('
       <h3 id="status-title">{i.status.title}</h3>
       <p class="block-lead">{i.status.lead}</p>
       <div class="status-cols">
-        {[i.status.works, i.status.unverified, i.status.notReleased].map((col) => (
+        {[i.status.can, i.status.providers, i.status.install].map((col) => (
           <div>
             <h4>{col.title}</h4>
             <ul>
               {col.items.map((t) => (
-                <li>{t}</li>
+                <li set:html={rich(t)} />
               ))}
             </ul>
           </div>
         ))}
       </div>
+      <p class="status-next">
+        <b>{i.status.nextTitle}</b>
+        <span set:html={rich(i.status.next)} />
+      </p>
     </section>
 
     <div class="legacy" id="legacy">

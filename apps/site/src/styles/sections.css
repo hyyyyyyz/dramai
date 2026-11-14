@@ -1228,7 +1228,7 @@ code {
 }
 .kind-row {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-columns: 112px minmax(0, 1fr);
   gap: 8px 12px;
   align-items: start;
 }
@@ -1315,4 +1315,17 @@ code {
   .kl {
     padding-top: 0;
   }
+}
+
+.status-next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 32px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+.status-next b {
+  color: var(--foreground);
+  font-weight: 500;
 }

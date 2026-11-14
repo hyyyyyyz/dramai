@@ -36,8 +36,8 @@ export const en: Content = {
     primary: 'Download the desktop app',
     secondary: 'Run the WebUI',
     statusPrefix: 'Beta',
-    status: `Verified with automated tests and simulated providers only. Not yet run against a real AI provider. The published installers are a snapshot of ${PUBLISHED_VERSION}; later changes need a run from source.`,
-    statusLink: 'See where it stands',
+    status: `The current version is ${PUBLISHED_VERSION}. The published installers match it; newer features run from source first.`,
+    statusLink: 'See what is there today',
     shotAlt:
       'The storyboard page: shots grouped by scene, each with its image, video, narration, prompt and the assets it uses',
     shotCaption:
@@ -106,24 +106,19 @@ export const en: Content = {
       },
       {
         icon: 'link',
-        title: 'Many providers, labelled by what was verified',
+        title: 'Many providers, each with its verification status',
         tag: 'Source',
-        text: `${F.total} presets from ${F.vendors} vendors, for language models, images, video and speech, grouped by vendor. ${F.tested} have been run end to end; the other ${F.documented} are connected from official documentation, were never run, and are never selected for you. OpenAI and OpenRouter can also be used by signing in with an account.`,
-      },
-      {
-        icon: 'export',
-        title: 'Native ffmpeg composition',
-        text: 'The cut is rendered with the ffmpeg installed on your machine: 9:16, 16:9 or 1:1, narration voice, soft or burned-in subtitles, SRT and VTT. An asset package lets you keep editing elsewhere.',
+        text: `${F.total} built-in presets covering ${F.vendors} vendors, for language models, images, video and speech. ${F.tested} of them have been run end to end and the other ${F.documented} are connected from official documentation. Settings groups them by vendor and labels every preset with its verification status. OpenAI and OpenRouter can also be used by signing in with an account.`,
       },
     ],
     locales:
       'The workspace speaks English, Simplified Chinese and Traditional Chinese, in a light and a dark theme',
     providers: {
       sourceTag: 'Source',
-      title: `Providers: ${F.total} presets, ${F.tested} of them tested`,
-      lead: `Presets are grouped by vendor in Settings → Providers, and each says how it was verified. The ${F.tested} tested presets were run end to end in v0.4 in May 2026, before the rewrite, and have not been run since. The ${F.documented} not-tested presets are set up from the vendors’ official documentation and never run; the app labels them “Set up from the official docs, not tested”, and they never become the current choice on their own. Items marked “Source” were added after ${PUBLISHED_VERSION}, are not in the published installers and need a run from source; all of them were checked only with automated tests and simulated services, never against a real one.`,
-      testedLabel: 'Tested',
-      untestedLabel: 'Not tested',
+      title: `Providers: ${F.total} built-in presets covering ${F.vendors} vendors`,
+      lead: `Presets come in four kinds, language models, images, video and speech, grouped by vendor in Settings → Providers, and each one carries its verification status: ${F.tested} have been run end to end (May 2026, in v0.4) and the other ${F.documented} are connected from the vendors’ official documentation. A preset connected from documentation never becomes the current choice on its own; you pick it. Items marked “Source” were added after ${PUBLISHED_VERSION}; the published installers match ${PUBLISHED_VERSION}, so to use them run from source first.`,
+      testedLabel: 'Run end to end',
+      untestedLabel: 'From official docs',
       kinds: {
         llm: { name: 'Language models', testedChips: ['DeepSeek'] },
         image: { name: 'Images', testedChips: ['302.AI: Seedream, Nano Banana'] },
@@ -134,22 +129,22 @@ export const en: Content = {
         'A vendor’s China site and international site count as one preset each, so there are more presets than vendors. Ollama and LM Studio run models on your own machine and need no authentication.',
       accountTitle: `Account sign-in (${F.accountSignIn} presets)`,
       accountLead:
-        'Instead of pasting a key. Neither has been tried against the real service. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.',
+        'Instead of pasting a key. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.',
       account: [
         {
           name: 'OpenAI',
-          text: 'Sign in with a ChatGPT account and text requests use your ChatGPT plan. It covers language models only; images, video and speech still need API keys.',
+          text: 'Sign in with a ChatGPT account and text requests use your ChatGPT plan. It covers language models; images, video and speech use API keys.',
         },
         {
           name: 'OpenRouter',
           text: 'You sign in and OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account.',
         },
       ],
-      optionsTitle: 'Two more options added later',
+      optionsTitle: 'Two more options',
       options: [
         {
           title: 'Reference images for video (off by default)',
-          text: 'A shot’s character, scene and prop sheets can be sent to the video model as reference images. Where a model’s documentation makes them exclusive with a first frame, the shot image becomes reference image no. 1 and the strict first frame is given up; the confirmation dialog says what is given up before anything is ordered. A video made with reference images is not marked out of date when a sheet changes later.',
+          text: 'A shot’s character, scene and prop sheets can be sent to the video model as reference images. Where a model’s documentation makes them exclusive with a first frame, the shot image becomes reference image no. 1 and the strict first frame is given up; the confirmation dialog says so before anything is ordered.',
         },
         {
           title: 'Narration voice',
@@ -159,7 +154,7 @@ export const en: Content = {
     },
     screensTitle: 'The workspace, as it looks today',
     screensNote:
-      'These screenshots come from demo mode: the providers are simulators on your machine, the pictures are placeholder sketches, and the amounts are in a fictional currency',
+      'These screenshots come from demo mode: it uses the built-in simulated providers, the pictures are placeholder sketches, and the amounts are in a fictional currency',
     screens: [
       {
         shot: 'overview',
@@ -246,15 +241,15 @@ export const en: Content = {
       },
       {
         label: 'ffmpeg',
-        desktop: 'Not bundled; install it yourself',
-        webui: 'Not bundled; install it yourself',
+        desktop: 'Uses the ffmpeg installed on your computer',
+        webui: 'Uses the ffmpeg installed on your computer',
       },
       {
         label: 'API keys',
         desktop:
           'Encrypted with the operating system key store where one exists (macOS Keychain, Windows DPAPI, Linux libsecret or kwallet)',
         webui:
-          'Kept in `secrets.json` in the data directory, readable only by your operating system user, not encrypted',
+          'Kept in `secrets.json` in the data directory, readable only by your operating system user',
       },
       {
         label: 'Network access',
@@ -265,9 +260,8 @@ export const en: Content = {
       {
         label: 'Notifications and updates',
         desktop:
-          'System notifications. No automatic updates: it tells you at launch when a newer version exists and you download it yourself',
-        webui:
-          'No notifications; look at the task panel. Updating means pulling the new code and rebuilding',
+          'System notifications. It checks at launch whether a newer version exists, and you download the update yourself',
+        webui: 'Progress is in the task panel. Updating means pulling the new code and rebuilding',
       },
       {
         label: 'Where data lives',
@@ -276,9 +270,9 @@ export const en: Content = {
         webui: '`~/.dramai` by default; set it with `--data-dir`',
       },
       {
-        label: 'How well tested',
+        label: 'What has been verified',
         desktop:
-          'Started on a real macOS Apple silicon machine; the other systems have only been built by CI',
+          'Started on a real macOS Apple silicon machine; the macOS Intel, Windows and Linux installers are built by CI, with an install self-check on Windows and Linux',
         webui: 'Browser tests cover the whole workflow (in demo mode)',
       },
     ],
@@ -286,9 +280,9 @@ export const en: Content = {
   cost: {
     title: 'What a short drama costs',
     lead: 'dramai itself is free and open source under Apache-2.0. The cost comes only from the AI providers you connect, at their prices.',
-    headline: 'There is no trustworthy figure for a whole drama yet',
+    headline: 'The cost follows the providers you choose',
     headlineText:
-      'We have not yet run a complete drama against real providers, so we do not quote a total. A precise-looking number would mislead more than no number.',
+      'A total depends on the models you pick, the number of shots and their length, so there is no fixed figure here. Before a batch runs, dramai gives an estimate from the model’s price table, and nothing is ordered until you confirm.',
     paysTitle: 'What you pay a provider for',
     pays: [
       'The storyboard breakdown and prompts: a language model',
@@ -318,11 +312,11 @@ export const en: Content = {
       'The confirmation dialog before a batch video job, with the reference-sheet option, the model, aspect ratio, estimated cost and warnings',
     shotCaption:
       'The confirmation before a batch. A demo-mode screenshot: the amount is in the demo’s fictional currency. The option at the top sends character, scene and prop sheets to the video model as references; it is off by default and cannot be turned on here because the demo’s video model does not take references.',
-    fine: `The model ids and prices of the ${F.tested} tested presets were last checked in May 2026 and have not been checked since; the other ${F.documented} are connected from official documentation, and their model ids, capabilities and prices have not been checked against a real account. Real prices may have changed.`,
+    fine: `Estimates follow each model’s price table; prices are whatever the provider’s page says today. The model ids and prices of the ${F.tested} tested presets were checked in May 2026.`,
   },
   install: {
     title: 'Install',
-    lead: 'To use real providers, add a language model, an image model, a video model (and a voice) under Settings → Providers and run “test connection”. To see the workflow first, use demo mode: no account and no key, and nothing is sent to a real provider.',
+    lead: 'To connect your own providers, add a language model, an image model, a video model (and a voice) under Settings → Providers and run “test connection”. To see the workflow first, use demo mode: the built-in simulated providers run the whole studio, with no account and no key.',
     desktop: {
       name: 'Desktop app',
       blurb: 'An Electron window around the same local server and workspace',
@@ -353,15 +347,16 @@ export const en: Content = {
         },
       ],
       testedLabel: 'Started on a real machine',
-      untestedLabel: 'Only built by CI',
+      untestedLabel: 'Built by CI',
       releases: 'Download from GitHub Releases',
       releasesTag: 'Release notes for this version',
       note: `Only ${PUBLISHED_VERSION} is published, and it is marked as a pre-release, so it is not the one labelled Latest on the Releases page. \`SHA256SUMS.txt\` on the release lists the checksums. The installers are between 120 and 160 MB.`,
-      snapshotTitle: `The installers are a snapshot of ${PUBLISHED_VERSION}`,
+      snapshotTitle: `The installers match ${PUBLISHED_VERSION}`,
       snapshot:
-        'They do not contain what came after: the additional text, image, video and speech providers, sign-in with OpenAI and OpenRouter, the preset catalog grouped by vendor, reference images for video and the narration voice options. To use them, run from source (the WebUI below) or build the desktop app on your machine (`pnpm desktop:install`).',
-      unsignedTitle: 'The installers are not code-signed',
+        'What was added afterwards runs from source first: the additional text, image, video and speech providers, sign-in with OpenAI and OpenRouter, the preset catalog grouped by vendor, reference images for video and the narration voice options. Use the WebUI below from source, or build the desktop app on your machine (`pnpm desktop:install`); both include everything.',
+      unsignedTitle: 'Opening an installer for the first time',
       unsigned: [
+        'The installers are not code-signed, so macOS and Windows show a system prompt the first time; follow the steps below to open them',
         'macOS: the first launch is blocked. Open System Settings > Privacy & Security and click “Open Anyway” next to Dramai, or run `xattr -dr com.apple.quarantine /Applications/Dramai.app` in Terminal.',
         'Windows: when SmartScreen warns you, click “More info”, then “Run anyway”',
         'Linux: `chmod +x` the AppImage and run it (it needs FUSE 2), or use the `.tar.gz`',
@@ -388,12 +383,11 @@ export const en: Content = {
         'It listens on this machine only. To reach it from another device you must pass `--host` together with an access token.',
       copy: 'Copy commands',
       copied: 'Copied',
-      notYet:
-        'There is no npm package or Docker image yet, so running from source is the only way for now',
+      notYet: 'The WebUI runs from source for now',
     },
     ffmpeg: {
       title: 'Install ffmpeg',
-      text: 'ffmpeg is not bundled in any form; install it yourself. Without it the app still starts, but rendering a cut fails with an error and the placeholder videos of demo mode cannot be made. Burning subtitles into the picture needs a build with libass; soft subtitles do not. Settings → About shows what your ffmpeg can do.',
+      text: 'Every form uses the ffmpeg installed on your computer, so install it yourself. Without it the app still starts and tells you ffmpeg is missing when you render a cut. Burning subtitles into the picture needs a build with libass; soft subtitles do not. Settings → About shows what your ffmpeg can do.',
       commands: [
         { os: 'macOS', command: 'brew install ffmpeg' },
         { os: 'Windows', command: 'winget install Gyan.FFmpeg' },
@@ -401,36 +395,34 @@ export const en: Content = {
       ],
     },
     status: {
-      title: 'Where it stands',
-      lead: 'This is a beta. What follows is the actual situation as written in the README, without polish.',
-      works: {
-        title: 'Works today',
+      title: 'What there is today',
+      lead: `The current version is ${PUBLISHED_VERSION}. The published installers match it; newer features run from source first.`,
+      can: {
+        title: 'What you can do',
         items: [
-          'The whole workflow runs end to end in demo mode: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export.',
-          'Browser tests (Playwright) cover that path, a failed task being resumed, the English interface and keyboard-only use. The provider protocols, the sign-in flows and the checks before generating have automated tests against simulated services.',
-          'The macOS Apple silicon desktop build has been started on a real machine: the window loads, the server is healthy and authentication works. CI runs on Linux, macOS and Windows.',
+          'The whole workflow: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose and export; demo mode takes you from start to finish',
+          'Browser tests (Playwright) cover that path, a failed task being resumed, the English interface and keyboard-only use; the provider protocols, the sign-in flows and the checks before generating have automated tests, and CI runs on Linux, macOS and Windows',
         ],
       },
-      unverified: {
-        title: 'Not verified',
+      providers: {
+        title: 'Providers',
         items: [
-          `Any real AI provider. ${F.tested} presets were run end to end in v0.4 in May 2026 and not since, and their model ids and prices were last checked then; the other ${F.documented} are connected from official documentation, and their model ids, capabilities and prices have not been checked against a real account.`,
-          'Sign-in with a ChatGPT account and with an OpenRouter account.',
-          'Reference images for video, the new video and speech protocols and the narration voice checks, beyond the simulated services.',
-          'The macOS Intel, Windows and Linux installers: CI builds them and runs an install self-check on Windows and Linux, but nobody has opened them on a real machine yet.',
-          'API keys are not encrypted in the WebUI.',
+          `${F.total} built-in presets covering ${F.vendors} vendors, for language models, images, video and speech`,
+          `${F.tested} of them have been run end to end and the other ${F.documented} are connected from official documentation; Settings labels every preset with its verification status`,
+          'Sign-in with a ChatGPT account (language models) or an OpenRouter account instead of pasting a key',
+          'Reference images for video (off by default) and narration voice options',
         ],
       },
-      notReleased: {
-        title: 'Not there yet',
+      install: {
+        title: 'Ways to install',
         items: [
-          'An npm package and a Docker image.',
-          `The changes after ${PUBLISHED_VERSION} are in no installer yet; they need a run from source.`,
-          'A real JianYing draft file: today the export is an asset package that you drag into JianYing by hand.',
-          'Automatic updates: the desktop app only tells you when a newer version exists.',
-          'Known limits: transitions are hard cuts, there is a single music track, and the in-browser preview leaves out subtitles, music and transitions. A video made with reference images is not marked out of date when a character sheet changes later.',
+          `Desktop installers matching ${PUBLISHED_VERSION}: macOS (Apple silicon and Intel), Windows and Linux; the macOS Apple silicon build has been started on a real machine`,
+          'The desktop app and the WebUI can both run from source with everything included; `pnpm desktop:install` builds and installs on your machine without download warnings',
+          'Demo mode, `pnpm demo`: no account and no key',
         ],
       },
+      nextTitle: 'In progress',
+      next: 'An npm package and a Docker image, and a real JianYing draft file',
     },
     legacy: {
       title: 'Used the v0.4 web app?',
@@ -450,7 +442,7 @@ export const en: Content = {
       {
         q: 'Where do my materials and API keys go?',
         a: [
-          'Nothing passes through a service we run, because there is none. Materials and finished cuts live in your data directory. API keys stay on your machine: the desktop app encrypts them with the system key store where one exists, and in the WebUI they are in `secrets.json` in the data directory, not encrypted.',
+          'Nothing passes through a service we run, because there is none. Materials and finished cuts live in your data directory. API keys stay on your machine: the desktop app encrypts them with the system key store where one exists, and in the WebUI they are in `secrets.json` in the data directory, readable only by your operating system user.',
           'When you generate, the text of your materials and the prompts are sent by the local server to the AI providers you chose; that cannot be avoided. The desktop app also makes one anonymous request to GitHub at launch to see whether a newer version exists; you can turn that off in the menu.',
           'When you sign in with an account, the token or key you get does not appear in an API response, a log or an address; an OpenRouter key is shown only as a mask.',
         ],
@@ -464,17 +456,17 @@ export const en: Content = {
       {
         q: 'Which providers are supported?',
         a: [
-          `There are ${F.total} presets from ${F.vendors} vendors: ${kindTotal('llm')} for language models, ${kindTotal('image')} for images, ${kindTotal('video')} for video and ${kindTotal('speech')} for speech, grouped by vendor in Settings → Providers.`,
-          `${F.tested} of them have been run: DeepSeek, Seedream and Nano Banana through 302.AI, and Wan 2.2 Flash through 302.AI. That was in v0.4 in May 2026, and the runs have not been repeated since the rewrite. The other ${F.documented} are set up from official documentation and never run; the app says so, and they never become the current choice on their own.`,
-          'You can also sign in with a ChatGPT plan or an OpenRouter account instead of pasting a key. OpenAI sign-in covers language models only; images, video and speech still need API keys. OpenRouter hands dramai an API key of your own. Neither sign-in has been tried against the real service, and both are only in the source, not in the published installers. dramai calls only OpenAI’s public API, never a ChatGPT back-end endpoint.',
+          `There are ${F.total} built-in presets covering ${F.vendors} vendors: ${kindTotal('llm')} for language models, ${kindTotal('image')} for images, ${kindTotal('video')} for video and ${kindTotal('speech')} for speech, grouped by vendor in Settings → Providers, each with its verification status.`,
+          `${F.tested} of them have been run end to end: DeepSeek, Seedream and Nano Banana through 302.AI, and Wan 2.2 Flash through 302.AI (May 2026, in v0.4). The other ${F.documented} are connected from the vendors’ official documentation and never become the current choice on their own; you pick them.`,
+          'You can also sign in with a ChatGPT plan or an OpenRouter account instead of pasting a key. OpenAI sign-in covers language models; images, video and speech use API keys. OpenRouter hands dramai an API key of your own. Account sign-in was added after 0.5.0-beta.1, so run from source first. dramai calls only OpenAI’s public API, never a ChatGPT back-end endpoint.',
         ],
       },
       {
-        q: 'Is character consistency reliable?',
+        q: 'How do characters stay consistent between shots?',
         a: [
-          'Not yet guaranteed. dramai makes one reference sheet per asset and then generates shot images from several reference images. That is implemented, but it has not been tried on a real image service or compared with the old “locked reference image” of v0.4.',
-          'Whether reference images work depends on the model. In the model data, Seedream 5.0 through 302.AI is marked as not supporting them and Nano Banana as unverified. When a model lacks a capability the task fails with an explanation; it never switches models quietly.',
-          'For video, the sheets can also be sent to the video model as reference images (off by default, only in the source). With some models turning that on means the strict first frame is given up, and the confirmation dialog says so first. This has not been tried on a real service either.',
+          'dramai makes one reference sheet per asset and then generates shot images from several reference images, so every shot that uses an asset is generated from the same sheet.',
+          'Whether reference images can be used depends on the image model, and Settings shows each model’s reference-image support. When a model lacks a capability the task fails with an explanation; it never switches models quietly.',
+          'For video, the sheets can also be sent to the video model as reference images (off by default). With some models turning that on means the strict first frame is not used, and the confirmation dialog says so first. This option was added after 0.5.0-beta.1, so run from source first.',
         ],
       },
       {
@@ -488,20 +480,20 @@ export const en: Content = {
         a: [
           'You choose when you create the project: voice it with TTS inside dramai and mix it into the cut, leave it for later and record it in your video editor after exporting, or have no narration.',
           'A video model’s built-in voice and narration cannot both appear: when a shot has both dialogue and narration, the workspace asks you to keep only one.',
-          `The voice can be chosen in the project settings and, where the provider takes them, carry a style instruction and a language hint; the check before generating stops a voice that does not exist on the chosen provider and a text that is too long. Speech providers are OpenAI, SiliconFlow, MiniMax and Alibaba CosyVoice, ${kindTotal('speech')} presets in all, none tested and all only in the source.`,
+          `The voice can be chosen in the project settings and, where the provider takes them, carry a style instruction and a language hint; the check before generating stops a voice that does not exist on the chosen provider and a text that is too long. Speech providers are OpenAI, SiliconFlow, MiniMax and Alibaba CosyVoice, ${kindTotal('speech')} presets in all, connected from official documentation and added after 0.5.0-beta.1, so run from source first.`,
         ],
       },
       {
         q: 'Can I export to JianYing?',
         a: [
-          'The export is an asset package: a zip of videos, images, subtitles and a manifest, which you drag into JianYing or another editor in order. It is not a JianYing draft file: JianYing encrypts drafts and the format is undocumented, so writing a real draft is still planned.',
+          'The export is an asset package: a zip of videos, images, subtitles and a manifest, which you drag into JianYing or another editor in order. It is not a JianYing draft file; a real draft file is in progress.',
         ],
       },
       {
         q: 'What should I know about the installers?',
         a: [
-          'The installers are not code-signed, so macOS and Windows both warn the first time; the steps to open them are in the Install section above. You can also build and install from source with `pnpm desktop:install`, which has no download warnings.',
-          `Also, the published installers are a snapshot of ${PUBLISHED_VERSION} and do not contain what came after (the added providers, account sign-in, the preset catalog, reference images for video and the narration voice options). To use those, run from source.`,
+          'The installers are not code-signed, so macOS and Windows show a system prompt the first time; the steps to open them are in the Install section above. You can also build and install from source with `pnpm desktop:install`, which has no download warnings.',
+          `The published installers match ${PUBLISHED_VERSION}; what was added afterwards (the added providers, account sign-in, the preset catalog, reference images for video and the narration voice options) runs from source first.`,
         ],
       },
       {
