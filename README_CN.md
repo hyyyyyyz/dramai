@@ -64,7 +64,7 @@ pnpm webui
 
 ### 3. 桌面端安装包
 
-到 [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases) 下载。目前只发布了 `0.5.0-beta.1`，它标为预发布，所以不是标着 Latest 的那个。按系统选：
+到 [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases) 下载。目前只发布了 `0.5.0-beta.1`，它标为预发布。按系统选：
 
 - **macOS**：`.dmg`，Apple 芯片用 `mac-arm64`，Intel 用 `mac-x64`。
 - **Windows**：`.exe` 安装程序或免安装的 `.zip`。
@@ -83,7 +83,7 @@ pnpm webui
 pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 ```
 
-默认地址是 `http://127.0.0.1:8787`，默认数据目录是 `~/.dramai`。服务只监听 `127.0.0.1`；想从别的设备访问，必须同时给 `--host` 和访问令牌。WebUI 下，API Key 保存在数据目录的 `secrets.json` 里，只有你的操作系统用户可读，没有加密。详见 [apps/webui](./apps/webui/README.md)。
+默认地址是 `http://127.0.0.1:8787`，默认数据目录是 `~/.dramai`。服务只监听 `127.0.0.1`；想从别的设备访问，必须同时给 `--host` 和访问令牌。WebUI 下，API Key 保存在数据目录的 `secrets.json` 里，没有加密；macOS 和 Linux 上文件权限设为仅本人可读。详见 [apps/webui](./apps/webui/README.md)。
 
 桌面端也可以用同一份检出运行或编译，需要先装好 ffmpeg：
 

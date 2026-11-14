@@ -64,7 +64,7 @@ Providers are presets grouped by vendor, each labelled with what has been verifi
 
 ### 3. Desktop installer
 
-Download from [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases). Only `0.5.0-beta.1` is published, and it is marked as a pre-release, so it is not the one labelled Latest. Choose by system:
+Download from [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases). Only `0.5.0-beta.1` is published, and it is marked as a pre-release. Choose by system:
 
 - **macOS**: the `.dmg`, `mac-arm64` for Apple silicon or `mac-x64` for Intel.
 - **Windows**: the `.exe` installer or the portable `.zip`.
@@ -83,7 +83,7 @@ Download from [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases). On
 pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 ```
 
-The default address is `http://127.0.0.1:8787` and the default data directory is `~/.dramai`. The server only listens on `127.0.0.1`; to reach it from another device you must pass `--host` together with an access token. In the WebUI, API keys are kept in `secrets.json` in the data directory, readable only by your operating system user and not encrypted. See [apps/webui](./apps/webui/README.md).
+The default address is `http://127.0.0.1:8787` and the default data directory is `~/.dramai`. The server only listens on `127.0.0.1`; to reach it from another device you must pass `--host` together with an access token. In the WebUI, API keys are kept in `secrets.json` in the data directory, not encrypted; on macOS and Linux the file permissions limit it to you. See [apps/webui](./apps/webui/README.md).
 
 The desktop app can also be run or built from the same checkout, with ffmpeg installed:
 
