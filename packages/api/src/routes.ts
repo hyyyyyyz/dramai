@@ -355,7 +355,7 @@ export const routes = {
     body: z.object({
       targetChars: z.number().int().min(300).max(20000).optional(),
       /** 创作者对这一次分集规划的要求（如“每集结尾留悬念”）。只对这一次有效——分集规划按批次追加，不记在项目上。 */
-      instructions: z.string().max(20000).optional(),
+      instructions: z.string().max(1000).optional(),
     }),
     response: jobOut,
   }),
@@ -367,7 +367,7 @@ export const routes = {
        * （`episode.breakdownInstructions`），不传 = 沿用集上记的（重新拆分默认沿用）；
        * 传空字符串 = 清掉，不再带任何要求。
        */
-      instructions: z.string().max(20000).optional(),
+      instructions: z.string().max(1000).optional(),
     }),
     response: jobOut,
   }),

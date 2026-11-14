@@ -109,6 +109,19 @@ describe('speech presets (P3d first batch): documented, not tested', () => {
     }
   })
 
+  it('nothing user-facing in this batch claims a failed request is free of charge (no official page says so)', () => {
+    const claim =
+      /不收费|免费|不计费|没有费用|不会收费|free of charge|no charge|not charged|won't be charged/i
+    const texts: string[] = []
+    for (const p of ttsPresets)
+      for (const lang of ['zh', 'zh-Hant', 'en'] as const) {
+        const l = localizeProviderPreset(p, lang)
+        texts.push(l.label, l.notes, ...l.knownLimitations)
+      }
+    for (const m of audioModels) texts.push(...m.quirks, m.provenance)
+    for (const x of texts) expect(x).not.toMatch(claim)
+  })
+
   it('voice lists: OpenAI is a closed list of 13; the others are open; v3.5 has no system voices', () => {
     const v = (protocol: 'openai-tts' | 'minimax-t2a' | 'dashscope-cosyvoice', model: string) =>
       catalog.models.lookup({ protocol, model }).capability

@@ -69,6 +69,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- The Alibaba CosyVoice style-instruction limit is now counted by the official rule (only Chinese characters count
+  2; kana, Hangul, punctuation, letters and digits count 1), so a Japanese instruction is no longer stopped wrongly;
+  `countText` is exported from `@dramai/api` for the front end. A very short valid AAC is no longer judged "not
+  audio" because of the temporary file's name. The contract accepts style instructions of up to 20000 characters
+  (OpenAI allows 4096), and `providers.capability` tells which voice is used when none is chosen
+  (`speechDefaultVoice`).
 - A narration that is certainly not audio (the probe tool runs and cannot open the file, or finds no audio stream)
   now fails with `AUDIO_UNREADABLE` instead of being saved as a finished version; a retry asks for confirmation
   because the service may have charged. Audio that opens but looks damaged (no readable duration, decode errors such
