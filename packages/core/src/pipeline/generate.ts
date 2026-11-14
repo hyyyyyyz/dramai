@@ -133,6 +133,37 @@ const PIXEL_SIZE_PROTOCOLS: ReadonlySet<string> = new Set([
   'siliconflow-images',
 ])
 
+/**
+ * 恢复的任务：进程在“版本已保存”和“任务标成成功”之间停了的话，重启后恢复流程会让这个任务续下载（检查点里有结果地址），
+ * 处理器如果再跑一遍，就会把同一个成品下载保存成第二个版本（没有重新提交、不会再花钱，但镜头上多一个重复的版本）。
+ * 版本上记着产生它的任务（`jobId`）：恢复的任务先看目标上是不是已经有自己的版本，有就直接以它为结果收尾，不再下载。
+ * 只在恢复时检查（`ctx.resume`）；正常运行的任务一个版本都不会有。
+ */
+async function versionSavedByJob(
+  deps: PipelineDeps,
+  ctx: JobContext,
+  target: GenerationTarget,
+): Promise<MediaVersion | undefined> {
+  if (!ctx.resume) return undefined
+  const slots: MediaSlot[] = []
+  if (target.kind === 'shot_video' || target.kind === 'shot_image') {
+    const shot = await deps.store.shots.get(target.shotId)
+    if (shot) slots.push(target.kind === 'shot_video' ? shot.video : shot.image)
+  } else if (target.kind === 'asset_sheet') {
+    const asset = await deps.store.assets.get(target.assetId)
+    if (asset) {
+      slots.push(
+        asset.sheet,
+        ...asset.variants.map((v) => v.sheet),
+        ...Object.values(asset.sheetViews ?? {}),
+      )
+    }
+  }
+  for (const slot of slots)
+    for (const v of slot?.versions ?? []) if (v.jobId === ctx.job.id) return v
+  return undefined
+}
+
 function jobTarget(ctx: JobContext): GenerationTarget {
   const t = ctx.job.params.target as GenerationTarget | undefined
   if (!t || typeof t !== 'object' || !('kind' in t)) {
@@ -389,6 +420,10 @@ async function doImageJob(
   ctx: JobContext,
   target: Extract<GenerationTarget, { kind: 'asset_sheet' | 'shot_image' }>,
 ) {
+  const saved = await versionSavedByJob(deps, ctx, target)
+  if (saved) {
+    return { result: { versionId: saved.id, path: saved.file.path, alreadySaved: true } }
+  }
   const config = await providerFor(deps, ctx, 'image')
   const lookup = deps.catalog.models.lookup(config)
   const cap = lookup.capability
@@ -720,6 +755,17 @@ function pickResolution(cap: ModelCapability, requested?: string): string | unde
 }
 
 async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
+  const saved = await versionSavedByJob(deps, ctx, { kind: 'shot_video', shotId })
+  if (saved) {
+    return {
+      result: {
+        versionId: saved.id,
+        path: saved.file.path,
+        withNativeAudio: saved.withNativeAudio,
+        alreadySaved: true,
+      },
+    }
+  }
   const config = await providerFor(deps, ctx, 'video')
   const lookup = deps.catalog.models.lookup(config)
   const cap = lookup.capability
