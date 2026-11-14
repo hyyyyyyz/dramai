@@ -21,6 +21,8 @@ import type { CostEstimate, ModelRegistry } from '../providers/catalog.ts'
 import { deriveVoiceOwner } from '../domain/voice.ts'
 import { isDurationAllowed, snapDuration } from '../providers/duration.ts'
 import { providerRegionOf } from '../providers/presets.ts'
+import { defaultSpeechVoice, judgeSpeech } from '../providers/speech.ts'
+import type { SpeechCode } from '../providers/speech.ts'
 import type {
   GenerationMode,
   ProviderConfig,
@@ -76,6 +78,7 @@ export type ReasonCode =
   | 'NARRATION_NOT_TTS'
   | 'DIALOGUE_NOT_VOICED'
   | 'NARRATION_VOICE_DEFAULTED'
+  | SpeechCode
   | 'UNVERIFIED_NEEDS_CONFIRMATION'
   | 'IN_FLIGHT_CONFLICT'
   | 'RECOVER_ORIGINAL_FIRST'
@@ -331,11 +334,24 @@ export async function evaluateTarget(
           code: 'DIALOGUE_NOT_VOICED',
           message: `${provider.model} 不自带人声，这个镜头的对白在视频里不会有声音`,
         })
-      } else if (item.target.kind === 'shot_audio' && !project.narrationVoice) {
+      } else if (
+        item.target.kind === 'shot_audio' &&
+        !project.narrationVoice &&
+        defaultSpeechVoice(provider.protocol, lookup.capability) !== undefined
+      ) {
         warnings.push({
           code: 'NARRATION_VOICE_DEFAULTED',
           message: '项目还没有设置旁白音色，将使用服务商默认音色',
         })
+      }
+      // 旁白配音的输入：音色在不在这个服务商上、写法对不对、文本有没有超过单次上限——花钱之前拦下
+      if (item.target.kind === 'shot_audio' && owner === 'tts') {
+        const speech = judgeSpeech(provider, ctx.models, {
+          text: inputs.narration ?? '',
+          narrationVoice: project.narrationVoice,
+        })
+        reasons.push(...speech.problems)
+        warnings.push(...speech.warnings)
       }
       // 这个镜头不用视频模型的原生人声，但模型没办法关掉它（如可灵 4.0）：视频里会带一条原声，
       // 加入时间线时这段原声的默认音量是 0（用户可以在时间线上调高）。

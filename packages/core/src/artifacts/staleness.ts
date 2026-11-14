@@ -31,6 +31,9 @@ export interface AudioSettings {
   model?: string
   voice: string
   speed?: number
+  /** 只在设置了才出现（没设置时依据和以前逐字节相同）。 */
+  instructions?: string
+  language?: string
 }
 
 export interface ExpectationContext {
@@ -48,7 +51,15 @@ export function buildExpectations(
   const nv = projection.project.narrationVoice
   const audioSettings: AudioSettings | undefined =
     context.audio ??
-    (nv ? { provider: nv.providerConfigId, voice: nv.voice, speed: nv.speed } : undefined)
+    (nv
+      ? {
+          provider: nv.providerConfigId,
+          voice: nv.voice,
+          speed: nv.speed,
+          ...(nv.instructions ? { instructions: nv.instructions } : {}),
+          ...(nv.language ? { language: nv.language } : {}),
+        }
+      : undefined)
 
   for (const asset of projection.assets.values()) {
     const sheetKey = `asset_sheet:${asset.id}`

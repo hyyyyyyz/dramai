@@ -41,6 +41,7 @@ import { snapDuration } from '../providers/duration.ts'
 import { getMediaProtocol } from '../providers/protocols/index.ts'
 import { frameRequiredProblem } from '../providers/video-input.ts'
 import { describeVideoReferences } from '../generation/video-refs.ts'
+import { judgeSpeech } from '../providers/speech.ts'
 import { applyNativeAudioDefaultAfterSave } from './native-audio.ts'
 import type {
   BinaryImage,
@@ -963,21 +964,35 @@ async function doAudioJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   // （曾经在这里额外塞进"这次任务的服务商 + 默认音色"，而之后的判定不知道这两样，于是刚生成完就显示 basis_changed。）
   // 用户之后设置了音色，依据才出现音频设置，旁白如实判为过期。
   const expectation = buildExpectations(projection).get(inputs.key)
-  const voice = project.narrationVoice?.voice ?? 'alloy'
+  // 音色和文本长度：准入已经拦过一次，这里用同一个函数兜底（绕过预检提交、或服务商配置在中途改过也不会发出去才失败）
+  const speech = judgeSpeech(config, deps.catalog.models, {
+    text: inputs.narration ?? '',
+    narrationVoice: project.narrationVoice,
+  })
+  if (speech.problems.length > 0) {
+    throw new JobFailure({
+      category: 'invalid_input',
+      code: speech.problems[0]!.code,
+      message: speech.problems.map((p) => p.message).join('；'),
+      recoverable: false,
+    })
+  }
   const input: SpeechInput = {
     text: inputs.narration ?? '',
-    voice,
+    voice: speech.voice,
     speed: project.narrationVoice?.speed,
     format: 'mp3',
+    ...(project.narrationVoice?.instructions
+      ? { instructions: project.narrationVoice.instructions }
+      : {}),
+    ...(project.narrationVoice?.language ? { language: project.narrationVoice.language } : {}),
   }
   await ctx.setStage('submitting')
-  const res = await runProviderJob(
-    ctx,
-    getMediaProtocol(config.protocol),
-    await authFor(deps, config),
-    input,
-    deps.executor,
-  )
+  const protocol = getMediaProtocol(config.protocol)
+  const auth = await authFor(deps, config)
+  // 设了、但这个协议 / 型号不会发出（或被夹到范围内）的输入：不静默丢弃，记进任务结果
+  const ignoredInputs = protocol.ignoredInputs?.(auth, input) ?? []
+  const res = await runProviderJob(ctx, protocol, auth, input, deps.executor)
   const out = res.outputs[0]
   if (!out || out.bytes.byteLength === 0) {
     throw new JobFailure({
@@ -1026,6 +1041,7 @@ async function doAudioJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
       versionId: stored.version.id,
       path: stored.file.path,
       durationSec: facts?.durationSec,
+      ...(ignoredInputs.length > 0 ? { ignoredInputs } : {}),
       ...(adopted ? {} : { ignored: true }),
     },
   }

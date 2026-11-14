@@ -63,6 +63,10 @@ export interface NarrationVoice {
   providerConfigId: string
   voice: string
   speed?: number
+  /** 风格指令（自然语言）。支持的型号才会发（OpenAI gpt-4o-mini-tts、CosyVoice），其余丢弃并记录。没设置 = 依据和以前完全相同。 */
+  instructions?: string
+  /** 语言提示（`zh` / `en` …）。MiniMax、CosyVoice 支持，其余丢弃并记录。没设置 = 依据和以前完全相同。 */
+  language?: string
 }
 
 /**

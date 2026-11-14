@@ -57,6 +57,10 @@ const narrationVoice = z.object({
   providerConfigId: z.string(),
   voice: z.string(),
   speed: z.number().positive().optional(),
+  /** 风格指令（自然语言）。支持的型号才会发，其余丢弃并记在任务结果的 `ignoredInputs` 里。 */
+  instructions: z.string().max(1000).optional(),
+  /** 语言提示（`zh` / `en` …）。 */
+  language: z.string().max(20).optional(),
 })
 
 export const projectCreate = z.object({

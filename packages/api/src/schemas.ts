@@ -98,7 +98,13 @@ export const project = z.object({
   style: styleSnapshot,
   narrationDelivery,
   narrationVoice: z
-    .object({ providerConfigId: z.string(), voice: z.string(), speed: z.number().optional() })
+    .object({
+      providerConfigId: z.string(),
+      voice: z.string(),
+      speed: z.number().optional(),
+      instructions: z.string().optional(),
+      language: z.string().optional(),
+    })
     .optional(),
   episodeOrder: z.array(z.string()),
   counters: z.object({
