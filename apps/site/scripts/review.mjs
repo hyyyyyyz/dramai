@@ -1,4 +1,4 @@
-// Visual and layout review of the built site: node scripts/review.mjs [outDir]
+// Visual and layout review of the built site: node scripts/review.mjs [outDir] [filePrefix]
 // Opens dist/ (served under /dramai/) in Chromium in eight combinations (375 and 1280 wide, light and
 // dark, Chinese and English), saves a full-page screenshot of each, and measures what a screenshot cannot
 // prove: no horizontal scroll, headings within their line budget, no element wider than the viewport.
@@ -9,6 +9,8 @@ import { chromium } from '@playwright/test'
 import { serveDist } from './serve-dist.mjs'
 
 const outDir = path.resolve(process.argv[2] ?? 'review')
+// Optional file name prefix, e.g. `v2-`, to keep several review rounds in one folder.
+const prefix = process.argv[3] ?? ''
 mkdirSync(outDir, { recursive: true })
 
 const server = await serveDist()
@@ -67,17 +69,23 @@ for (const p of pages) {
       page.on('request', (r) => requests.push(r.url()))
       await page.goto(server.url + p.path, { waitUntil: 'load' })
       await page.evaluate(() => document.fonts.ready)
-      // Lazy images only load once near the viewport: scroll through the page so the screenshot has them.
+      // Lazy images only load once near the viewport: make every visible one eager and wait until it is decoded.
       await page.evaluate(async () => {
-        for (let y = 0; y < document.body.scrollHeight; y += 600) {
-          window.scrollTo(0, y)
-          await new Promise((r) => setTimeout(r, 60))
-        }
-        window.scrollTo(0, 0)
+        const shown = [...document.images].filter((i) => getComputedStyle(i).display !== 'none')
+        for (const img of shown) img.loading = 'eager'
+        await Promise.all(
+          shown.map(async (img) => {
+            if (!img.complete)
+              await new Promise((r) => {
+                img.addEventListener('load', r, { once: true })
+                img.addEventListener('error', r, { once: true })
+              })
+            await img.decode().catch(() => {})
+          }),
+        )
       })
-      await page.waitForLoadState('networkidle')
       const m = await page.evaluate(measure)
-      const name = `${p.lang}-${size.name}-${scheme}`
+      const name = `${prefix}${p.lang}-${size.name}-${scheme}`
       // A sticky header would be painted in the middle of a full-page capture.
       await page.addStyleTag({ content: '.top { position: static !important; }' })
       await page.screenshot({ path: path.join(outDir, `${name}.png`), fullPage: true })
@@ -110,7 +118,10 @@ for (const p of pages) {
   })
   const page = await context.newPage()
   await page.goto(server.url + p.path, { waitUntil: 'load' })
-  await page.screenshot({ path: path.join(outDir, `${p.lang}-1280-dark-nojs.png`), fullPage: true })
+  await page.screenshot({
+    path: path.join(outDir, `${prefix}${p.lang}-1280-dark-nojs.png`),
+    fullPage: true,
+  })
   const hiddenButtons = await page.locator('#theme').isVisible()
   console.log(`nojs ${p.lang}: theme button visible = ${hiddenButtons} (expected false)`)
   if (hiddenButtons) failures++
