@@ -5,7 +5,7 @@ import type { Notice } from '@/data/events'
  * A `job.notice` in the interface's language: a code this version knows has its own words; a code it doesn't shows the
  * server's message (the style follows `level`, which the caller reads). Never a key name or a blank.
  */
-export const KNOWN_NOTICE_CODES = ['native_audio_default_failed'] as const
+export const KNOWN_NOTICE_CODES = ['native_audio_default_failed', 'audio_decode_warnings'] as const
 
 export function useNoticeText() {
   const { t } = useTranslation()

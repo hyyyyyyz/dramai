@@ -71,8 +71,10 @@ export default {
       title: 'Revision history',
       author: {
         creator: 'You',
+        system: 'System',
         agent: 'Agent',
         external: 'External tool',
+        other: 'Other',
       },
       current: 'Current',
       cutFrom: 'cut rendered from this one',

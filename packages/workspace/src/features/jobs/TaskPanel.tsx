@@ -127,6 +127,11 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
             </Notice>
           )
         })}
+        {snapshot.notices.length > 0 && (
+          <p className="-mt-1 mb-3 text-xs text-subtle" data-testid="notice-transient">
+            {t('jobs.notice.transient')}
+          </p>
+        )}
         {ops.error !== undefined && (
           <Notice tone="danger" className="mb-3" role="alert">
             {errorText(ops.error)}

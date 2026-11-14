@@ -979,6 +979,34 @@ describe('job.notice: a note that is not a failure', () => {
     expect(notes[0]).not.toHaveTextContent('something_new')
   })
 
+  it('audio_decode_warnings: a narration that is saved but may be damaged, said in the interface language', async () => {
+    panel({
+      events: [
+        notice({
+          code: 'audio_decode_warnings',
+          message: '服务端的话',
+          shotId: 'shot_1',
+          jobId: 'job_a',
+        }),
+      ],
+    })
+    const n = await screen.findByTestId('job-notice')
+    expect(n).toHaveTextContent('这段配音可能不完整或有损坏')
+    expect(n).toHaveTextContent('配音已经保存，任务也成功了')
+    expect(n).toHaveTextContent('建议先试听一遍，必要时重新生成')
+    expect(n).not.toHaveTextContent('服务端的话')
+  })
+
+  it('says the notes are only shown while the app is open, and only when there are some', async () => {
+    panel({ events: [notice()] })
+    expect(await screen.findByTestId('notice-transient')).toHaveTextContent('刷新页面后不会再出现')
+  })
+  it('no notes, no such line', async () => {
+    panel({})
+    await screen.findByRole('tablist')
+    expect(screen.queryByTestId('notice-transient')).toBeNull()
+  })
+
   it('a runner error (job.worker_error) is still the red banner, and is a different thing', async () => {
     panel({ error: 'boom' })
     expect(await screen.findByText('任务执行器出错了')).toBeInTheDocument()
@@ -1005,12 +1033,14 @@ describe('job.notice: a note that is not a failure', () => {
   })
 
   it('English and Traditional Chinese', async () => {
-    for (const [locale, text] of [
-      ['en', 'The timeline’s default mute wasn’t set'],
-      ['zh-TW', '時間線的預設靜音沒有設上'],
+    for (const [locale, code, text] of [
+      ['en', 'native_audio_default_failed', 'The timeline’s default mute wasn’t set'],
+      ['zh-TW', 'native_audio_default_failed', '時間線的預設靜音沒有設上'],
+      ['en', 'audio_decode_warnings', 'This narration may be incomplete or damaged'],
+      ['zh-TW', 'audio_decode_warnings', '這段配音可能不完整或有損壞'],
     ] as const) {
       await switchLocale(locale)
-      const { unmount } = panel({ events: [notice()] })
+      const { unmount } = panel({ events: [notice({ code })] })
       expect(await screen.findByText(text)).toBeInTheDocument()
       unmount()
     }

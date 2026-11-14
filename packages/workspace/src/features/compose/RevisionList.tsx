@@ -1,9 +1,13 @@
 import { useTranslation } from 'react-i18next'
-import type { TimelineView } from '@dramai/api'
+import { REVISION_AUTHOR_KINDS_KNOWN, type TimelineView } from '@dramai/api'
 import { Button, Pill } from '@dramai/ui/v2'
 import { useFormat } from '@/i18n/format'
 import { Block } from '@/features/common/PageHead'
 import { clipName } from './timeline-model'
+
+/** The author kinds this version has a label for (the contract also lets a server send others). */
+const isKnownAuthor = (k: string): k is (typeof REVISION_AUTHOR_KINDS_KNOWN)[number] =>
+  (REVISION_AUTHOR_KINDS_KNOWN as readonly string[]).includes(k)
 
 /** 修订历史：只追加，不改写；回滚是把旧修订的内容追加成一个新修订。 */
 export function RevisionList({
@@ -52,7 +56,10 @@ export function RevisionList({
   // The author is what the revision says it is (`author.kind`), nothing inferred from the reason; the reason only
   // decides what the explanation says. An automatic change is recorded by the server with the author it chose.
   const authorOf = (r: TimelineView['revisions'][number]) =>
-    t(`compose.revisions.author.${r.author.kind}` as 'compose.revisions.author.creator')
+    isKnownAuthor(r.author.kind)
+      ? t(`compose.revisions.author.${r.author.kind}`)
+      : // a kind a newer server added: a neutral word, never the key or the raw value
+        t('compose.revisions.author.other')
   return (
     <Block title={t('compose.revisions.title')} aria-label={t('compose.revisions.title')}>
       <ul className="flex flex-col p-4">

@@ -350,6 +350,78 @@ describe('system revisions are described in the interface language', () => {
     expect(meta('外部工具写的')).toMatch(/^外部工具 /)
   })
 
+  it('every kind of author: the four known ones, and one this version has never heard of, through the contract', async () => {
+    // not forced into the component: the (fake) server answers, the client validates the response with the contract
+    // (which lets any string through as an author kind), and the list is rendered from what comes back
+    const tl = makeTimeline({ head: 6 })
+    tl.revisions = [
+      { number: 6, author: { kind: 'robot' }, summary: '新种类的作者写的', createdAt: 1 },
+      { number: 5, author: { kind: 'external' }, summary: '外部工具写的', createdAt: 1 },
+      {
+        number: 4,
+        author: { kind: 'agent' },
+        summary: '早先记成智能体的自动静音',
+        createdAt: 1,
+        reason: 'native_audio_default',
+        changedClipIds: ['clip_1'],
+      },
+      {
+        number: 3,
+        author: { kind: 'system' },
+        summary: '同步',
+        createdAt: 1,
+        reason: 'sync_shots',
+      },
+      {
+        number: 2,
+        author: { kind: 'creator' },
+        summary: '旧数据里的同步',
+        createdAt: 1,
+        reason: 'sync_shots',
+      },
+      { number: 1, author: { kind: 'system' }, summary: 'x', createdAt: 1, reason: 'initial' },
+    ] as never
+    const server = fakeServer({ 'GET /api/episodes/ep_1/timeline': () => tl })
+    const got = await server.client.call('timeline.get', { params: { episodeId: 'ep_1' } })
+    expect(got.revisions[0]!.author.kind).toBe('robot')
+    renderApp(<RevisionList view={got} onRollback={() => {}} />, { client: server.client })
+    const meta = (text: RegExp | string) =>
+      screen.getByText(text).closest('li')!.querySelector('small')!.textContent!
+    // the author is the revision's own kind; the text is the reason's
+    expect(meta('初始时间线')).toMatch(/^系统 /)
+    const syncs = screen
+      .getAllByText('同步镜头顺序')
+      .map((e) => e.closest('li')!.querySelector('small')!.textContent!)
+    expect(syncs.map((x) => x.split(' ')[0]).sort()).toEqual(['你', '系统'])
+    expect(meta(/自动设置：这些片段/)).toMatch(/^智能体 /)
+    expect(meta('外部工具写的')).toMatch(/^外部工具 /)
+    // a kind it doesn't know: a neutral word, never the raw value or a key
+    const unknown = meta('新种类的作者写的')
+    expect(unknown).toMatch(/^其他 /)
+    expect(document.body.textContent).not.toContain('robot')
+    expect(document.body.textContent).not.toContain('compose.revisions')
+  })
+
+  it('English and Traditional Chinese name the system author, and an unknown one', async () => {
+    for (const [locale, system, other] of [
+      ['en', /^System /, /^Other /],
+      ['zh-TW', /^系統 /, /^其他 /],
+    ] as const) {
+      await switchLocale(locale)
+      const tl = makeTimeline({ head: 2 })
+      tl.revisions = [
+        { number: 2, author: { kind: 'robot' }, summary: 'from robot', createdAt: 1 },
+        { number: 1, author: { kind: 'system' }, summary: 'x', createdAt: 1, reason: 'initial' },
+      ] as never
+      const { unmount } = render(tl)
+      const small = (txt: string) =>
+        screen.getByText(txt).closest('li')!.querySelector('small')!.textContent!
+      expect(small(locale === 'en' ? 'Initial timeline' : '初始時間線')).toMatch(system)
+      expect(small('from robot')).toMatch(other)
+      unmount()
+    }
+  })
+
   it('an old revision without a reason falls back to the first-revision and restoredFrom rules', () => {
     render(
       view([

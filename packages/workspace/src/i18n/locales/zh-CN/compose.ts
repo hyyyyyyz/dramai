@@ -66,7 +66,13 @@ export default {
     },
     revisions: {
       title: '修订历史',
-      author: { creator: '你', agent: '智能体', external: '外部工具' },
+      author: {
+        creator: '你',
+        system: '系统',
+        agent: '智能体',
+        external: '外部工具',
+        other: '其他',
+      },
       current: '当前',
       cutFrom: '成片按这一版渲染',
       restoredTo: '回滚到修订 {{n}}',

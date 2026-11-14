@@ -66,7 +66,13 @@ export default {
     },
     revisions: {
       title: '修訂歷史',
-      author: { creator: '你', agent: '智慧體', external: '外部工具' },
+      author: {
+        creator: '你',
+        system: '系統',
+        agent: '智慧體',
+        external: '外部工具',
+        other: '其他',
+      },
       current: '當前',
       cutFrom: '成片按這一版渲染',
       restoredTo: '回滾到修訂 {{n}}',

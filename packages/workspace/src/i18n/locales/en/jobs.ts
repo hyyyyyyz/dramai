@@ -13,6 +13,12 @@ export default {
         title: 'The timeline’s default mute wasn’t set',
         body: 'The video was generated and saved; nothing failed. Only the step that starts this new clip’s own audio muted didn’t finish, so the clip’s audio volume stays as it was: if its model has its own audio, check the clip’s audio volume on the timeline',
       },
+      audio_decode_warnings: {
+        title: 'This narration may be incomplete or damaged',
+        body: 'The narration is saved and the task succeeded, but problems turned up when decoding it, so the audio may be incomplete or damaged. Listen to it first, and regenerate it if needed',
+      },
+      transient:
+        'These notes are shown only while you have the app open; they won’t be here after a refresh',
     },
     workerErrorBody:
       'The background runner reported an error, so some jobs may not advance. Details are in the server log; restarting the service usually recovers it',
