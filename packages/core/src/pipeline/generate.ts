@@ -307,14 +307,16 @@ async function probeBytes(
 }
 
 /**
- * 配音：探测并判断服务商返回的是不是可用的音频（见 `inspectAudio`）。探测工具不可用 / 自己出了故障（`unknown`）时和以前一样：
- * 不记时长、照常保存。工具明确判定“这不是可解码的音频”才返回 `bad`——此时**在写入文件之前**就返回，所以没有任何文件落盘，也不会登记版本。
+ * 配音：探测并判断服务商返回的是不是可用的音频（两档，见 `inspectAudio`）：
+ * - `bad`：确定不是音频（打不开、没有音频流）——调用方让任务失败；**在写入文件之前**就返回，所以没有任何文件落盘，也不会登记版本；
+ * - `flawed`：是音频但有问题（读不出时长、解码有错）——照常保存，`flawed` 是给用户看的原因，调用方在保存之后发一条提醒；
+ * - 探测工具不可用 / 自己出了故障（`unknown`）：和以前一样，不记时长、照常保存、不提醒。
  */
 async function inspectAudioBytes(
   deps: PipelineDeps,
   bytes: Uint8Array,
   ext: string,
-): Promise<{ facts?: MediaFacts; bad?: string }> {
+): Promise<{ facts?: MediaFacts; bad?: string; flawed?: string }> {
   if (!deps.media) return {}
   let dir: string | undefined
   try {
@@ -332,6 +334,7 @@ async function inspectAudioBytes(
         hasAudio: r.info.hasAudio,
         fps: r.info.fps,
       },
+      ...(r.verdict === 'flawed' ? { flawed: r.reason } : {}),
     }
   } catch {
     return {}
@@ -1148,6 +1151,23 @@ async function doAudioJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   })
   if (record && adopted) {
     deps.events?.emit({ type: 'artifact.changed', projectId: record.projectId, key: record.key })
+  }
+  // 是音频但有问题（可能被截断 / 局部损坏）：已经照常保存，任务成功；另发一条提醒试听的提示（不是失败，也不是执行器出错）。
+  // 版本上没有现成的位置记这件事（MediaFacts 只有尺寸 / 时长 / 帧率），所以只发事件，不加字段。
+  if (inspected.flawed !== undefined && adopted) {
+    try {
+      deps.events?.emit({
+        type: 'job.notice',
+        level: 'warning',
+        code: 'audio_decode_warnings',
+        message: `这段配音已保存，但解码时发现问题（${inspected.flawed}），可能不完整或有损坏：建议试听，必要时重新生成`,
+        projectId: project.id,
+        jobId: ctx.job.id,
+        shotId,
+      })
+    } catch {
+      // 事件只是通知界面
+    }
   }
   return {
     result: {

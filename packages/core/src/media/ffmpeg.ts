@@ -433,10 +433,13 @@ export function parseFfmpegBanner(stderr: string): MediaInfo {
 }
 
 /**
- * 一段服务商返回的“音频”能不能当成品。三种结论，**只有第二种才是音频本身的问题**：
+ * 一段服务商返回的“音频”能不能当成品。四个结论，**只有 `not_audio` 才拒绝**：
  * - `ok`：探测工具正常运行，是可用的音频（`info` 是探测到的事实）；
- * - `not_audio`：探测工具**正常运行并明确判定**这不是可解码的音频——打不开（`Invalid data found`、`End of file`、`moov atom not found`…）、
- *   没有音频流、没有时长，或者解码时报了解码错误（被截断 / 损坏的 WAV、FLAC 等）；`reason` 是工具的原话（一行）；
+ * - `not_audio`（第一档，**确定不是音频**，几乎不可能误判）：探测工具**正常运行**，并且文件根本打不开
+ *   （`Invalid data found`、`End of file`、`moov atom not found`…），或者里面没有音频流；`reason` 是工具的原话（一行）。任务失败、不保存；
+ * - `flawed`（第二档，**是音频但有问题**，可能误判，所以只提醒不丢弃）：能打开、有音频流，但读不出时长，或者再解码一遍时报了解码错误
+ *   （被截断 / 局部损坏的 WAV、FLAC 等）。照常保存、任务成功，另发一条提醒试听的 `job.notice`；`info` 是能读到的事实
+ *   （读不出时长就没有时长，和探测工具不可用时一样）；
  * - `unknown`：探测工具不可用、起不来、崩了或输出读不懂——这是本机的问题，不是音频的问题，调用方保持原来的行为（照常保存，不记时长）。
  *
  * 已知看不出来的：被截断的 MP3 仍然是一段合法的、更短的 MP3，没有任何工具能判断它被截断了。
@@ -444,6 +447,7 @@ export function parseFfmpegBanner(stderr: string): MediaInfo {
 export type AudioInspection =
   | { verdict: 'ok'; info: MediaInfo }
   | { verdict: 'not_audio'; reason: string }
+  | { verdict: 'flawed'; info: MediaInfo; reason: string }
   | { verdict: 'unknown' }
 
 /** ffprobe / ffmpeg 对“这个文件本身读不了”的原话（不包括工具自己的问题，如找不到命令、权限）。 */
@@ -488,17 +492,19 @@ export async function inspectAudio(bins: FfmpegBinaries, file: string): Promise<
     return { verdict: 'unknown' } // 起不来 / 输出读不懂：工具的问题
   }
   if (!info.hasAudio) return { verdict: 'not_audio', reason: '文件里没有音频流' }
-  if (bins.ffprobe && !(info.durationSec !== undefined && info.durationSec > 0)) {
-    return { verdict: 'not_audio', reason: '读不出音频的时长' }
-  }
+  // 以下都是“是音频，但有问题”：不拒绝（可能误判），照常保存并提醒
+  const goodDuration = info.durationSec !== undefined && info.durationSec > 0
+  const noDuration = bins.ffprobe !== undefined && !goodDuration
+  const usable: MediaInfo = goodDuration ? info : { ...info, durationSec: undefined }
   // 解码一遍：被截断 / 损坏的数据解码时会报错（退出码仍然是 0，要看错误输出）
   try {
     const dec = await runProcess(bins.ffmpeg, ['-v', 'error', '-i', file, '-f', 'null', '-'])
     if (DECODE_ERROR.test(dec.stderr)) {
-      return { verdict: 'not_audio', reason: firstLine(dec.stderr) }
+      return { verdict: 'flawed', info: usable, reason: firstLine(dec.stderr) }
     }
   } catch {
     // 解码检查本身起不来：不影响结论
   }
+  if (noDuration) return { verdict: 'flawed', info: usable, reason: '读不出音频的时长' }
   return { verdict: 'ok', info }
 }

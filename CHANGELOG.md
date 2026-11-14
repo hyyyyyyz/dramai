@@ -65,10 +65,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- A narration whose audio the probe tool clearly cannot decode (not audio, no audio stream, no duration, decode
-  errors such as a cut-off wav) now fails with `AUDIO_UNREADABLE` instead of being saved as a finished version; a
-  retry asks for confirmation because the service may have charged. Nothing changes when the probe tool is missing
-  or broken. Videos and images are not checked.
+- A narration that is certainly not audio (the probe tool runs and cannot open the file, or finds no audio stream)
+  now fails with `AUDIO_UNREADABLE` instead of being saved as a finished version; a retry asks for confirmation
+  because the service may have charged. Audio that opens but looks damaged (no readable duration, decode errors such
+  as a cut-off wav) is still saved and the job succeeds, with a `job.notice` warning (`audio_decode_warnings`)
+  asking you to listen to it. Nothing changes when the probe tool is missing or broken. Videos and images are not
+  checked.
 
 - After a restart that interrupted a finished job just before it was marked succeeded, the shot no longer gets a
   second copy of the same version (this happened in 0.5.0-beta.1 as well). It covers every task that resumes a
