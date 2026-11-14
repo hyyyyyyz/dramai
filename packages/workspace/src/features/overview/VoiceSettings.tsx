@@ -30,7 +30,7 @@ export function VoiceSettings({
   draft: VoiceDraft
   onChange: (d: VoiceDraft) => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const settings = useSettings()
   const providers = useProviders()
   const provider = providers.data?.items.find((p) => p.id === settings.data?.activeProviders.tts)
@@ -121,6 +121,7 @@ export function VoiceSettings({
             >
               <Input
                 mono
+                autoFocus={draft.voice === OTHER}
                 value={draft.voice === OTHER ? '' : draft.voice}
                 onChange={(e) => onChange({ ...draft, voice: e.target.value })}
               />
@@ -150,8 +151,9 @@ export function VoiceSettings({
         </Field>
       )}
 
-      {kind !== 'none' && note && <Hint>{note}</Hint>}
-      {kind !== 'none' && !note && <Hint>{t('narrationVoice.documented')}</Hint>}
+      {kind !== 'none' && <Hint>{t('narrationVoice.documented')}</Hint>}
+      {/* the server's note is in Chinese only, so it is shown only to a Chinese interface, as a supplement */}
+      {kind !== 'none' && note && i18n.language.startsWith('zh') && <Hint>{note}</Hint>}
 
       {draft.voice === '' && fallback && (
         <Hint>{t('narrationVoice.defaultIs', { voice: fallback })}</Hint>

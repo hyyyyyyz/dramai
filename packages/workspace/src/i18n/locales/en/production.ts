@@ -94,7 +94,11 @@ export default {
       'An optional input is missing (for example a costume has no sheet), so only its text description is used',
     REFS_TRIMMED:
       'There are more reference images than the model allows; the extra ones won’t be sent',
-    how: { characters: ' characters', cjk_double: ' characters (a Chinese character counts as 2)' },
+    how: {
+      characters: ' characters',
+      cjk_double: ' characters (a Chinese character counts as 2)',
+      unknown: ' (as the server counted)',
+    },
     warn: {
       VOICE_NOT_AVAILABLE:
         'The voice chosen in the project may not be in the current speech model’s list, so generation may fail (we have no official basis for this provider or model, so it isn’t blocked). You can choose another in the project settings',
@@ -288,7 +292,7 @@ export default {
       goAsset: 'Add a sheet for “{{name}}”',
       goCandidates: 'Review candidates',
       goProviders: 'Set up providers',
-      goVoice: 'Choose the voice',
+      goVoice: 'Open the project settings',
       action: {
         prompts: 'Fill in shot prompts',
         generateImage: 'Generate image',

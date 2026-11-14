@@ -259,6 +259,10 @@ export default {
       title: 'The provider says there is no such voice',
       body: 'Choose a voice again in the project settings. If it is your own cloned voice, check that it belongs to this provider’s account and hasn’t expired',
     },
+    AUDIO_UNREADABLE: {
+      title: 'The audio the provider returned can’t be opened',
+      body: 'The provider has already processed the request and may have charged for it; what came back is not audio that can be opened, so it was not saved. Regenerating asks again and may be charged again, so be sure before you retry',
+    },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: 'The base URL isn’t allowed, so no sign-in token was sent',
       body: 'The base URL for account sign-in is fixed. Delete this provider in Settings and add it again from the preset',

@@ -149,6 +149,7 @@ export const PROVIDER_ERROR_CODES = [
   'FIRST_FRAME_REQUIRED',
   // speech providers
   'VOICE_MISSING',
+  'AUDIO_UNREADABLE',
 ] as const
 export type ProviderErrorCode = (typeof PROVIDER_ERROR_CODES)[number]
 
@@ -261,6 +262,7 @@ export const PROVIDER_ERROR_ACTION: Record<ProviderErrorCode, 'manage' | 'settin
   TASK_UNKNOWN: undefined,
   FIRST_FRAME_REQUIRED: undefined,
   VOICE_MISSING: undefined,
+  AUDIO_UNREADABLE: undefined,
 }
 
 /**

@@ -684,7 +684,7 @@ describe('the confirm dialog for narration', () => {
     })
     expect(await screen.findByText(/是另一家语音服务商的，当前的服务商用不了/)).toBeInTheDocument()
     expect(screen.getByText(/没有项目里选的这个音色（它的音色是封闭清单/)).toBeInTheDocument()
-    const links = screen.getAllByRole('link', { name: '去选音色' })
+    const links = screen.getAllByRole('link', { name: '去项目设置' })
     expect(links).toHaveLength(2)
     expect(links[0]).toHaveAttribute('href', '/projects/proj_1?voice=1')
   })
@@ -755,7 +755,9 @@ describe('the confirm dialog for narration', () => {
         ],
       },
     })
-    expect(await screen.findByText(/这段旁白有 12，当前的语音型号单次最多 10/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/这段旁白有 12 个，当前的语音型号单次最多 10/),
+    ).toBeInTheDocument()
   })
 
   it('the five speech codes as warnings say it may fail, are shown next to the shot, and do not stop the batch', async () => {
@@ -788,7 +790,7 @@ describe('the confirm dialog for narration', () => {
     expect(text).not.toContain('不能生成')
     expect(text).not.toContain('当前的服务商用不了')
     // the voice ones link to where the voice is chosen
-    expect(within(list).getAllByRole('link', { name: '去选音色' }).length).toBeGreaterThan(0)
+    expect(within(list).getAllByRole('link', { name: '去项目设置' }).length).toBeGreaterThan(0)
     // not in the general warnings list as well, and the batch can go ahead
     expect(screen.queryByText('不会拦下，但值得知道')).toBeNull()
     expect(screen.getByText('可运行')).toBeInTheDocument()
@@ -877,6 +879,21 @@ describe('task details', () => {
     const line = screen.getByTestId('ignored-inputs')
     expect(line).toHaveTextContent('风格指令（这个型号不支持，没有使用）')
     expect(line).toHaveTextContent('语速（超出服务商的范围，已调整到范围内）')
+  })
+  it('AUDIO_UNREADABLE is explained and says it may have been charged', () => {
+    item(
+      failedJob('submission_unknown', {
+        error: {
+          category: 'submission_unknown',
+          code: 'AUDIO_UNREADABLE',
+          message: '原文',
+          recoverable: false,
+        },
+      }),
+    )
+    expect(screen.getByTestId('provider-error')).toHaveTextContent('服务商返回的音频打不开')
+    expect(screen.getByTestId('provider-error')).toHaveTextContent('可能已经计费')
+    expect(screen.queryByTestId('raw-error')).toBeNull()
   })
   it('a speech that was clamped into the provider’s range says the speed was adjusted', () => {
     item(makeJob({ status: 'succeeded', result: { ignoredInputs: ['speed'] } }))

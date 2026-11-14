@@ -76,7 +76,7 @@ export default {
     DURATION_SNAPPED: '鏡頭時長不在模型支援的檔位上，會按最接近的檔位生成',
     OPTIONAL_INPUT_OMITTED: '有一個可選的輸入缺失（比如服裝沒有設定圖），只會用它的文字描述',
     REFS_TRIMMED: '參考圖超過了模型的上限，多出的幾張不會帶上',
-    how: { characters: ' 個字元', cjk_double: ' 個字元（漢字算 2 個）' },
+    how: { characters: ' 個字元', cjk_double: ' 個字元（漢字算 2 個）', unknown: ' 個' },
     warn: {
       VOICE_NOT_AVAILABLE:
         '專案裡選的音色可能不在當前語音型號的清單裡，生成可能會失敗（這個服務商或型號我們沒有官方依據，所以不攔下）。可以去專案設定裡換一個',
@@ -108,7 +108,7 @@ export default {
     TEXT_TOO_LONG_PLAIN:
       '這段旁白超過了當前語音型號的單次上限。把這個鏡頭的旁白縮短、拆成兩個鏡頭，或者換一個單次上限更高的語音服務商',
     VOICE_UNLISTED:
-      '專案裡的音色不在常用清單裡。如果是你自己的克隆或自定義音色就沒問題；不存在的話服務商會拒絕，不收費',
+      '專案裡的音色不在常用清單裡。如果是你自己的複製或自定義音色就沒問題；不存在的話服務商會拒絕，不收費',
     REFERENCE_NOT_SUPPORTED_VIDEO:
       '當前影片模型不支援參考圖，不能開啟“用角色設定圖作參考”。關掉這個開關改用首幀，或者換一個支援參考圖的影片模型',
     FRAME_WITH_REFS_UNSUPPORTED:
@@ -250,7 +250,7 @@ export default {
       goAsset: '去補「{{name}}」的設定圖',
       goCandidates: '去確認候選',
       goProviders: '去設定服務商',
-      goVoice: '去選音色',
+      goVoice: '去專案設定',
       action: {
         prompts: '補全鏡頭提示詞',
         generateImage: '生成圖片',

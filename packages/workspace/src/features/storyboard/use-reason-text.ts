@@ -31,7 +31,7 @@ export function useReasonText(assets: ReadonlyMap<string, Asset>, opts?: { video
             how:
               d.counting === 'characters' || d.counting === 'cjk_double'
                 ? t(`reasons.how.${d.counting}` as 'reasons.how.characters')
-                : '',
+                : t('reasons.how.unknown'),
           })
         : t(`${kind}${r.code}_PLAIN` as 'reasons.TEXT_TOO_LONG_PLAIN')
     }

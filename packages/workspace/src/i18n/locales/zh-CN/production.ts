@@ -76,7 +76,7 @@ export default {
     DURATION_SNAPPED: '镜头时长不在模型支持的档位上，会按最接近的档位生成',
     OPTIONAL_INPUT_OMITTED: '有一个可选的输入缺失（比如服装没有设定图），只会用它的文字描述',
     REFS_TRIMMED: '参考图超过了模型的上限，多出的几张不会带上',
-    how: { characters: ' 个字符', cjk_double: ' 个字符（汉字算 2 个）' },
+    how: { characters: ' 个字符', cjk_double: ' 个字符（汉字算 2 个）', unknown: ' 个' },
     warn: {
       VOICE_NOT_AVAILABLE:
         '项目里选的音色可能不在当前语音型号的清单里，生成可能会失败（这个服务商或型号我们没有官方依据，所以不拦下）。可以去项目设置里换一个',
@@ -250,7 +250,7 @@ export default {
       goAsset: '去补「{{name}}」的设定图',
       goCandidates: '去确认候选',
       goProviders: '去设置服务商',
-      goVoice: '去选音色',
+      goVoice: '去项目设置',
       action: {
         prompts: '补全镜头提示词',
         generateImage: '生成图片',
