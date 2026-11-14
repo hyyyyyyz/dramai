@@ -79,7 +79,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   now fails with `AUDIO_UNREADABLE` instead of being saved as a finished version; a retry asks for confirmation
   because the service may have charged. Audio that opens but looks damaged (no readable duration, decode errors such
   as a cut-off wav) is still saved and the job succeeds, with a `job.notice` warning (`audio_decode_warnings`)
-  asking you to listen to it. Nothing changes when the probe tool is missing or broken. Videos and images are not
+  asking you to listen to it. Whether damage is noticed depends on the local ffmpeg and on the file (for example a
+  cut-off MP3 is a valid shorter MP3 and is never noticed); the audio is saved either way. Nothing changes when the
+  probe tool is missing or broken. Videos and images are not
   checked.
 
 - After a restart that interrupted a finished job just before it was marked succeeded, the shot no longer gets a

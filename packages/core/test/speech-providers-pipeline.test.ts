@@ -1,4 +1,5 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { writeFileSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -27,6 +28,8 @@ let env: PipelineEnv
 let narr: Shot[]
 let wavBytes: Uint8Array
 let flacBytes: Uint8Array
+/** A cut of the flac that THIS machine's ffmpeg reports decode errors for (undefined if no cut position does). */
+let flacDamaged: Uint8Array | undefined
 let aacBytes: Uint8Array
 const calls: Array<{
   method: string
@@ -81,6 +84,7 @@ beforeAll(async () => {
       join(dir, 'a.flac'),
     ])
     flacBytes = new Uint8Array(await readFile(join(dir, 'a.flac')))
+    flacDamaged = findDamagedCut(media.bins.ffmpeg, flacBytes, dir)
     // a very short, valid bare ADTS AAC (the reviewer's sample): ffprobe cannot open it when the file is named .mp3
     execFileSync(media.bins.ffmpeg, [
       '-v',
@@ -136,7 +140,10 @@ beforeAll(async () => {
           return okBody(hexOf(wavBytes.slice(0, Math.floor(wavBytes.length / 2) | 1)))
         // a flac cut in the middle of a frame: it opens and has an audio stream, the decoder reports errors
         if (mode.minimax === 'flac-cut')
-          return okBody(hexOf(flacBytes.slice(0, Math.floor(flacBytes.length / 2))), 'flac')
+          return okBody(
+            hexOf(flacDamaged ?? flacBytes.slice(0, Math.floor(flacBytes.length / 2))),
+            'flac',
+          )
         // the response says nothing we know about the format (default type audio/mpeg -> a ".mp3" guess for the probe file)
         if (mode.minimax === 'adts-aac') return okBody(hexOf(aacBytes), 'aac')
         if (mode.minimax === 'bad-hex')
@@ -174,6 +181,28 @@ beforeAll(async () => {
     (s) => s.narration && !s.dialogue.some((d) => d.text.trim()),
   )
 }, 240_000)
+
+/**
+ * Where a flac is cut decides whether the cut falls inside a frame (the decoder reports errors) or between frames (a
+ * valid shorter file, no error), and the frames depend on the encoder - the flac made by ffmpeg 8.0.1 cut at half is
+ * clean, the one made by 9.0.2 is not (the decoders of both versions behave the same on the same bytes). So the damaged
+ * file is not "cut at half": it is the first cut, searched from the middle on, for which the ffmpeg of this run reports
+ * decode errors (the same sentences the product looks for).
+ */
+function findDamagedCut(ffmpeg: string, flac: Uint8Array, dir: string): Uint8Array | undefined {
+  const file = join(dir, 'cut.flac')
+  const complained =
+    /Decoding error|Error while decoding|decode_frame\(\) failed|Invalid PCM packet/i
+  for (let pct = 50; pct < 98; pct++) {
+    const cut = flac.slice(0, Math.floor((flac.length * pct) / 100))
+    writeFileSync(file, cut)
+    const res = spawnSync(ffmpeg, ['-v', 'error', '-i', file, '-f', 'null', '-'], {
+      encoding: 'utf8',
+    })
+    if (complained.test(res.stderr ?? '')) return cut
+  }
+  return undefined
+}
 
 const real = (name: string, fn: () => Promise<void>) =>
   it(name, async (ctx) => (media ? fn() : ctx.skip()), 120_000)
@@ -628,17 +657,27 @@ describe('exec 32: audio the probe tool clearly cannot decode is not a product',
   ]
   for (const [name, modeName] of flawedCases) {
     real(
-      `${name}: the job succeeds, the version is saved, and a warning notice with a stable code is sent`,
+      `${name}: the job succeeds and the version is saved; the warning notice is sent whenever this machine's ffmpeg can see the damage`,
       async () => {
         const shot = narr[2] ?? narr[0]!
         const events = env.ports.events
         const noticesBefore = events.ofType('job.notice').length
         const errorsBefore = events.ofType('job.worker_error').length
         const { job, before, after, version } = await run(modeName, shot)
+        // whatever the tool version: the paid audio is kept and the job succeeds
         expect(job.status, JSON.stringify(job.error)).toBe('succeeded')
         expect(after).toBe(before + 1) // the version exists
         expect(version).toBeDefined()
+        expect(job.error).toBeUndefined()
+        expect(events.ofType('job.worker_error').length).toBe(errorsBefore) // never an executor error
         const notices = events.ofType('job.notice').slice(noticesBefore)
+        // can this machine's ffmpeg see the damage in the file that was returned? (by construction yes for the wav; for the
+        // flac only if a damaged cut was found - see findDamagedCut)
+        const detectable = modeName !== 'flac-cut' || flacDamaged !== undefined
+        if (!detectable) {
+          expect(notices).toEqual([]) // an undetectable damage is not announced - and nothing else changes
+          return
+        }
         expect(notices).toHaveLength(1)
         expect(notices[0]).toMatchObject({
           level: 'warning',
@@ -648,7 +687,6 @@ describe('exec 32: audio the probe tool clearly cannot decode is not a product',
           shotId: shot.id,
         })
         expect(notices[0]!.message).toContain('试听')
-        expect(events.ofType('job.worker_error').length).toBe(errorsBefore) // never an executor error
         expect(version!.facts?.durationSec).toBeGreaterThan(0) // the duration that could be read is kept
       },
     )
