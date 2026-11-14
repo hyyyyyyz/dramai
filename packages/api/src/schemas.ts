@@ -879,7 +879,10 @@ export const modelCapability = z.object({
   firstFrameWithRefs: support.optional(),
   audioToggle: support.optional(),
   refVideoMaxTotalSec: z.number().optional(),
-  /** 语音：预置音色清单（`supported` = 封闭清单，`unverified` = 只列了一部分，可以手填别的）。 */
+  /**
+   * 语音：预置音色清单。**这里的 `support` 不是“实测支持”的三态，而是清单的完整程度**：`supported` = 封闭清单（官方写明就这些），
+   * `unverified` = 开放清单（只列了一部分，可以手填别的），`unsupported` = 没有系统音色。
+   */
   voices: claim(
     z.array(
       z.object({ id: z.string(), label: z.string().optional(), lang: z.string().optional() }),

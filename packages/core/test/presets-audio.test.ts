@@ -94,6 +94,21 @@ describe('speech presets (P3d first batch): documented, not tested', () => {
     expect(limit('dashscope-cosyvoice', 'cosyvoice-v3-flash')).toBeUndefined()
   })
 
+  it('the MiniMax limit 9999 says in every language that how it is counted is not verified (billing counts a Chinese character as 2)', () => {
+    for (const m of audioModels.filter((x) => x.protocol === 'minimax-t2a'))
+      expect(m.quirks.join(' '), m.id).toMatch(/没有写这个上限按什么计数/)
+    for (const id of ['minimax-tts-cn']) {
+      const p = PROVIDER_PRESETS.find((x) => x.id === id)!
+      expect(p.knownLimitations.join(' ')).toContain('官方没有写这个上限按什么计数')
+      expect(localizeProviderPreset(p, 'zh-Hant').knownLimitations.join(' ')).toContain(
+        '官方沒有寫這個上限按什麼計數',
+      )
+      expect(localizeProviderPreset(p, 'en').knownLimitations.join(' ')).toContain(
+        'do not say how this limit is counted',
+      )
+    }
+  })
+
   it('voice lists: OpenAI is a closed list of 13; the others are open; v3.5 has no system voices', () => {
     const v = (protocol: 'openai-tts' | 'minimax-t2a' | 'dashscope-cosyvoice', model: string) =>
       catalog.models.lookup({ protocol, model }).capability

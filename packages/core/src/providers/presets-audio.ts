@@ -147,7 +147,7 @@ export const AUDIO_PRESETS: readonly ProviderPreset[] = [
       notes:
         'MiniMax 同步语音合成（t2a_v2）。默认型号 speech-2.8-hd；speech-2.8-turbo 更便宜。音色填 voice_id（系统音色约 300 个，如 Chinese (Mandarin)_News_Anchor），克隆音色也直接填 voice_id。',
       limits: [
-        '单次文本须小于 10000 字符，超过的旁白会在生成前被拦下；语速 0.5–2。',
+        '单次文本须小于 10000 字符，超过的旁白会在生成前被拦下（官方没有写这个上限按什么计数，计费是 1 个汉字算 2 个字符；这里按字符数、一个汉字算 1 个，可能比实际上限宽）；语速 0.5–2。',
         '官方：HTTP 200 的响应也可能是失败（看 base_resp.status_code）；音频是十六进制字符串，这里解码成字节后保存。',
         '价格：2.8 HD 3.50 元 / 万字符、2.8 Turbo 2.00 元 / 万字符；官方：1 个汉字计 2 个字符，所以估价是区间，纯中文旁白看上限。',
         '风格指令没有对应字段（情绪只有固定枚举，这一版不发）；克隆音色 7 天内没被使用会被官方删除。',
@@ -159,7 +159,7 @@ export const AUDIO_PRESETS: readonly ProviderPreset[] = [
       notes:
         'MiniMax 同步語音合成（t2a_v2）。預設型號 speech-2.8-hd；speech-2.8-turbo 更便宜。音色填 voice_id（系統音色約 300 個，如 Chinese (Mandarin)_News_Anchor），複製音色也直接填 voice_id。',
       limits: [
-        '單次文字須小於 10000 字元，超過的旁白會在產生前被擋下；語速 0.5–2。',
+        '單次文字須小於 10000 字元，超過的旁白會在產生前被擋下（官方沒有寫這個上限按什麼計數，計費是 1 個漢字算 2 個字元；這裡按字元數、一個漢字算 1 個，可能比實際上限寬）；語速 0.5–2。',
         '官方：HTTP 200 的回應也可能是失敗（看 base_resp.status_code）；音訊是十六進位字串，這裡解碼成位元組後儲存。',
         '價格：2.8 HD 3.50 元 / 萬字元、2.8 Turbo 2.00 元 / 萬字元；官方：1 個漢字計 2 個字元，所以估價是區間，純中文旁白看上限。',
         '風格指令沒有對應欄位（情緒只有固定列舉，這一版不發）；複製音色 7 天內沒被使用會被官方刪除。',
@@ -171,7 +171,7 @@ export const AUDIO_PRESETS: readonly ProviderPreset[] = [
       notes:
         'MiniMax synchronous speech (t2a_v2). The default model is speech-2.8-hd; speech-2.8-turbo is cheaper. A voice is a voice_id (about 300 system voices, e.g. Chinese (Mandarin)_News_Anchor); cloned voices are typed in as voice_id too.',
       limits: [
-        'Text must be under 10000 characters per request; a longer narration is stopped before generation. Speed 0.5-2.',
+        'Text must be under 10000 characters per request; a longer narration is stopped before generation (the docs do not say how this limit is counted, and billing counts a Chinese character as 2; here it is counted in characters, one per Chinese character, so it may be looser than the real limit). Speed 0.5-2.',
         'Official: an HTTP 200 response can still be a failure (see base_resp.status_code); the audio is a hex string, decoded to bytes before saving.',
         'Prices: 2.8 HD 3.50 CNY / 10k characters, 2.8 Turbo 2.00 CNY / 10k; officially one Chinese character counts as 2, so the estimate is a range - for pure Chinese narration read the upper end.',
         'There is no field for a style instruction (emotion is a fixed list, not sent in this version); the official service deletes a cloned voice that is not used for 7 days.',

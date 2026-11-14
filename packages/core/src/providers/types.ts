@@ -423,8 +423,10 @@ export interface ModelCapability {
   /** 参考视频的总时长上限（秒），与 `refAudioMaxTotalSec` 对称。 */
   refVideoMaxTotalSec?: number
   /**
-   * 语音：预置音色清单。`support: 'supported'` = **封闭清单**，官方写明就这些；`unverified` = **开放清单**，
-   * 只列了一部分（还有克隆 / 自定义音色等），手填其他的也可以。`maxPromptChars` 对语音型号表示单次输入的字符数上限。
+   * 语音：预置音色清单。**这里的 `support` 不是别的能力字段那种“实测支持 / 不支持 / 未验证”的三态**，含义是清单的完整程度：
+   * `supported` = **封闭清单**，官方写明就这些（不是“实测支持”）；`unverified` = **开放清单**，只列了一部分
+   * （还有克隆 / 自定义音色等），手填其他的也可以；`unsupported` = 没有系统音色（只能用克隆 / 设计音色）。
+   * `maxPromptChars` 对语音型号表示单次输入的字符数上限（官方写的上限，计数方式未必核实过，见各画像的说明）。
    */
   voices?: Claim<VoiceEntry[]>
   /** 语音：项目没设置旁白音色时用的默认音色；没写 = 这个型号没有可靠的默认值，必须先设置音色。 */
