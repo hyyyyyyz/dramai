@@ -1,5 +1,5 @@
 import { asRecord, joinUrl, jsonHeaders, jsonPost, str } from '../http.ts'
-import type { MediaProtocol, RawResponse, SpeechInput } from '../types.ts'
+import type { MediaProtocol, RawResponse, SpeechInput, SpeechInputSupport } from '../types.ts'
 import { capabilityError } from './content-array.ts'
 
 /**
@@ -170,9 +170,16 @@ function mimeOfFormat(format: unknown): string {
   }
 }
 
+/** 这个协议会发哪些可选输入：没有风格指令的对应字段；语言提示映射到 `language_boost`（只映射官方页面读到的几个写法）。 */
+const INPUTS: SpeechInputSupport = {
+  instructions: { supported: false },
+  language: { supported: true },
+}
+
 export const minimaxT2a: MediaProtocol<SpeechInput> = {
   id: 'minimax-t2a',
   media: 'audio',
+  speechInputs: () => INPUTS,
 
   buildGenerateRequest(auth, input) {
     if (!input.voice) {
@@ -250,7 +257,7 @@ export const minimaxT2a: MediaProtocol<SpeechInput> = {
 
   ignoredInputs(_auth, input) {
     const out: string[] = []
-    if (input.instructions) out.push('instructions')
+    if (input.instructions && !INPUTS.instructions.supported) out.push('instructions')
     if (input.language && !LANGUAGE_BOOST[input.language.toLowerCase()]) out.push('language')
     if (input.speed && (input.speed < SPEED.min || input.speed > SPEED.max)) out.push('speed')
     return out

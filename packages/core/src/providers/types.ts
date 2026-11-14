@@ -246,7 +246,34 @@ export interface MediaProtocol<Input> {
    * 这个输入这个协议 / 型号肯定发不出去（写法不对、超出协议自己的限制）时的原因，纯函数。准入据此在花钱之前拦下，
    * 任务入口用同一个函数兜底。不实现 = 没有协议级的输入限制。
    */
-  inputProblem?(auth: AuthContext, input: Input): { code: string; message: string } | undefined
+  inputProblem?(auth: AuthContext, input: Input): SpeechInputProblem | undefined
+  /**
+   * 语音协议：这个协议 / 型号会真正发出哪些可选输入，以及它们的官方上限。**协议自己说明**，
+   * 请求构造器、`ignoredInputs`、`inputProblem` 和给界面的 `providers.capability` 都读这一份，不另有手写的表。
+   * 不看画像，只看协议和型号名：没有画像的自填型号也按同样的规则回答（例如 OpenAI 协议下型号名以 `gpt-4o-mini-tts` 开头才支持风格指令）。
+   */
+  speechInputs?(auth: Pick<AuthContext, 'baseUrl' | 'model'>): SpeechInputSupport
+}
+
+/** 长度怎么数：`characters` = 按字符（码点）；`cjk_double` = 汉字（含全角字符）算 2 个，其余算 1 个（阿里 CosyVoice 的规则）。 */
+export type CountingMode = 'characters' | 'cjk_double'
+
+/** 带数字的原因：上限、实际值、计数方式——界面不必自己数，也不必抄上限。 */
+export interface LimitDetails {
+  limit: number
+  actual: number
+  counting: CountingMode
+}
+
+export interface SpeechInputProblem {
+  code: string
+  message: string
+  details?: LimitDetails
+}
+
+export interface SpeechInputSupport {
+  instructions: { supported: boolean; maxLength?: number; counting?: CountingMode }
+  language: { supported: boolean }
 }
 
 export interface ImageGenInput {

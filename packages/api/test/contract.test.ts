@@ -252,3 +252,27 @@ describe('protected request headers', () => {
     expect(new Set(PROTECTED_REQUEST_HEADERS).size).toBe(PROTECTED_REQUEST_HEADERS.length)
   })
 })
+
+describe('timeline revision reason: a client built before a new value existed still reads the revision', () => {
+  it('accepts the known values and any other string; the known list is exported', async () => {
+    const { timelineRevision, timelineRevisionReason, TIMELINE_REVISION_REASONS_KNOWN } =
+      await import('../src/index.ts')
+    const base = {
+      number: 2,
+      author: { kind: 'agent' },
+      summary: 'x',
+      createdAt: 1,
+      content: { clips: [], bgm: [] },
+    }
+    for (const reason of [...TIMELINE_REVISION_REASONS_KNOWN, 'some_future_reason'])
+      expect(timelineRevision.safeParse({ ...base, reason }).success, reason).toBe(true)
+    expect(timelineRevision.safeParse(base).success).toBe(true) // old revisions have none
+    expect(timelineRevisionReason.safeParse(5).success).toBe(false) // still a string
+    expect(TIMELINE_REVISION_REASONS_KNOWN).toEqual([
+      'native_audio_default',
+      'initial',
+      'sync_shots',
+      'rollback',
+    ])
+  })
+})

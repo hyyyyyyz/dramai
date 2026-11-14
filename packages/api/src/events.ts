@@ -34,7 +34,23 @@ export const serverEvent = z.discriminatedUnion('type', [
     progress: z.number(),
     message: z.string().optional(),
   }),
+  /** 执行器自己出了错（和某个任务的结果无关）：显示成“后台出错”。 */
   z.object({ type: z.literal('job.worker_error'), message: z.string() }),
+  /**
+   * **提示，不是失败**：任务本身的结果是对的（例如视频已经保存），只是某个附带步骤没有完成。
+   * 目前只有一个码：`native_audio_default_failed`（视频已保存，自动静音没有完成，那个片段的音量保持原样，可以在时间线上自己调）。
+   * `level` 目前都是 `warning`；`code` 稳定，`message` 是给人看的中文（可以按 `code` 本地化）。
+   * 不认识这个事件类型的旧版客户端会直接忽略它（客户端校验失败的事件会被丢弃）。
+   */
+  z.object({
+    type: z.literal('job.notice'),
+    level: z.enum(['info', 'warning']),
+    code: z.string(),
+    message: z.string(),
+    projectId: z.string(),
+    jobId: z.string().optional(),
+    shotId: z.string().optional(),
+  }),
   /** 文本步骤（分集、分镜拆解、实体抽取、镜头提示词）里 LLM 的流式输出。 */
   z.object({
     type: z.literal('text.delta'),
@@ -65,6 +81,7 @@ export const SERVER_EVENT_TYPES: readonly ServerEventType[] = [
   'job.updated',
   'job.progress',
   'job.worker_error',
+  'job.notice',
   'text.delta',
   'data.changed',
   'artifact.changed',

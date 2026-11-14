@@ -610,6 +610,18 @@ const timelineBgm = z.object({
 export const timelineContent = z.object({ clips: z.array(timelineClip), bgm: z.array(timelineBgm) })
 export type TimelineContent = z.infer<typeof timelineContent>
 
+/**
+ * 系统追加的时间线修订的原因码：已知值，**或任意字符串**——以后服务端再加新的原因码时，旧版客户端校验响应不会整体失败，
+ * 遇到不认识的值就退回显示修订的 `summary`。
+ */
+export const TIMELINE_REVISION_REASONS_KNOWN = [
+  'native_audio_default',
+  'initial',
+  'sync_shots',
+  'rollback',
+] as const
+export const timelineRevisionReason = z.union([z.enum(TIMELINE_REVISION_REASONS_KNOWN), z.string()])
+
 export const timelineRevision = z.object({
   number: z.number(),
   parent: z.number().optional(),
@@ -631,7 +643,7 @@ export const timelineRevision = z.object({
    * - `rollback`：回滚到旧修订（`restoredFrom` 是旧修订号）。
    * 用户自己的修改没有这个字段；这个字段加上之前创建的修订也没有，读取和显示照常。遇到不认识的值，退回显示 `summary`。
    */
-  reason: z.enum(['native_audio_default', 'initial', 'sync_shots', 'rollback']).optional(),
+  reason: timelineRevisionReason.optional(),
 })
 
 export const timelineIssue = z.object({
@@ -915,10 +927,26 @@ export type ProviderConfigDto = z.infer<typeof providerConfig>
 /** `GET /providers/:id/models`：这个服务商当前能用的模型。 */
 export const providerModel = z.object({ id: z.string(), label: z.string() })
 
+/**
+ * 语音服务商会发哪些可选输入（风格指令、语言提示）和官方上限。**和协议实际发送的是同一个来源**（协议自己说明），
+ * 不看画像：没有画像的自填型号按协议和型号名回答（例如 OpenAI 协议下型号名以 `gpt-4o-mini-tts` 开头才支持风格指令）。
+ * 上限的计数方式见 `reasonDetails`。
+ */
+export const speechInputSupport = z.object({
+  instructions: z.object({
+    supported: z.boolean(),
+    maxLength: z.number().optional(),
+    counting: z.string().optional(),
+  }),
+  language: z.object({ supported: z.boolean() }),
+})
+
 export const providerCapabilityView = z.object({
   /** 模型画像是否存在；false = 用户自填型号，能力是保守默认。 */
   declared: z.boolean(),
   capability: modelCapability,
+  /** 只有语音服务商有。 */
+  speechInputs: speechInputSupport.optional(),
   pricing: z.array(priceEntry),
   quirks: z.array(z.string()),
   provenance: z.string().optional(),
@@ -1078,10 +1106,22 @@ export const generateItem = z.object({
 })
 export type GenerateItem = z.infer<typeof generateItem>
 
+/**
+ * 带数字的原因的结构化数字：`TEXT_TOO_LONG`（旁白字数 / 单次输入上限）、`INSTRUCTION_TOO_LONG`（风格指令）。
+ * `counting` 说明怎么数的：`characters` = 按字符（码点）；`cjk_double` = 汉字（含全角字符）算 2 个、其余算 1 个。
+ * 以后可能出现新的计数方式，所以是字符串，遇到不认识的值就只显示数字。
+ */
+export const reasonDetails = z.object({
+  limit: z.number(),
+  actual: z.number(),
+  counting: z.string(),
+})
 export const reason = z.object({
   code: z.string(),
   message: z.string(),
   assetId: z.string().optional(),
+  /** 超长类原因（阻断和警告里都一样）带结构化的数字，界面不必从 `message` 里读，也不必抄上限。 */
+  details: reasonDetails.optional(),
 })
 export const costEstimate = z.discriminatedUnion('priced', [
   z.object({

@@ -2,7 +2,15 @@ import type { NarrationVoice } from '../domain/project.ts'
 import type { ModelRegistry } from './catalog.ts'
 import { isOfficialSpeechAddress } from './official-hosts.ts'
 import { getMediaProtocol } from './protocols/index.ts'
-import type { ModelCapability, ProtocolId, ProviderConfig, SpeechInput } from './types.ts'
+import { countText } from './text-count.ts'
+import type {
+  LimitDetails,
+  ModelCapability,
+  ProtocolId,
+  ProviderConfig,
+  SpeechInput,
+  SpeechInputSupport,
+} from './types.ts'
 
 /**
  * 旁白配音的输入判断，**只有这一份**：准入（花钱之前）和旁白任务（发请求之前，兜底）用同一个函数。
@@ -35,6 +43,8 @@ export type SpeechCode =
 export interface SpeechProblem {
   code: SpeechCode
   message: string
+  /** 超长类原因带结构化的数字：上限、实际值、计数方式。 */
+  details?: LimitDetails
 }
 
 export interface SpeechJudgement {
@@ -122,11 +132,12 @@ export function judgeSpeech(
   if (protocolProblem) find(protocolProblem as SpeechProblem)
 
   const limit = cap.maxPromptChars
-  const length = [...input.text].length
+  const length = countText('characters', input.text)
   if (limit !== undefined && length > limit) {
     find({
       code: 'TEXT_TOO_LONG',
       message: `旁白有 ${length} 个字符，${config.model} 单次最多 ${limit} 个：请缩短旁白或把镜头拆开${strong ? '' : '（这个地址不是官方地址，上限可能不同，所以只是提醒）'}`,
+      details: { limit, actual: length, counting: 'characters' },
     })
   }
 
@@ -144,4 +155,21 @@ export function judgeSpeech(
     })
   }
   return { voice, defaulted, problems, warnings }
+}
+
+/**
+ * 这个服务商配置会发哪些可选的语音输入（风格指令、语言提示）和官方上限，给界面用（`providers.capability`）。
+ * **和协议实际发送的是同一个来源**（协议自己的 `speechInputs`）；不看画像：没有画像的自填型号按协议和型号名回答。
+ * 不是语音协议返回 `undefined`。
+ */
+export function speechInputSupportOf(
+  config: Pick<ProviderConfig, 'protocol' | 'model' | 'baseUrl'>,
+): SpeechInputSupport | undefined {
+  let protocol: ReturnType<typeof getMediaProtocol>
+  try {
+    protocol = getMediaProtocol(config.protocol)
+  } catch {
+    return undefined // 文本协议不是媒体协议
+  }
+  return protocol.speechInputs?.({ baseUrl: config.baseUrl, model: config.model })
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { PROTECTED_REQUEST_HEADERS } from '@dramai/api'
-import { mergeHeaders, PROTECTED_HEADERS } from '@dramai/core'
+import { PROTECTED_REQUEST_HEADERS, TIMELINE_REVISION_REASONS_KNOWN } from '@dramai/api'
+import { mergeHeaders, PROTECTED_HEADERS, TIMELINE_REVISION_REASONS } from '@dramai/core'
 
 describe('the global list of protected request headers, exported by the contract', () => {
   it('is exactly the list the server enforces (one edit without the other turns this red)', () => {
@@ -19,5 +19,13 @@ describe('the global list of protected request headers, exported by the contract
         expect(Object.keys(out), spelled).toEqual(['X-Base'])
       }
     }
+  })
+})
+
+describe('the known timeline revision reasons in the contract', () => {
+  it('are exactly the ones the server writes (a new reason added on one side only turns this red)', () => {
+    expect([...TIMELINE_REVISION_REASONS_KNOWN].sort()).toEqual(
+      [...TIMELINE_REVISION_REASONS].sort(),
+    )
   })
 })

@@ -23,6 +23,7 @@ import { isDurationAllowed, snapDuration } from '../providers/duration.ts'
 import { providerRegionOf } from '../providers/presets.ts'
 import { judgeSpeech } from '../providers/speech.ts'
 import type { SpeechCode } from '../providers/speech.ts'
+import type { LimitDetails } from '../providers/types.ts'
 import type {
   GenerationMode,
   ProviderConfig,
@@ -91,6 +92,8 @@ export interface Reason {
   code: ReasonCode
   message: string
   assetId?: string
+  /** 超长类原因（`TEXT_TOO_LONG`、`INSTRUCTION_TOO_LONG`）带结构化的数字；阻断和警告里都一样。 */
+  details?: LimitDetails
 }
 
 export interface AdmissionTarget {

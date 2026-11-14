@@ -9,6 +9,7 @@ import {
   PROVIDER_PRESETS,
   ProviderError,
   sendRequest,
+  speechInputSupportOf,
   testProvider,
 } from '@dramai/core'
 import type {
@@ -378,9 +379,11 @@ export class ProviderService {
 
   capability(cfg: ProviderConfig) {
     const found = this.d.models.lookup(cfg)
+    const speechInputs = speechInputSupportOf(cfg)
     return {
       declared: found.declared,
       capability: found.capability,
+      ...(speechInputs ? { speechInputs } : {}),
       pricing: found.profile?.pricing ?? [],
       quirks: found.profile?.quirks ?? [],
       provenance: found.profile?.provenance,

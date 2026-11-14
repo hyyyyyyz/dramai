@@ -1,5 +1,12 @@
 import { asRecord, bodyError, joinUrl, jsonHeaders, jsonPost, str } from '../http.ts'
-import type { MediaProtocol, RawResponse, SpeechInput } from '../types.ts'
+import { countText } from '../text-count.ts'
+import type {
+  MediaProtocol,
+  RawResponse,
+  SpeechInput,
+  SpeechInputProblem,
+  SpeechInputSupport,
+} from '../types.ts'
 import { capabilityError } from './content-array.ts'
 
 /**
@@ -57,17 +64,23 @@ const INSTRUCTION_MAX = 100
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
 
 /** 指令长度：汉字（含全角字符）算 2，其余算 1。 */
-export function instructionLength(text: string): number {
-  let n = 0
-  for (const ch of text) n += /[⺀-鿿豈-﫿＀-￯]/.test(ch) ? 2 : 1
-  return n
+export const instructionLength = (text: string): number => countText('cjk_double', text)
+
+/** 这个协议会发哪些可选输入：指令（官方上限 100，汉字算 2）和语言提示。 */
+const INPUTS: SpeechInputSupport = {
+  instructions: { supported: true, maxLength: INSTRUCTION_MAX, counting: 'cjk_double' },
+  language: { supported: true },
 }
 
-function problemOf(input: SpeechInput): { code: string; message: string } | undefined {
-  if (input.instructions && instructionLength(input.instructions) > INSTRUCTION_MAX) {
-    return {
-      code: 'INSTRUCTION_TOO_LONG',
-      message: `风格指令太长：CosyVoice 限制 ${INSTRUCTION_MAX} 个字符，汉字算 2 个（现在 ${instructionLength(input.instructions)}）`,
+function problemOf(input: SpeechInput): SpeechInputProblem | undefined {
+  if (input.instructions) {
+    const actual = countText('cjk_double', input.instructions)
+    if (actual > INSTRUCTION_MAX) {
+      return {
+        code: 'INSTRUCTION_TOO_LONG',
+        message: `风格指令太长：CosyVoice 限制 ${INSTRUCTION_MAX} 个字符，汉字算 2 个（现在 ${actual}）`,
+        details: { limit: INSTRUCTION_MAX, actual, counting: 'cjk_double' },
+      }
     }
   }
   return undefined
@@ -76,6 +89,7 @@ function problemOf(input: SpeechInput): { code: string; message: string } | unde
 export const dashscopeCosyvoice: MediaProtocol<SpeechInput> = {
   id: 'dashscope-cosyvoice',
   media: 'audio',
+  speechInputs: () => INPUTS,
   // 加上它响应会变成 SSE 事件流，这个协议只读一次性 JSON
   protectedHeaders: ['X-DashScope-SSE'],
 
@@ -150,6 +164,7 @@ export const dashscopeCosyvoice: MediaProtocol<SpeechInput> = {
 
   ignoredInputs(_auth, input) {
     const out: string[] = []
+    if (input.instructions && !INPUTS.instructions.supported) out.push('instructions')
     if (input.language && !LANGUAGES.has(input.language.toLowerCase())) out.push('language')
     if (input.speed && (input.speed < RATE.min || input.speed > RATE.max)) out.push('speed')
     return out

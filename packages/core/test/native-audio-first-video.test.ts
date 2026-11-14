@@ -399,8 +399,17 @@ describe('exec 25: the automatic mute must never cost a paid-for video', () => {
       expect(after).toEqual(corrupt)
       expect(w.env.ports.events.ofType('timeline.changed')).toEqual([])
       // one short notice without any content (only the error type)
-      const notes = w.env.ports.events.ofType('job.worker_error')
+      // a notice (the video IS saved and the job succeeded), never an executor error
+      const notes = w.env.ports.events.ofType('job.notice')
       expect(notes).toHaveLength(1)
+      expect(notes[0]).toMatchObject({
+        level: 'warning',
+        code: 'native_audio_default_failed',
+        projectId: w.env.projectId,
+        shotId: narr.id,
+        jobId: job.id,
+      })
+      expect(w.env.ports.events.ofType('job.worker_error')).toEqual([])
       expect(notes[0]!.message).toContain('视频已保存')
       expect(notes[0]!.message).not.toContain('content')
       expect(notes[0]!.message).not.toContain('clips')
@@ -428,7 +437,8 @@ describe('exec 25: the automatic mute must never cost a paid-for video', () => {
       const job = jobs.filter((j) => j.operation === 'shot_video').at(-1)!
       expect(job.status).toBe('succeeded')
       expect(currentVersion((await w.env.deps.store.shots.get(narr.id))!.video)).toBeTruthy()
-      expect(w.env.ports.events.ofType('job.worker_error').length).toBe(1)
+      expect(w.env.ports.events.ofType('job.notice').length).toBe(1)
+      expect(w.env.ports.events.ofType('job.worker_error')).toEqual([])
     },
   )
 
@@ -450,6 +460,7 @@ describe('exec 25: the automatic mute must never cost a paid-for video', () => {
         types.indexOf('artifact.changed'),
       )
       expect(w.env.ports.events.ofType('job.worker_error')).toEqual([])
+      expect(w.env.ports.events.ofType('job.notice')).toEqual([])
     },
   )
 
