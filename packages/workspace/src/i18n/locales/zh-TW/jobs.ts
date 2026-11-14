@@ -38,7 +38,7 @@ export default {
       unknown: '任務 · {{operation}}',
     },
     target: { shot: '鏡頭 {{n}}', removed: '已刪除的物件', edit: '指令修改' },
-    ignoredNote: '結果已標記為忽略：照常跑完、照常計費，產物進版本歷史，但不會自動成為當前版本',
+    ignoredNote: '結果已標記為忽略：照常跑完，可能照常計費，產物進版本歷史，但不會自動成為當前版本',
     ignoredInputs: '這次沒有用上的輸入：{{list}}',
     ignoredInput: {
       instructions: '風格指令（這個型號不支援，沒有使用）',
@@ -52,7 +52,7 @@ export default {
     cancelledLabel: '已取消',
     attempt: '第 {{n}} 次嘗試',
     streamedChars: '已生成 {{n}} 字',
-    runningNotCancellable: '已提交給服務商，不能取消，已發出的呼叫會照常跑完、照常計費',
+    runningNotCancellable: '已提交給服務商，不能取消，已發出的呼叫會照常跑完，可能照常計費',
     runningLocal: '正在執行，不能取消',
     failure: {
       generation_failed: '服務商明確拒絕或生成失敗了。這類失敗不能恢復，只能重新生成',

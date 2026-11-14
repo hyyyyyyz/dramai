@@ -132,7 +132,7 @@ export default {
     TEXT_TOO_LONG_PLAIN:
       'This narration is longer than the current speech model takes at a time. Shorten the narration of this shot, split it into two shots, or choose a speech provider with a higher limit',
     VOICE_UNLISTED:
-      'The voice in the project isn’t in the list of common ones. That’s fine for your own cloned or custom voice; if it doesn’t exist the provider refuses and doesn’t charge',
+      'The voice in the project isn’t in the list of common ones. If it is your own cloned or custom voice, this can’t confirm that it exists; if the name is wrong, generation may fail',
     REFERENCE_NOT_SUPPORTED_VIDEO:
       'This video model doesn’t accept reference images, so “Use character sheets as references” can’t be on. Turn the switch off to use the first frame, or choose a video model that supports references',
     FRAME_WITH_REFS_UNSUPPORTED:
@@ -599,7 +599,7 @@ export default {
       title: 'Voice reference',
       none: 'No voice reference yet. When a character speaks in several shots, the voice may change between them',
       play: 'Listen to the voice reference of {{name}}',
-      hint: 'The reference audio must be at least 2 seconds. When a character speaks in 2 or more shots, generating video sends this audio to the model so the same person keeps the same voice. Listen first and make sure it sounds right before the per-second billed video generation starts',
+      hint: 'The reference audio must be at least 2 seconds. When a character speaks in 2 or more shots, generating video sends this audio to the model so the same person keeps the same voice. Listen first and make sure it sounds right before the video generation starts (video generation is usually billed by duration or usage)',
       upload: 'Upload a voice reference',
       replace: 'Replace',
     },

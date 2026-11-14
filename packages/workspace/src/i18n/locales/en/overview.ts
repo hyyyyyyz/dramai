@@ -128,7 +128,7 @@ export default {
     notSaved:
       'No voice is chosen, so the style instruction and language hint were not saved this time (this model doesn’t declare a default voice, and they can’t be written without a voice). Choose a voice, then save',
     pinned:
-      'No voice is chosen, so saving fixes the default voice {{voice}} for this project; if the default changes later, this project won’t follow',
+      'No voice is chosen, so saving fixes the default voice {{voice}} for this project; if the default changes later, this project won’t follow; and if you later switch to another speech provider, this voice may not exist there and the check before generating will block it (without the pinning, it wouldn’t)',
     closedHint: 'This model has only the voices in the list; choose one of them',
     openHint:
       'Only the common voices are listed here. For another voice (your own cloned voice, say) choose “Type another voice…” and write it',

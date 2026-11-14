@@ -38,7 +38,7 @@ export default {
       unknown: '任务 · {{operation}}',
     },
     target: { shot: '镜头 {{n}}', removed: '已删除的对象', edit: '指令修改' },
-    ignoredNote: '结果已标记为忽略：照常跑完、照常计费，产物进版本历史，但不会自动成为当前版本',
+    ignoredNote: '结果已标记为忽略：照常跑完，可能照常计费，产物进版本历史，但不会自动成为当前版本',
     ignoredInputs: '这次没有用上的输入：{{list}}',
     ignoredInput: {
       instructions: '风格指令（这个型号不支持，没有使用）',
@@ -52,7 +52,7 @@ export default {
     cancelledLabel: '已取消',
     attempt: '第 {{n}} 次尝试',
     streamedChars: '已生成 {{n}} 字',
-    runningNotCancellable: '已提交给服务商，不能取消，已发出的调用会照常跑完、照常计费',
+    runningNotCancellable: '已提交给服务商，不能取消，已发出的调用会照常跑完，可能照常计费',
     runningLocal: '正在运行，不能取消',
     failure: {
       generation_failed: '服务商明确拒绝或生成失败了。这类失败不能恢复，只能重新生成',

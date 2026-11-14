@@ -46,7 +46,7 @@ export default {
     },
     target: { shot: 'shot {{n}}', removed: 'a deleted item', edit: 'edit by instruction' },
     ignoredNote:
-      'Result marked as ignored: it runs to completion and is billed as usual, and lands in the version history without becoming current',
+      'Result marked as ignored: it runs to completion and may be billed as usual, and lands in the version history without becoming current',
     ignoredInputs: 'Inputs that were not used this time: {{list}}',
     ignoredInput: {
       instructions: 'style instruction (this model doesn’t take it, so it was not used)',
@@ -62,7 +62,7 @@ export default {
     streamedChars_one: '{{n}} char generated',
     streamedChars_other: '{{n}} chars generated',
     runningNotCancellable:
-      'Submitted to the provider and can’t be cancelled; calls already sent run to completion and are billed as usual',
+      'Submitted to the provider and can’t be cancelled; calls already sent run to completion and may be billed as usual',
     runningLocal: 'Running; it can’t be cancelled',
     failure: {
       generation_failed:

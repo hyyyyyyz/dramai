@@ -105,6 +105,10 @@ describe('review 1 / default voice: the server says what is used when no voice i
     // a language hint with no voice chosen is written with the default voice, and the dialog says so
     await userEvent.type(screen.getByRole('textbox', { name: '语言提示（可选）' }), 'zh')
     expect(await screen.findByTestId('voice-pinned')).toHaveTextContent('默认音色 alloy')
+    // and what pinning means when the provider is switched later
+    expect(screen.getByTestId('voice-pinned')).toHaveTextContent(
+      '换到另一家语音服务商，这个音色在新服务商上可能不存在，生成前的检查会拦下',
+    )
     expect(screen.queryByTestId('voice-not-saved')).toBeNull()
     await save()
     await waitFor(() => expect(patches(server)).toHaveLength(1))
