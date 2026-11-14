@@ -712,7 +712,7 @@ describe('timeline', () => {
           ),
         },
         summary: '默认音量：测试',
-        author: { kind: 'agent' },
+        author: { kind: 'system' },
         now: 5,
         changedClipIds: [clip.id],
         reason: 'native_audio_default',
@@ -721,7 +721,7 @@ describe('timeline', () => {
     const v2 = await h.client.call('timeline.get', { params: { episodeId: 'e1' } })
     expect(v2.head).toBe(2)
     expect(v2.revision.reason).toBe('native_audio_default')
-    expect(v2.revision.author.kind).toBe('agent')
+    expect(v2.revision.author.kind).toBe('system')
     expect(v2.revisions.map((r) => r.reason)).toEqual(['initial', 'native_audio_default'])
     // the user's own edit on top has no reason; the rollback is a system revision with its own
     const c = v2.revision.content.clips
@@ -734,11 +734,13 @@ describe('timeline', () => {
       },
     })
     expect(v3.revision).not.toHaveProperty('reason')
+    expect(v3.revision.author.kind).toBe('creator')
     const rolled = await h.client.call('timeline.rollback', {
       params: { episodeId: 'e1' },
       body: { revision: 2 },
     })
     expect(rolled.revision).toMatchObject({ reason: 'rollback', restoredFrom: 2 })
+    expect(rolled.revision.author.kind).toBe('creator') // a rollback is the user's own action
     expect(rolled.revisions.map((r) => r.reason)).toEqual([
       'initial',
       'native_audio_default',
@@ -844,6 +846,8 @@ describe('timeline', () => {
     expect(synced.head).toBe(2)
     expect(synced.revision).toMatchObject({ reason: 'sync_shots', summary: '同步镜头顺序' })
     expect(synced.revisions.map((r) => r.reason)).toEqual(['initial', 'sync_shots'])
+    // the revisions the system makes by itself say so; a revision made by the user's own edit or rollback says creator
+    expect(synced.revisions.map((r) => r.author.kind)).toEqual(['system', 'system'])
     expect(synced.revision.content.clips.map((c) => c.shotId)).toEqual(['sh3', 'sh1', 'sh4'])
     // 已有片段 id 保留，新增的不撞号
     const ids = synced.revision.content.clips.map((c) => c.id)

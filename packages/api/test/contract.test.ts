@@ -276,3 +276,14 @@ describe('timeline revision reason: a client built before a new value existed st
     ])
   })
 })
+
+describe('revision author kind: known values or any string', () => {
+  it('a client built before a new kind existed still reads the revision', async () => {
+    const { timelineRevision, REVISION_AUTHOR_KINDS_KNOWN } = await import('../src/index.ts')
+    const base = { number: 2, summary: 'x', createdAt: 1, content: { clips: [], bgm: [] } }
+    expect([...REVISION_AUTHOR_KINDS_KNOWN]).toEqual(['creator', 'system', 'agent', 'external'])
+    for (const kind of [...REVISION_AUTHOR_KINDS_KNOWN, 'some_future_kind'])
+      expect(timelineRevision.safeParse({ ...base, author: { kind } }).success, kind).toBe(true)
+    expect(timelineRevision.safeParse({ ...base, author: { kind: 5 } }).success).toBe(false)
+  })
+})

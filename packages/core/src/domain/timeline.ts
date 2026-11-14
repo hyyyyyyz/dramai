@@ -82,7 +82,13 @@ export interface TimelineRevision {
   /** 从 1 连续编号。 */
   number: number
   parent?: number
-  author: { kind: 'creator' | 'agent' | 'external'; userId?: string }
+  /**
+   * 谁产生的这个修订：`creator` 用户自己；`system` **系统按规则自动产生**（不是用户，也不是智能体：第一份时间线、同步镜头顺序、
+   * 自动静音）；`agent` / `external` 保留给以后真的有智能体 / 外部程序的时候（现在没有任何代码写它们，
+   * 开发数据里早先的自动静音修订还记着 `agent`，照常读取）。回滚是用户的操作，作者是 `creator`。
+   * 没有任何逻辑按作者种类做判断（“用户有没有调过音量”只看每个修订里片段的音量值）。
+   */
+  author: { kind: 'creator' | 'agent' | 'external' | 'system'; userId?: string }
   summary: string
   createdAt: number
   content: { clips: TimelineClip[]; bgm: TimelineBgmClip[] }
