@@ -287,3 +287,41 @@ describe('revision author kind: known values or any string', () => {
     expect(timelineRevision.safeParse({ ...base, author: { kind: 5 } }).success).toBe(false)
   })
 })
+
+describe('narrationVoice in the contract is never stricter than what a provider declares', () => {
+  it('a style instruction of 4096 characters (OpenAI) and much more is accepted; only an absurd length is refused', async () => {
+    const { projectUpdate, projectCreate } = await import('../src/index.ts')
+    const voice = (instructions: string) => ({
+      providerConfigId: 'p',
+      voice: 'v',
+      speed: 4,
+      language: 'fil',
+      instructions,
+    })
+    for (const n of [1, 1000, 1001, 4096, 8000, 20000]) {
+      expect(
+        projectUpdate.safeParse({ narrationVoice: voice('a'.repeat(n)) }).success,
+        String(n),
+      ).toBe(true)
+      expect(
+        projectCreate.safeParse({
+          name: 'x',
+          aspectRatio: '9:16',
+          narrationVoice: voice('字'.repeat(n)),
+        }).success,
+        String(n),
+      ).toBe(true)
+    }
+    expect(projectUpdate.safeParse({ narrationVoice: voice('a'.repeat(20001)) }).success).toBe(
+      false,
+    )
+  })
+
+  it('the voice name has no length limit of its own (SiliconFlow addresses and MiniMax ids are long)', async () => {
+    const { projectUpdate } = await import('../src/index.ts')
+    const long = `speech:${'x'.repeat(300)}:abc:def`
+    expect(
+      projectUpdate.safeParse({ narrationVoice: { providerConfigId: 'p', voice: long } }).success,
+    ).toBe(true)
+  })
+})
