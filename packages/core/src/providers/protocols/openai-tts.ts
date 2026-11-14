@@ -1,4 +1,5 @@
 import { joinUrl, jsonHeaders, jsonPost } from '../http.ts'
+import { isOfficialSpeechAddress } from '../official-hosts.ts'
 import type { MediaProtocol, SpeechInput } from '../types.ts'
 
 const MIME: Record<string, string> = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg' }
@@ -7,6 +8,18 @@ const MIME: Record<string, string> = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg:
  * 官方：`instructions` 只有 `gpt-4o-mini-tts*` 支持，`tts-1` / `tts-1-hd` 不支持（OpenAI speech 参考页，2026-11-13）。
  * 其他型号（硅基流动、各种中转、自填型号）不认这个字段，所以只对这个型号名发。
  */
+/** 官方页面写的语速范围（OpenAI 参考页、硅基流动 audio-speech 页都是 0.25–4）。 */
+const SPEED = { min: 0.25, max: 4 }
+
+/** 官方地址上把语速夹到官方范围内；中转站 / 其他地址原样发（它们的范围官方没写，保持一直以来的行为）。 */
+const speedFor = (auth: { baseUrl: string }, speed: number): number =>
+  isOfficialSpeechAddress('openai-tts', auth.baseUrl)
+    ? Math.min(SPEED.max, Math.max(SPEED.min, speed))
+    : speed
+
+/** `instructions` 的官方上限（OpenAI speech 参考页：最多 4096 字符）。 */
+const INSTRUCTIONS_MAX = 4096
+
 function isSiliconflow(baseUrl: string): boolean {
   try {
     return /^api\.siliconflow\.(cn|com)$/i.test(new URL(baseUrl).hostname)
@@ -36,7 +49,7 @@ export const openaiTts: MediaProtocol<SpeechInput> = {
       voice: input.voice ?? 'alloy',
       response_format: input.format ?? 'mp3',
     }
-    if (input.speed) body.speed = input.speed
+    if (input.speed) body.speed = speedFor(auth, input.speed)
     if (input.instructions && takesInstructions(auth.model)) body.instructions = input.instructions
     return jsonPost(joinUrl(auth.baseUrl, '/audio/speech'), body, {
       ...jsonHeaders(auth.apiKey),
@@ -53,6 +66,16 @@ export const openaiTts: MediaProtocol<SpeechInput> = {
   },
 
   inputProblem(auth, input) {
+    if (
+      input.instructions &&
+      takesInstructions(auth.model) &&
+      [...input.instructions].length > INSTRUCTIONS_MAX
+    ) {
+      return {
+        code: 'INSTRUCTION_TOO_LONG',
+        message: `风格指令太长：${auth.model} 最多 ${INSTRUCTIONS_MAX} 个字符（现在 ${[...input.instructions].length}）`,
+      }
+    }
     // 硅基流动的音色写作“模型名:音色名”（或上传得到的 speech:… 地址）；只对它的地址检查，其他 OpenAI 兼容服务不受影响
     if (!isSiliconflow(auth.baseUrl)) return undefined
     const v = input.voice ?? ''
@@ -67,6 +90,11 @@ export const openaiTts: MediaProtocol<SpeechInput> = {
     const out: string[] = []
     if (input.instructions && !takesInstructions(auth.model)) out.push('instructions')
     if (input.language) out.push('language')
+    if (
+      input.speed &&
+      speedFor(auth, input.speed) !== input.speed // 官方地址上被夹到范围内
+    )
+      out.push('speed')
     return out
   },
 }

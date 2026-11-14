@@ -124,13 +124,16 @@ describe('dashscope-cosyvoice: the request', () => {
     ).toMatchObject({
       code: 'INSTRUCTION_TOO_LONG',
     })
-    expect(() =>
-      dashscopeCosyvoice.buildGenerateRequest(auth(), {
-        text: 'x',
-        voice: 'v',
-        instructions: fiftyOne,
-      }),
-    ).toThrow(expect.objectContaining({ kind: 'capability', code: 'INSTRUCTION_TOO_LONG' }))
+    // the protocol itself sends what it is given; admission decides whether this blocks (official address + profile) or warns
+    expect(
+      body(
+        dashscopeCosyvoice.buildGenerateRequest(auth(), {
+          text: 'x',
+          voice: 'v',
+          instructions: fiftyOne,
+        }),
+      ).input.instruction,
+    ).toBe(fiftyOne)
   })
 
   it('language_hints: one official code only; unknown ones are dropped and reported', () => {

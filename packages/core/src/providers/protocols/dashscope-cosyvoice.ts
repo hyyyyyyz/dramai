@@ -17,7 +17,8 @@ import { capabilityError } from './content-array.ts'
  * - **不能走流式**：请求头 `X-DashScope-SSE: enable` 会让响应变成 SSE 事件流，这里读不了，所以声明为受保护头，
  *   用户的“额外请求头”改不了它；
  * - 所有字段都在 `input` 里（没有 `parameters`）；`speed` 对应 `rate`（0.5–2，超出夹到范围内并报告）；
- * - `instruction`（风格 / 方言 / 情绪指令）官方限制 100 字符且汉字算 2 个：超过就在准入阶段拦下（`inputProblem`），不发请求；
+ * - `instruction`（风格 / 方言 / 情绪指令）官方限制 100 字符且汉字算 2 个：超过由 `inputProblem` 报告——官方地址上的型号准入阶段阻断，
+ *   其余（自填型号、中转站）只警告；这里照实发，由上游决定；
  * - `language_hints` 只处理第一项，只发一项；只认官方列出的语言码，其余丢弃并报告；
  * - 错误体：官方这一页没有写错误响应的结构；沿用百炼通用的 `{ code, message }` 读法（与万相协议相同，**未核实**）。
  */
@@ -92,8 +93,7 @@ export const dashscopeCosyvoice: MediaProtocol<SpeechInput> = {
         `CosyVoice 这一版只发 mp3 / wav，不发 ${input.format}`,
       )
     }
-    const problem = problemOf(input)
-    if (problem) throw capabilityError(problem.code, problem.message)
+    // 指令太长不在这里抛：它由 `inputProblem` 报告（官方地址上的型号准入就阻断，其余只警告，由上游决定）
     const body: Record<string, unknown> = {
       model: auth.model,
       input: {

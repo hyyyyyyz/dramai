@@ -21,7 +21,7 @@ import type { CostEstimate, ModelRegistry } from '../providers/catalog.ts'
 import { deriveVoiceOwner } from '../domain/voice.ts'
 import { isDurationAllowed, snapDuration } from '../providers/duration.ts'
 import { providerRegionOf } from '../providers/presets.ts'
-import { defaultSpeechVoice, judgeSpeech } from '../providers/speech.ts'
+import { judgeSpeech } from '../providers/speech.ts'
 import type { SpeechCode } from '../providers/speech.ts'
 import type {
   GenerationMode,
@@ -334,22 +334,20 @@ export async function evaluateTarget(
           code: 'DIALOGUE_NOT_VOICED',
           message: `${provider.model} 不自带人声，这个镜头的对白在视频里不会有声音`,
         })
-      } else if (
-        item.target.kind === 'shot_audio' &&
-        !project.narrationVoice &&
-        defaultSpeechVoice(provider.protocol, lookup.capability) !== undefined
-      ) {
-        warnings.push({
-          code: 'NARRATION_VOICE_DEFAULTED',
-          message: '项目还没有设置旁白音色，将使用服务商默认音色',
-        })
       }
       // 旁白配音的输入：音色在不在这个服务商上、写法对不对、文本有没有超过单次上限——花钱之前拦下
+      // （阻断只给有官方依据、且确定会失败的情况；其余是警告，见 `judgeSpeech`）
       if (item.target.kind === 'shot_audio' && owner === 'tts') {
         const speech = judgeSpeech(provider, ctx.models, {
           text: inputs.narration ?? '',
           narrationVoice: project.narrationVoice,
         })
+        if (speech.defaulted) {
+          warnings.push({
+            code: 'NARRATION_VOICE_DEFAULTED',
+            message: '项目还没有设置旁白音色，将使用服务商默认音色',
+          })
+        }
         reasons.push(...speech.problems)
         warnings.push(...speech.warnings)
       }
