@@ -152,12 +152,13 @@ export default {
   providers: {
     voiceSwitch: {
       title: '换成「{{name}}」后，有的项目的旁白音色要重新选',
-      from_another_service:
-        '「{{project}}」的音色“{{voice}}”像是之前那家服务商的，新的服务商多半用不了，生成时可能会失败。',
-      not_available: '「{{project}}」的音色“{{voice}}”在新的服务商的清单里没有，生成时可能会失败。',
+      not_available:
+        '「{{project}}」的音色“{{voice}}”在新的服务商的清单里没有，生成时可能会失败，或被生成前的检查拦下。',
       required: '「{{project}}」还没选音色，而新的服务商的这个型号没有默认音色。',
       unlisted:
-        '「{{project}}」的音色“{{voice}}”不在新服务商的常用清单里；如果是你自己的音色就没问题。',
+        '「{{project}}」的音色“{{voice}}”不在新服务商的常用清单里；如果它是另一家服务商的音色，生成前的检查可能会拦下。',
+      unchecked:
+        '新的服务商的这个型号没有音色清单，「{{project}}」的音色“{{voice}}”能不能用这里没法检查，生成前的检查会告诉你。',
       go: '去重选音色',
       dismiss: '知道了',
     },

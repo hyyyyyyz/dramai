@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { Field, Hint, Input, Notice, Select, Textarea } from '@dramai/ui/v2'
+import type { Project } from '@dramai/api'
+import { Button, Field, Hint, Input, Notice, Select, Textarea } from '@dramai/ui/v2'
 import { useProviderCapability, useProviders, useSettings } from '@/data/queries'
 import { OTHER, type VoiceDraft } from './voice-draft'
 import {
   NO_SPEECH_INPUTS,
+  defaultVoiceState,
   instructionCount,
   isSiliconflow,
   voiceFit,
@@ -19,9 +21,12 @@ import {
  * no default voice needs one before anything can be generated, and the dialog says so now, not at generation time.
  */
 export function VoiceSettings({
+  live,
   draft,
   onChange,
 }: {
+  /** The project as it is now (the speed it holds is shown, and is kept as it is). */
+  live: Project
   draft: VoiceDraft
   onChange: (d: VoiceDraft) => void
 }) {
@@ -38,6 +43,9 @@ export function VoiceSettings({
   const kind = voiceListKind(capability)
   const list = voicesOf(capability)
   const fallback = capability.defaultVoice
+  // whether the model has a default voice, as the server says: known, none, or not said (then nothing is concluded)
+  const defaultState = defaultVoiceState(cap.data)
+  const speed = live.narrationVoice?.speed
   const fit = voiceFit(capability, draft.voice.trim())
   const typed =
     kind === 'open' ? !list.some((v) => v.id === draft.voice) && draft.voice !== '' : false
@@ -51,6 +59,13 @@ export function VoiceSettings({
     [v.label ?? v.id, v.lang].filter(Boolean).join(' · ')
 
   const note = capability.voices?.note
+  const noVoiceLabel = fallback
+    ? t('narrationVoice.useDefault', { voice: fallback })
+    : defaultState === 'none'
+      ? t('narrationVoice.choose')
+      : t('narrationVoice.noChoice')
+  // a voice stored in the project that this model's closed list does not have: shown as what it is, never as "default"
+  const outside = kind === 'closed' && fit === 'not_in_list' ? draft.voice.trim() : undefined
   return (
     <div className="flex flex-col gap-3" data-testid="voice-settings">
       <p className="text-sm text-muted-foreground">
@@ -63,11 +78,10 @@ export function VoiceSettings({
             value={draft.voice}
             onChange={(e) => onChange({ ...draft, voice: e.target.value })}
           >
-            <option value="">
-              {fallback
-                ? t('narrationVoice.useDefault', { voice: fallback })
-                : t('narrationVoice.choose')}
-            </option>
+            <option value="">{noVoiceLabel}</option>
+            {outside && (
+              <option value={outside}>{t('narrationVoice.outsideList', { voice: outside })}</option>
+            )}
             {list.map((v) => (
               <option key={v.id} value={v.id}>
                 {labelOf(v)}
@@ -86,11 +100,7 @@ export function VoiceSettings({
                 onChange({ ...draft, voice: e.target.value === OTHER ? OTHER : e.target.value })
               }
             >
-              <option value="">
-                {fallback
-                  ? t('narrationVoice.useDefault', { voice: fallback })
-                  : t('narrationVoice.choose')}
-              </option>
+              <option value="">{noVoiceLabel}</option>
               {list.map((v) => (
                 <option key={v.id} value={v.id}>
                   {labelOf(v)}
@@ -125,7 +135,7 @@ export function VoiceSettings({
           hint={
             isSiliconflow(provider.baseUrl)
               ? t('narrationVoice.siliconflowFormat', { model: provider.model })
-              : capability.voices?.support === 'unsupported'
+              : defaultState === 'none'
                 ? t('narrationVoice.noneHint')
                 : t('narrationVoice.unknownHint')
           }
@@ -146,14 +156,24 @@ export function VoiceSettings({
       {draft.voice === '' && fallback && (
         <Hint>{t('narrationVoice.defaultIs', { voice: fallback })}</Hint>
       )}
-      {draft.voice === '' && !fallback && (
+      {draft.voice === '' && !fallback && defaultState === 'none' && (
         <Notice tone="warn">{t('narrationVoice.required', { model: provider.model })}</Notice>
       )}
+      {draft.voice === '' && !fallback && defaultState === 'unknown' && (
+        <Hint>{t('narrationVoice.defaultUnknown', { model: provider.model })}</Hint>
+      )}
       {fit === 'not_in_list' && (
-        <Notice tone="warn">{t('narrationVoice.notInList', { model: provider.model })}</Notice>
+        <Notice tone="warn" data-testid="voice-not-in-list">
+          {t('narrationVoice.notInList', { model: provider.model, voice: draft.voice.trim() })}
+        </Notice>
       )}
       {fit === 'unlisted' && draft.voice !== OTHER && (
         <Notice tone="info">{t('narrationVoice.unlisted')}</Notice>
+      )}
+      {kind === 'none' && draft.voice.trim() !== '' && (
+        <Notice tone="info" data-testid="voice-unchecked">
+          {t('narrationVoice.unchecked', { model: provider.model })}
+        </Notice>
       )}
 
       <Field
@@ -213,6 +233,40 @@ export function VoiceSettings({
         <Notice tone="info">
           {t('narrationVoice.ignoredLanguage', { model: provider.model })}
         </Notice>
+      )}
+      {speed !== undefined && (
+        <Hint data-testid="voice-speed">{t('narrationVoice.speedKept', { speed })}</Hint>
+      )}
+      {live.narrationVoice && (
+        <div className="flex flex-col gap-2">
+          {draft.clearAll ? (
+            <Notice
+              tone="warn"
+              data-testid="voice-clear-all"
+              actions={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onChange({ ...draft, clearAll: false })}
+                >
+                  {t('narrationVoice.clearAllUndo')}
+                </Button>
+              }
+            >
+              {t('narrationVoice.clearAllNote')}
+            </Notice>
+          ) : (
+            <div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onChange({ ...draft, clearAll: true })}
+              >
+                {t('narrationVoice.clearAll')}
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

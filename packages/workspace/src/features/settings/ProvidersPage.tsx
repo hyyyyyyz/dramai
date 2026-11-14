@@ -96,7 +96,6 @@ export function ProvidersPage() {
             {kind === 'tts' && voiceSwitch && voiceSwitch.next === active.tts && current && (
               <VoiceSwitchNotice
                 nextId={voiceSwitch.next}
-                previousId={voiceSwitch.previous}
                 providerName={current.label}
                 projects={projects.data?.items ?? []}
                 onDismiss={() => setVoiceSwitch(undefined)}

@@ -19,7 +19,6 @@ import {
   voiceFit,
   voiceFormatProblem,
   voiceListKind,
-  voiceMismatch,
 } from '@/features/settings/voice-model'
 import { voiceIssues } from '@/features/settings/voice-issues'
 import en from '@/i18n/locales/en'
@@ -141,13 +140,6 @@ describe('voice rules', () => {
     expect(voiceFit(closedCap.capability as never, 'x')).toBe('not_in_list')
     expect(voiceFit(openCap.capability as never, 'x')).toBe('unlisted')
     expect(voiceFit(noVoicesCap.capability as never, 'x')).toBe('fine')
-  })
-  it('says whether a voice belongs to the previous provider or simply is not there', () => {
-    const next = closedCap.capability as never
-    const prev = openCap.capability as never
-    expect(voiceMismatch(next, prev, 'male-qn-qingse')).toBe('from_another_service')
-    expect(voiceMismatch(next, prev, 'nobody')).toBe('not_available')
-    expect(voiceMismatch(next, prev, 'alloy')).toBeUndefined()
   })
   it('SiliconFlow wants model:voice, or a speech: address', () => {
     const url = 'https://api.siliconflow.cn/v1'
@@ -370,15 +362,16 @@ describe('choosing the narration voice', () => {
     expect(patchBody(server).narrationVoice).toMatchObject({ voice: 'my_voice' })
   })
 
-  it('a model with no default voice says a voice is needed, before anything is generated, and an instruction cannot be saved without one', async () => {
+  it('a model whose profile says it has no default voice says a voice is needed, and that these inputs are not saved without one', async () => {
     const server = openSettings({
       cap: noVoicesCap,
       provider: { protocol: 'dashscope-cosyvoice', model: 'cosyvoice-v3.5-plus' },
     })
     expect(await screen.findByText(/没有默认音色，必须选一个音色才能生成配音/)).toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox', { name: '风格指令（可选）' }), '平静')
-    expect(await screen.findByText(/要写风格指令或语言提示，先选一个音色/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '保存' })).toBeDisabled()
+    expect(await screen.findByTestId('voice-not-saved')).toBeInTheDocument()
+    // saving is still possible (it only leaves the voice out), and no narrationVoice goes out
+    expect(screen.getByRole('button', { name: '保存' })).toBeEnabled()
     void server
   })
 
@@ -538,14 +531,13 @@ describe('choosing the narration voice', () => {
 // ------------------------------------------------------------------ switching the provider
 
 describe('switching the speech provider', () => {
-  const issues = (p: Partial<Project>[], next: unknown, prev: unknown) =>
+  const issues = (p: Partial<Project>[], next: unknown) =>
     voiceIssues(
       p.map((x, i) => project({ id: `p${i}`, name: `项目${i}`, ...x })),
-      (next as typeof closedCap).capability as never,
-      (prev as typeof closedCap).capability as never,
+      next as never,
     )
 
-  it('names the two cases apart: it belongs to the previous provider, or the new one just has no such voice', () => {
+  it('a closed list that does not have the voice is "not available", whichever provider the voice came from', () => {
     const out = issues(
       [
         { narrationVoice: { providerConfigId: 'a', voice: 'male-qn-qingse' } },
@@ -553,23 +545,26 @@ describe('switching the speech provider', () => {
         { narrationVoice: { providerConfigId: 'a', voice: 'alloy' } },
       ],
       closedCap,
-      openCap,
     )
-    expect(out.map((i) => i.kind)).toEqual(['from_another_service', 'not_available'])
+    expect(out.map((i) => i.kind)).toEqual(['not_available', 'not_available'])
   })
-  it('a project with no voice is flagged when the new model has no default, and an unlisted voice on an open list softly', () => {
-    expect(issues([{}], noVoicesCap, closedCap).map((i) => i.kind)).toEqual(['required'])
-    expect(issues([{}], closedCap, openCap)).toEqual([])
+  it('a project with no voice is flagged only when the profile says there is no default; an open list says "unlisted"; no list says "unchecked"', () => {
+    expect(issues([{}], noVoicesCap).map((i) => i.kind)).toEqual(['required'])
+    expect(issues([{}], closedCap)).toEqual([])
     expect(
-      issues([{ narrationVoice: { providerConfigId: 'a', voice: 'zzz' } }], openCap, closedCap).map(
+      issues([{ narrationVoice: { providerConfigId: 'a', voice: 'zzz' } }], openCap).map(
         (i) => i.kind,
       ),
     ).toEqual(['unlisted'])
     expect(
+      issues([{ narrationVoice: { providerConfigId: 'a', voice: 'zzz' } }], noVoicesCap).map(
+        (i) => i.kind,
+      ),
+    ).toEqual(['unchecked'])
+    expect(
       issues(
         [{ narrationDelivery: 'post', narrationVoice: { providerConfigId: 'a', voice: 'zzz' } }],
         closedCap,
-        openCap,
       ),
     ).toEqual([])
   })
@@ -623,7 +618,7 @@ describe('switching the speech provider', () => {
     await userEvent.click(within(card).getByRole('button', { name: '设为使用' }))
     const box = await screen.findByTestId('voice-switch')
     expect(box).toHaveTextContent(
-      '「清朝宫廷」的音色“male-qn-qingse”像是之前那家服务商的，新的服务商多半用不了，生成时可能会失败。',
+      '「清朝宫廷」的音色“male-qn-qingse”在新的服务商的清单里没有，生成时可能会失败，或被生成前的检查拦下。',
     )
     expect(within(box).getByRole('link', { name: '去重选音色' })).toHaveAttribute(
       'href',

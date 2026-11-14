@@ -12,7 +12,7 @@ import {
   type NarrationValue,
 } from '@/features/projects/pickers'
 import { VoiceSettings } from './VoiceSettings'
-import { draftOfVoice, voiceBody, voiceDraftProblem, type VoiceDraft } from './voice-draft'
+import { draftOfVoice, voiceOutcome, type VoiceDraft } from './voice-draft'
 
 /** 项目设置：标题、画幅、旁白交付。风格在“素材”页里改。 */
 export function ProjectSettingsDialog({
@@ -23,42 +23,43 @@ export function ProjectSettingsDialog({
   onClose: () => void
 }) {
   const { t } = useTranslation()
-  const [name, setName] = useState(project.name)
-  const [aspect, setAspect] = useState<AspectRatio>(project.aspectRatio)
-  const [narration, setNarration] = useState<NarrationValue>(project.narrationDelivery)
-  const [voice, setVoice] = useState<VoiceDraft>(() => draftOfVoice(project.narrationVoice))
+  // The project as it was when the dialog opened. What the user changed is whatever differs from this, never from the
+  // project as it is now: if something was changed elsewhere while the dialog was open, a field the user did not touch
+  // must not be written back with the old value.
+  const [base] = useState(project)
+  const [name, setName] = useState(base.name)
+  const [aspect, setAspect] = useState<AspectRatio>(base.aspectRatio)
+  const [narration, setNarration] = useState<NarrationValue>(base.narrationDelivery)
+  const [voice, setVoice] = useState<VoiceDraft>(() => draftOfVoice(base.narrationVoice))
   const settings = useSettings()
   const providers = useProviders()
   const ttsProvider = providers.data?.items.find((p) => p.id === settings.data?.activeProviders.tts)
   const ttsCap = useProviderCapability(ttsProvider?.id ?? '', Boolean(ttsProvider))
   const update = useCall('projects.update', { invalidate: [qk.projects, qk.project(project.id)] })
-  const changedAspect = aspect !== project.aspectRatio
-  const voiceProblem =
-    narration === 'tts' && ttsProvider
-      ? voiceDraftProblem(voice, ttsCap.data?.capability.defaultVoice)
-      : undefined
-  const valid = name.trim() !== '' && !voiceProblem
-  const voiceChange = voiceBody(
-    project,
-    voice,
-    ttsProvider
-      ? { providerConfigId: ttsProvider.id, defaultVoice: ttsCap.data?.capability.defaultVoice }
-      : undefined,
-  )
+  const changedName = name.trim() !== base.name
+  const changedAspect = aspect !== base.aspectRatio
+  const changedNarration = narration !== base.narrationDelivery
+  const voiceOut =
+    narration === 'tts' && ttsProvider && ttsCap.data
+      ? voiceOutcome(base, project, voice, {
+          providerConfigId: ttsProvider.id,
+          defaultVoice: ttsCap.data.capability.defaultVoice,
+        })
+      : ({ kind: 'none' } as const)
+  // the title is the only thing that can make the form invalid
+  const valid = name.trim() !== ''
   const save = async () => {
     if (!valid) return
+    const body = {
+      ...(changedName ? { name: name.trim() } : {}),
+      ...(changedAspect ? { aspectRatio: aspect } : {}),
+      ...(changedNarration ? { narrationDelivery: narration } : {}),
+      ...(voiceOut.kind === 'set' ? { narrationVoice: voiceOut.body } : {}),
+      ...(voiceOut.kind === 'clear' ? { narrationVoice: null } : {}),
+    }
+    if (Object.keys(body).length === 0) return onClose()
     try {
-      await update.mutateAsync({
-        params: { projectId: project.id },
-        body: {
-          name: name.trim(),
-          ...(changedAspect ? { aspectRatio: aspect } : {}),
-          ...(narration !== project.narrationDelivery ? { narrationDelivery: narration } : {}),
-          ...(narration === 'tts' && voiceChange !== undefined
-            ? { narrationVoice: voiceChange }
-            : {}),
-        },
-      })
+      await update.mutateAsync({ params: { projectId: project.id }, body })
       onClose()
     } catch {
       /* 显示在对话框里 */
@@ -109,9 +110,16 @@ export function ProjectSettingsDialog({
         {narration === 'tts' && (
           <div className="flex flex-col gap-2">
             <Label>{t('narrationVoice.title')}</Label>
-            <VoiceSettings draft={voice} onChange={setVoice} />
-            {voiceProblem === 'voice_needed' && (
-              <Notice tone="warn">{t('narrationVoice.voiceNeeded')}</Notice>
+            <VoiceSettings live={project} draft={voice} onChange={setVoice} />
+            {voiceOut.kind === 'blocked' && (
+              <Notice tone="warn" data-testid="voice-not-saved">
+                {t('narrationVoice.notSaved')}
+              </Notice>
+            )}
+            {voiceOut.kind === 'set' && voiceOut.pinnedDefault && (
+              <Notice tone="info" data-testid="voice-pinned">
+                {t('narrationVoice.pinned', { voice: voiceOut.pinnedDefault })}
+              </Notice>
             )}
           </div>
         )}

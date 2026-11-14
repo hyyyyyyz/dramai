@@ -1,5 +1,22 @@
 /** Error copy keyed by the stable codes in @dramai/api's ERROR_CODES. */
 export default {
+  fieldInvalid: '“{{field}}” can’t be saved like this: {{reason}}',
+  fields: {
+    name: 'Title',
+    summary: 'Summary',
+    aspectRatio: 'Aspect ratio',
+    narrationDelivery: 'How the narration is delivered',
+    'narrationVoice.voice': 'Voice',
+    'narrationVoice.instructions': 'Style instruction',
+    'narrationVoice.language': 'Language hint',
+    'narrationVoice.speed': 'Speed',
+    'narrationVoice.providerConfigId': 'Speech provider',
+  },
+  reason: {
+    tooBig: 'at most {{max}} characters',
+    tooSmall: 'at least {{min}} characters',
+    empty: 'can’t be empty',
+  },
   NETWORK_ERROR: 'Can’t reach the local server. Make sure it is still running',
   UNKNOWN: 'Something went wrong. Please try again',
   goProviders: 'Set up providers',

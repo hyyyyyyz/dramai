@@ -114,14 +114,26 @@ export default {
     defaultIs: 'If you choose none, the model’s default voice is used: {{voice}}',
     required:
       '{{model}} has no default voice, so you have to choose one before narration can be generated',
-    voiceNeeded:
-      'To write a style instruction or a language hint, choose a voice first (this model has no default voice)',
+    noChoice: 'None (the provider decides the default voice)',
+    defaultUnknown:
+      '{{model}} doesn’t declare a default voice. If you choose none, the check before generating will tell you whether it can be used',
+    outsideList: '{{voice}} (stored in the project; not in this model’s list)',
+    unchecked:
+      '{{model}} has no voice list, so this can’t check whether the voice stored in the project works. If it belongs to another provider, the check before generating may block it',
+    speedKept: 'Speed {{speed}} (can’t be changed here; it is kept as it is when you save)',
+    clearAll: 'Clear all narration settings (including the speed)',
+    clearAllUndo: 'Don’t clear',
+    clearAllNote:
+      'When you save, this project’s voice, style instruction, language hint and speed are all cleared',
+    notSaved:
+      'No voice is chosen, so the style instruction and language hint were not saved this time (this model doesn’t declare a default voice, and they can’t be written without a voice). Choose a voice, then save',
+    pinned:
+      'No voice is chosen, so saving fixes the default voice {{voice}} for this project; if the default changes later, this project won’t follow',
     closedHint: 'This model has only the voices in the list; choose one of them',
     openHint:
       'Only the common voices are listed here. For another voice (your own cloned voice, say) choose “Type another voice…” and write it',
     typeOther: 'Type another voice…',
-    noneHint:
-      'This model has no system voices, so a voice name can only be typed (leave it empty if you don’t need one)',
+    noneHint: 'This model has no system voices, so a voice name can only be typed',
     unknownHint: 'This model has no voice list, so type the voice name as the provider writes it',
     siliconflowFormat:
       'SiliconFlow voices are written “model:voice”, for example {{model}}:alex; choosing from the list writes it for you',
@@ -130,9 +142,9 @@ export default {
     documented:
       'The voice list comes from the official documentation and hasn’t been tested; the provider’s own list is what counts',
     notInList:
-      '{{model}} doesn’t have this voice. Choose another from the list: on the official address generation will be blocked, and elsewhere it will most likely fail',
+      'The voice “{{voice}}” stored in the project isn’t in {{model}}’s list. Whether to change it is up to you: if you don’t, generation will be blocked on the official address and will most likely fail elsewhere',
     unlisted:
-      'This voice isn’t in the list of common ones. That’s fine for your own cloned or custom voice; if it doesn’t exist the provider refuses and doesn’t charge',
+      'This voice isn’t in the list of common ones. If it belongs to another provider, the check before generating may block it; if it is your own cloned or custom voice, go by the check before generating too',
     instructions: 'Style instruction (optional)',
     instructionsHint:
       'Describe the tone and mood in plain words, for example “calm, with a hint of a smile”',

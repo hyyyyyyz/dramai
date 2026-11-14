@@ -159,14 +159,14 @@ export default {
   providers: {
     voiceSwitch: {
       title: 'After switching to “{{name}}”, some projects need their narration voice chosen again',
-      from_another_service:
-        'The voice “{{voice}}” of “{{project}}” looks like the previous provider’s; the new one most likely can’t use it, and generation may fail.',
       not_available:
-        'The voice “{{voice}}” of “{{project}}” isn’t in the new provider’s list, so generation may fail.',
+        'The voice “{{voice}}” of “{{project}}” isn’t in the new provider’s list, so generation may fail or be blocked by the check before it.',
       required:
         '“{{project}}” has no voice yet, and this model of the new provider has no default voice.',
       unlisted:
-        'The voice “{{voice}}” of “{{project}}” isn’t in the new provider’s list of common voices; that’s fine if it’s your own voice.',
+        'The voice “{{voice}}” of “{{project}}” isn’t in the new provider’s list of common voices; if it belongs to another provider, the check before generating may block it.',
+      unchecked:
+        'This model of the new provider has no voice list, so whether the voice “{{voice}}” of “{{project}}” works can’t be checked here; the check before generating will say.',
       go: 'Choose the voice again',
       dismiss: 'Got it',
     },

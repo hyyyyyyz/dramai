@@ -23,7 +23,7 @@ export const voicesOf = (cap: Capability | undefined) => cap?.voices?.value ?? [
 /** The speech address is SiliconFlow's: its voices are written "model:voice". */
 export const isSiliconflow = (baseUrl: string): boolean => {
   try {
-    return /(^|\.)siliconflow\.(cn|com)$/i.test(new URL(baseUrl).hostname)
+    return /^api\.siliconflow\.(cn|com)$/i.test(new URL(baseUrl).hostname)
   } catch {
     return false
   }
@@ -56,7 +56,9 @@ export function countText(text: string, counting: string | undefined): number | 
   if (counting === 'characters') return [...text].length
   if (counting === 'cjk_double') {
     let n = 0
-    for (const ch of text) n += /[⺀-鿿豈-﫿＀-￯]/.test(ch) ? 2 : 1
+    // the same three ranges as the server's `countText` (packages/core/src/providers/text-count.ts), written as escapes
+    // so no character can be mistaken for a look-alike: U+2E80–U+9FFF, U+F900–U+FAFF, U+FF00–U+FFEF
+    for (const ch of text) n += /[\u2E80-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/.test(ch) ? 2 : 1
     return n
   }
   return undefined
@@ -70,7 +72,8 @@ export function instructionCount(
   const { maxLength, counting } = inputs.instructions
   if (!inputs.instructions.supported || maxLength === undefined || counting === undefined)
     return undefined
-  const n = countText(text, counting)
+  // what is saved is the trimmed text, so that is what is counted
+  const n = countText(text.trim(), counting)
   return n === undefined ? undefined : { n, max: maxLength, counting, over: n > maxLength }
 }
 
@@ -93,15 +96,16 @@ export function voiceFit(cap: Capability | undefined, voice: string | undefined)
 }
 
 /**
- * Why a voice that was chosen for one speech provider does not work on another: it is in the old provider's list
- * ("belongs to the other service"), or the new one simply has no such voice.
+ * Does the model have a default voice, as far as the server says? `known`: it names one. `none`: the model has a profile
+ * with voice information and no default (the server then asks for a voice before generating). `unknown`: the server
+ * does not say (a model without a profile, such as `tts-1` or a relay's): the server may still fall back to a voice of
+ * its own, so nothing is concluded here and the pre-flight is the one to say.
  */
-export function voiceMismatch(
-  next: Capability | undefined,
-  previous: Capability | undefined,
-  voice: string,
-): 'from_another_service' | 'not_available' | undefined {
-  if (voiceFit(next, voice) !== 'not_in_list') return undefined
-  const inPrevious = voicesOf(previous).some((v) => v.id === voice)
-  return inPrevious ? 'from_another_service' : 'not_available'
+export type DefaultVoiceState = 'known' | 'none' | 'unknown'
+export function defaultVoiceState(view: {
+  declared: boolean
+  capability: Capability
+}): DefaultVoiceState {
+  if (view.capability.defaultVoice) return 'known'
+  return view.declared && view.capability.voices !== undefined ? 'none' : 'unknown'
 }

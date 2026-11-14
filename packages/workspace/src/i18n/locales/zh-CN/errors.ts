@@ -1,5 +1,22 @@
 /** 错误文案：键就是 @dramai/api 的错误码（ERROR_CODES）。tests/i18n.test.ts 保证码表里的每个码都有翻译。 */
 export default {
+  fieldInvalid: '「{{field}}」不能这样保存：{{reason}}',
+  fields: {
+    name: '标题',
+    summary: '简介',
+    aspectRatio: '画幅',
+    narrationDelivery: '旁白交付方式',
+    'narrationVoice.voice': '音色',
+    'narrationVoice.instructions': '风格指令',
+    'narrationVoice.language': '语言提示',
+    'narrationVoice.speed': '语速',
+    'narrationVoice.providerConfigId': '语音服务商',
+  },
+  reason: {
+    tooBig: '最多 {{max}} 个字符',
+    tooSmall: '至少 {{min}} 个字符',
+    empty: '不能为空',
+  },
   NETWORK_ERROR: '连不上本地服务，请确认它还在运行',
   UNKNOWN: '出了点问题，请稍后重试',
   goProviders: '去设置服务商',

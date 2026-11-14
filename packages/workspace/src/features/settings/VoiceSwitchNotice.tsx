@@ -12,24 +12,21 @@ import { voiceIssues } from './voice-issues'
  */
 export function VoiceSwitchNotice({
   nextId,
-  previousId,
   providerName,
   projects,
   onDismiss,
 }: {
   nextId: string
-  previousId?: string
   providerName: string
   projects: readonly Pick<Project, 'id' | 'name' | 'narrationDelivery' | 'narrationVoice'>[]
   onDismiss: () => void
 }) {
   const { t } = useTranslation()
   const next = useProviderCapability(nextId)
-  const previous = useProviderCapability(previousId ?? '', Boolean(previousId))
-  if (!next.data || (previousId && !previous.data)) return null
-  const issues = voiceIssues(projects, next.data.capability, previous.data?.capability)
+  if (!next.data) return null
+  const issues = voiceIssues(projects, next.data)
   if (issues.length === 0) return null
-  const blocking = issues.some((i) => i.kind !== 'unlisted')
+  const blocking = issues.some((i) => i.kind === 'not_available' || i.kind === 'required')
   return (
     <Notice
       tone={blocking ? 'warn' : 'info'}

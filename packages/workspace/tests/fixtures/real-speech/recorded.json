@@ -1,0 +1,1795 @@
+{
+  "meta": {
+    "note": "Recorded from the real server (upstream stubbed, fake keys). Regenerate with record.mjs in this folder.",
+    "commit": "7f77ff731a5f346b50302d613c89b1f4b66c7da5",
+    "coreServerApiDirtyWhenRecorded": false,
+    "command": "node --conditions=dramai-source --experimental-strip-types packages/workspace/tests/fixtures/real-speech/record.mjs",
+    "upstreamRequests": 0
+  },
+  "providers": {
+    "openai": {
+      "id": "prov_556039683524",
+      "label": "OpenAI · 语音合成（API Key）",
+      "kind": "tts",
+      "protocol": "openai-tts",
+      "baseUrl": "https://api.openai.com/v1",
+      "model": "gpt-4o-mini-tts",
+      "enabled": true,
+      "auth": {
+        "type": "api_key"
+      },
+      "presetId": "openai-tts-key",
+      "notes": "OpenAI 官方 /audio/speech，API Key 鉴权。默认型号 gpt-4o-mini-tts，支持用自然语言写的风格指令；tts-1 / tts-1-hd 也可以在型号里改。内置 13 个音色（alloy、ash、ballad、coral、echo、fable、onyx、nova、sage、shimmer、verse、marin、cedar）。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create"
+      },
+      "knownLimitations": [
+        "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 都计划在 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；长期使用请另做打算。",
+        "单次输入最多 4096 字符，超过的旁白会在生成前被拦下。",
+        "音色以英语优化，中文旁白的效果没有验证；自定义音色（克隆）只对受限开通的账号开放，这一版不支持。",
+        "gpt-4o-mini-tts 按 token 计价，这里没有估价。国内网络通常需要自备代理。"
+      ],
+      "hasKey": true,
+      "keyMask": "sk-…9012"
+    },
+    "minimax": {
+      "id": "prov_c232ce740847",
+      "label": "MiniMax · 语音合成（国内站）",
+      "kind": "tts",
+      "protocol": "minimax-t2a",
+      "baseUrl": "https://api.minimax.cn/v1",
+      "model": "speech-2.8-hd",
+      "enabled": true,
+      "auth": {
+        "type": "api_key"
+      },
+      "presetId": "minimax-tts-cn",
+      "notes": "MiniMax 同步语音合成（t2a_v2）。默认型号 speech-2.8-hd；speech-2.8-turbo 更便宜。音色填 voice_id（系统音色约 300 个，如 Chinese (Mandarin)_News_Anchor），克隆音色也直接填 voice_id。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://platform.minimax.cn/docs/api-reference/speech-t2a-http"
+      },
+      "knownLimitations": [
+        "单次文本须小于 10000 字符，超过的旁白会在生成前被拦下（官方没有写这个上限按什么计数，计费是 1 个汉字算 2 个字符；这里按字符数、一个汉字算 1 个，可能比实际上限宽）；语速 0.5–2。",
+        "官方：HTTP 200 的响应也可能是失败（看 base_resp.status_code）；音频是十六进制字符串，这里解码成字节后保存。",
+        "价格：2.8 HD 3.50 元 / 万字符、2.8 Turbo 2.00 元 / 万字符；官方：1 个汉字计 2 个字符，所以估价是区间，纯中文旁白看上限。",
+        "风格指令没有对应字段（情绪只有固定枚举，这一版不发）；克隆音色 7 天内没被使用会被官方删除。",
+        "国内站的接口地址以官方国内文档为准（api.minimax.cn），旧域名 api.minimaxi.com 是否可用没有核实；国内外 Key 按不互通处理。"
+      ],
+      "hasKey": true,
+      "keyMask": "sk-…9012"
+    },
+    "siliconflow": {
+      "id": "prov_419286b2e5e6",
+      "label": "硅基流动 · 语音合成（国内站）",
+      "kind": "tts",
+      "protocol": "openai-tts",
+      "baseUrl": "https://api.siliconflow.cn/v1",
+      "model": "FunAudioLLM/CosyVoice2-0.5B",
+      "enabled": true,
+      "auth": {
+        "type": "api_key"
+      },
+      "presetId": "siliconflow-tts-cn",
+      "notes": "硅基流动的 OpenAI 兼容 /audio/speech。默认型号 FunAudioLLM/CosyVoice2-0.5B，支持中英日韩和粤语、四川话等方言；音色要写成“模型名:音色名”，如 FunAudioLLM/CosyVoice2-0.5B:alex（8 个系统音色：alex、benjamin、charles、david、anna、bella、claire、diana）。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://docs.siliconflow.cn/docs/api/audio-speech-post"
+      },
+      "knownLimitations": [
+        "音色写法不对（没有“模型名:”前缀）会在生成前被拦下。上传参考音频得到的 speech:… 地址也可以手填，但这一版没有上传通道。",
+        "单次输入最多 128000 字符。按输入文本的 UTF-8 字节数计费，官方页面没有写单价，这里没有估价。",
+        "官方提醒：支持的语音型号会变化，以平台“语音”标签下的列表为准；fish-speech 系列只能用账户余额付费。",
+        "风格 / 方言指令要写在输入文本前面并用 <|endofprompt|> 隔开，这一版不会自动拼接。"
+      ],
+      "hasKey": true,
+      "keyMask": "sk-…9012"
+    },
+    "cosyFlash": {
+      "id": "prov_51b29c21bb6e",
+      "label": "阿里云百炼 · CosyVoice 语音合成（国内站）",
+      "kind": "tts",
+      "protocol": "dashscope-cosyvoice",
+      "baseUrl": "https://ws123.cn-beijing.maas.aliyuncs.com",
+      "model": "cosyvoice-v3-flash",
+      "enabled": true,
+      "auth": {
+        "type": "api_key"
+      },
+      "presetId": "aliyun-cosyvoice-cn",
+      "notes": "百炼 CosyVoice 的 HTTP 非实时接口（北京地域）。地址里的 {WorkspaceId} 要换成你的业务空间 ID，模型、地址、Key 必须同一地域。默认型号 cosyvoice-v3-flash；音色填 voice，如 longanyang（龙安洋）、longanhuan（龙安欢），还有粤语、东北话、陕西话等方言音色。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api"
+      },
+      "knownLimitations": [
+        "官方 HTTP 页只写了北京地域，所以只有国内站预设；新加坡地域只有 WebSocket 形态的文档，这一版不做。",
+        "cosyvoice-v3.5 系列没有系统音色，只能用声音复刻 / 设计得到的音色，需要先在百炼控制台创建后手填 voice；v3-plus 只有 longanyang、longanhuan 两个系统音色。",
+        "风格 / 方言 / 情绪指令最多 100 个字符，汉字算 2 个，超过会在生成前被拦下。",
+        "成品是 24 小时有效的链接，生成成功后会立即下载保存。官方页面没有写单次文本长度上限和错误响应的结构，这里没有核实。",
+        "价格：cosyvoice-v3-flash 北京 1 元 / 万字符；其他型号的单价没有在官方页面核对，这里没有估价。"
+      ],
+      "hasKey": true,
+      "keyMask": "sk-…9012"
+    },
+    "tts1": {
+      "id": "prov_44f3d858163e",
+      "label": "tts-1",
+      "kind": "tts",
+      "protocol": "openai-tts",
+      "baseUrl": "https://api.openai.com/v1",
+      "model": "tts-1",
+      "enabled": true,
+      "auth": {
+        "type": "api_key"
+      },
+      "presetId": "openai-tts-key",
+      "notes": "OpenAI 官方 /audio/speech，API Key 鉴权。默认型号 gpt-4o-mini-tts，支持用自然语言写的风格指令；tts-1 / tts-1-hd 也可以在型号里改。内置 13 个音色（alloy、ash、ballad、coral、echo、fable、onyx、nova、sage、shimmer、verse、marin、cedar）。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create"
+      },
+      "knownLimitations": [
+        "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 都计划在 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；长期使用请另做打算。",
+        "单次输入最多 4096 字符，超过的旁白会在生成前被拦下。",
+        "音色以英语优化，中文旁白的效果没有验证；自定义音色（克隆）只对受限开通的账号开放，这一版不支持。",
+        "gpt-4o-mini-tts 按 token 计价，这里没有估价。国内网络通常需要自备代理。"
+      ],
+      "hasKey": true,
+      "keyMask": "sk-…9012"
+    },
+    "relay": {
+      "id": "prov_4fef10e1e9f6",
+      "label": "relay",
+      "kind": "tts",
+      "protocol": "openai-tts",
+      "baseUrl": "https://relay.example.com/v1",
+      "model": "gpt-4o-mini-tts",
+      "enabled": true,
+      "auth": {
+        "type": "api_key"
+      },
+      "presetId": "openai-tts-key",
+      "notes": "OpenAI 官方 /audio/speech，API Key 鉴权。默认型号 gpt-4o-mini-tts，支持用自然语言写的风格指令；tts-1 / tts-1-hd 也可以在型号里改。内置 13 个音色（alloy、ash、ballad、coral、echo、fable、onyx、nova、sage、shimmer、verse、marin、cedar）。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create"
+      },
+      "knownLimitations": [
+        "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 都计划在 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；长期使用请另做打算。",
+        "单次输入最多 4096 字符，超过的旁白会在生成前被拦下。",
+        "音色以英语优化，中文旁白的效果没有验证；自定义音色（克隆）只对受限开通的账号开放，这一版不支持。",
+        "gpt-4o-mini-tts 按 token 计价，这里没有估价。国内网络通常需要自备代理。"
+      ],
+      "hasKey": true,
+      "keyMask": "sk-…9012"
+    },
+    "relayTts1": {
+      "id": "prov_9a9372f46cae",
+      "label": "relay tts-1",
+      "kind": "tts",
+      "protocol": "openai-tts",
+      "baseUrl": "https://relay.example.com/v1",
+      "model": "tts-1",
+      "enabled": true,
+      "auth": {
+        "type": "api_key"
+      },
+      "presetId": "openai-tts-key",
+      "notes": "OpenAI 官方 /audio/speech，API Key 鉴权。默认型号 gpt-4o-mini-tts，支持用自然语言写的风格指令；tts-1 / tts-1-hd 也可以在型号里改。内置 13 个音色（alloy、ash、ballad、coral、echo、fable、onyx、nova、sage、shimmer、verse、marin、cedar）。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create"
+      },
+      "knownLimitations": [
+        "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 都计划在 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；长期使用请另做打算。",
+        "单次输入最多 4096 字符，超过的旁白会在生成前被拦下。",
+        "音色以英语优化，中文旁白的效果没有验证；自定义音色（克隆）只对受限开通的账号开放，这一版不支持。",
+        "gpt-4o-mini-tts 按 token 计价，这里没有估价。国内网络通常需要自备代理。"
+      ],
+      "hasKey": true,
+      "keyMask": "sk-…9012"
+    },
+    "cosy35": {
+      "id": "prov_672096015b0a",
+      "label": "cosy v3.5",
+      "kind": "tts",
+      "protocol": "dashscope-cosyvoice",
+      "baseUrl": "https://ws123.cn-beijing.maas.aliyuncs.com",
+      "model": "cosyvoice-v3.5-plus",
+      "enabled": true,
+      "auth": {
+        "type": "api_key"
+      },
+      "presetId": "aliyun-cosyvoice-cn",
+      "notes": "百炼 CosyVoice 的 HTTP 非实时接口（北京地域）。地址里的 {WorkspaceId} 要换成你的业务空间 ID，模型、地址、Key 必须同一地域。默认型号 cosyvoice-v3-flash；音色填 voice，如 longanyang（龙安洋）、longanhuan（龙安欢），还有粤语、东北话、陕西话等方言音色。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api"
+      },
+      "knownLimitations": [
+        "官方 HTTP 页只写了北京地域，所以只有国内站预设；新加坡地域只有 WebSocket 形态的文档，这一版不做。",
+        "cosyvoice-v3.5 系列没有系统音色，只能用声音复刻 / 设计得到的音色，需要先在百炼控制台创建后手填 voice；v3-plus 只有 longanyang、longanhuan 两个系统音色。",
+        "风格 / 方言 / 情绪指令最多 100 个字符，汉字算 2 个，超过会在生成前被拦下。",
+        "成品是 24 小时有效的链接，生成成功后会立即下载保存。官方页面没有写单次文本长度上限和错误响应的结构，这里没有核实。",
+        "价格：cosyvoice-v3-flash 北京 1 元 / 万字符；其他型号的单价没有在官方页面核对，这里没有估价。"
+      ],
+      "hasKey": true,
+      "keyMask": "sk-…9012"
+    }
+  },
+  "capabilities": {
+    "openai": {
+      "declared": true,
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 4096,
+        "voices": {
+          "support": "supported",
+          "value": [
+            {
+              "id": "alloy"
+            },
+            {
+              "id": "ash"
+            },
+            {
+              "id": "ballad"
+            },
+            {
+              "id": "coral"
+            },
+            {
+              "id": "echo"
+            },
+            {
+              "id": "fable"
+            },
+            {
+              "id": "onyx"
+            },
+            {
+              "id": "nova"
+            },
+            {
+              "id": "sage"
+            },
+            {
+              "id": "shimmer"
+            },
+            {
+              "id": "verse"
+            },
+            {
+              "id": "marin"
+            },
+            {
+              "id": "cedar"
+            }
+          ],
+          "note": "官方列出 13 个内置音色；自定义音色（{id}）只对受限开通的账号开放，这一版不支持。"
+        },
+        "defaultVoice": "alloy"
+      },
+      "speechInputs": {
+        "instructions": {
+          "supported": true,
+          "maxLength": 4096,
+          "counting": "characters"
+        },
+        "language": {
+          "supported": false
+        }
+      },
+      "pricing": [],
+      "quirks": [
+        "官方：input 最多 4096 字符；instructions（风格指令）最多 4096 字符，只有这个型号支持。",
+        "官方：按 token 计价（文本输入 $0.60 / 1M，音频输出 $12.00 / 1M），不按字符，这里不估价。",
+        "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 及其快照已弃用，计划 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；新接入请考虑这一点。"
+      ],
+      "provenance": "官方 speech 参考页 developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create（2026-11-13 核对）。未实测。"
+    },
+    "minimax": {
+      "declared": true,
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 9999,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "Chinese (Mandarin)_Reliable_Executive",
+              "label": "Reliable Executive",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_News_Anchor",
+              "label": "News Anchor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Unrestrained_Young_Man",
+              "label": "Unrestrained Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Mature_Woman",
+              "label": "Mature Woman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Arrogant_Miss",
+              "label": "Arrogant Miss",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Robot_Armor",
+              "label": "Robot Armor",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Kind-hearted_Antie",
+              "label": "Kind-hearted Antie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_HK_Flight_Attendant",
+              "label": "HK Flight Attendant",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Humorous_Elder",
+              "label": "Humorous Elder",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Gentleman",
+              "label": "Gentleman",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Warm_Bestie",
+              "label": "Warm Bestie",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Stubborn_Friend",
+              "label": "Stubborn Friend",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Sweet_Lady",
+              "label": "Sweet Lady",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Southern_Young_Man",
+              "label": "Southern Young Man",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "Chinese (Mandarin)_Wise_Women",
+              "label": "Wise Women",
+              "lang": "中文（普通话）"
+            },
+            {
+              "id": "English_expressive_narrator",
+              "label": "Expressive Narrator",
+              "lang": "English"
+            },
+            {
+              "id": "English_radiant_girl",
+              "label": "Radiant Girl",
+              "lang": "English"
+            },
+            {
+              "id": "English_magnetic_voiced_man",
+              "label": "Magnetic-voiced Male",
+              "lang": "English"
+            },
+            {
+              "id": "English_compelling_lady1",
+              "label": "Compelling Lady",
+              "lang": "English"
+            },
+            {
+              "id": "English_Aussie_Bloke",
+              "label": "Aussie Bloke",
+              "lang": "English"
+            }
+          ],
+          "note": "官方系统音色页共 332 个、24 种语言（2026-11-13），这里只列了常用的 20 个；其他系统音色、复刻音色、设计音色直接手填 voice_id。"
+        },
+        "defaultVoice": "Chinese (Mandarin)_News_Anchor"
+      },
+      "speechInputs": {
+        "instructions": {
+          "supported": false
+        },
+        "language": {
+          "supported": true
+        }
+      },
+      "pricing": [
+        {
+          "currency": "USD",
+          "unit": "per_1k_chars",
+          "amount": 0.1,
+          "dimensions": {
+            "region": "global"
+          },
+          "note": "国际站 $100 / 1M 字符（同步与异步同价）；国际站页面没写字符怎么数。"
+        },
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.35,
+          "dimensions": {
+            "region": "cn"
+          },
+          "range": [0.35, 0.7],
+          "note": "国内站 3.50 元 / 万字符；官方：1 个汉字计 2 个字符，其余字符计 1 个。区间下限 = 全是非汉字，上限 = 全是汉字；估价按字数 × 单价，纯中文旁白看上限。"
+        }
+      ],
+      "quirks": [
+        "官方：text 须小于 10000 字符（3000 以上建议流式；这里不用流式）；语速 0.5–2，超出会被夹到范围内；有 pronunciation_dict、情绪枚举等，这一版不发。",
+        "上限 9999 来自官方“小于 10000 字符”；官方没有写这个上限按什么计数（计费是 1 个汉字算 2 个字符），这里按字符（码点）数、一个汉字算 1 个，所以可能比服务商实际的上限宽——超过上限的旁白会被拦下，没超过的不保证一定能合成。",
+        "官方：HTTP 200 的响应也可能是失败，看 base_resp.status_code（0 才成功）；音频默认是十六进制字符串，这里解码成字节。",
+        "官方：风格指令（instructions）没有对应字段，会被丢弃并记录；情绪只有固定枚举，这一版不发。",
+        "国内（api.minimax.cn）和国际（api.minimax.io）按两套账号处理，Key 是否互通官方没写。"
+      ],
+      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。未实测。"
+    },
+    "siliconflow": {
+      "declared": true,
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 128000,
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:alex",
+              "label": "沉稳男声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:benjamin",
+              "label": "低沉男声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:charles",
+              "label": "磁性男声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:david",
+              "label": "欢快男声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:anna",
+              "label": "沉稳女声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:bella",
+              "label": "激情女声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:claire",
+              "label": "温柔女声"
+            },
+            {
+              "id": "FunAudioLLM/CosyVoice2-0.5B:diana",
+              "label": "欢快女声"
+            }
+          ],
+          "note": "官方列出 8 个系统预置音色，音色写作“模型名:音色名”；上传参考音频得到的 speech:… 地址也可以手填。"
+        },
+        "defaultVoice": "FunAudioLLM/CosyVoice2-0.5B:alex"
+      },
+      "speechInputs": {
+        "instructions": {
+          "supported": false
+        },
+        "language": {
+          "supported": false
+        }
+      },
+      "pricing": [],
+      "quirks": [
+        "官方：input 长度 1–128000；voice 写作“模型名:音色名”；speed 0.25–4；响应是二进制音频（chunked）。",
+        "官方：按输入文本的 UTF-8 字节数计费，页面没有单价，这里不估价。",
+        "官方提醒：支持的型号会变化，以平台“语音”标签下的型号列表为准。",
+        "官方：情绪 / 方言指令要写在输入文本前面，用 <|endofprompt|> 隔开（如“用四川话说<|endofprompt|>……”）；支持 [laughter]、[breath] 等标签。这一版不自动拼接。"
+      ],
+      "provenance": "官方：docs.siliconflow.cn/docs/api/audio-speech-post 与 docs.siliconflow.com/en/userguide/capabilities/text-to-speech（2026-11-13 核对）。未实测。"
+    },
+    "cosyFlash": {
+      "declared": true,
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "voices": {
+          "support": "unverified",
+          "value": [
+            {
+              "id": "longanyang",
+              "label": "龙安洋",
+              "lang": "中文（普通话）、英文 / 社交陪伴"
+            },
+            {
+              "id": "longanhuan_v3",
+              "label": "龙安欢（V3）",
+              "lang": "中文（普通话及多种方言）、英文 / 社交陪伴"
+            },
+            {
+              "id": "longanhuan",
+              "label": "龙安欢",
+              "lang": "中文（普通话）、英文 / 社交陪伴"
+            },
+            {
+              "id": "longhuhu_v3",
+              "label": "龙呼呼",
+              "lang": "中文（普通话）、英文 / 童声"
+            },
+            {
+              "id": "longpaopao_v3",
+              "label": "龙泡泡",
+              "lang": "中文（普通话）、英文 / 智能玩具、儿童故事机"
+            },
+            {
+              "id": "longjielidou_v3",
+              "label": "龙杰力豆",
+              "lang": "中文（普通话）、英文 / 智能玩具、儿童故事机"
+            },
+            {
+              "id": "longxian_v3",
+              "label": "龙仙",
+              "lang": "中文（普通话）、英文 / 智能玩具、儿童故事机"
+            },
+            {
+              "id": "longling_v3",
+              "label": "龙铃",
+              "lang": "中文（普通话）、英文 / 智能玩具、儿童故事机"
+            },
+            {
+              "id": "longshanshan_v3",
+              "label": "龙闪闪",
+              "lang": "中文（普通话）、英文 / 消费电子-儿童有声书"
+            },
+            {
+              "id": "longniuniu_v3",
+              "label": "龙牛牛",
+              "lang": "中文（普通话）、英文 / 消费电子-儿童有声书"
+            },
+            {
+              "id": "longjiaxin_v3",
+              "label": "龙嘉欣",
+              "lang": "中文（粤语）、英文 / 方言"
+            },
+            {
+              "id": "longjiayi_v3",
+              "label": "龙嘉怡",
+              "lang": "中文（粤语）、英文 / 方言"
+            },
+            {
+              "id": "longanyue_v3",
+              "label": "龙安粤",
+              "lang": "中文（粤语）、英文 / 方言"
+            },
+            {
+              "id": "longlaotie_v3",
+              "label": "龙老铁",
+              "lang": "中文（东北话）、英文 / 方言"
+            },
+            {
+              "id": "longshange_v3",
+              "label": "龙陕哥",
+              "lang": "中文（陕西话）、英文 / 方言"
+            },
+            {
+              "id": "longanmin_v3",
+              "label": "龙安闽",
+              "lang": "中文（闽南话）、英文 / 方言"
+            }
+          ],
+          "note": "官方音色列表页共有更多，这里只列了前 16 个（普通话 / 方言）；其他系统音色、复刻 / 设计音色直接手填 voice 值。"
+        },
+        "defaultVoice": "longanyang"
+      },
+      "speechInputs": {
+        "instructions": {
+          "supported": true,
+          "maxLength": 100,
+          "counting": "cjk_double"
+        },
+        "language": {
+          "supported": true
+        }
+      },
+      "pricing": [
+        {
+          "currency": "CNY",
+          "unit": "per_1k_chars",
+          "amount": 0.1,
+          "dimensions": {
+            "region": "cn"
+          },
+          "note": "北京 1 元 / 万字符（官方 cosyvoice-v3-flash 价格页）；页面没写汉字怎么计数。"
+        }
+      ],
+      "quirks": [
+        "官方 HTTP 页只写了北京地域（华北2）的接口 https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer；模型、地址、Key 必须同一地域。",
+        "官方：成品是 24 小时有效的链接，成功后会立即下载保存。",
+        "官方：风格 / 方言 / 情绪指令（instruction）最多 100 个字符，汉字算 2 个；语速 rate 0.5–2。",
+        "官方页面没有写单次文本长度上限，这里不填，不猜。",
+        "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
+        "官方：单价 1 元 / 万字符（北京），RPM 180。"
+      ],
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+    },
+    "tts1": {
+      "declared": false,
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "supported"
+        },
+        "refImages": {
+          "support": "unverified"
+        },
+        "refVideos": {
+          "support": "unverified"
+        },
+        "refAudios": {
+          "support": "unverified"
+        },
+        "firstFrame": "unverified",
+        "lastFrame": "unverified",
+        "nativeAudio": "unverified",
+        "durations": {
+          "support": "unverified"
+        },
+        "resolutions": {
+          "support": "unverified"
+        },
+        "aspectRatios": {
+          "support": "unverified"
+        }
+      },
+      "speechInputs": {
+        "instructions": {
+          "supported": false
+        },
+        "language": {
+          "supported": false
+        }
+      },
+      "pricing": [],
+      "quirks": []
+    },
+    "relay": {
+      "declared": true,
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "maxPromptChars": 4096,
+        "voices": {
+          "support": "supported",
+          "value": [
+            {
+              "id": "alloy"
+            },
+            {
+              "id": "ash"
+            },
+            {
+              "id": "ballad"
+            },
+            {
+              "id": "coral"
+            },
+            {
+              "id": "echo"
+            },
+            {
+              "id": "fable"
+            },
+            {
+              "id": "onyx"
+            },
+            {
+              "id": "nova"
+            },
+            {
+              "id": "sage"
+            },
+            {
+              "id": "shimmer"
+            },
+            {
+              "id": "verse"
+            },
+            {
+              "id": "marin"
+            },
+            {
+              "id": "cedar"
+            }
+          ],
+          "note": "官方列出 13 个内置音色；自定义音色（{id}）只对受限开通的账号开放，这一版不支持。"
+        },
+        "defaultVoice": "alloy"
+      },
+      "speechInputs": {
+        "instructions": {
+          "supported": true,
+          "maxLength": 4096,
+          "counting": "characters"
+        },
+        "language": {
+          "supported": false
+        }
+      },
+      "pricing": [],
+      "quirks": [
+        "官方：input 最多 4096 字符；instructions（风格指令）最多 4096 字符，只有这个型号支持。",
+        "官方：按 token 计价（文本输入 $0.60 / 1M，音频输出 $12.00 / 1M），不按字符，这里不估价。",
+        "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 及其快照已弃用，计划 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；新接入请考虑这一点。"
+      ],
+      "provenance": "官方 speech 参考页 developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create（2026-11-13 核对）。未实测。"
+    },
+    "relayTts1": {
+      "declared": false,
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "supported"
+        },
+        "refImages": {
+          "support": "unverified"
+        },
+        "refVideos": {
+          "support": "unverified"
+        },
+        "refAudios": {
+          "support": "unverified"
+        },
+        "firstFrame": "unverified",
+        "lastFrame": "unverified",
+        "nativeAudio": "unverified",
+        "durations": {
+          "support": "unverified"
+        },
+        "resolutions": {
+          "support": "unverified"
+        },
+        "aspectRatios": {
+          "support": "unverified"
+        }
+      },
+      "speechInputs": {
+        "instructions": {
+          "supported": false
+        },
+        "language": {
+          "supported": false
+        }
+      },
+      "pricing": [],
+      "quirks": []
+    },
+    "cosy35": {
+      "declared": true,
+      "capability": {
+        "media": "audio",
+        "modes": {
+          "tts": "unverified"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "unsupported"
+        },
+        "aspectRatios": {
+          "support": "unsupported"
+        },
+        "voices": {
+          "support": "unsupported",
+          "value": [],
+          "note": "官方：v3.5 系列没有系统音色，只能用声音复刻或声音设计得到的音色（音色与合成型号绑定，不能跨型号）；这一版没有创建音色的通道，需要先在百炼控制台创建，再把 voice 值手填进来。"
+        }
+      },
+      "speechInputs": {
+        "instructions": {
+          "supported": true,
+          "maxLength": 100,
+          "counting": "cjk_double"
+        },
+        "language": {
+          "supported": true
+        }
+      },
+      "pricing": [],
+      "quirks": [
+        "官方 HTTP 页只写了北京地域（华北2）的接口 https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer；模型、地址、Key 必须同一地域。",
+        "官方：成品是 24 小时有效的链接，成功后会立即下载保存。",
+        "官方：风格 / 方言 / 情绪指令（instruction）最多 100 个字符，汉字算 2 个；语速 rate 0.5–2。",
+        "官方页面没有写单次文本长度上限，这里不填，不猜。",
+        "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
+        "单价只在检索摘要里见过，没有在官方页面核对，这里不填。"
+      ],
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+    }
+  },
+  "scenarios": {
+    "noVoiceTts1": {
+      "provider": "tts1",
+      "projectId": "proj_472e5c1fa3df",
+      "shotId": "sh_e1",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_472e5c1fa3df",
+        "name": "no voice, tts-1",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262174
+        },
+        "narrationDelivery": "tts",
+        "episodeOrder": ["e1"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262174,
+        "updatedAt": 1794627262174
+      },
+      "preflight": {
+        "ok": true,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e1",
+            "status": "accepted",
+            "reasons": [],
+            "warnings": [
+              {
+                "code": "NARRATION_VOICE_DEFAULTED",
+                "message": "项目还没有设置旁白音色，将使用服务商默认音色"
+              }
+            ],
+            "unverified": [],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号没有画像，未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "noVoiceRelay": {
+      "provider": "relay",
+      "projectId": "proj_1d7f12623e32",
+      "shotId": "sh_e2",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_1d7f12623e32",
+        "name": "no voice, relay",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262179
+        },
+        "narrationDelivery": "tts",
+        "episodeOrder": ["e2"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262179,
+        "updatedAt": 1794627262179
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e2",
+            "status": "needs_confirmation",
+            "reasons": [
+              {
+                "code": "UNVERIFIED_NEEDS_CONFIRMATION",
+                "message": "这次生成依赖没验证过的能力，需要确认后才会开始：gpt-4o-mini-tts 的 tts 模式没有验证过"
+              }
+            ],
+            "warnings": [
+              {
+                "code": "NARRATION_VOICE_DEFAULTED",
+                "message": "项目还没有设置旁白音色，将使用服务商默认音色"
+              }
+            ],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "gpt-4o-mini-tts 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "noVoiceCosy35": {
+      "provider": "cosy35",
+      "projectId": "proj_02deab4e6f54",
+      "shotId": "sh_e3",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_02deab4e6f54",
+        "name": "no voice, cosy 3.5",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262182
+        },
+        "narrationDelivery": "tts",
+        "episodeOrder": ["e3"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262182,
+        "updatedAt": 1794627262182
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e3",
+            "status": "blocked",
+            "reasons": [
+              {
+                "code": "NARRATION_VOICE_REQUIRED",
+                "message": "cosyvoice-v3.5-plus 没有默认音色，请先在项目里设置旁白音色"
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "cosyvoice-v3.5-plus 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "foreignOnClosed": {
+      "provider": "openai",
+      "projectId": "proj_db8edd01d2c2",
+      "shotId": "sh_e4",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_db8edd01d2c2",
+        "name": "foreign on closed",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262184
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_c232ce740847",
+          "voice": "Chinese (Mandarin)_News_Anchor"
+        },
+        "episodeOrder": ["e4"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262184,
+        "updatedAt": 1794627262184
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e4",
+            "status": "blocked",
+            "reasons": [
+              {
+                "code": "VOICE_NOT_AVAILABLE",
+                "message": "gpt-4o-mini-tts 没有音色“Chinese (Mandarin)_News_Anchor”，可选：alloy、ash、ballad、coral、echo 等"
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "gpt-4o-mini-tts 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "foreignOnOpen": {
+      "provider": "minimax",
+      "projectId": "proj_20303da38444",
+      "shotId": "sh_e5",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_20303da38444",
+        "name": "foreign on open",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262186
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_556039683524",
+          "voice": "nova"
+        },
+        "episodeOrder": ["e5"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262186,
+        "updatedAt": 1794627262186
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e5",
+            "status": "blocked",
+            "reasons": [
+              {
+                "code": "VOICE_FROM_ANOTHER_SERVICE",
+                "message": "音色“nova”是 OpenAI gpt-4o-mini-tts 的，speech-2.8-hd 用不了；换了服务商后请重新选择旁白音色"
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "speech-2.8-hd 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": true,
+              "currency": "CNY",
+              "amount": 0.0035,
+              "range": [0.0035, 0.007],
+              "approx": true
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {
+            "CNY": {
+              "amount": 0.0035,
+              "range": [0.0035, 0.007],
+              "approx": true
+            }
+          },
+          "unpriced": 0,
+          "remaining": {
+            "CNY": {
+              "amount": 0.0035,
+              "range": [0.0035, 0.007],
+              "approx": true
+            }
+          },
+          "isEstimate": true
+        }
+      }
+    },
+    "foreignOnNone": {
+      "provider": "cosy35",
+      "projectId": "proj_4bba4bd1cb22",
+      "shotId": "sh_e6",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_4bba4bd1cb22",
+        "name": "foreign on none",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262189
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_556039683524",
+          "voice": "alloy"
+        },
+        "episodeOrder": ["e6"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262189,
+        "updatedAt": 1794627262189
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e6",
+            "status": "blocked",
+            "reasons": [
+              {
+                "code": "VOICE_FROM_ANOTHER_SERVICE",
+                "message": "音色“alloy”是 OpenAI gpt-4o-mini-tts 的，cosyvoice-v3.5-plus 用不了；换了服务商后请重新选择旁白音色"
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "cosyvoice-v3.5-plus 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "foreignOnRelay": {
+      "provider": "relayTts1",
+      "projectId": "proj_faf7c4247ceb",
+      "shotId": "sh_e7",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_faf7c4247ceb",
+        "name": "foreign on relay",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262191
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_c232ce740847",
+          "voice": "male-qn-qingse"
+        },
+        "episodeOrder": ["e7"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262191,
+        "updatedAt": 1794627262191
+      },
+      "preflight": {
+        "ok": true,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e7",
+            "status": "accepted",
+            "reasons": [],
+            "warnings": [],
+            "unverified": [],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号没有画像，未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "narrationTooLong": {
+      "provider": "openai",
+      "projectId": "proj_c45de3674f0a",
+      "shotId": "sh_e8",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_c45de3674f0a",
+        "name": "narration too long",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262193
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_556039683524",
+          "voice": "nova"
+        },
+        "episodeOrder": ["e8"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262193,
+        "updatedAt": 1794627262193
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e8",
+            "status": "blocked",
+            "reasons": [
+              {
+                "code": "TEXT_TOO_LONG",
+                "message": "旁白有 5000 个字符，gpt-4o-mini-tts 单次最多 4096 个：请缩短旁白或把镜头拆开",
+                "details": {
+                  "limit": 4096,
+                  "actual": 5000,
+                  "counting": "characters"
+                }
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "gpt-4o-mini-tts 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "instructionTooLong": {
+      "provider": "cosyFlash",
+      "projectId": "proj_dcd9ea20d08f",
+      "shotId": "sh_e9",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_dcd9ea20d08f",
+        "name": "instruction too long",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262196
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_51b29c21bb6e",
+          "voice": "longanyang",
+          "instructions": "平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平"
+        },
+        "episodeOrder": ["e9"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262196,
+        "updatedAt": 1794627262196
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e9",
+            "status": "blocked",
+            "reasons": [
+              {
+                "code": "INSTRUCTION_TOO_LONG",
+                "message": "风格指令太长：CosyVoice 限制 100 个字符，汉字算 2 个（现在 120）",
+                "details": {
+                  "limit": 100,
+                  "actual": 120,
+                  "counting": "cjk_double"
+                }
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "cosyvoice-v3-flash 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": true,
+              "currency": "CNY",
+              "amount": 0.001,
+              "approx": false
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {
+            "CNY": {
+              "amount": 0.001,
+              "approx": false
+            }
+          },
+          "unpriced": 0,
+          "remaining": {
+            "CNY": {
+              "amount": 0.001,
+              "approx": false
+            }
+          },
+          "isEstimate": true
+        }
+      }
+    },
+    "withSpeed": {
+      "provider": "openai",
+      "projectId": "proj_670afa85f261",
+      "shotId": "sh_e10",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_670afa85f261",
+        "name": "voice with speed",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262198
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_556039683524",
+          "voice": "nova",
+          "speed": 1.25
+        },
+        "episodeOrder": ["e10"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262198,
+        "updatedAt": 1794627262198
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e10",
+            "status": "needs_confirmation",
+            "reasons": [
+              {
+                "code": "UNVERIFIED_NEEDS_CONFIRMATION",
+                "message": "这次生成依赖没验证过的能力，需要确认后才会开始：gpt-4o-mini-tts 的 tts 模式没有验证过"
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "gpt-4o-mini-tts 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "withSpeedAndInstructions": {
+      "provider": "openai",
+      "projectId": "proj_d18a8e5e990b",
+      "shotId": "sh_e11",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_d18a8e5e990b",
+        "name": "voice, speed, instructions",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262200
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_556039683524",
+          "voice": "nova",
+          "speed": 1.25,
+          "instructions": "轻声"
+        },
+        "episodeOrder": ["e11"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262200,
+        "updatedAt": 1794627262200
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e11",
+            "status": "needs_confirmation",
+            "reasons": [
+              {
+                "code": "UNVERIFIED_NEEDS_CONFIRMATION",
+                "message": "这次生成依赖没验证过的能力，需要确认后才会开始：gpt-4o-mini-tts 的 tts 模式没有验证过"
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "gpt-4o-mini-tts 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    },
+    "paddedVoice": {
+      "provider": "openai",
+      "projectId": "proj_cbadb16c5074",
+      "shotId": "sh_e12",
+      "project": {
+        "schemaVersion": 1,
+        "id": "proj_cbadb16c5074",
+        "name": "padded voice",
+        "aspectRatio": "9:16",
+        "style": {
+          "source": "none",
+          "label": "未指定",
+          "description": "",
+          "imageKeywords": "",
+          "expandedAt": 1794627262202
+        },
+        "narrationDelivery": "tts",
+        "narrationVoice": {
+          "providerConfigId": "prov_556039683524",
+          "voice": " nova ",
+          "speed": 1
+        },
+        "episodeOrder": ["e12"],
+        "counters": {
+          "episode": 0,
+          "scene": 0,
+          "shot": 0,
+          "asset": 0,
+          "material": 0
+        },
+        "createdAt": 1794627262202,
+        "updatedAt": 1794627262202
+      },
+      "preflight": {
+        "ok": false,
+        "results": [
+          {
+            "targetId": "shot_audio:sh_e12",
+            "status": "blocked",
+            "reasons": [
+              {
+                "code": "VOICE_NOT_AVAILABLE",
+                "message": "gpt-4o-mini-tts 没有音色“ nova ”，可选：alloy、ash、ballad、coral、echo 等"
+              }
+            ],
+            "warnings": [],
+            "unverified": [
+              {
+                "key": "mode:tts",
+                "code": "MODE_UNSUPPORTED",
+                "message": "gpt-4o-mini-tts 的 tts 模式没有验证过",
+                "confirmed": false
+              }
+            ],
+            "estimate": {
+              "priced": false,
+              "reason": "该型号未定价"
+            }
+          }
+        ],
+        "totals": {
+          "byCurrency": {},
+          "unpriced": 1,
+          "remaining": {},
+          "isEstimate": true
+        }
+      }
+    }
+  }
+}
