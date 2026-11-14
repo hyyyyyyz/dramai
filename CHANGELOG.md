@@ -43,14 +43,29 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   voice is spelled wrongly, or whose text is longer than the provider accepts. The narration voice setting can
   carry an optional style instruction and language hint; inputs a provider cannot use are not sent and are listed
   in the job result.
+- Stopping rules are only strict where the official documentation backs them: an unknown voice, an over-long text
+  or an over-long style instruction stops a narration before sending only for a model that has a profile on the
+  vendor's official address; for a self-entered model, a relay or any other address the same finding is a warning.
+  A blank voice counts as "not chosen".
+- If you already use `gpt-4o-mini-tts` through an OpenAI-compatible configuration, the model now has a profile, and
+  that changes: the first generation asks for one confirmation (its speech mode is documented, not tested); on
+  `api.openai.com` a voice outside the 13 official ones, a narration over 4096 characters and a style instruction
+  over 4096 characters are stopped before sending (the service would refuse them anyway) and a speed outside 0.25-4
+  is clamped; on any other address these only warn; a style instruction is now sent when you set one; the cost stays
+  "unpriced" (the service prices per token); the settings show its voice list. `tts-1`, `tts-1-hd` and every other
+  model without a profile behave exactly as before.
 - Timeline revisions made by the system (the first timeline of an episode, synchronising with the shot order, a
   rollback) carry a machine-readable reason, like the automatic mute does; older revisions are read as before.
 - `@dramai/api` exports the list of request headers that cannot be overridden by a provider's extra headers.
 
 ### Fixed
 
-- After a restart that interrupted a finished video or image job just before it was marked succeeded, the shot no
-  longer gets a second copy of the same version (this happened in 0.5.0-beta.1 as well).
+- After a restart that interrupted a finished job just before it was marked succeeded, the shot no longer gets a
+  second copy of the same version (this happened in 0.5.0-beta.1 as well). It covers every task that resumes a
+  download - video, images and CosyVoice voice-over - and a version only counts when it was saved by the current
+  attempt, so the result of a paid retry is never skipped because an earlier attempt had left a version behind.
+  Voice-over from services that answer with bytes still shows the job as failed after such a restart (the version
+  is saved, no second one is made).
 
 ### Changed
 
