@@ -1,6 +1,6 @@
 ---
 import type { Content } from '../content/types.ts'
-import { REPO, RELEASES, RELEASE_TAG, VERSION, fileName } from '../content/site.ts'
+import { REPO, RELEASES, RELEASE_TAG, PUBLISHED_VERSION, fileName } from '../content/site.ts'
 import { rich } from '../lib/rich.ts'
 import Icon from './Icon.astro'
 
@@ -24,7 +24,7 @@ const allCommands = w.commands.map((x) => `# ${x.comment}\n${x.command}`).join('
     <div class="dl">
       <div class="dl-card" id="desktop">
         <h3>
-          {d.name} <span class="ver mono">{VERSION}</span>
+          {d.name} <span class="ver mono">{PUBLISHED_VERSION}</span>
         </h3>
         <p class="dl-blurb">{d.blurb}</p>
         <ul class="plat">
@@ -46,6 +46,10 @@ const allCommands = w.commands.map((x) => `# ${x.comment}\n${x.command}`).join('
             </li>
           ))}
         </ul>
+        <div class="callout snapshot">
+          <h4>{d.snapshotTitle}</h4>
+          <p set:html={rich(d.snapshot)} />
+        </div>
         <div class="dl-actions">
           <a class="btn btn-primary" href={RELEASES}>
             {d.releases}

@@ -4,7 +4,7 @@ import '../styles/tokens.css'
 import '../styles/base.css'
 import '../styles/sections.css'
 import { fontPreloads } from '../lib/fonts.ts'
-import { absoluteUrl, VERSION } from '../content/site.ts'
+import { absoluteUrl, PUBLISHED_VERSION } from '../content/site.ts'
 import type { Locale } from '../content/types.ts'
 import Sprite from '../components/Sprite.astro'
 
@@ -49,7 +49,7 @@ const jsonLd = {
   name: 'dramai',
   applicationCategory: 'MultimediaApplication',
   operatingSystem: 'macOS, Windows, Linux',
-  softwareVersion: VERSION,
+  softwareVersion: PUBLISHED_VERSION,
   license: 'https://www.apache.org/licenses/LICENSE-2.0',
   isAccessibleForFree: true,
   description,

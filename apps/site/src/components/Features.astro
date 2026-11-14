@@ -2,6 +2,8 @@
 import type { Content, Locale } from '../content/types.ts'
 import Icon from './Icon.astro'
 import Shot from './Shot.astro'
+import { PROVIDER_FACTS, VENDOR_NAMES } from '../content/facts.ts'
+import type { ProviderKindId } from '../content/facts.ts'
 
 interface Props {
   c: Content
@@ -9,6 +11,8 @@ interface Props {
 }
 const { c, locale } = Astro.props
 const f = c.features
+const pv = f.providers
+const kinds: ProviderKindId[] = ['llm', 'image', 'video', 'speech']
 ---
 
 <section class="sec" id="features" aria-labelledby="features-title">
@@ -30,6 +34,77 @@ const f = c.features
       ))}
     </ul>
     <p class="feat-note">{f.locales}</p>
+
+    <div class="providers" id="providers">
+      <h3 class="block-title">
+        {pv.title}
+        <span class="src-tag">{pv.sourceTag}</span>
+      </h3>
+      <p class="block-lead">{pv.lead}</p>
+      <div class="kinds">
+        {kinds.map((k) => {
+          const facts = PROVIDER_FACTS.kinds[k]
+          return (
+            <div class="kind">
+              <h4>
+                {pv.kinds[k].name}
+                <span class="kcount mono">
+                  {pv.testedLabel} {facts.tested} · {pv.untestedLabel} {facts.documented}
+                </span>
+              </h4>
+              {pv.kinds[k].testedChips.length > 0 && (
+                <div class="kind-row">
+                  <span class="kl">{pv.testedLabel}</span>
+                  <ul class="chips">
+                    {pv.kinds[k].testedChips.map((t) => (
+                      <li class="chip pchip ok">
+                        <span class="dot" aria-hidden="true" />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div class="kind-row">
+                <span class="kl">{pv.untestedLabel}</span>
+                <ul class="chips">
+                  {facts.documentedVendors.map((id) => (
+                    <li class="chip pchip">{VENDOR_NAMES[id]?.[locale]}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <p class="fine">{pv.kindsNote}</p>
+
+      <div class="provider-notes">
+        <div>
+          <h4>{pv.accountTitle}</h4>
+          <p>{pv.accountLead}</p>
+          <dl class="notes">
+            {pv.account.map((a) => (
+              <div>
+                <dt>{a.name}</dt>
+                <dd>{a.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div>
+          <h4>{pv.optionsTitle}</h4>
+          <dl class="notes">
+            {pv.options.map((o) => (
+              <div>
+                <dt>{o.title}</dt>
+                <dd>{o.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
+    </div>
 
     <div class="screens" id="screens">
       <h3 class="block-title">{f.screensTitle}</h3>

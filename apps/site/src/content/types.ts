@@ -1,3 +1,5 @@
+import type { ProviderKindId } from './facts.ts'
+
 export type Locale = 'zh' | 'en'
 
 export type IconName =
@@ -13,6 +15,7 @@ export type IconName =
   | 'git'
   | 'down'
   | 'copy'
+  | 'alert'
   | 'play'
 
 export type ShotName = 'storyboard' | 'overview' | 'assets' | 'confirm' | 'compose' | 'tasks'
@@ -27,6 +30,8 @@ export interface Feature {
   icon: IconName
   title: string
   text: string
+  /** Optional small label next to the title, e.g. that the item is only in the source. */
+  tag?: string
 }
 
 export interface Screen {
@@ -100,6 +105,21 @@ export interface Content {
     lead: string
     items: Feature[]
     locales: string
+    providers: {
+      /** Small label for things that are in the source but not in the published installers. */
+      sourceTag: string
+      title: string
+      lead: string
+      testedLabel: string
+      untestedLabel: string
+      kinds: Record<ProviderKindId, { name: string; testedChips: string[] }>
+      kindsNote: string
+      accountTitle: string
+      accountLead: string
+      account: { name: string; text: string }[]
+      optionsTitle: string
+      options: { title: string; text: string }[]
+    }
     screensTitle: string
     screensNote: string
     screens: Screen[]
@@ -141,6 +161,8 @@ export interface Content {
       releases: string
       releasesTag: string
       note: string
+      snapshotTitle: string
+      snapshot: string
       unsignedTitle: string
       unsigned: string[]
       sizeNote: string
