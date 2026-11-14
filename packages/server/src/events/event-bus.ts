@@ -70,6 +70,17 @@ export class EventBus implements EventSink {
       case 'job.worker_error':
         this.publish({ type: 'job.worker_error', message: event.message })
         break
+      case 'job.notice':
+        this.publish({
+          type: 'job.notice',
+          level: event.level,
+          code: event.code,
+          message: event.message,
+          projectId: event.projectId,
+          ...(event.jobId === undefined ? {} : { jobId: event.jobId }),
+          ...(event.shotId === undefined ? {} : { shotId: event.shotId }),
+        })
+        break
       case 'artifact.changed':
         this.publish({ type: 'artifact.changed', projectId: event.projectId, key: event.key })
         break

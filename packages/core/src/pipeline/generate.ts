@@ -25,7 +25,7 @@ import type { JobContext, JobHandler } from '../jobs/worker.ts'
 import { runProviderJob } from '../jobs/provider-job.ts'
 import { createFfmpegImageEncoder, fitReferenceImages } from '../media/reference-images.ts'
 import type { ImageEncoder, ReferenceImageInput } from '../media/reference-images.ts'
-import { probeMedia } from '../media/ffmpeg.ts'
+import { inspectAudio, probeMedia } from '../media/ffmpeg.ts'
 import { resolveOutputSize } from '../media/output-size.ts'
 import { readImageSize } from '../parsers/image-size.ts'
 import { compileImagePrompt, compileVideoPrompt } from '../prompts/compile.ts'
@@ -134,21 +134,39 @@ const PIXEL_SIZE_PROTOCOLS: ReadonlySet<string> = new Set([
 ])
 
 /**
- * 恢复的任务：进程在“版本已保存”和“任务标成成功”之间停了的话，重启后恢复流程会让这个任务续下载（检查点里有结果地址），
- * 处理器如果再跑一遍，就会把同一个成品下载保存成第二个版本（没有重新提交、不会再花钱，但镜头上多一个重复的版本）。
- * 版本上记着产生它的任务（`jobId`）：恢复的任务先看目标上是不是已经有自己的版本，有就直接以它为结果收尾，不再下载。
- * 只在恢复时检查（`ctx.resume`）；正常运行的任务一个版本都不会有。
+ * 恢复时“这一次尝试已经保存过成品”的判断，**所有会续下载的任务类型共用这一处**（视频、分镜图 / 设定图、配音都调用它）。
+ *
+ * 为什么会需要：进程在“版本已提交”和“任务标成成功”之间停了的话，重启后恢复流程看到检查点里有结果地址或上游任务号，
+ * 会让任务续轮询 / 续下载；处理器如果再跑一遍，就会把同一个成品保存成第二个版本。会续下载的任务，共同条件就是
+ * `ctx.resume`（恢复流程写的 `resumeFrom`）：只要它有值，处理器开头就先问这里。不分任务种类、不分协议是同步还是异步
+ * （阿里 CosyVoice 配音是同步协议，但结果是链接，检查点里有结果地址，恢复时同样续下载）。
+ *
+ * 判据：版本上的 `jobId` **和** `attempt` 都等于这个任务**现在这一次**尝试。任务失败后用户确认再次计费重试时，任务号不变、
+ * 尝试序号加一——上一次尝试留下的版本不是这次的成品，不能拿它收尾（第二次已经付费的结果会丢）。
+ * 旧版本没有 `attempt`，不能确认是这次的，一律继续下载并保存：**拿不准就多保存一个，不能少下载一个。**
  */
-async function versionSavedByJob(
+async function versionSavedByThisAttempt(
   deps: PipelineDeps,
   ctx: JobContext,
   target: GenerationTarget,
 ): Promise<MediaVersion | undefined> {
   if (!ctx.resume) return undefined
   const slots: MediaSlot[] = []
-  if (target.kind === 'shot_video' || target.kind === 'shot_image') {
+  if (
+    target.kind === 'shot_video' ||
+    target.kind === 'shot_image' ||
+    target.kind === 'shot_audio'
+  ) {
     const shot = await deps.store.shots.get(target.shotId)
-    if (shot) slots.push(target.kind === 'shot_video' ? shot.video : shot.image)
+    if (shot) {
+      slots.push(
+        target.kind === 'shot_video'
+          ? shot.video
+          : target.kind === 'shot_image'
+            ? shot.image
+            : shot.narrationAudio,
+      )
+    }
   } else if (target.kind === 'asset_sheet') {
     const asset = await deps.store.assets.get(target.assetId)
     if (asset) {
@@ -160,9 +178,21 @@ async function versionSavedByJob(
     }
   }
   for (const slot of slots)
-    for (const v of slot?.versions ?? []) if (v.jobId === ctx.job.id) return v
+    for (const v of slot?.versions ?? [])
+      if (v.jobId === ctx.job.id && v.attempt !== undefined && v.attempt === ctx.job.attempt)
+        return v
   return undefined
 }
+
+/** 已保存的版本直接作为这个任务的结果（不下载、不再保存）。 */
+const alreadySavedResult = (v: MediaVersion) => ({
+  result: {
+    versionId: v.id,
+    path: v.file.path,
+    ...(v.withNativeAudio !== undefined ? { withNativeAudio: v.withNativeAudio } : {}),
+    alreadySaved: true,
+  },
+})
 
 function jobTarget(ctx: JobContext): GenerationTarget {
   const t = ctx.job.params.target as GenerationTarget | undefined
@@ -276,6 +306,40 @@ async function probeBytes(
   }
 }
 
+/**
+ * 配音：探测并判断服务商返回的是不是可用的音频（见 `inspectAudio`）。探测工具不可用 / 自己出了故障（`unknown`）时和以前一样：
+ * 不记时长、照常保存。工具明确判定“这不是可解码的音频”才返回 `bad`——此时**在写入文件之前**就返回，所以没有任何文件落盘，也不会登记版本。
+ */
+async function inspectAudioBytes(
+  deps: PipelineDeps,
+  bytes: Uint8Array,
+  ext: string,
+): Promise<{ facts?: MediaFacts; bad?: string }> {
+  if (!deps.media) return {}
+  let dir: string | undefined
+  try {
+    dir = await mkdtemp(join(tmpdir(), 'dramai-probe-'))
+    const file = join(dir, `f.${ext}`)
+    await writeFile(file, bytes)
+    const r = await inspectAudio(deps.media.bins, file)
+    if (r.verdict === 'not_audio') return { bad: r.reason }
+    if (r.verdict === 'unknown') return {}
+    return {
+      facts: {
+        width: r.info.width,
+        height: r.info.height,
+        durationSec: r.info.durationSec,
+        hasAudio: r.info.hasAudio,
+        fps: r.info.fps,
+      },
+    }
+  } catch {
+    return {}
+  } finally {
+    if (dir) await removeRetry(dir)
+  }
+}
+
 interface Stored {
   version: MediaVersion
   file: FileRef
@@ -315,6 +379,7 @@ async function storeVersion(
     source: input.source,
     createdAt: deps.clock.now(),
     jobId: input.ctx.job.id,
+    attempt: input.ctx.job.attempt,
     prompt: input.prompt,
     provider: {
       providerConfigId: input.config.id,
@@ -420,10 +485,8 @@ async function doImageJob(
   ctx: JobContext,
   target: Extract<GenerationTarget, { kind: 'asset_sheet' | 'shot_image' }>,
 ) {
-  const saved = await versionSavedByJob(deps, ctx, target)
-  if (saved) {
-    return { result: { versionId: saved.id, path: saved.file.path, alreadySaved: true } }
-  }
+  const saved = await versionSavedByThisAttempt(deps, ctx, target)
+  if (saved) return alreadySavedResult(saved)
   const config = await providerFor(deps, ctx, 'image')
   const lookup = deps.catalog.models.lookup(config)
   const cap = lookup.capability
@@ -755,17 +818,8 @@ function pickResolution(cap: ModelCapability, requested?: string): string | unde
 }
 
 async function doVideoJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
-  const saved = await versionSavedByJob(deps, ctx, { kind: 'shot_video', shotId })
-  if (saved) {
-    return {
-      result: {
-        versionId: saved.id,
-        path: saved.file.path,
-        withNativeAudio: saved.withNativeAudio,
-        alreadySaved: true,
-      },
-    }
-  }
+  const saved = await versionSavedByThisAttempt(deps, ctx, { kind: 'shot_video', shotId })
+  if (saved) return alreadySavedResult(saved)
   const config = await providerFor(deps, ctx, 'video')
   const lookup = deps.catalog.models.lookup(config)
   const cap = lookup.capability
@@ -987,6 +1041,8 @@ export async function runAudioJob(deps: PipelineDeps, ctx: JobContext) {
 }
 
 async function doAudioJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
+  const saved = await versionSavedByThisAttempt(deps, ctx, { kind: 'shot_audio', shotId })
+  if (saved) return alreadySavedResult(saved)
   const config = await providerFor(deps, ctx, 'tts')
   const projection = await loadProjection(deps.store, ctx.job.projectId)
   const inputs = resolveInputs(projection, { kind: 'shot_audio', shotId })
@@ -1051,7 +1107,18 @@ async function doAudioJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   await ctx.setStage('processing')
   const ext = extFor(out.mime, 'mp3')
   // 配音实测时长：合成时旁白按它摆放，可以比镜头长。
-  const facts = await probeBytes(deps, out.bytes, ext)
+  const inspected = await inspectAudioBytes(deps, out.bytes, ext)
+  if (inspected.bad !== undefined) {
+    // 请求已经被服务商处理过（可能已计费），但返回的不是可用的音频：不保存（还没有写文件，也不登记版本），
+    // 按“结果不明”处理——重试要用户确认
+    throw new JobFailure({
+      category: 'submission_unknown',
+      code: 'AUDIO_UNREADABLE',
+      message: `服务商返回的不是可用的音频（${inspected.bad}）：没有保存。请求已经被处理，可能已计费；重新生成需要确认`,
+      recoverable: false,
+    })
+  }
+  const facts = inspected.facts
   const stored = await storeVersion(deps, {
     projectId: project.id,
     ctx,

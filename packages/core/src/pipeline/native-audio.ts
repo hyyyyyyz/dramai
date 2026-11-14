@@ -167,9 +167,15 @@ export async function applyNativeAudioDefaultAfterSave(
   } catch (err) {
     // 不含任何内容：只有出错的类型名。视频已经保存；这个片段的音量保持原样，用户可以在时间线上自己调。
     try {
+      // 提示，不是失败：视频已经保存，任务是成功的（所以不用 `job.worker_error`，那个表示执行器出错）
       deps.events?.emit({
-        type: 'job.worker_error',
+        type: 'job.notice',
+        level: 'warning',
+        code: 'native_audio_default_failed',
         message: `时间线默认静音没有完成（视频已保存）：${err instanceof Error ? err.name : 'Error'}`,
+        projectId: input.shotBefore.projectId,
+        ...(input.version.jobId ? { jobId: input.version.jobId } : {}),
+        shotId: input.shotBefore.id,
       })
     } catch {
       // 连提示都发不出去也不影响视频任务

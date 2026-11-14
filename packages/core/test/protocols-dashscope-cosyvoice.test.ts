@@ -124,13 +124,16 @@ describe('dashscope-cosyvoice: the request', () => {
     ).toMatchObject({
       code: 'INSTRUCTION_TOO_LONG',
     })
-    expect(() =>
-      dashscopeCosyvoice.buildGenerateRequest(auth(), {
-        text: 'x',
-        voice: 'v',
-        instructions: fiftyOne,
-      }),
-    ).toThrow(expect.objectContaining({ kind: 'capability', code: 'INSTRUCTION_TOO_LONG' }))
+    // the protocol itself sends what it is given; admission decides whether this blocks (official address + profile) or warns
+    expect(
+      body(
+        dashscopeCosyvoice.buildGenerateRequest(auth(), {
+          text: 'x',
+          voice: 'v',
+          instructions: fiftyOne,
+        }),
+      ).input.instruction,
+    ).toBe(fiftyOne)
   })
 
   it('language_hints: one official code only; unknown ones are dropped and reported', () => {
@@ -204,16 +207,16 @@ describe('dashscope-cosyvoice: the response', () => {
     expect(r).not.toHaveProperty('rejected')
   })
 
-  it('a business error inside a 200 body is a clear rejection with the upstream code', () => {
+  it('a business error inside a 200 body keeps the upstream code but is NOT called a clear rejection (the page says nothing about charging)', () => {
     const r = dashscopeCosyvoice.parseGenerateResponse(
       raw({ code: 'InvalidParameter', message: 'voice not found', request_id: 'r' }),
     )
     expect(r).toMatchObject({
       status: 'failed',
-      rejected: true,
       code: 'InvalidParameter',
       message: 'voice not found',
     })
+    expect(r).not.toHaveProperty('rejected')
   })
 
   it('HTTP error bodies: code and message are read; only 429 / 5xx are retryable', () => {
@@ -367,9 +370,9 @@ describe('dashscope-cosyvoice: through the executor (submit, then the link is do
     await expect(
       run(j({ code: 'DataInspectionFailed', message: 'content' })),
     ).rejects.toMatchObject({
-      kind: 'upstream_failed',
+      kind: 'parse',
       code: 'DataInspectionFailed',
-      submission: 'rejected',
+      submission: 'unknown', // an error shape the official page does not describe: not assumed to be free of charge
     })
   })
 })

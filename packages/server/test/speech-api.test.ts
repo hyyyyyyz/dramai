@@ -139,3 +139,79 @@ describe('the narration voice and admission over HTTP', () => {
     expect(ok.results[0]!.estimate).toMatchObject({ priced: true, currency: 'CNY' })
   })
 })
+
+describe('exec 32: what a speech model takes, over HTTP', () => {
+  it('providers.capability says which optional inputs and which limits - the protocol is the source, a profile is not needed', async () => {
+    const h = await boot()
+    const openai = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'openai-tts-key', apiKey: 'sk-oa-123456789012' },
+    })
+    const a = await h.client.call('providers.capability', { params: { providerId: openai.id } })
+    expect(a.speechInputs).toEqual({
+      instructions: { supported: true, maxLength: 4096, counting: 'characters' },
+      language: { supported: false },
+    })
+    // tts-1 takes none
+    await h.client.call('providers.update', {
+      params: { providerId: openai.id },
+      body: { model: 'tts-1' },
+    })
+    const b = await h.client.call('providers.capability', { params: { providerId: openai.id } })
+    expect(b.declared).toBe(false)
+    expect(b.speechInputs).toEqual({
+      instructions: { supported: false },
+      language: { supported: false },
+    })
+    const mm = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'minimax-tts-cn', apiKey: 'sk-mm-123456789012' },
+    })
+    expect(
+      (await h.client.call('providers.capability', { params: { providerId: mm.id } })).speechInputs,
+    ).toEqual({ instructions: { supported: false }, language: { supported: true } })
+    const cosy = await h.client.call('providers.fromPreset', {
+      body: {
+        presetId: 'aliyun-cosyvoice-cn',
+        apiKey: 'sk-ali-123456789012',
+        baseUrl: 'https://ws1.cn-beijing.maas.aliyuncs.com',
+      },
+    })
+    expect(
+      (await h.client.call('providers.capability', { params: { providerId: cosy.id } }))
+        .speechInputs,
+    ).toEqual({
+      instructions: { supported: true, maxLength: 100, counting: 'cjk_double' },
+      language: { supported: true },
+    })
+  })
+
+  it('a provider that is not a speech provider has no speechInputs', async () => {
+    const h = await boot()
+    const llm = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'deepseek-llm', apiKey: 'sk-ds-123456789012' },
+    })
+    const c = await h.client.call('providers.capability', { params: { providerId: llm.id } })
+    expect(c).not.toHaveProperty('speechInputs')
+  })
+
+  it('the pre-flight reason carries limit / actual / counting', async () => {
+    const h = await boot()
+    const openai = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'openai-tts-key', apiKey: 'sk-oa-123456789012' },
+    })
+    await h.server.ctx.store.shots.put({
+      ...(await h.server.ctx.store.shots.get('sh1'))!,
+      narration: '字'.repeat(4097),
+    })
+    await h.client.call('projects.update', {
+      params: { projectId: 'p1' },
+      body: { narrationVoice: { providerConfigId: openai.id, voice: 'alloy' } },
+    })
+    const r = await h.client.call('generate.preflight', {
+      params: { projectId: 'p1' },
+      body: { items: [{ target: { kind: 'shot_audio', shotId: 'sh1' }, providerId: openai.id }] },
+    })
+    expect(r.results[0]!.reasons.find((x) => x.code === 'TEXT_TOO_LONG')).toMatchObject({
+      details: { limit: 4096, actual: 4097, counting: 'characters' },
+    })
+  })
+})

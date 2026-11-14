@@ -197,6 +197,19 @@ export type CoreEvent =
   | { type: 'project.changed'; projectId: ProjectId }
   /** 时间线被后台自动改了一个修订（如第一份生成的视频到了，片段原声默认音量跟着定下来）。 */
   | { type: 'timeline.changed'; projectId: ProjectId; episodeId: string }
+  /**
+   * **提示，不是失败**：任务本身的结果是对的（例如视频已经保存），只是某个附带步骤没有完成。
+   * 客户端不得把它显示成“任务失败”或“执行器出错”（那是 `job.worker_error`）。`code` 是稳定的机器可读码。
+   */
+  | {
+      type: 'job.notice'
+      level: 'info' | 'warning'
+      code: string
+      message: string
+      projectId: ProjectId
+      jobId?: JobId
+      shotId?: string
+    }
 
 export interface EventSink {
   emit(event: CoreEvent): void

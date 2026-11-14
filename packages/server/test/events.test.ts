@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { serverEvent } from '@dramai/api'
 import { EventBus } from '../src/events/event-bus.ts'
 import { cleanupAll, startServer } from './helpers.ts'
 
@@ -39,6 +40,42 @@ describe('EventBus', () => {
     expect(seen).toEqual([
       { type: 'data.changed', entity: 'timeline', projectId: 'p1', ids: ['ep1'], op: 'updated' },
     ])
+  })
+
+  it('a core job.notice reaches clients as a job.notice (a hint, never a job.worker_error) and is accepted by the contract', () => {
+    const bus = new EventBus({ epoch: 'e5' })
+    const seen: unknown[] = []
+    bus.subscribe((e) => seen.push(e.event))
+    bus.emit({
+      type: 'job.notice',
+      level: 'warning',
+      code: 'native_audio_default_failed',
+      message: '时间线默认静音没有完成（视频已保存）：TypeError',
+      projectId: 'p1',
+      jobId: 'j1',
+      shotId: 's1',
+    })
+    bus.emit({
+      type: 'job.notice',
+      level: 'info',
+      code: 'x',
+      message: 'm',
+      projectId: 'p1',
+    })
+    expect(seen).toEqual([
+      {
+        type: 'job.notice',
+        level: 'warning',
+        code: 'native_audio_default_failed',
+        message: '时间线默认静音没有完成（视频已保存）：TypeError',
+        projectId: 'p1',
+        jobId: 'j1',
+        shotId: 's1',
+      },
+      { type: 'job.notice', level: 'info', code: 'x', message: 'm', projectId: 'p1' },
+    ])
+    for (const e of seen) expect(serverEvent.safeParse(e).success).toBe(true)
+    expect(seen.some((e) => (e as { type: string }).type === 'job.worker_error')).toBe(false)
   })
 
   it('coalesces text deltas, keeps order, and does not replay them', async () => {

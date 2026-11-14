@@ -58,6 +58,12 @@ export interface MediaVersion {
   createdAt: number
   /** 产生这个版本的任务（上传的没有）。 */
   jobId?: JobId
+  /**
+   * 产生这个版本的**那一次尝试**（任务的 `attempt`；失败后确认重试会加一）。重启恢复据此区分“这次尝试已经保存过成品”
+   * 和“上一次尝试留下的旧版本”：只有任务号和尝试序号都对得上才算这次的成品。旧版本没有这个字段，
+   * 按“不能确认是这次的”处理，也就是照旧继续下载。
+   */
+  attempt?: number
   prompt?: string
   provider?: ProviderSnapshot
   facts?: MediaFacts
