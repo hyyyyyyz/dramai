@@ -9,7 +9,6 @@ import { qk } from '@/data/keys'
 import {
   useCall,
   useProviderCapability,
-  useProject,
   useProviders,
   usePreflight,
   useSettings,
@@ -20,9 +19,8 @@ import { CostBox } from './CostBox'
 import { costHeadline } from './cost'
 import { batchTargetId, type BatchCandidate, type BatchKind } from './batch-model'
 import { VOICE_REASONS, visibleReasons } from './reasons'
-import { useReasonText } from './use-reason-text'
+import { SPEECH_WARNABLE, useReasonText } from './use-reason-text'
 import { VideoRefsControl } from './VideoRefsControl'
-import { instructionWeight } from '@/features/settings/voice-model'
 import { VIDEO_PLAN_WARNINGS, frameOutcome } from './video-refs-model'
 import { usedReferenceNames } from './version-model'
 import { useFormat } from '@/i18n/format'
@@ -83,15 +81,7 @@ export function BatchConfirmDialog({
     (p) => p.id === settings.data?.activeProviders[providerKind],
   )
   const cap = useProviderCapability(provider?.id ?? '', Boolean(provider))
-  // narration: the numbers behind "too long" come from the model's limit and the project's style instruction
-  const project = useProject(projectId)
-  const reasonText = useReasonText(assets, {
-    video: kind === 'shot_video',
-    speech: {
-      limit: cap.data?.capability.maxPromptChars,
-      instructionChars: instructionWeight(project.data?.narrationVoice?.instructions ?? ''),
-    },
-  })
+  const reasonText = useReasonText(assets, { video: kind === 'shot_video' })
 
   const verdictOf = (shotId: string) =>
     pre.data?.results.find((v) => v.targetId === batchTargetId(kind, shotId))
@@ -109,6 +99,7 @@ export function BatchConfirmDialog({
       (pre.data?.results ?? [])
         .flatMap((v) => v.warnings)
         .filter((w) => !(kind === 'shot_video' && VIDEO_PLAN_WARNINGS.includes(w.code)))
+        .filter((w) => !(kind === 'shot_audio' && SPEECH_WARNABLE.includes(w.code)))
         .map((w) => [`${w.code}:${w.assetId ?? ''}`, w] as const),
     ).values(),
   ]
@@ -253,7 +244,7 @@ export function BatchConfirmDialog({
                       <ul className="mt-1 flex flex-col gap-1 text-muted-foreground">
                         {visibleReasons(v.reasons).map((r, i) => (
                           <li key={`${r.code}-${i}`}>
-                            {reasonText(r, { chars: c.narrationChars })}
+                            {reasonText(r)}
                             {VOICE_REASONS.includes(r.code) && (
                               <>
                                 {' '}
@@ -269,6 +260,35 @@ export function BatchConfirmDialog({
                         ))}
                       </ul>
                     )}
+                    {checked &&
+                      kind === 'shot_audio' &&
+                      v &&
+                      v.status !== 'blocked' &&
+                      v.warnings.some((w) => SPEECH_WARNABLE.includes(w.code)) && (
+                        <ul
+                          className="mt-1 flex flex-col gap-1 text-muted-foreground"
+                          data-testid="shot-warnings"
+                        >
+                          {v.warnings
+                            .filter((w) => SPEECH_WARNABLE.includes(w.code))
+                            .map((w, i) => (
+                              <li key={`${w.code}-${i}`}>
+                                {reasonText(w, { warning: true })}
+                                {VOICE_REASONS.includes(w.code) && (
+                                  <>
+                                    {' '}
+                                    <Link
+                                      to={`/projects/${projectId}?voice=1`}
+                                      className="text-accent-text underline underline-offset-2"
+                                    >
+                                      {t('storyboard.blocked.goVoice')}
+                                    </Link>
+                                  </>
+                                )}
+                              </li>
+                            ))}
+                        </ul>
+                      )}
                     {checked && v?.status === 'blocked_by_batch' && (
                       <p className="mt-1 text-muted-foreground">
                         {t('storyboard.batch.byBatch', {

@@ -12,8 +12,6 @@ export interface BatchCandidate {
   thumb?: string
   /** 补充说明（比如“用指令修改”的那句指令），写在名字下面。 */
   note?: string
-  /** 旁白配音：这个镜头的旁白有多少个字符，超长时说明用（字符数，按码点）。 */
-  narrationChars?: number
   /** 请求里的目标。 */
   target: GenerateItem['target']
 }

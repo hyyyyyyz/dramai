@@ -1,6 +1,8 @@
 import { Route, Routes } from 'react-router'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useContext, useEffect } from 'react'
+import { StoreContext } from '@/data/contexts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { GenerateItem, Shot } from '@dramai/api'
 import { StoryboardPage } from '@/features/storyboard/StoryboardPage'
@@ -47,6 +49,8 @@ function setup(opts: {
   artifacts?: ReturnType<typeof staleReport>[]
   jobs?: ReturnType<typeof makeJob>[]
   routes?: Parameters<typeof fakeServer>[0]
+  /** Rendered next to the page (a test can use it to reach the event store). */
+  extra?: React.ReactNode
 }) {
   const detail = makeEpisodeDetail(opts.shots)
   detail.refs = opts.refs ?? []
@@ -76,12 +80,15 @@ function setup(opts: {
     ...opts.routes,
   })
   const view = renderApp(
-    <Routes>
-      <Route
-        path="/projects/:projectId/episodes/:episodeId/storyboard"
-        element={<StoryboardPage />}
-      />
-    </Routes>,
+    <>
+      <Routes>
+        <Route
+          path="/projects/:projectId/episodes/:episodeId/storyboard"
+          element={<StoryboardPage />}
+        />
+      </Routes>
+      {opts.extra}
+    </>,
     { client: server.client, route: '/projects/proj_1/episodes/ep_1/storyboard' },
   )
   return { ...view, server }
@@ -487,5 +494,32 @@ describe('storyboard page', () => {
     const c = await card(1)
     expect(await within(c).findByRole('button', { name: 'Generate image' })).toBeInTheDocument()
     expect(screen.getByText(/Storyboard · 1 scenes · 1 shots/)).toBeInTheDocument()
+  })
+})
+
+describe('a notice about a shot', () => {
+  it('shows on that shot’s card, not only in the task panel', async () => {
+    function Push() {
+      const store = useContext(StoreContext)
+      useEffect(
+        () =>
+          store?.addNotice({
+            type: 'job.notice',
+            level: 'warning',
+            code: 'native_audio_default_failed',
+            message: '服务端的话',
+            projectId: 'proj_1',
+            shotId: 'b',
+          }),
+        [store],
+      )
+      return null
+    }
+    setup({ shots: [makeShot({ id: 'a' }), makeShot({ id: 'b' })], extra: <Push /> })
+    const second = await card(2)
+    expect(await within(second).findByTestId('shot-notice')).toHaveTextContent(
+      '时间线的默认静音没有设上',
+    )
+    expect(within(await card(1)).queryByTestId('shot-notice')).toBeNull()
   })
 })

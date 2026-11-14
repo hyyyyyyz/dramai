@@ -100,14 +100,20 @@ export default {
     unknownHint: '这个型号没有音色清单，音色名要自己写，写法以服务商为准',
     siliconflowFormat:
       '硅基流动的音色要写成“模型名:音色名”，例如 {{model}}:alex；从清单里选会自动写好',
-    formatBad: '写法不对：要写成“模型名:音色名”（或上传参考音频得到的 speech:… 地址）',
+    formatBad:
+      '写法可能不对：硅基流动的音色要写成“模型名:音色名”（或上传参考音频得到的 speech:… 地址）',
     documented: '音色清单来自官方文档，没有实测过；以服务商实际支持的为准',
-    notInList: '{{model}} 没有这个音色。从清单里重新选一个，不然生成会被拦下',
+    notInList:
+      '{{model}} 没有这个音色。从清单里重新选一个：在官方地址上生成会被拦下，其他地址多半也会失败',
     unlisted:
       '这个音色不在常用清单里。如果是你自己的克隆或自定义音色就没问题；不存在的话服务商会拒绝，不收费',
     instructions: '风格指令（可选）',
     instructionsHint: '用自然语言说语气和情绪，例如“平静、略带笑意”',
-    instructionsTooLong: '风格指令太长：最多 {{max}} 个字符，汉字算 2 个，现在是 {{n}}',
+    instructionsOver:
+      '风格指令超过了这个型号的上限（最多 {{max}}，现在是 {{n}}）。在官方地址上生成会被拦下，其他地址可能失败；可以先保存，生成前预检会再说明',
+    instructionCount: '已写 {{n}} / {{max}}（{{how}}）',
+    instructionMax: '最多 {{max}}',
+    counting: { characters: '按字符计', cjk_double: '汉字算 2 个' },
     ignoredInstructions: '{{model}} 会忽略风格指令，已填的内容不会被使用',
     language: '语言提示（可选）',
     languageHint: '例如 zh、en、ja',

@@ -100,14 +100,20 @@ export default {
     unknownHint: '這個型號沒有音色清單，音色名要自己寫，寫法以服務商為準',
     siliconflowFormat:
       '矽基流動的音色要寫成“模型名:音色名”，例如 {{model}}:alex；從清單裡選會自動寫好',
-    formatBad: '寫法不對：要寫成“模型名:音色名”（或上傳參考音訊得到的 speech:… 地址）',
+    formatBad:
+      '寫法可能不對：矽基流動的音色要寫成“模型名:音色名”（或上傳參考音訊得到的 speech:… 地址）',
     documented: '音色清單來自官方文件，沒有實測過；以服務商實際支援的為準',
-    notInList: '{{model}} 沒有這個音色。從清單裡重新選一個，不然生成會被攔下',
+    notInList:
+      '{{model}} 沒有這個音色。從清單裡重新選一個：在官方地址上生成會被攔下，其他地址多半也會失敗',
     unlisted:
       '這個音色不在常用清單裡。如果是你自己的克隆或自定義音色就沒問題；不存在的話服務商會拒絕，不收費',
     instructions: '風格指令（可選）',
     instructionsHint: '用自然語言說語氣和情緒，例如“平靜、略帶笑意”',
-    instructionsTooLong: '風格指令太長：最多 {{max}} 個字元，漢字算 2 個，現在是 {{n}}',
+    instructionsOver:
+      '風格指令超過了這個型號的上限（最多 {{max}}，現在是 {{n}}）。在官方地址上生成會被攔下，其他地址可能失敗；可以先儲存，生成前預檢會再說明',
+    instructionCount: '已寫 {{n}} / {{max}}（{{how}}）',
+    instructionMax: '最多 {{max}}',
+    counting: { characters: '按字元計', cjk_double: '漢字算 2 個' },
     ignoredInstructions: '{{model}} 會忽略風格指令，已填的內容不會被使用',
     language: '語言提示（可選）',
     languageHint: '例如 zh、en、ja',

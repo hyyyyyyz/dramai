@@ -3,10 +3,9 @@ import { Field, Hint, Input, Notice, Select, Textarea } from '@dramai/ui/v2'
 import { useProviderCapability, useProviders, useSettings } from '@/data/queries'
 import { OTHER, type VoiceDraft } from './voice-draft'
 import {
-  INSTRUCTION_MAX,
-  instructionWeight,
+  NO_SPEECH_INPUTS,
+  instructionCount,
   isSiliconflow,
-  speechInputSupport,
   voiceFit,
   voiceFormatProblem,
   voiceListKind,
@@ -43,9 +42,10 @@ export function VoiceSettings({
   const typed =
     kind === 'open' ? !list.some((v) => v.id === draft.voice) && draft.voice !== '' : false
   const picking = kind === 'closed' || (kind === 'open' && !typed && draft.voice !== OTHER)
-  const support = speechInputSupport(provider.protocol, provider.model)
-  const instructionOver =
-    support.instructions && instructionWeight(draft.instructions) > INSTRUCTION_MAX
+  // what the model takes besides the voice, and the limit and way of counting of the style instruction, are the
+  // server's to say (`speechInputs`); nothing here knows a protocol or a model name
+  const inputs = cap.data.speechInputs ?? NO_SPEECH_INPUTS
+  const count = instructionCount(inputs, draft.instructions)
   const formatBad = voiceFormatProblem(provider.baseUrl, provider.model, draft.voice)
   const labelOf = (v: { id: string; label?: string; lang?: string }) =>
     [v.label ?? v.id, v.lang].filter(Boolean).join(' · ')
@@ -150,7 +150,7 @@ export function VoiceSettings({
         <Notice tone="warn">{t('narrationVoice.required', { model: provider.model })}</Notice>
       )}
       {fit === 'not_in_list' && (
-        <Notice tone="danger">{t('narrationVoice.notInList', { model: provider.model })}</Notice>
+        <Notice tone="warn">{t('narrationVoice.notInList', { model: provider.model })}</Notice>
       )}
       {fit === 'unlisted' && draft.voice !== OTHER && (
         <Notice tone="info">{t('narrationVoice.unlisted')}</Notice>
@@ -158,14 +158,27 @@ export function VoiceSettings({
 
       <Field
         label={t('narrationVoice.instructions')}
-        hint={support.instructions ? t('narrationVoice.instructionsHint') : undefined}
-        error={
-          instructionOver
-            ? t('narrationVoice.instructionsTooLong', {
-                max: INSTRUCTION_MAX,
-                n: instructionWeight(draft.instructions),
-              })
-            : undefined
+        hint={
+          inputs.instructions.supported ? (
+            <>
+              <span className="block">{t('narrationVoice.instructionsHint')}</span>
+              {count ? (
+                <span className="block" data-testid="instruction-count">
+                  {t('narrationVoice.instructionCount', {
+                    n: count.n,
+                    max: count.max,
+                    how: t(
+                      `narrationVoice.counting.${count.counting}` as 'narrationVoice.counting.characters',
+                    ),
+                  })}
+                </span>
+              ) : inputs.instructions.maxLength !== undefined ? (
+                <span className="block">
+                  {t('narrationVoice.instructionMax', { max: inputs.instructions.maxLength })}
+                </span>
+              ) : null}
+            </>
+          ) : undefined
         }
       >
         <Textarea
@@ -174,14 +187,19 @@ export function VoiceSettings({
           onChange={(e) => onChange({ ...draft, instructions: e.target.value })}
         />
       </Field>
-      {draft.instructions.trim() !== '' && !support.instructions && (
+      {count?.over && (
+        <Notice tone="warn" data-testid="instruction-over">
+          {t('narrationVoice.instructionsOver', { max: count.max, n: count.n })}
+        </Notice>
+      )}
+      {draft.instructions.trim() !== '' && !inputs.instructions.supported && (
         <Notice tone="info">
           {t('narrationVoice.ignoredInstructions', { model: provider.model })}
         </Notice>
       )}
       <Field
         label={t('narrationVoice.language')}
-        hint={support.language ? t('narrationVoice.languageHint') : undefined}
+        hint={inputs.language.supported ? t('narrationVoice.languageHint') : undefined}
       >
         <Input
           mono
@@ -191,7 +209,7 @@ export function VoiceSettings({
           onChange={(e) => onChange({ ...draft, language: e.target.value })}
         />
       </Field>
-      {draft.language.trim() !== '' && !support.language && (
+      {draft.language.trim() !== '' && !inputs.language.supported && (
         <Notice tone="info">
           {t('narrationVoice.ignoredLanguage', { model: provider.model })}
         </Notice>

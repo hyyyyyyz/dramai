@@ -2,20 +2,20 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useContext, useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { GenerateItem, Project } from '@dramai/api'
+import type { GenerateItem, Project, ServerEvent } from '@dramai/api'
 import { StoreContext } from '@/data/contexts'
 import { BatchConfirmDialog } from '@/features/storyboard/BatchConfirmDialog'
 import type { BatchCandidate } from '@/features/storyboard/batch-model'
 import { ProjectSettingsDialog } from '@/features/overview/ProjectSettingsDialog'
 import { TaskItem } from '@/features/jobs/TaskItem'
 import { TaskPanel } from '@/features/jobs/TaskPanel'
-import { workerErrorKind } from '@/features/jobs/job-model'
 import { costHeadline, hasRange } from '@/features/storyboard/cost'
 import { ProvidersPage } from '@/features/settings/ProvidersPage'
 import { ALL_PROTOCOLS, PROTOCOLS_BY_KIND, kindOfProtocol } from '@/features/settings/protocols'
 import {
-  instructionWeight,
-  speechInputSupport,
+  NO_SPEECH_INPUTS,
+  countText,
+  instructionCount,
   voiceFit,
   voiceFormatProblem,
   voiceListKind,
@@ -59,10 +59,27 @@ const MINIMAX_VOICES = [
   voice('male-qn-qingse', '青涩青年', 'zh'),
 ]
 
-function speechCap(over: Record<string, unknown>) {
+type Inputs = {
+  instructions: { supported: boolean; maxLength?: number; counting?: string }
+  language: { supported: boolean }
+}
+// what the server reports each kind of model takes besides the voice
+const OPENAI_INPUTS: Inputs = {
+  instructions: { supported: true, maxLength: 4096, counting: 'characters' },
+  language: { supported: false },
+}
+const COSY_INPUTS: Inputs = {
+  instructions: { supported: true, maxLength: 100, counting: 'cjk_double' },
+  language: { supported: true },
+}
+const MINIMAX_INPUTS: Inputs = { instructions: { supported: false }, language: { supported: true } }
+const NONE_INPUTS: Inputs = { instructions: { supported: false }, language: { supported: false } }
+
+function speechCap(over: Record<string, unknown>, speechInputs?: Inputs) {
   const base = makeCapabilityView()
   return {
     ...base,
+    ...(speechInputs ? { speechInputs } : {}),
     capability: {
       ...base.capability,
       media: 'audio' as const,
@@ -71,21 +88,27 @@ function speechCap(over: Record<string, unknown>) {
     },
   }
 }
-const closedCap = speechCap({
-  voices: { support: 'supported', value: OPENAI_VOICES },
-  defaultVoice: 'alloy',
-  maxPromptChars: 4096,
-})
-const openCap = speechCap({
-  voices: {
-    support: 'unverified',
-    value: MINIMAX_VOICES,
-    note: '官方文档列出的常用音色，共 332 个，没有实测',
+const closedCap = speechCap(
+  {
+    voices: { support: 'supported', value: OPENAI_VOICES },
+    defaultVoice: 'alloy',
+    maxPromptChars: 4096,
   },
-  defaultVoice: 'Chinese (Mandarin)_News_Anchor',
-  maxPromptChars: 9999,
-})
-const noVoicesCap = speechCap({ voices: { support: 'unsupported', value: [] } })
+  OPENAI_INPUTS,
+)
+const openCap = speechCap(
+  {
+    voices: {
+      support: 'unverified',
+      value: MINIMAX_VOICES,
+      note: '官方文档列出的常用音色，共 332 个，没有实测',
+    },
+    defaultVoice: 'Chinese (Mandarin)_News_Anchor',
+    maxPromptChars: 9999,
+  },
+  MINIMAX_INPUTS,
+)
+const noVoicesCap = speechCap({ voices: { support: 'unsupported', value: [] } }, COSY_INPUTS)
 
 const ttsProvider = (patch: Record<string, unknown>) =>
   makeKeyProvider({ id: 'prov_tts', label: '配音', kind: 'tts', ...patch })
@@ -135,27 +158,42 @@ describe('voice rules', () => {
     expect(voiceFormatProblem(url, model, '')).toBe(false)
     expect(voiceFormatProblem('https://api.openai.com/v1', 'gpt-4o-mini-tts', 'alloy')).toBe(false)
   })
-  it('knows which models take a style instruction and a language hint', () => {
-    expect(speechInputSupport('openai-tts', 'gpt-4o-mini-tts')).toEqual({
-      instructions: true,
-      language: false,
-    })
-    expect(speechInputSupport('openai-tts', 'tts-1')).toEqual({
-      instructions: false,
-      language: false,
-    })
-    expect(speechInputSupport('minimax-t2a', 'speech-2.8-hd')).toEqual({
-      instructions: false,
-      language: true,
-    })
-    expect(speechInputSupport('dashscope-cosyvoice', 'cosyvoice-v3-flash')).toEqual({
-      instructions: true,
-      language: true,
-    })
+  it('counts the way the server says: characters, or a Chinese character as 2; an unknown way gives nothing', () => {
+    expect(countText('abc平静', 'characters')).toBe(5)
+    expect(countText('abc平静', 'cjk_double')).toBe(7)
+    expect(countText('abc', 'some_new_way')).toBeUndefined()
+    expect(countText('abc', undefined)).toBeUndefined()
   })
-  it('counts a Chinese character as 2 in an instruction', () => {
-    expect(instructionWeight('abc')).toBe(3)
-    expect(instructionWeight('平静')).toBe(4)
+  it('the instruction limit and counting come from the capability, per model', () => {
+    const text = '平'.repeat(60)
+    // OpenAI gpt-4o-mini-tts: 4096, by characters: 60 is nowhere near
+    expect(instructionCount(OPENAI_INPUTS as never, text)).toEqual({
+      n: 60,
+      max: 4096,
+      counting: 'characters',
+      over: false,
+    })
+    // Alibaba: 100, a Chinese character counts 2: 60 characters is 120, over
+    expect(instructionCount(COSY_INPUTS as never, text)).toEqual({
+      n: 120,
+      max: 100,
+      counting: 'cjk_double',
+      over: true,
+    })
+    // MiniMax takes no instruction: nothing to compare
+    expect(instructionCount(MINIMAX_INPUTS as never, text)).toBeUndefined()
+    // a model with no profile, or nothing reported
+    expect(instructionCount(NO_SPEECH_INPUTS, text)).toBeUndefined()
+    // a way of counting this version does not know: no local check
+    expect(
+      instructionCount(
+        {
+          instructions: { supported: true, maxLength: 10, counting: 'syllables' },
+          language: { supported: false },
+        } as never,
+        text,
+      ),
+    ).toBeUndefined()
   })
 })
 
@@ -377,32 +415,108 @@ describe('choosing the narration voice', () => {
       screen.getByText(/要写成“模型名:音色名”，例如 FunAudioLLM\/CosyVoice2-0.5B:alex/),
     ).toBeInTheDocument()
     await userEvent.type(typed, 'alex')
-    expect(await screen.findByText(/写法不对：要写成“模型名:音色名”/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/写法可能不对：硅基流动的音色要写成“模型名:音色名”/),
+    ).toBeInTheDocument()
   })
 
-  it('style instruction and language: shown as ignored on a model that does not take them; too long blocks saving on CosyVoice', async () => {
-    openSettings({ cap: closedCap, provider: { protocol: 'openai-tts', model: 'tts-1' } })
+  it('a model that reports it takes neither input shows what was typed as ignored', async () => {
+    openSettings({
+      cap: speechCap(
+        { voices: { support: 'supported', value: OPENAI_VOICES }, defaultVoice: 'alloy' },
+        NONE_INPUTS,
+      ),
+      provider: { protocol: 'openai-tts', model: 'tts-1' },
+    })
     await userEvent.type(await screen.findByRole('textbox', { name: '风格指令（可选）' }), '开心')
     expect(await screen.findByText(/会忽略风格指令，已填的内容不会被使用/)).toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox', { name: '语言提示（可选）' }), 'zh')
     expect(await screen.findByText(/会忽略语言提示/)).toBeInTheDocument()
   })
 
-  it('a style instruction over CosyVoice’s limit says how long it is and blocks saving', async () => {
+  it('MiniMax takes no style instruction (it takes a language hint): typing one shows it as ignored, no count is shown', async () => {
     openSettings({
-      cap: speechCap({
-        voices: { support: 'unverified', value: [voice('longanyang')] },
-        defaultVoice: 'longanyang',
-      }),
+      cap: openCap,
+      provider: {
+        protocol: 'minimax-t2a',
+        model: 'speech-2.8-hd',
+        baseUrl: 'https://api.minimaxi.com/v1',
+      },
+    })
+    await userEvent.type(await screen.findByRole('textbox', { name: '风格指令（可选）' }), '开心')
+    expect(await screen.findByText(/会忽略风格指令/)).toBeInTheDocument()
+    expect(screen.queryByTestId('instruction-count')).toBeNull()
+    // the language hint is taken: no "ignored" note, and its hint is shown
+    await userEvent.type(screen.getByRole('textbox', { name: '语言提示（可选）' }), 'zh')
+    expect(screen.queryByText(/会忽略语言提示/)).toBeNull()
+    expect(screen.getByText('例如 zh、en、ja')).toBeInTheDocument()
+  })
+
+  it('a capability that reports nothing at all (no profile) is treated as taking neither', async () => {
+    openSettings({
+      cap: speechCap({ voices: { support: 'unsupported', value: [] } }),
+      provider: { protocol: 'openai-tts', model: 'my-own-model' },
+    })
+    await userEvent.type(await screen.findByRole('textbox', { name: '风格指令（可选）' }), '开心')
+    expect(await screen.findByText(/会忽略风格指令/)).toBeInTheDocument()
+  })
+
+  it('OpenAI gpt-4o-mini-tts: the limit is 4096 counted in characters, so 60 Chinese characters are 60 of 4096', async () => {
+    openSettings({ cap: closedCap })
+    const box = await screen.findByRole('textbox', { name: '风格指令（可选）' })
+    await userEvent.click(box)
+    await userEvent.paste('平'.repeat(60))
+    expect(await screen.findByTestId('instruction-count')).toHaveTextContent(
+      '已写 60 / 4096（按字符计）',
+    )
+    expect(screen.queryByTestId('instruction-over')).toBeNull()
+    expect(screen.getByRole('button', { name: '保存' })).toBeEnabled()
+  })
+
+  it('Alibaba CosyVoice: the limit is 100 and a Chinese character counts 2, shown while typing; over it is a reminder, not a stop', async () => {
+    const server = openSettings({
+      cap: speechCap(
+        {
+          voices: { support: 'unverified', value: [voice('longanyang')] },
+          defaultVoice: 'longanyang',
+        },
+        COSY_INPUTS,
+      ),
       provider: { protocol: 'dashscope-cosyvoice', model: 'cosyvoice-v3-flash' },
     })
     const box = await screen.findByRole('textbox', { name: '风格指令（可选）' })
     await userEvent.click(box)
-    await userEvent.paste('平'.repeat(60))
-    expect(
-      await screen.findByText('风格指令太长：最多 100 个字符，汉字算 2 个，现在是 120'),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '保存' })).toBeDisabled()
+    await userEvent.paste('平'.repeat(30))
+    expect(await screen.findByTestId('instruction-count')).toHaveTextContent(
+      '已写 60 / 100（汉字算 2 个）',
+    )
+    expect(screen.queryByTestId('instruction-over')).toBeNull()
+    await userEvent.paste('平'.repeat(30))
+    expect(await screen.findByTestId('instruction-count')).toHaveTextContent('已写 120 / 100')
+    expect(screen.getByTestId('instruction-over')).toHaveTextContent('最多 100，现在是 120')
+    // the server's pre-flight says whether this is refused; the dialog still lets it be saved
+    expect(screen.getByRole('button', { name: '保存' })).toBeEnabled()
+    await save(server)
+    expect(patchBody(server).narrationVoice).toMatchObject({ instructions: '平'.repeat(60) })
+  })
+
+  it('a way of counting this version does not know: the limit is stated, nothing is counted or checked here', async () => {
+    openSettings({
+      cap: speechCap(
+        { voices: { support: 'unverified', value: [voice('v1')] }, defaultVoice: 'v1' },
+        {
+          instructions: { supported: true, maxLength: 10, counting: 'syllables' },
+          language: { supported: false },
+        },
+      ),
+      provider: { protocol: 'openai-tts', model: 'gpt-4o-mini-tts' },
+    })
+    const box = await screen.findByRole('textbox', { name: '风格指令（可选）' })
+    await userEvent.click(box)
+    await userEvent.paste('平'.repeat(50))
+    expect(screen.getByText('最多 10')).toBeInTheDocument()
+    expect(screen.queryByTestId('instruction-count')).toBeNull()
+    expect(screen.queryByTestId('instruction-over')).toBeNull()
   })
 
   it('a project not delivered by speech has no voice section', async () => {
@@ -509,7 +623,7 @@ describe('switching the speech provider', () => {
     await userEvent.click(within(card).getByRole('button', { name: '设为使用' }))
     const box = await screen.findByTestId('voice-switch')
     expect(box).toHaveTextContent(
-      '「清朝宫廷」的音色“male-qn-qingse”是之前那家服务商的，新的服务商用不了。',
+      '「清朝宫廷」的音色“male-qn-qingse”像是之前那家服务商的，新的服务商多半用不了，生成时可能会失败。',
     )
     expect(within(box).getByRole('link', { name: '去重选音色' })).toHaveAttribute(
       'href',
@@ -521,38 +635,34 @@ describe('switching the speech provider', () => {
 // ------------------------------------------------------------------ the confirm dialog
 
 describe('the confirm dialog for narration', () => {
-  const candidate = (n: number, chars?: number): BatchCandidate => ({
-    shotId: `s${n}`,
-    index: n,
-    label: `镜头 0${n}`,
-    narrationChars: chars,
-    target: { kind: 'shot_audio', shotId: `s${n}` },
-  })
-  function open(
-    codes: Record<string, { code: string; message: string }[]>,
-    cap = closedCap,
-    p = project(),
-  ) {
-    const candidates = Object.keys(codes).map((id) => ({
-      ...candidate(Number(id.slice(1)), id === 's1' ? 5000 : undefined),
+  type Item = {
+    code: string
+    message: string
+    details?: { limit: number; actual: number; counting: string }
+  }
+  /** Per shot: reasons that block, and reasons that only warn (the same codes, when the server has no firm basis). */
+  function open(shots: Record<string, { block?: Item[]; warn?: Item[] }>) {
+    const candidates: BatchCandidate[] = Object.keys(shots).map((id) => ({
       shotId: id,
+      index: Number(id.slice(1)),
+      label: `镜头 0${id.slice(1)}`,
       target: { kind: 'shot_audio' as const, shotId: id },
     }))
     const server = fakeServer({
-      'GET /api/projects/proj_1': () => p,
       'GET /api/settings': () => ({ activeProviders: { tts: 'prov_tts' }, cost: {} }),
       'GET /api/providers': () => ({
         items: [makeProvider({ id: 'prov_tts', kind: 'tts', label: '配音' })],
       }),
-      'GET /api/providers/prov_tts/capability': () => cap,
+      'GET /api/providers/prov_tts/capability': () => closedCap,
       'POST /api/projects/proj_1/preflight': ({ body }) =>
         makePreflight(
           (body as { items: GenerateItem[] }).items.map((it) => {
             const id = (it.target as { shotId: string }).shotId
-            const reasons = codes[id] ?? []
+            const { block = [], warn = [] } = shots[id] ?? {}
             return makeVerdict(`shot_audio:${id}`, {
-              status: reasons.length ? 'blocked' : 'accepted',
-              reasons,
+              status: block.length ? 'blocked' : 'accepted',
+              reasons: block,
+              warnings: warn,
             })
           }),
         ),
@@ -574,8 +684,8 @@ describe('the confirm dialog for narration', () => {
 
   it('the voice of another service and a voice this service lacks read differently, and both say where to fix it', async () => {
     open({
-      s1: [{ code: 'VOICE_FROM_ANOTHER_SERVICE', message: 'x' }],
-      s2: [{ code: 'VOICE_NOT_AVAILABLE', message: 'x' }],
+      s1: { block: [{ code: 'VOICE_FROM_ANOTHER_SERVICE', message: 'x' }] },
+      s2: { block: [{ code: 'VOICE_NOT_AVAILABLE', message: 'x' }] },
     })
     expect(await screen.findByText(/是另一家语音服务商的，当前的服务商用不了/)).toBeInTheDocument()
     expect(screen.getByText(/没有项目里选的这个音色（它的音色是封闭清单/)).toBeInTheDocument()
@@ -585,63 +695,149 @@ describe('the confirm dialog for narration', () => {
   })
 
   it('a voice that is required but not chosen says so', async () => {
-    open({ s1: [{ code: 'NARRATION_VOICE_REQUIRED', message: 'x' }] })
+    open({ s1: { block: [{ code: 'NARRATION_VOICE_REQUIRED', message: 'x' }] } })
     expect(
       await screen.findByText(/当前的语音型号没有默认音色。先去项目设置里选一个音色/),
     ).toBeInTheDocument()
   })
 
-  it('a narration that is too long says how long it is, what the limit is, and what to do', async () => {
-    open({ s1: [{ code: 'TEXT_TOO_LONG', message: 'x' }] })
+  it('a narration that is too long: the numbers are the server’s (OpenAI, counted in characters)', async () => {
+    open({
+      s1: {
+        block: [
+          {
+            code: 'TEXT_TOO_LONG',
+            message: 'x',
+            details: { limit: 4096, actual: 5000, counting: 'characters' },
+          },
+        ],
+      },
+    })
     expect(
       await screen.findByText(
-        /这段旁白有 5000 个字符，当前的语音型号单次最多 4096 个。把这个镜头的旁白缩短、拆成两个镜头，或者换一个单次上限更高的语音服务商/,
+        /这段旁白有 5000 个字符，当前的语音型号单次最多 4096。把这个镜头的旁白缩短、拆成两个镜头，或者换一个单次上限更高的语音服务商/,
       ),
     ).toBeInTheDocument()
   })
 
-  it('a too-long narration of a shot whose length is not known still gives the way out', async () => {
-    open({ s2: [{ code: 'TEXT_TOO_LONG', message: 'x' }] })
+  it('a style instruction that is too long: the numbers and the way of counting are the server’s (Alibaba, a Chinese character is 2)', async () => {
+    open({
+      s2: {
+        block: [
+          {
+            code: 'INSTRUCTION_TOO_LONG',
+            message: 'x',
+            details: { limit: 100, actual: 120, counting: 'cjk_double' },
+          },
+        ],
+      },
+    })
+    expect(
+      await screen.findByText(/风格指令有 120 个字符（汉字算 2 个），超过了这个型号的上限 100/),
+    ).toBeInTheDocument()
+  })
+
+  it('without details, a too-long text still says what to do, with no numbers', async () => {
+    open({
+      s1: { block: [{ code: 'TEXT_TOO_LONG', message: 'x' }] },
+      s2: { block: [{ code: 'INSTRUCTION_TOO_LONG', message: 'x' }] },
+    })
     expect(
       await screen.findByText(/这段旁白超过了当前语音型号的单次上限。把这个镜头的旁白缩短/),
     ).toBeInTheDocument()
+    expect(screen.getByText(/风格指令超过了这个型号的上限。去项目设置里缩短它/)).toBeInTheDocument()
   })
 
-  it('a style instruction that is too long says how long it is now', async () => {
-    open(
-      { s2: [{ code: 'INSTRUCTION_TOO_LONG', message: 'x' }] },
-      closedCap,
-      project({
-        narrationVoice: {
-          providerConfigId: 'prov_tts',
-          voice: 'alloy',
-          instructions: '平'.repeat(60),
-        },
-      }),
+  it('a way of counting this version does not know: the numbers are shown without a unit', async () => {
+    open({
+      s1: {
+        block: [
+          {
+            code: 'TEXT_TOO_LONG',
+            message: 'x',
+            details: { limit: 10, actual: 12, counting: 'syllables' },
+          },
+        ],
+      },
+    })
+    expect(await screen.findByText(/这段旁白有 12，当前的语音型号单次最多 10/)).toBeInTheDocument()
+  })
+
+  it('the five speech codes as warnings say it may fail, are shown next to the shot, and do not stop the batch', async () => {
+    const warn = (code: string, details?: Item['details']): Item => ({
+      code,
+      message: 'x',
+      details,
+    })
+    open({
+      s1: {
+        warn: [
+          warn('VOICE_NOT_AVAILABLE'),
+          warn('VOICE_FROM_ANOTHER_SERVICE'),
+          warn('VOICE_FORMAT_INVALID'),
+          warn('INSTRUCTION_TOO_LONG', { limit: 4096, actual: 5000, counting: 'characters' }),
+          warn('TEXT_TOO_LONG', { limit: 100, actual: 130, counting: 'cjk_double' }),
+        ],
+      },
+    })
+    const list = await screen.findByTestId('shot-warnings')
+    const text = list.textContent ?? ''
+    expect(text).toContain('可能不在当前语音型号的清单里，生成可能会失败')
+    expect(text).toContain('看起来是另一家语音服务商的，生成可能会失败')
+    expect(text).toContain('音色的写法可能不对')
+    expect(text).toContain('风格指令有 5000 个字符，超过了这个型号的上限 4096，生成可能会失败')
+    expect(text).toContain(
+      '这段旁白有 130 个字符（汉字算 2 个），超过了当前语音型号的单次上限 100，生成可能会失败',
     )
-    expect(
-      await screen.findByText(/最多 100 个字符（汉字算 2 个），现在是 120/),
-    ).toBeInTheDocument()
+    // never the wording of a block
+    expect(text).not.toContain('不能生成')
+    expect(text).not.toContain('当前的服务商用不了')
+    // the voice ones link to where the voice is chosen
+    expect(within(list).getAllByRole('link', { name: '去选音色' }).length).toBeGreaterThan(0)
+    // not in the general warnings list as well, and the batch can go ahead
+    expect(screen.queryByText('不会拦下，但值得知道')).toBeNull()
+    expect(screen.getByText('可运行')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /确认并加入队列/ })).toBeEnabled(),
+    )
   })
 
   it('a code this version has no words for shows the server’s own text', async () => {
-    open({ s2: [{ code: 'SOMETHING_NEW_FROM_A_NEWER_SERVER', message: '服务端写的说明' }] })
+    open({
+      s2: { block: [{ code: 'SOMETHING_NEW_FROM_A_NEWER_SERVER', message: '服务端写的说明' }] },
+    })
     expect(await screen.findByText('服务端写的说明')).toBeInTheDocument()
   })
 
-  it('every new code has copy in all three languages', () => {
-    for (const code of [
+  it('every new code has copy in all three languages, as a block and as a warning', () => {
+    const blocks = [
       'NARRATION_VOICE_REQUIRED',
       'VOICE_NOT_AVAILABLE',
       'VOICE_FROM_ANOTHER_SERVICE',
       'VOICE_FORMAT_INVALID',
       'INSTRUCTION_TOO_LONG',
+      'INSTRUCTION_TOO_LONG_PLAIN',
       'TEXT_TOO_LONG',
       'TEXT_TOO_LONG_PLAIN',
       'VOICE_UNLISTED',
-    ])
-      for (const dict of [zh, zhTW, en])
-        expect((dict.reasons as Record<string, string>)[code], code).toBeTruthy()
+    ]
+    const warns = [
+      'VOICE_NOT_AVAILABLE',
+      'VOICE_FROM_ANOTHER_SERVICE',
+      'VOICE_FORMAT_INVALID',
+      'INSTRUCTION_TOO_LONG',
+      'INSTRUCTION_TOO_LONG_PLAIN',
+      'TEXT_TOO_LONG',
+      'TEXT_TOO_LONG_PLAIN',
+    ]
+    for (const dict of [zh, zhTW, en]) {
+      const r = dict.reasons as unknown as Record<string, unknown>
+      for (const code of blocks) expect(r[code], code).toBeTruthy()
+      for (const code of warns)
+        expect((r.warn as Record<string, string>)[code], `warn ${code}`).toBeTruthy()
+      for (const how of ['characters', 'cjk_double'])
+        expect((r.how as Record<string, string>)[how], how).toBeTruthy()
+    }
   })
 })
 
@@ -687,6 +883,13 @@ describe('task details', () => {
     expect(line).toHaveTextContent('风格指令（这个型号不支持，没有使用）')
     expect(line).toHaveTextContent('语速（超出服务商的范围，已调整到范围内）')
   })
+  it('a speech that was clamped into the provider’s range says the speed was adjusted', () => {
+    item(makeJob({ status: 'succeeded', result: { ignoredInputs: ['speed'] } }))
+    expect(screen.getByTestId('ignored-inputs')).toHaveTextContent(
+      '语速（超出服务商的范围，已调整到范围内）',
+    )
+    expect(screen.getByTestId('ignored-inputs')).not.toHaveTextContent('风格指令')
+  })
   it('nothing is said when nothing was dropped', () => {
     item(makeJob({ status: 'succeeded', result: { versionId: 'v' } }))
     expect(screen.queryByTestId('ignored-inputs')).toBeNull()
@@ -720,39 +923,96 @@ describe('task details', () => {
   })
 })
 
-describe('the automatic mute did not finish', () => {
-  it('is recognised from the server’s words, and is not a runner failure', () => {
-    expect(workerErrorKind('时间线默认静音没有完成（视频已保存）：TypeError')).toBe('mute_not_set')
-    expect(workerErrorKind('boom')).toBe('runner')
+describe('job.notice: a note that is not a failure', () => {
+  type NoticeEvent = Extract<ServerEvent, { type: 'job.notice' }>
+  const notice = (over: Partial<NoticeEvent> = {}): NoticeEvent => ({
+    type: 'job.notice',
+    level: 'warning',
+    code: 'native_audio_default_failed',
+    message: '时间线默认静音没有完成（视频已保存）：TypeError',
+    projectId: 'proj_1',
+    ...over,
   })
 
-  function Push({ message }: { message: string }) {
+  function Push({ events, error }: { events?: NoticeEvent[]; error?: string }) {
     const store = useContext(StoreContext)
-    useEffect(() => store?.setWorkerError(message), [store, message])
+    useEffect(() => {
+      for (const e of events ?? []) store?.addNotice(e)
+      if (error) store?.setWorkerError(error)
+    }, [store, events, error])
     return null
   }
-  const panel = (message: string) =>
+  const panel = (props: { events?: NoticeEvent[]; error?: string }, jobs: unknown[] = []) =>
     renderApp(
       <>
-        <Push message={message} />
+        <Push {...props} />
         <TaskPanel />
       </>,
       {
         client: fakeServer({
-          'GET /api/jobs': () => ({ items: [] }),
+          'GET /api/jobs': () => ({ items: jobs }),
           'GET /api/projects': () => ({ items: [] }),
         }).client,
       },
     )
 
-  it('shows a quiet note that the video is saved, not an error banner', async () => {
-    panel('时间线默认静音没有完成（视频已保存）：TypeError')
-    expect(await screen.findByText('时间线的默认静音没有设上')).toBeInTheDocument()
-    expect(screen.getByText(/视频已经生成并保存了，没有失败/)).toBeInTheDocument()
+  it('a known code is shown in the interface language as a quiet note, not an error banner', async () => {
+    panel({ events: [notice()] })
+    const n = await screen.findByTestId('job-notice')
+    expect(n).toHaveTextContent('时间线的默认静音没有设上')
+    expect(n).toHaveTextContent('视频已经生成并保存了，没有失败')
     expect(screen.queryByText('任务执行器出错了')).toBeNull()
   })
-  it('any other runner error is still shown as one', async () => {
-    panel('boom')
+
+  it('an unknown code shows the server’s own message, styled by its level', async () => {
+    panel({
+      events: [
+        notice({ code: 'something_new', level: 'info', message: '配音已保存，但可能不完整' }),
+        notice({ code: 'another_new', level: 'warning', message: '另一条提示' }),
+      ],
+    })
+    const notes = await screen.findAllByTestId('job-notice')
+    expect(notes).toHaveLength(2)
+    expect(notes[0]).toHaveTextContent('配音已保存，但可能不完整')
+    expect(notes[1]).toHaveTextContent('另一条提示')
+    expect(notes[0]!.className).not.toEqual(notes[1]!.className)
+    expect(notes[0]).not.toHaveTextContent('something_new')
+  })
+
+  it('a runner error (job.worker_error) is still the red banner, and is a different thing', async () => {
+    panel({ error: 'boom' })
     expect(await screen.findByText('任务执行器出错了')).toBeInTheDocument()
+    expect(screen.queryByTestId('job-notice')).toBeNull()
+  })
+
+  it('a notice can be dismissed', async () => {
+    panel({ events: [notice()] })
+    await userEvent.click(
+      await within(await screen.findByTestId('job-notice')).findByRole('button', {
+        name: '知道了',
+      }),
+    )
+    await waitFor(() => expect(screen.queryByTestId('job-notice')).toBeNull())
+  })
+
+  it('a notice that belongs to a task shows on that task, and the same notice twice is one', async () => {
+    const job = makeJob({ id: 'job_a', status: 'succeeded' })
+    panel({ events: [notice({ jobId: 'job_a' }), notice({ jobId: 'job_a' })] }, [
+      { ...job, needsAttention: false, target: { kind: 'project' }, resultIgnored: false },
+    ])
+    expect(await screen.findAllByTestId('job-notice')).toHaveLength(1)
+    expect(await screen.findByTestId('task-notice')).toHaveTextContent('时间线的默认静音没有设上')
+  })
+
+  it('English and Traditional Chinese', async () => {
+    for (const [locale, text] of [
+      ['en', 'The timeline’s default mute wasn’t set'],
+      ['zh-TW', '時間線的預設靜音沒有設上'],
+    ] as const) {
+      await switchLocale(locale)
+      const { unmount } = panel({ events: [notice()] })
+      expect(await screen.findByText(text)).toBeInTheDocument()
+      unmount()
+    }
   })
 })

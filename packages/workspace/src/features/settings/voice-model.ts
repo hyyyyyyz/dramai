@@ -1,5 +1,4 @@
 import type { CallOutput } from '@dramai/api'
-import type { ProtocolId } from './protocols'
 
 type Capability = CallOutput<'providers.capability'>['capability']
 
@@ -40,33 +39,39 @@ export function voiceFormatProblem(baseUrl: string, model: string, voice: string
   return !(v === '' || v.startsWith('speech:') || v.startsWith(`${model}:`))
 }
 
-/**
- * Which optional narration inputs the model really sends (from the request builders): a style instruction goes out for
- * OpenAI's `gpt-4o-mini-tts*` and CosyVoice, a language hint for MiniMax and CosyVoice. The others drop what was
- * typed and list it in the task result's `ignoredInputs`.
- */
-export function speechInputSupport(
-  protocol: ProtocolId,
-  model: string,
-): { instructions: boolean; language: boolean } {
-  switch (protocol) {
-    case 'openai-tts':
-      return { instructions: /^gpt-4o-mini-tts/i.test(model), language: false }
-    case 'minimax-t2a':
-      return { instructions: false, language: true }
-    case 'dashscope-cosyvoice':
-      return { instructions: true, language: true }
-    default:
-      return { instructions: false, language: false }
-  }
+/** What a speech model takes besides the voice, as the server reports it (`speechInputs` of the capability). */
+export type SpeechInputs = NonNullable<CallOutput<'providers.capability'>['speechInputs']>
+/** A model that reports nothing takes neither input. */
+export const NO_SPEECH_INPUTS: SpeechInputs = {
+  instructions: { supported: false },
+  language: { supported: false },
 }
 
-/** CosyVoice's limit on the style instruction: 100 characters, a Chinese (full-width) character counts for 2. */
-export const INSTRUCTION_MAX = 100
-export function instructionWeight(text: string): number {
-  let n = 0
-  for (const ch of text) n += /[⺀-鿿豈-﫿＀-￯]/.test(ch) ? 2 : 1
-  return n
+/**
+ * How many a text counts for under the way the server says it counts: `characters` (code points) or `cjk_double`
+ * (a Chinese or full-width character counts as 2). A way of counting this version doesn't know gives nothing, and the
+ * caller then does no local check and leaves it to the pre-flight.
+ */
+export function countText(text: string, counting: string | undefined): number | undefined {
+  if (counting === 'characters') return [...text].length
+  if (counting === 'cjk_double') {
+    let n = 0
+    for (const ch of text) n += /[⺀-鿿豈-﫿＀-￯]/.test(ch) ? 2 : 1
+    return n
+  }
+  return undefined
+}
+
+/** The style instruction typed so far against the model's limit: the count and the limit, or nothing to compare. */
+export function instructionCount(
+  inputs: SpeechInputs,
+  text: string,
+): { n: number; max: number; counting: string; over: boolean } | undefined {
+  const { maxLength, counting } = inputs.instructions
+  if (!inputs.instructions.supported || maxLength === undefined || counting === undefined)
+    return undefined
+  const n = countText(text, counting)
+  return n === undefined ? undefined : { n, max: maxLength, counting, over: n > maxLength }
 }
 
 export type VoiceFit =

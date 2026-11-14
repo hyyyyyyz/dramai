@@ -73,7 +73,6 @@ export default {
         creator: 'You',
         agent: 'Agent',
         external: 'External tool',
-        system: 'System (automatic)',
       },
       current: 'Current',
       cutFrom: 'cut rendered from this one',
@@ -82,9 +81,9 @@ export default {
       syncShots: 'Synced with the shot order',
       rollbackPlain: 'Rolled back to an earlier revision',
       nativeAudio:
-        'The model of some clips can’t turn its own audio off, so their audio starts muted; you can raise it',
+        'Set automatically: the model of some clips can’t turn its own audio off, so their audio starts muted; you can raise it',
       nativeAudioClips:
-        'The model of these clips can’t turn its own audio off, so their audio starts muted; you can raise it: {{clips}}',
+        'Set automatically: the model of these clips can’t turn its own audio off, so their audio starts muted; you can raise it: {{clips}}',
       listSep: ', ',
       rollback: 'Go back to this',
       rollbackLabel: 'Go back to revision {{n}}',

@@ -227,8 +227,14 @@ describe('prompt mentions', () => {
 describe('reason codes', () => {
   it('every known reason code has copy in both languages', () => {
     for (const code of REASON_CODES) {
-      expect((zh as { reasons: Record<string, string> }).reasons, `zh ${code}`).toHaveProperty(code)
-      expect((en as { reasons: Record<string, string> }).reasons, `en ${code}`).toHaveProperty(code)
+      expect(
+        (zh as unknown as { reasons: Record<string, string> }).reasons,
+        `zh ${code}`,
+      ).toHaveProperty(code)
+      expect(
+        (en as unknown as { reasons: Record<string, string> }).reasons,
+        `en ${code}`,
+      ).toHaveProperty(code)
     }
     expect(isReasonCode('PROMPT_EMPTY')).toBe(true)
     expect(isReasonCode('SOMETHING_NEW')).toBe(false)

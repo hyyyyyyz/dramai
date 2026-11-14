@@ -1,9 +1,4 @@
 import type { Project } from '@dramai/api'
-import {
-  INSTRUCTION_MAX,
-  instructionWeight,
-  speechInputSupport,
-} from '@/features/settings/voice-model'
 
 /** The marker of the voice select for "type another voice". */
 export const OTHER = '__other__'
@@ -59,16 +54,16 @@ export function voiceBody(
   }
 }
 
-/** What blocks saving the voice section: an instruction over the limit, or extras with no voice and no default. */
+/**
+ * What blocks saving the voice section. Only what cannot be saved at all: a style instruction or language hint needs a
+ * voice to go with it, and a model with no default voice has none to fall back on. A text over the model's limit is
+ * not here: whether that is refused is the server's pre-flight to say (it only refuses on the official address of a
+ * known model), so the dialog reminds and still lets it be saved.
+ */
 export function voiceDraftProblem(
   draft: VoiceDraft,
-  protocol: string,
-  model: string,
   defaultVoice: string | undefined,
-): 'instruction_too_long' | 'voice_needed' | undefined {
-  const support = speechInputSupport(protocol as never, model)
-  if (support.instructions && instructionWeight(draft.instructions) > INSTRUCTION_MAX)
-    return 'instruction_too_long'
+): 'voice_needed' | undefined {
   const voice = draft.voice === OTHER ? '' : draft.voice.trim()
   const extras = draft.instructions.trim() !== '' || draft.language.trim() !== ''
   if (voice === '' && extras && !defaultVoice) return 'voice_needed'

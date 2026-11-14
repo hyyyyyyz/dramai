@@ -22,13 +22,29 @@ export interface StreamState {
   updatedAt: number
 }
 
+export interface Notice {
+  /** 本地用的编号（关掉某一条用）。 */
+  id: number
+  level: 'info' | 'warning'
+  code: string
+  message: string
+  projectId: string
+  jobId?: string
+  shotId?: string
+}
+
 export interface EventSnapshot {
   status: ConnectionStatus
   /** 本次连接里看到的服务纪元；变了说明服务重启过。 */
   epoch?: string
   streams: Readonly<Record<string, StreamState>>
-  /** 最近一次 worker 报错（job.worker_error），任务面板里显示。 */
+  /** 最近一次 worker 报错（job.worker_error，执行器自己出了错），任务面板里显示。 */
   workerError?: string
+  /**
+   * 提示（job.notice）：任务本身的结果是对的，只是某个附带步骤没完成（例如视频已保存，自动静音没设上）。
+   * 只在内存里，刷新页面就没了；最新的在最后，最多保留这么多条。
+   */
+  notices: readonly Notice[]
   /** 最近一次整体刷新（用于测试和调试）。 */
   lastResync?: string
 }
@@ -36,12 +52,14 @@ export interface EventSnapshot {
 /** 流式文本在内存里最多保留这么多字（够界面显示最后一段）。 */
 const MAX_STREAM_CHARS = 60_000
 const MAX_STREAMS = 20
+const MAX_NOTICES = 20
 
 type Listener = () => void
 
 /** 事件相关的瞬时状态（不是服务端状态，所以不放进查询缓存）。可用 useSyncExternalStore 订阅。 */
 export class EventStore {
-  #snap: EventSnapshot = { status: 'connecting', streams: {} }
+  #snap: EventSnapshot = { status: 'connecting', streams: {}, notices: [] }
+  #noticeId = 0
   #listeners = new Set<Listener>()
 
   subscribe = (fn: Listener): (() => void) => {
@@ -63,6 +81,21 @@ export class EventStore {
   }
   setWorkerError(message: string | undefined) {
     this.#set({ workerError: message })
+  }
+  addNotice(e: Extract<ServerEvent, { type: 'job.notice' }>) {
+    const { type: _type, ...rest } = e
+    void _type
+    // the same notice for the same job / shot twice is one notice
+    const same = (n: Notice) =>
+      n.code === rest.code && n.jobId === rest.jobId && n.shotId === rest.shotId
+    const notices = [
+      ...this.#snap.notices.filter((n) => !same(n)),
+      { ...rest, id: ++this.#noticeId },
+    ].slice(-MAX_NOTICES)
+    this.#set({ notices })
+  }
+  dismissNotice(id: number) {
+    this.#set({ notices: this.#snap.notices.filter((n) => n.id !== id) })
   }
   noteResync(reason: string) {
     this.#set({ lastResync: reason })
@@ -257,6 +290,9 @@ export function routeEvent(event: ServerEvent, deps: EventDeps): void {
     }
     case 'job.worker_error':
       store.setWorkerError(event.message)
+      return
+    case 'job.notice':
+      store.addNotice(event)
       return
     case 'text.delta':
       store.appendText(event, now)

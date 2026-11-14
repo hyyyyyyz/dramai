@@ -17,6 +17,8 @@ import type { JobListItem } from '@dramai/api'
 import { Button, IconButton, Progress, iconProps, cn } from '@dramai/ui/v2'
 import { useFormat } from '@/i18n/format'
 import { ProviderErrorNotice } from './ProviderErrorNotice'
+import { useEventSnapshot } from '@/data/use-events'
+import { useNoticeText } from './notice-text'
 import { providerErrorOf } from '@/features/settings/provider-model'
 import { failureKind, ignoredInputsOf, isKnownOperation, jobActions } from './job-model'
 
@@ -110,6 +112,8 @@ export function TaskItem({
   if (job.attempt > 1) sub.push(t('jobs.attempt', { n: job.attempt }))
 
   const LaneIcon = LANE_ICON[job.type]
+  const notices = useEventSnapshot().notices.filter((n) => n.jobId === job.id)
+  const noticeText = useNoticeText()
   return (
     <li
       data-state={failed ? 'failed' : job.status}
@@ -142,6 +146,16 @@ export function TaskItem({
         {sub.length > 0 && (
           <div className="text-xs leading-normal text-muted-foreground">{sub.join(' · ')}</div>
         )}
+
+        {notices.map((n) => (
+          <div
+            key={n.id}
+            className="mt-0.5 text-xs leading-normal text-muted-foreground"
+            data-testid="task-notice"
+          >
+            {noticeText(n).title ?? noticeText(n).body}
+          </div>
+        ))}
 
         {job.status === 'succeeded' && ignoredInputsOf(job.result).length > 0 && (
           <div

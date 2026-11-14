@@ -7,9 +7,12 @@ export default {
       'No tasks yet. Progress shows up here when you generate images or videos or plan episodes',
     emptyFilter: 'Nothing in this group right now',
     workerError: 'The job runner hit an error',
-    muteNotSet: {
-      title: 'The timeline’s default mute wasn’t set',
-      body: 'The video was generated and saved; nothing failed. Only the step that starts this new clip’s own audio muted didn’t finish: if its model has its own audio, check the clip’s audio volume on the timeline',
+    notice: {
+      dismiss: 'Got it',
+      native_audio_default_failed: {
+        title: 'The timeline’s default mute wasn’t set',
+        body: 'The video was generated and saved; nothing failed. Only the step that starts this new clip’s own audio muted didn’t finish, so the clip’s audio volume stays as it was: if its model has its own audio, check the clip’s audio volume on the timeline',
+      },
     },
     workerErrorBody:
       'The background runner reported an error, so some jobs may not advance. Details are in the server log; restarting the service usually recovers it',

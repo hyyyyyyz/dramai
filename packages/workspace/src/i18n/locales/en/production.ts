@@ -94,6 +94,25 @@ export default {
       'An optional input is missing (for example a costume has no sheet), so only its text description is used',
     REFS_TRIMMED:
       'There are more reference images than the model allows; the extra ones won’t be sent',
+    how: { characters: ' characters', cjk_double: ' characters (a Chinese character counts as 2)' },
+    warn: {
+      VOICE_NOT_AVAILABLE:
+        'The voice chosen in the project may not be in the current speech model’s list, so generation may fail (we have no official basis for this provider or model, so it isn’t blocked). You can choose another in the project settings',
+      VOICE_FROM_ANOTHER_SERVICE:
+        'The voice chosen in the project looks like it belongs to another speech provider, so generation may fail (most likely the provider was switched and the voice wasn’t). You can choose a voice again in the project settings',
+      VOICE_FORMAT_INVALID:
+        'The voice may not be written the right way (SiliconFlow voices are written “model:voice”), so generation may fail. You can take a look in the project settings',
+      INSTRUCTION_TOO_LONG:
+        'The style instruction is {{actual}}{{how}}, over this model’s limit of {{limit}}, so generation may fail. You can shorten it in the project settings',
+      INSTRUCTION_TOO_LONG_PLAIN:
+        'The style instruction may be over this model’s limit, so generation may fail. You can shorten it in the project settings',
+      TEXT_TOO_LONG:
+        'This narration is {{actual}}{{how}}, over the current speech model’s limit of {{limit}} at a time, so generation may fail. You can shorten it, split it into two shots, or choose a speech provider with a higher limit',
+      TEXT_TOO_LONG_PLAIN:
+        'This narration may be over the current speech model’s limit at a time, so generation may fail. You can shorten it, split it into two shots, or choose a speech provider with a higher limit',
+    },
+    INSTRUCTION_TOO_LONG_PLAIN:
+      'The style instruction is over this model’s limit. Shorten or clear it in the project settings',
     NARRATION_VOICE_REQUIRED:
       'The project has no narration voice yet, and the current speech model has no default voice. Choose a voice in the project settings first',
     VOICE_NOT_AVAILABLE:
@@ -103,9 +122,9 @@ export default {
     VOICE_FORMAT_INVALID:
       'The voice is not written the right way (SiliconFlow voices are written “model:voice”). Fix it in the project settings',
     INSTRUCTION_TOO_LONG:
-      'The style instruction is too long: at most 100 characters (a Chinese character counts as 2), and it is {{n}} now. Shorten or clear it in the project settings',
+      'The style instruction is {{actual}}{{how}}, over this model’s limit of {{limit}}. Shorten or clear it in the project settings',
     TEXT_TOO_LONG:
-      'This narration has {{chars}} characters, and the current speech model takes at most {{limit}} at a time. Shorten the narration of this shot, split it into two shots, or choose a speech provider with a higher limit',
+      'This narration is {{actual}}{{how}}, and the current speech model takes at most {{limit}} at a time. Shorten the narration of this shot, split it into two shots, or choose a speech provider with a higher limit',
     TEXT_TOO_LONG_PLAIN:
       'This narration is longer than the current speech model takes at a time. Shorten the narration of this shot, split it into two shots, or choose a speech provider with a higher limit',
     VOICE_UNLISTED:

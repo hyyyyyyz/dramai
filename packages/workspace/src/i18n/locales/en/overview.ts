@@ -126,18 +126,24 @@ export default {
     siliconflowFormat:
       'SiliconFlow voices are written “model:voice”, for example {{model}}:alex; choosing from the list writes it for you',
     formatBad:
-      'That isn’t the right form: write “model:voice” (or a speech:… address from an uploaded reference audio)',
+      'This may not be the right form: SiliconFlow voices are written “model:voice” (or a speech:… address from an uploaded reference audio)',
     documented:
       'The voice list comes from the official documentation and hasn’t been tested; the provider’s own list is what counts',
     notInList:
-      '{{model}} doesn’t have this voice. Choose another from the list, or generation will be blocked',
+      '{{model}} doesn’t have this voice. Choose another from the list: on the official address generation will be blocked, and elsewhere it will most likely fail',
     unlisted:
       'This voice isn’t in the list of common ones. That’s fine for your own cloned or custom voice; if it doesn’t exist the provider refuses and doesn’t charge',
     instructions: 'Style instruction (optional)',
     instructionsHint:
       'Describe the tone and mood in plain words, for example “calm, with a hint of a smile”',
-    instructionsTooLong:
-      'The style instruction is too long: at most {{max}} characters, a Chinese character counts as 2, and it is {{n}} now',
+    instructionsOver:
+      'The style instruction is over this model’s limit (at most {{max}}, now {{n}}). On the official address generation will be blocked, and elsewhere it may fail; you can save it now and the pre-flight will say more before generating',
+    instructionCount: '{{n}} of {{max}} used ({{how}})',
+    instructionMax: 'At most {{max}}',
+    counting: {
+      characters: 'counted in characters',
+      cjk_double: 'a Chinese character counts as 2',
+    },
     ignoredInstructions: '{{model}} ignores style instructions; what you typed will not be used',
     language: 'Language hint (optional)',
     languageHint: 'For example zh, en, ja',

@@ -153,8 +153,8 @@ export default {
     voiceSwitch: {
       title: '换成「{{name}}」后，有的项目的旁白音色要重新选',
       from_another_service:
-        '「{{project}}」的音色“{{voice}}”是之前那家服务商的，新的服务商用不了。',
-      not_available: '「{{project}}」的音色“{{voice}}”在新的服务商上没有。',
+        '「{{project}}」的音色“{{voice}}”像是之前那家服务商的，新的服务商多半用不了，生成时可能会失败。',
+      not_available: '「{{project}}」的音色“{{voice}}”在新的服务商的清单里没有，生成时可能会失败。',
       required: '「{{project}}」还没选音色，而新的服务商的这个型号没有默认音色。',
       unlisted:
         '「{{project}}」的音色“{{voice}}”不在新服务商的常用清单里；如果是你自己的音色就没问题。',

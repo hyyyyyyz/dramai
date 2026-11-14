@@ -160,8 +160,9 @@ export default {
     voiceSwitch: {
       title: 'After switching to “{{name}}”, some projects need their narration voice chosen again',
       from_another_service:
-        'The voice “{{voice}}” of “{{project}}” belongs to the previous provider; the new one can’t use it.',
-      not_available: 'The voice “{{voice}}” of “{{project}}” doesn’t exist on the new provider.',
+        'The voice “{{voice}}” of “{{project}}” looks like the previous provider’s; the new one most likely can’t use it, and generation may fail.',
+      not_available:
+        'The voice “{{voice}}” of “{{project}}” isn’t in the new provider’s list, so generation may fail.',
       required:
         '“{{project}}” has no voice yet, and this model of the new provider has no default voice.',
       unlisted:

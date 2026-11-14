@@ -225,10 +225,10 @@ describe('system revisions are described in the interface language', () => {
       ]),
     )
     const row = screen
-      .getByText(/这些片段的模型关不掉自带的声音，原声默认静音，可以调高：c1、c2/)
+      .getByText(/自动设置：这些片段的模型关不掉自带的声音，原声默认静音，可以调高：c1、c2/)
       .closest('li')!
-    expect(row).toHaveTextContent('系统（自动）')
-    expect(row).not.toHaveTextContent('智能体')
+    // the explanation says it was set automatically; the author is what the revision says (here the server chose agent)
+    expect(row).toHaveTextContent('智能体')
     expect(screen.queryByText('默认音量：服务端写的')).toBeNull()
   })
 
@@ -240,7 +240,9 @@ describe('system revisions are described in the interface language', () => {
       ]),
     )
     expect(
-      screen.getByText('有的片段的模型关不掉自带的声音，这些片段的原声默认静音，可以调高'),
+      screen.getByText(
+        '自动设置：有的片段的模型关不掉自带的声音，这些片段的原声默认静音，可以调高',
+      ),
     ).toBeInTheDocument()
   })
 
@@ -264,13 +266,13 @@ describe('system revisions are described in the interface language', () => {
     for (const [locale, text, rolled, note] of [
       [
         'en',
-        'The model of these clips can’t turn its own audio off, so their audio starts muted; you can raise it: c1',
+        'Set automatically: the model of these clips can’t turn its own audio off, so their audio starts muted; you can raise it: c1',
         /rolled back to revision 1/i,
         /restored from|rolled back from/i,
       ],
       [
         'zh-TW',
-        '這些片段的模型關不掉自帶的聲音，原聲預設靜音，可以調高：c1',
+        '自動設定：這些片段的模型關不掉自帶的聲音，原聲預設靜音，可以調高：c1',
         '回滾到修訂 1',
         /回滾自/,
       ],
@@ -308,10 +310,44 @@ describe('system revisions are described in the interface language', () => {
       ]),
     )
     expect(screen.getByText('初始时间线')).toBeInTheDocument()
-    expect(screen.getByText('同步镜头顺序').closest('li')).toHaveTextContent('系统（自动）')
-    // a rollback is the person's own action, so it is attributed to them
+    // the text follows the reason, the author follows the revision's own `author.kind`: neither is inferred from the other
+    expect(screen.getByText('同步镜头顺序').closest('li')).toHaveTextContent('你')
     expect(screen.getByText('回滚到修订 1').closest('li')).toHaveTextContent('你')
     expect(screen.getByText('我改了音量').closest('li')).toHaveTextContent('你')
+  })
+
+  it('the three kinds of author: a rollback by the user, an edit by an agent, the automatic mute, an outside tool', () => {
+    render(
+      view([
+        { number: 1 },
+        // the user triggered a rollback: creator, with a reason
+        {
+          number: 2,
+          author: { kind: 'creator' },
+          summary: 'x',
+          restoredFrom: 1,
+          reason: 'rollback',
+        },
+        // an agent changed the timeline: agent, no reason
+        { number: 3, author: { kind: 'agent' }, summary: 'agent 改了转场' },
+        // the automatic mute: the server records it as the agent, with a reason
+        {
+          number: 4,
+          author: { kind: 'agent' },
+          summary: 'y',
+          changedClipIds: ['clip_1'],
+          reason: 'native_audio_default',
+        },
+        // an outside tool, whatever the text
+        { number: 5, author: { kind: 'external' }, summary: '外部工具写的' },
+      ]),
+    )
+    const meta = (text: RegExp | string) =>
+      screen.getByText(text).closest('li')!.querySelector('small')!.textContent
+    expect(meta('回滚到修订 1')).toMatch(/^你 /)
+    expect(meta('agent 改了转场')).toMatch(/^智能体 /)
+    expect(meta(/自动设置：这些片段的模型关不掉自带的声音/)).toMatch(/^智能体 /)
+    expect(meta('外部工具写的')).toMatch(/^外部工具 /)
   })
 
   it('an old revision without a reason falls back to the first-revision and restoredFrom rules', () => {
@@ -325,15 +361,33 @@ describe('system revisions are described in the interface language', () => {
     expect(screen.getByText('回滚到修订 1')).toBeInTheDocument()
   })
 
-  it('a reason this version has never heard of shows the summary the server wrote', () => {
-    render(
-      view([
-        { number: 1 },
-        { number: 2, summary: '服务端写的新类型说明', reason: 'brand_new_reason' as never },
-      ]),
-    )
+  it('a reason this version has never heard of goes through the contract’s validation and shows the summary the server wrote', async () => {
+    // not forced into the component: the page asks the (fake) server for the timeline, the client validates the
+    // response with the contract, and the contract accepts any string as a reason
+    const tl = makeTimeline({ head: 2 })
+    tl.revisions = [
+      {
+        number: 2,
+        author: { kind: 'creator' },
+        summary: '服务端写的新类型说明',
+        createdAt: 1,
+        reason: 'brand_new_reason',
+      },
+      {
+        number: 1,
+        author: { kind: 'creator' },
+        summary: '初始时间线',
+        createdAt: 1,
+        reason: 'initial',
+      },
+    ] as never
+    const server = fakeServer({ 'GET /api/episodes/ep_1/timeline': () => tl })
+    const got = await server.client.call('timeline.get', { params: { episodeId: 'ep_1' } })
+    expect(got.revisions[0]!.reason).toBe('brand_new_reason')
+    renderApp(<RevisionList view={got} onRollback={() => {}} />, { client: server.client })
     const row = screen.getByText('服务端写的新类型说明').closest('li')!
     expect(row).toHaveTextContent('你')
+    expect(screen.getByText('初始时间线')).toBeInTheDocument()
   })
 })
 

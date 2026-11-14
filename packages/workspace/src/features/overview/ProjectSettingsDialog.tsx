@@ -35,12 +35,7 @@ export function ProjectSettingsDialog({
   const changedAspect = aspect !== project.aspectRatio
   const voiceProblem =
     narration === 'tts' && ttsProvider
-      ? voiceDraftProblem(
-          voice,
-          ttsProvider.protocol,
-          ttsProvider.model,
-          ttsCap.data?.capability.defaultVoice,
-        )
+      ? voiceDraftProblem(voice, ttsCap.data?.capability.defaultVoice)
       : undefined
   const valid = name.trim() !== '' && !voiceProblem
   const voiceChange = voiceBody(

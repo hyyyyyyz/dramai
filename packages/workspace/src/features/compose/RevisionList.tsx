@@ -49,13 +49,10 @@ export function RevisionList({
     if (r.number === 1 && r.parent === undefined && !r.reason) return t('compose.revisions.initial')
     return r.summary
   }
-  // Made by the system itself (not an edit by a person or an agent), except a rollback, which the person asked for.
-  const bySystem = (r: TimelineView['revisions'][number]) =>
-    r.reason === 'native_audio_default' || r.reason === 'initial' || r.reason === 'sync_shots'
+  // The author is what the revision says it is (`author.kind`), nothing inferred from the reason; the reason only
+  // decides what the explanation says. An automatic change is recorded by the server with the author it chose.
   const authorOf = (r: TimelineView['revisions'][number]) =>
-    bySystem(r)
-      ? t('compose.revisions.author.system')
-      : t(`compose.revisions.author.${r.author.kind}`)
+    t(`compose.revisions.author.${r.author.kind}` as 'compose.revisions.author.creator')
   return (
     <Block title={t('compose.revisions.title')} aria-label={t('compose.revisions.title')}>
       <ul className="flex flex-col p-4">

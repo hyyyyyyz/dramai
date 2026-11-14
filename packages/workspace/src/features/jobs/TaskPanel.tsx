@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ListChecks, PanelRightClose } from 'lucide-react'
 import type { JobListItem } from '@dramai/api'
@@ -12,13 +12,15 @@ import {
   TabsTrigger,
   iconProps,
 } from '@dramai/ui/v2'
+import { StoreContext } from '@/data/contexts'
 import { useEventSnapshot } from '@/data/use-events'
 import { useJobs, useProjects } from '@/data/queries'
 import { useNow } from '@/lib/use-now'
 import { useErrorText } from '@/features/common/use-error-text'
 import { TaskItem } from './TaskItem'
 import { jobContext } from './job-context'
-import { groupJobs, jobCounts, workerErrorKind, type JobGroup } from './job-model'
+import { groupJobs, jobCounts, type JobGroup } from './job-model'
+import { useNoticeText } from './notice-text'
 import { useJobOps } from './job-ops-context'
 
 type Filter = 'all' | 'running' | 'queued' | 'attention'
@@ -29,6 +31,8 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
   const jobs = useJobs()
   const projects = useProjects()
   const snapshot = useEventSnapshot()
+  const store = useContext(StoreContext)
+  const noticeText = useNoticeText()
   const errorText = useErrorText()
   const ops = useJobOps()
   const [filter, setFilter] = useState<Filter>('all')
@@ -99,16 +103,30 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
       </Tabs>
 
       <div className={embedded ? 'flex-1 p-3' : 'min-h-0 flex-1 overflow-y-auto p-3'}>
-        {snapshot.workerError &&
-          (workerErrorKind(snapshot.workerError) === 'mute_not_set' ? (
-            <Notice tone="info" className="mb-3" title={t('jobs.muteNotSet.title')}>
-              {t('jobs.muteNotSet.body')}
+        {snapshot.workerError && (
+          <Notice tone="danger" className="mb-3" title={t('jobs.workerError')}>
+            {t('jobs.workerErrorBody')}
+          </Notice>
+        )}
+        {snapshot.notices.map((n) => {
+          const text = noticeText(n)
+          return (
+            <Notice
+              key={n.id}
+              tone={n.level === 'warning' ? 'warn' : 'info'}
+              className="mb-3"
+              title={text.title}
+              data-testid="job-notice"
+              actions={
+                <Button size="sm" variant="ghost" onClick={() => store?.dismissNotice(n.id)}>
+                  {t('jobs.notice.dismiss')}
+                </Button>
+              }
+            >
+              {text.body}
             </Notice>
-          ) : (
-            <Notice tone="danger" className="mb-3" title={t('jobs.workerError')}>
-              {t('jobs.workerErrorBody')}
-            </Notice>
-          ))}
+          )
+        })}
         {ops.error !== undefined && (
           <Notice tone="danger" className="mb-3" role="alert">
             {errorText(ops.error)}

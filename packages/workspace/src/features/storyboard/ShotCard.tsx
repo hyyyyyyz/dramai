@@ -19,6 +19,7 @@ import {
   CropMarks,
   Frame,
   IconButton,
+  Notice,
   Pill,
   iconProps,
   iconPropsSm,
@@ -30,6 +31,8 @@ import { useFormat } from '@/i18n/format'
 import { AssetRefs } from './AssetRefs'
 import { BlockedNotice, FailedNotice, StaleNotice } from './ShotNotices'
 import { VersionStrip } from './VersionStrip'
+import { useEventSnapshot } from '@/data/use-events'
+import { useNoticeText } from '@/features/jobs/notice-text'
 import { versionNumber } from './version-model'
 import type { ReasonAction } from './reasons'
 import { mentionsToNames } from './mentions'
@@ -81,6 +84,10 @@ export function ShotCard(p: ShotCardProps) {
   const api = useApi()
   const fmt = useFormat()
   const { shot, view } = p
+  // a notice the server sent about this shot (the video is saved, a side step did not finish): shown here, where the
+  // shot is, not only in the task panel
+  const shotNotices = useEventSnapshot().notices.filter((n) => n.shotId === shot.id)
+  const noticeText = useNoticeText()
   const [preview, setPreview] = useState(false)
   const img = currentImage(shot)
   const vid = currentVideo(shot)
@@ -255,6 +262,16 @@ export function ShotCard(p: ShotCardProps) {
           assets={p.assets}
           loading={p.assetsLoading}
         />
+        {shotNotices.map((n) => (
+          <Notice
+            key={n.id}
+            tone={n.level === 'warning' ? 'warn' : 'info'}
+            title={noticeText(n).title}
+            data-testid="shot-notice"
+          >
+            {noticeText(n).body}
+          </Notice>
+        ))}
         <VersionStrip
           projectId={p.projectId}
           imageSlot={shot.image}
