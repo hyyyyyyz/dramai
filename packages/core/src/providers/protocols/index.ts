@@ -35,7 +35,7 @@ export {
   volcengineVideo,
 }
 export * from './content-array.ts'
-export { hexToBytes } from './minimax-t2a.ts'
+export { hexToBytes, MINIMAX_REJECTED_CODES } from './minimax-t2a.ts'
 export { instructionLength } from './dashscope-cosyvoice.ts'
 export * from './openai-chat.ts'
 export { openAiImageStyle, parseImagesData } from './openai-images.ts'

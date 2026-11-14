@@ -122,8 +122,10 @@ export const dashscopeCosyvoice: MediaProtocol<SpeechInput> = {
     if (!url) {
       const err = bodyError(json)
       if (err) {
+        // 官方这一页没有写错误响应的结构，也没有说哪些错误没有计费：读到了错误也不能断定“没有计费”，
+        // 带上码，按“结果不明”处理（重试要用户确认）。HTTP 4xx 仍然按状态码算被拒绝（执行器的通用规则）
         const code = str(json.code)
-        return { status: 'failed', message: err, rejected: true, ...(code ? { code } : {}) }
+        return { status: 'failed', message: err, ...(code ? { code } : {}) }
       }
       return { status: 'failed', message: '百炼响应里没有音频地址（output.audio.url 缺失）' }
     }

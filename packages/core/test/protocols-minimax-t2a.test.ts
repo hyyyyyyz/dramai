@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { toJobError } from '../src/providers/errors.ts'
 import { runGeneration } from '../src/providers/executor.ts'
-import { getMediaProtocol, hexToBytes, minimaxT2a } from '../src/providers/protocols/index.ts'
+import {
+  getMediaProtocol,
+  hexToBytes,
+  MINIMAX_REJECTED_CODES,
+  minimaxT2a,
+} from '../src/providers/protocols/index.ts'
 import type { AuthContext, HttpRequestSpec, RawResponse } from '../src/providers/types.ts'
 
 /** MiniMax T2A v2 (sync, hex audio). Built from the official pages of 2026-11-13; never run against the real service. */
@@ -176,39 +182,85 @@ describe('minimax-t2a: the response', () => {
     expect(hexToBytes('0g')).toBeUndefined()
   })
 
-  const codes: Array<[number, string]> = [
-    [1004, '鉴权失败'],
-    [2049, '鉴权失败'],
-    [1008, '余额不足'],
-    [1002, '稍后再试'],
-    [1039, '稍后再试'],
-    [1026, '敏感内容'],
-    [2013, '参数不合法'],
-    [20132, '音色不存在'],
-    [2054, '音色不存在'],
-    [2042, '音色不存在'],
-    [2043, '不支持该音色'],
-    [2022, '型号不存在'],
-    [1000, '稍后再试'],
-  ]
-  it.each(codes)(
-    'base_resp status_code %i is a clear rejection with a stable code and a hint',
-    (code, hint) => {
+  // every code classified as a clear rejection (no charge), with the official wording that justifies it
+  it.each(Object.entries(MINIMAX_REJECTED_CODES).map(([c, w]) => [Number(c), w] as const))(
+    'code %i (%s) is a clear rejection with a stable code',
+    (code) => {
       const r = minimaxT2a.parseGenerateResponse(
         raw({ base_resp: { status_code: code, status_msg: 'upstream words' } }),
       )
       expect(r).toMatchObject({ status: 'failed', rejected: true, code: `MINIMAX_${code}` })
-      const message = (r as { message: string }).message
-      expect(message).toContain(hint)
-      expect(message).toContain('upstream words')
+      expect((r as { message: string }).message).toContain('upstream words')
     },
   )
+
+  it('the classification is exactly the documented categories - nothing else sneaks in', () => {
+    expect(
+      Object.keys(MINIMAX_REJECTED_CODES)
+        .map(Number)
+        .sort((x, y) => x - y),
+    ).toEqual([
+      1002, 1004, 1008, 1026, 1039, 1041, 1042, 2013, 2014, 2022, 2042, 2043, 2045, 2046, 2047,
+      2049, 2053, 2054, 2056, 2057, 2061, 2062, 2067, 2068, 2069, 20132,
+    ])
+  })
+
+  // codes the official page does not say are free of charge: unknown outcome, the user must confirm a retry
+  const unknownOutcome: Array<[number, string]> = [
+    [1000, 'Unknown error'],
+    [1001, 'Request timeout'],
+    [1024, 'Internal error'],
+    [1027, 'Output flagged as sensitive'],
+    [1033, 'System or database error'],
+    [2064, 'Server cluster under high load'],
+    [2066, 'Request timed out during processing'],
+    [9999, 'a code that is not on the page'],
+    [2037, 'a voice-clone code that cannot occur here'],
+  ]
+  it.each(unknownOutcome)(
+    'code %i (%s) is NOT called a clear rejection: it keeps its stable code and means "result unknown, may have been charged"',
+    (code) => {
+      const r = minimaxT2a.parseGenerateResponse(
+        raw({ base_resp: { status_code: code, status_msg: 'upstream words' } }),
+      )
+      expect(r).toMatchObject({ status: 'failed', code: `MINIMAX_${code}` })
+      expect(r).not.toHaveProperty('rejected')
+      expect((r as { message: string }).message).toContain('upstream words')
+    },
+  )
+
+  it('through the executor and the job error mapping: rejected -> generation_failed, retry without confirmation; unknown -> submission_unknown, retry needs confirmation', async () => {
+    const run = (code: number) =>
+      runGeneration(
+        minimaxT2a,
+        auth(),
+        { text: 'x', voice: 'v' },
+        {
+          fetch: async () =>
+            new Response(JSON.stringify({ base_resp: { status_code: code, status_msg: 'm' } })),
+        },
+      ).catch((e) => e)
+    for (const code of [1004, 1008, 1002, 2013, 1026, 2054]) {
+      const err = await run(code)
+      expect(err, String(code)).toMatchObject({ submission: 'rejected', code: `MINIMAX_${code}` })
+      expect(toJobError(err), String(code)).toMatchObject({ category: 'generation_failed' })
+    }
+    for (const code of [1000, 1001, 1024, 1027, 1033, 2064, 2066]) {
+      const err = await run(code)
+      expect(err, String(code)).toMatchObject({ submission: 'unknown', code: `MINIMAX_${code}` })
+      expect(toJobError(err), String(code)).toMatchObject({
+        category: 'submission_unknown',
+        code: `MINIMAX_${code}`,
+      })
+    }
+  })
 
   it('an unknown code still gets its stable code and the upstream words', () => {
     const r = minimaxT2a.parseGenerateResponse(
       raw({ base_resp: { status_code: 9999, status_msg: 'brand new' } }),
     )
-    expect(r).toMatchObject({ rejected: true, code: 'MINIMAX_9999' })
+    expect(r).toMatchObject({ code: 'MINIMAX_9999' })
+    expect(r).not.toHaveProperty('rejected')
     expect((r as { message: string }).message).toContain('brand new')
   })
 
