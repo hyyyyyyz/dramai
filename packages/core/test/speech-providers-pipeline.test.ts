@@ -5,6 +5,7 @@ import { currentVersion, SCHEMA_VERSIONS } from '../src/domain/index.ts'
 import type { NarrationVoice, Shot } from '../src/domain/index.ts'
 import { loadProjection } from '../src/generation/projection.ts'
 import { episodeShots } from '../src/pipeline/entities.ts'
+import { JobQueue } from '../src/jobs/index.ts'
 import { requestGeneration } from '../src/pipeline/request.ts'
 import type { ProviderConfig } from '../src/providers/types.ts'
 import { locateMedia, makePipelineEnv, PROVIDERS } from './fakes.ts'
@@ -76,6 +77,22 @@ beforeAll(async () => {
         calls.push({ method, url, headers: init?.headers as Record<string, string>, body })
         if (mode.minimax === 'business-error')
           return json({ base_resp: { status_code: 1004, status_msg: 'login fail: bad key' } })
+        const hexOf = (b: Uint8Array) => Buffer.from(b).toString('hex')
+        const okBody = (audio: string) =>
+          json({
+            data: { audio, status: 2 },
+            extra_info: { audio_format: 'wav', audio_length: 1500 },
+            base_resp: { status_code: 0, status_msg: 'success' },
+          })
+        // valid hex, but what it decodes to is not audio / a wav cut in the middle of a sample
+        if (mode.minimax === 'garbage')
+          return okBody(
+            hexOf(new TextEncoder().encode('<?xml version="1.0"?><Error>denied</Error>')),
+          )
+        if (mode.minimax === 'random')
+          return okBody(hexOf(new Uint8Array(300).map((_, i) => (i * 37) % 251)))
+        if (mode.minimax === 'truncated')
+          return okBody(hexOf(wavBytes.slice(0, Math.floor(wavBytes.length / 2) | 1)))
         if (mode.minimax === 'bad-hex')
           return json({ data: { audio: 'not-hex!', status: 2 }, base_resp: { status_code: 0 } })
         return json({
@@ -504,4 +521,119 @@ describe('restart between "version saved" and "job marked succeeded" (voice-over
       expect(await n()).toBe(before)
     },
   )
+})
+
+describe('exec 32: audio the probe tool clearly cannot decode is not a product', () => {
+  const versionsOf = async (shotId: string) =>
+    (await env.deps.store.shots.get(shotId))!.narrationAudio.versions.length
+  // count the files written under audio/ (nothing may be written for a product that is refused)
+  let written = 0
+  let wrapped = false
+  const audioFiles = async () => {
+    if (!wrapped) {
+      wrapped = true
+      const put = env.deps.files.put.bind(env.deps.files)
+      env.deps.files.put = async (projectId, path, data) => {
+        if (path.startsWith('audio/')) written++
+        return put(projectId, path, data)
+      }
+    }
+    return written
+  }
+
+  async function run(modeName: string, shot: Shot) {
+    await audioFiles() // install the counter
+    mode.minimax = modeName
+    await setVoice({ providerConfigId: 'minimax', voice: 'Chinese (Mandarin)_News_Anchor' })
+    const before = await versionsOf(shot.id)
+    const r = await narrate(MINIMAX, shot)
+    mode.minimax = 'ok'
+    return { ...r, before, after: await versionsOf(shot.id) }
+  }
+
+  real(
+    'bytes that are not audio at all (an XML error page; random bytes): the job fails, nothing is saved, no file is written',
+    async () => {
+      for (const [name, i] of [
+        ['garbage', 0],
+        ['random', 1],
+      ] as const) {
+        const shot = narr[i] ?? narr[0]!
+        const filesBefore = await audioFiles()
+        const { job, before, after } = await run(name, shot)
+        expect(job.status, name).toBe('failed')
+        expect(job.error, name).toMatchObject({
+          category: 'submission_unknown', // the service processed the request: possibly charged
+          code: 'AUDIO_UNREADABLE',
+          recoverable: false,
+        })
+        expect(job.error!.message).toContain('可能已计费')
+        expect(after, name).toBe(before) // no version
+        expect(await audioFiles(), name).toBe(filesBefore) // nothing written
+      }
+    },
+  )
+
+  real(
+    'a wav cut in the middle of a sample: the decoder reports errors - the job fails the same way',
+    async () => {
+      const shot = narr[2] ?? narr[0]!
+      const filesBefore = await audioFiles()
+      const { job, before, after } = await run('truncated', shot)
+      expect(job.status).toBe('failed')
+      expect(job.error).toMatchObject({ category: 'submission_unknown', code: 'AUDIO_UNREADABLE' })
+      expect(after).toBe(before)
+      expect(await audioFiles()).toBe(filesBefore)
+    },
+  )
+
+  real('a retry of such a failure needs the user to confirm "may be charged again"', async () => {
+    const shot = narr[0]!
+    const { job } = await run('garbage', shot)
+    expect(job.status).toBe('failed')
+    const queue = new JobQueue({
+      jobs: env.deps.store.jobs,
+      clock: env.deps.clock,
+      ids: env.deps.ids,
+    })
+    const denied = await queue.retry(job.id)
+    expect(denied).toMatchObject({ ok: false, reason: 'CONFIRM_RECHARGE_REQUIRED' })
+  })
+
+  real(
+    "the probe tool unavailable or broken is not the audio's fault: unchanged - the audio is saved, only without a duration",
+    async () => {
+      const shot = narr[1] ?? narr[0]!
+      const media = env.deps.media
+      try {
+        for (const kind of ['no-tools', 'missing-binaries'] as const) {
+          env.deps.media =
+            kind === 'no-tools'
+              ? undefined
+              : {
+                  ...media!,
+                  bins: {
+                    ffmpeg: '/nonexistent/ffmpeg',
+                    ffprobe: '/nonexistent/ffprobe',
+                    source: 'option',
+                  },
+                }
+          const { job, before, after, version } = await run('garbage', shot)
+          expect(job.status, kind).toBe('succeeded')
+          expect(after, kind).toBe(before + 1)
+          expect(version!.facts?.durationSec, kind).toBeUndefined()
+        }
+      } finally {
+        env.deps.media = media
+      }
+    },
+  )
+
+  real('good audio is unaffected: still saved, with the measured duration', async () => {
+    const shot = narr[2] ?? narr[0]!
+    const { job, version, before, after } = await run('ok', shot)
+    expect(job.status).toBe('succeeded')
+    expect(after).toBe(before + 1)
+    expect(version!.facts?.durationSec).toBeGreaterThan(1.2)
+  })
 })

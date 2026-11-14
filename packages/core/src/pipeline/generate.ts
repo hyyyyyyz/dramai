@@ -25,7 +25,7 @@ import type { JobContext, JobHandler } from '../jobs/worker.ts'
 import { runProviderJob } from '../jobs/provider-job.ts'
 import { createFfmpegImageEncoder, fitReferenceImages } from '../media/reference-images.ts'
 import type { ImageEncoder, ReferenceImageInput } from '../media/reference-images.ts'
-import { probeMedia } from '../media/ffmpeg.ts'
+import { inspectAudio, probeMedia } from '../media/ffmpeg.ts'
 import { resolveOutputSize } from '../media/output-size.ts'
 import { readImageSize } from '../parsers/image-size.ts'
 import { compileImagePrompt, compileVideoPrompt } from '../prompts/compile.ts'
@@ -303,6 +303,40 @@ async function probeBytes(
     return undefined
   } finally {
     await removeRetry(dir)
+  }
+}
+
+/**
+ * 配音：探测并判断服务商返回的是不是可用的音频（见 `inspectAudio`）。探测工具不可用 / 自己出了故障（`unknown`）时和以前一样：
+ * 不记时长、照常保存。工具明确判定“这不是可解码的音频”才返回 `bad`——此时**在写入文件之前**就返回，所以没有任何文件落盘，也不会登记版本。
+ */
+async function inspectAudioBytes(
+  deps: PipelineDeps,
+  bytes: Uint8Array,
+  ext: string,
+): Promise<{ facts?: MediaFacts; bad?: string }> {
+  if (!deps.media) return {}
+  let dir: string | undefined
+  try {
+    dir = await mkdtemp(join(tmpdir(), 'dramai-probe-'))
+    const file = join(dir, `f.${ext}`)
+    await writeFile(file, bytes)
+    const r = await inspectAudio(deps.media.bins, file)
+    if (r.verdict === 'not_audio') return { bad: r.reason }
+    if (r.verdict === 'unknown') return {}
+    return {
+      facts: {
+        width: r.info.width,
+        height: r.info.height,
+        durationSec: r.info.durationSec,
+        hasAudio: r.info.hasAudio,
+        fps: r.info.fps,
+      },
+    }
+  } catch {
+    return {}
+  } finally {
+    if (dir) await removeRetry(dir)
   }
 }
 
@@ -1073,7 +1107,18 @@ async function doAudioJob(deps: PipelineDeps, ctx: JobContext, shotId: string) {
   await ctx.setStage('processing')
   const ext = extFor(out.mime, 'mp3')
   // 配音实测时长：合成时旁白按它摆放，可以比镜头长。
-  const facts = await probeBytes(deps, out.bytes, ext)
+  const inspected = await inspectAudioBytes(deps, out.bytes, ext)
+  if (inspected.bad !== undefined) {
+    // 请求已经被服务商处理过（可能已计费），但返回的不是可用的音频：不保存（还没有写文件，也不登记版本），
+    // 按“结果不明”处理——重试要用户确认
+    throw new JobFailure({
+      category: 'submission_unknown',
+      code: 'AUDIO_UNREADABLE',
+      message: `服务商返回的不是可用的音频（${inspected.bad}）：没有保存。请求已经被处理，可能已计费；重新生成需要确认`,
+      recoverable: false,
+    })
+  }
+  const facts = inspected.facts
   const stored = await storeVersion(deps, {
     projectId: project.id,
     ctx,
