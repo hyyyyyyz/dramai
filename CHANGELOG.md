@@ -8,7 +8,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
-- **Account sign-in (not tested against the real services).** Two providers can be used with an account instead of
+- **Account sign-in.** Two providers can be used with an account instead of
   an API key. **OpenAI**: "Sign in with ChatGPT", so text requests use your ChatGPT plan; it covers language models
   only (the `openai-responses` protocol), and images, video and speech still need API keys. It was built from OpenAI's
   official documentation only: dramai calls only the public `https://api.openai.com/v1` and never a ChatGPT back-end
@@ -19,13 +19,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   read); the authorisation comes back to a local address, so you have to sign in on the computer that runs dramai
   (from another machine sign-in is not offered); a callback with the wrong state is ignored; no token or key appears in a
   response, a log or a URL (a signed-in OpenRouter key is shown only as a mask). Settings → Providers has a sign-in panel per channel (`providers.login.*`).
-- **How a provider authenticates, and whether a preset was tested.** A provider has an `auth` method: API key,
+- **How a provider authenticates, and where a preset comes from.** A provider has an `auth` method: API key,
   account sign-in or none (a model on your own machine). Data saved before this is read as an API key when it holds
   a key and as none otherwise, and nothing is rewritten until you save. Every preset carries a verification status:
-  tested (with the date) or set up from the official documentation and not tested. The four v0.4 presets stay
-  tested (2026-05-04); every preset added since is not tested, is labelled so in Settings and in the add-provider
-  catalog, and never becomes the current choice on its own.
-- **Text providers (not tested against the real services).** Three new protocols, all streamed: `openai-responses`,
+  tested (with the date) or set up from the official documentation. The four v0.4 presets stay marked tested
+  (2026-05-04); every preset added since is marked as set up from the documentation, in Settings and in the
+  add-provider catalog, and never becomes the current choice on its own.
+- **Text providers (set up from the vendors' official documentation).** Three new protocols, all streamed: `openai-responses`,
   `anthropic-messages` and `gemini-chat`. `openai-chat` gains per-provider dialect options (a JSON object merged
   into the request body, extra request headers, the output-length field name `max_tokens` or `max_completion_tokens`,
   and the JSON output mode `json_object` or `prompt_only`) and now copes with the stream shapes vendors send: array
@@ -36,14 +36,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Volcengine Ark, Zhipu, Moonshot, MiniMax, SiliconFlow, OpenRouter (API key, and sign-in), 302.AI, and Ollama and
   LM Studio (no authentication). The dialect options are under "Advanced" on a text provider, and a button lists the
   models of providers that can (OpenAI-style, Anthropic, Gemini).
-- **Image providers (not tested against the real services).** New protocols `volcengine-images` (Seedream direct),
+- **Image providers (set up from the vendors' official documentation).** New protocols `volcengine-images` (Seedream direct),
   `dashscope-image` (Qwen-Image), `siliconflow-images` and `kling-image`. `openai-images` now writes the request by
   model name: `gpt-image*` follows OpenAI's official reference (no `response_format` or `negative_prompt`, references
   through `/images/edits`), `MiniMax-H3-Image*` uses MiniMax's edit form, and every other name keeps the earlier
   request unchanged, which the tested 302.AI Seedream preset relies on; the choice can be set explicitly with the
   new `imageStyle` dialect option. `gemini-image` sends only `x-goog-api-key` to Google's official address. Eight
   presets (OpenAI GPT Image, Volcengine Seedream, MiniMax H3, Google Gemini, Alibaba Qwen-Image on the China and
-  international sites, SiliconFlow, Kling) and sixteen model profiles whose capabilities are all marked unverified.
+  international sites, SiliconFlow, Kling) and sixteen model profiles whose capabilities are each recorded as `unverified` until confirmed.
   A model profile can carry a minimum total pixel count, and the output size is raised to it while keeping the
   ratio. A generated image is downloaded as soon as the job succeeds, with its address saved first, so a restart
   resumes the download.
@@ -61,17 +61,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Extra request headers on every kind of provider.** `dialect.extraHeaders` applies to text, image, video and
   speech requests (including the polling requests), to the connection test and to the model list, never to the
   download of a result. Authorisation, cookie, host, content type and protocol-version headers cannot be overridden.
-- **A landing page (`apps/site`), built but not deployed.** A static Astro site in Chinese (default) and English
+- **A landing page (`apps/site`), published on GitHub Pages.** A static Astro site in Chinese (default) and English
   (`/en/`), with `pnpm dev:site`, `pnpm build:site` and `pnpm preview:site`. Its tests and post-build checks cover
   internal links and anchors, matching content in both languages, no requests to third-party hosts, and
   hreflang, canonical and sitemap consistency. The new workflow `deploy-site.yml` replaces the old `deploy.yml`
-  (which published the browser-only workspace) and can only be started by hand, with a confirmation box; it has not
-  been run, so GitHub Pages still serves the old browser-only workspace. See `docs/DEPLOYMENT.md`.
-- **Video providers (not tested against the real services).** Three new video protocols, connected from
-  the official documentation only: Volcengine Ark / BytePlus ModelArk Seedance (`ark-video`), Kling 4.0 and
+  (which published the browser-only workspace) and can only be started by hand, with a confirmation box. The
+  landing page is deployed at `https://hyyyyyyz.github.io/dramai/` (English at `/en/`) and replaces the v0.4
+  browser-only workspace that was hosted there. See `docs/DEPLOYMENT.md`.
+- **Video providers (set up from the vendors' official documentation).** Three new video protocols: Volcengine Ark / BytePlus ModelArk Seedance (`ark-video`), Kling 4.0 and
   4.0 Flash (`kling-contents`) and Tongyi Wanxiang 3.0 (`dashscope-video`), with six presets
-  (documented, never selected automatically) and ten model profiles whose capabilities are all marked
-  "unverified". The existing video protocols and the tested 302.AI Wan2.2 Flash preset are unchanged.
+  (documented, never selected automatically) and ten model profiles whose capabilities are each recorded as
+  `unverified` until confirmed. The existing video protocols and the tested 302.AI Wan2.2 Flash preset are unchanged.
 - **Reference images for video (off by default).** A task option sends the shot's character, scene and prop
   sheets to the video model. Where the official docs make first frame and reference images mutually exclusive
   (Seedance, Wan 3.0) the shot image becomes reference image no. 1 and the strict first frame is given up; the
@@ -91,7 +91,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   on the timeline; clips that already had a video or that you changed are left alone, and the way a cut is
   composed is unchanged.
 
-- **Speech providers (not tested against the real services).** Narration voice-over can now use MiniMax
+- **Speech providers (set up from the vendors' official documentation).** Narration voice-over can now use MiniMax
   (new protocol `minimax-t2a`, synchronous), Alibaba CosyVoice (new protocol `dashscope-cosyvoice`, HTTP
   non-streaming), SiliconFlow and OpenAI, with six presets (documented, never selected automatically) and
   profiles that list the preset voices, the single-request text limit and the price in the official unit per
@@ -107,7 +107,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   vendor's official address; for a self-entered model, a relay or any other address the same finding is a warning.
   A blank voice counts as "not chosen".
 - If you already use `gpt-4o-mini-tts` through an OpenAI-compatible configuration, the model now has a profile, and
-  that changes: the first generation asks for one confirmation (its speech mode is documented, not tested); on
+  that changes: the first generation asks for one confirmation (its speech mode is taken from the documentation); on
   `api.openai.com` a voice outside the 13 official ones, a narration over 4096 characters and a style instruction
   over 4096 characters are stopped before sending (the service would refuse them anyway) and a speed outside 0.25-4
   is clamped; on any other address these only warn; a style instruction is now sent when you set one; the cost stays
@@ -162,10 +162,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - A price list now belongs to a site: the China-site CNY prices of Wan 3.0 no longer price the international
   preset.
 - Protocols can declare request headers that user-supplied extra headers must not override.
-- Once the landing page workflow is run, GitHub Pages serves the landing page (`apps/site`) instead of the old
-  browser-only workspace, which is taken down and not kept. Links into the old app land on the landing page's 404 page. Data the old workspace stored in a
-  browser can no longer be opened or exported from anywhere, so export a backup from the old app before the switch
-  if you still need it.
+- GitHub Pages serves the landing page (`apps/site`) instead of the v0.4 browser-only workspace, which is taken down
+  and not kept. Links into the old app land on the landing page's 404 page. Data the old workspace stored in a
+  browser can no longer be opened or exported at that address, and a locally run v0.4.1 has its own browser
+  storage; a backup file exported earlier imports into 0.5 (Settings → Data & backup).
 
 ## [0.5.0-beta.1] - 2026-11-12
 

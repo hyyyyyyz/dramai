@@ -9,9 +9,9 @@ dramai is an application you run on your own computer, so there is nothing to ho
 | The app (WebUI and desktop) | Your computer                        | Run from a checkout, build and install locally, or download an installer from a release. See the [README](../README.md) and [`apps/desktop/README.md`](../apps/desktop/README.md) |
 | The landing page            | GitHub Pages, built from `apps/site` | Visit the site                                                                                                                                                                    |
 
-GitHub Pages cannot run the app: it needs the local server (`@dramai/server`) behind it. Today Pages still serves the
-old browser-only workspace (last built from commit `2ec3810` on `main`, a little after the v0.4.1 tag). Once the
-landing page is deployed that workspace is gone, and it is not kept anywhere on the site.
+GitHub Pages cannot run the app: it needs the local server (`@dramai/server`) behind it, so Pages serves the landing
+page. The v0.4 browser-only workspace that Pages served before (last built from commit `2ec3810` on `main`, a little
+after the v0.4.1 tag) was replaced by it and is not kept anywhere on the site.
 
 ## Deploying the landing page
 
@@ -37,22 +37,21 @@ Actions are pinned to commit SHAs, like every other workflow in the repository (
 ### Deploying
 
 The workflow is manual for now: **Actions → Deploy site to GitHub Pages → Run workflow**, choosing `main` and ticking
-the **confirm** box (without it nothing is built or deployed). The first deployment **replaces whatever Pages serves
-today**, which at the time of writing is the old browser-only workspace, and that cannot be undone.
+the **confirm** box (without it nothing is built or deployed). The first deployment **replaced the old browser-only
+workspace** that Pages served before, and that cannot be undone; later deployments replace the previous landing page.
 
 To deploy automatically whenever `apps/site` changes on `main`, uncomment the `push:` block at the top of the workflow
 (it is written and commented out); keep `workflow_dispatch` so a deployment can still be re-run by hand.
 
-### What visitors see after the switch
+### What visitors see
 
 - `/dramai/` and `/dramai/en/` are the landing page.
 - Links into the old app (`/dramai/projects`, `/dramai/settings`, and so on) land on the landing page's own 404 page;
   there is no redirect and no copy of the old app.
 - Data the old workspace stored in a visitor's browser (IndexedDB and localStorage) stays there, but nothing can open or
   export it any more. Browsers keep that data per origin, and it belongs to `https://hyyyyyyz.github.io`; running v0.4.1
-  locally is a different origin (`http://localhost:5173`) and cannot read it. People who did not export a backup before
-  the switch cannot get their data back. The landing page says so, and the 0.5.0 app imports a backup file if they have
-  one (Settings → Data & backup).
+  locally is a different origin (`http://localhost:5173`) and cannot read it. A backup exported before the switch imports into
+  the 0.5.0 app (Settings → Data & backup).
 
 ### Checking a deployment
 

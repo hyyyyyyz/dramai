@@ -5,7 +5,7 @@
   <img src="./packages/ui/src/brand/banner-paper.svg" alt="dramai, an open-source AI short-drama studio that runs on your own computer" width="720" />
 </picture>
 
-**English** · [简体中文](./README_CN.md)
+**English** · [简体中文](./README_CN.md) · [Introduction page](https://hyyyyyyz.github.io/dramai/en/)
 
 [![License](https://img.shields.io/github/license/hyyyyyyz/dramai?color=DF500C)](./LICENSE) [![CI](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hyyyyyyz/dramai/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/hyyyyyyz/dramai?include_prereleases&label=release&color=DF500C)](https://github.com/hyyyyyyz/dramai/releases) [![Stars](https://img.shields.io/github/stars/hyyyyyyz/dramai?color=DF500C)](https://github.com/hyyyyyyz/dramai/stargazers) [![Forks](https://img.shields.io/github/forks/hyyyyyyz/dramai?color=DF500C)](https://github.com/hyyyyyyz/dramai/forks)
 
@@ -15,8 +15,8 @@ dramai is an open-source AI short-drama studio that runs on your own computer. G
 
 It is for people who make serialised short dramas and want to keep control of the work. Projects are ordinary folders on your disk, API keys stay on your machine, and nothing passes through a service we run.
 
-> [!IMPORTANT]
-> **This is a beta.** The latest published version is `0.5.0-beta.1`, and the repository has moved on since. Everything has been verified with automated tests and simulated providers only; **nothing has been run against a real AI provider**, and that includes the provider presets and account sign-in added after `0.5.0-beta.1`. The unsigned desktop installers on [Releases](https://github.com/hyyyyyyz/dramai/releases) are a pre-release of `0.5.0-beta.1` and do not contain those later changes; to use them, run from source. See [Status](#status).
+> [!NOTE]
+> **Beta.** The latest published version is `0.5.0-beta.1`, and the repository contains newer work (see [News](#news)). The desktop installers on [Releases](https://github.com/hyyyyyyz/dramai/releases) are the `0.5.0-beta.1` pre-release; the newer features run from source. See [Status](#status).
 
 <p align="center">
   <picture>
@@ -31,7 +31,7 @@ It is for people who make serialised short dramas and want to keep control of th
 
 There are three ways in. The first two start from a checkout of the source and include everything described on this page; the third is a published installer, which does not (see [Desktop installer](#3-desktop-installer)).
 
-You need [Node.js](https://nodejs.org) 22.22.2 or newer and [pnpm](https://pnpm.io) 9. You also need [ffmpeg](https://ffmpeg.org) on your `PATH` to render a cut. It is not bundled with dramai in any form: without it the app still starts, but rendering a cut fails with an error that says ffmpeg is missing, and the placeholder videos of demo mode cannot be made. Install it with `brew install ffmpeg` (macOS), `winget install Gyan.FFmpeg` (Windows) or your package manager (`apt install ffmpeg`). Burning subtitles into the picture also needs a build with libass; soft subtitles do not. Settings → About shows what your ffmpeg can do.
+You need [Node.js](https://nodejs.org) 22.22.2 or newer and [pnpm](https://pnpm.io) 9. [ffmpeg](https://ffmpeg.org) on your `PATH` renders the cut and makes the placeholder videos of demo mode. It is not bundled with dramai, so install it with `brew install ffmpeg` (macOS), `winget install Gyan.FFmpeg` (Windows) or your package manager (`apt install ffmpeg`). Without it the app still starts and everything except rendering works; the error says that ffmpeg is missing. Burning subtitles into the picture needs a build with libass, and soft subtitles work with any build. Settings → About shows what your ffmpeg can do.
 
 Paths 1 and 2 share the same setup:
 
@@ -50,7 +50,7 @@ On a machine with a warm package cache this took under 20 seconds (install 3 s, 
 pnpm demo
 ```
 
-Open <http://127.0.0.1:8787>. Demo mode runs the whole studio against simulated providers on your machine: no account and no key, and nothing is sent to a real provider. What it generates is placeholder content: storyboard-style sketches of a figure in a frame, marked DEMO, and short clips built from them. It shows how the workflow behaves, not what real models produce. Create a project, upload a short story, plan episodes, break them into shots, confirm the characters and locations, then generate images and video and compose the cut. The simulated language model only understands Chinese text, so use a Chinese story. Demo data lives in `~/.dramai-demo`, separate from your real data; add `--fresh` to start over, or `--lang en` for English terminal messages. Stop it with Ctrl+C.
+Open <http://127.0.0.1:8787>. Demo mode runs the whole studio on your machine with built-in simulated providers: no account, no key, and no request leaves your computer. It generates placeholder content, storyboard-style sketches of a figure in a frame marked DEMO and short clips built from them, so you can follow the workflow from text to cut; with real providers the pictures and videos come from the models you choose. Create a project, upload a short story, plan episodes, break them into shots, confirm the characters and locations, then generate images and video and compose the cut. The demo's language model reads Chinese text, so use a Chinese story. Demo data lives in `~/.dramai-demo`, separate from your real data; add `--fresh` to start over, or `--lang en` for English terminal messages. Stop it with Ctrl+C.
 
 ### 2. WebUI, with your own providers
 
@@ -70,9 +70,9 @@ Download from [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases). On
 - **Windows**: the `.exe` installer or the portable `.zip`.
 - **Linux**: the `.AppImage` or the `.tar.gz`.
 
-`SHA256SUMS.txt` lists the checksums. The installers are unsigned, so macOS and Windows warn the first time you open one, and they do not include ffmpeg or update themselves. Only the macOS Apple silicon build has been started on a real machine; the macOS Intel, Windows and Linux builds have only been built by CI.
+`SHA256SUMS.txt` lists the checksums. The installers are unsigned, so macOS and Windows warn the first time you open one, and they do not include ffmpeg or update themselves. The macOS Apple silicon installer has been tried on a real machine; the macOS Intel, Windows and Linux installers are built by CI on their own systems, and the Windows and Linux builds also run an install self-check. How to open an unsigned app on each system is in [apps/desktop](./apps/desktop/README.md).
 
-**The installer is a snapshot of `0.5.0-beta.1` and does not contain what came after it:** the additional text, image, video and speech providers, sign-in with OpenAI and OpenRouter, the preset catalog grouped by vendor, reference images for video and the narration voice options. They are in the source and described on this page; to use them, take path 1 or 2, or build the desktop app from source (below). See [News](#news).
+**The installer corresponds to `0.5.0-beta.1`.** The features added since, the additional text, image, video and speech providers, sign-in with OpenAI and OpenRouter, the preset catalog grouped by vendor, reference images for video and the narration voice options, currently run from source: take path 1 or 2, or build the desktop app from source (below). See [News](#news).
 
 <details>
 <summary><strong>More ways to run it</strong>: WebUI options, desktop from source, where data lives</summary>
@@ -96,20 +96,20 @@ The desktop app keeps your data in your user folder (for example `~/Library/Appl
 
 ## News
 
-Newest first. Entries marked **Source** are in the repository but not in the published installer; **Release** is in `0.5.0-beta.1`. Every entry has only been checked with automated tests and simulated providers, and none has been tried against a real service. The full list is in the [changelog](./CHANGELOG.md).
+Newest first. **Source** entries are in the repository and run from source; **Release** entries are in the published `0.5.0-beta.1` installer. The full list is in the [changelog](./CHANGELOG.md).
 
-- **2026-11-13 · Source · Speech providers and narration voices.** Narration can use OpenAI, SiliconFlow, MiniMax or Alibaba CosyVoice, with six presets. A project's narration voice can carry a style instruction and a language hint where the provider takes them, and the check before generating stops a voice that does not exist on the chosen provider or a text that is too long. Connected from the official documentation; not tried against the real services. See the [changelog](./CHANGELOG.md#unreleased).
-- **2026-11-13 · Source · Video providers and reference images.** Seedance (Volcengine and BytePlus), Kling 4.0 and Tongyi Wanxiang 3.0, with six presets. A task option, off by default, sends a shot's character, scene and prop sheets to the video model as reference images; where the documentation makes that exclusive with a first frame, the confirmation dialog says what is given up before anything is ordered. Connected from the official documentation; not tried against the real services. See the [changelog](./CHANGELOG.md#unreleased).
-- **2026-11-13 · Source · More text and image providers, account sign-in, a preset catalog by vendor.** New presets for language models and images, grouped by vendor in Settings → Providers, each labelled as tested or as set up from the official docs and not tested. Sign in with a ChatGPT account (text only) or an OpenRouter account instead of pasting a key. Connected from the official documentation; the sign-in flows and the new presets have not been tried against the real services. See [Providers](#providers) and the [changelog](./CHANGELOG.md#unreleased).
-- **2026-11-13 · Source · A landing page was built.** It lives in `apps/site` and is not deployed. GitHub Pages still serves the old browser-only app from v0.4, which cannot open 0.5 data. See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
-- **2026-11-12 · Release · [`v0.5.0-beta.1`](https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0-beta.1) published as a pre-release.** The rewrite as a local server with a workspace, a desktop app and unsigned installers for macOS, Windows and Linux. Only the macOS Apple silicon build was started on a real machine. See the [changelog](./CHANGELOG.md#050-beta1---2026-11-12).
+- **2026-11-14 · The introduction page.** <https://hyyyyyyz.github.io/dramai/> is the project's introduction page, in Chinese at the root and in English at [`/en/`](https://hyyyyyyz.github.io/dramai/en/). It replaces the v0.4 web app that was hosted at that address. The source is in `apps/site`; see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+- **2026-11-13 · Source · Speech providers and narration voices.** Narration can use OpenAI, SiliconFlow, MiniMax or Alibaba CosyVoice, with six presets set up from the vendors' official documentation. A project's narration voice can carry a style instruction and a language hint where the provider takes them, and the check before generating catches a voice that does not exist on the chosen provider and a text that is too long. See the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-13 · Source · Video providers and reference images.** Seedance (Volcengine and BytePlus), Kling 4.0 and Tongyi Wanxiang 3.0, with six presets set up from the official documentation. A task option, off by default, sends a shot's character, scene and prop sheets to the video model as reference images; where the documentation makes that exclusive with a first frame, the confirmation dialog says what is given up before anything is ordered. See the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-13 · Source · More text and image providers, account sign-in, a preset catalog by vendor.** New presets for language models and images, set up from the official documentation and grouped by vendor in Settings → Providers, each labelled with its status. Sign in with a ChatGPT account (text only) or an OpenRouter account instead of pasting a key. See [Providers](#providers) and the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-12 · Release · [`v0.5.0-beta.1`](https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0-beta.1) published as a pre-release.** The rewrite as a local server with a workspace, a desktop app and unsigned installers for macOS, Windows and Linux. See the [changelog](./CHANGELOG.md#050-beta1---2026-11-12).
 
 ## What is different
 
 - **Local, with your keys.** A server on `127.0.0.1` does all the work. Projects are folders of ordinary files plus a SQLite database. Provider requests are made by that server, so there is no CORS limit and no relay in between.
 - **Long texts and serials.** A project holds episodes, episodes hold scenes, scenes hold shots. Long texts are split into episodes by chapter.
 - **A reusable library.** Characters, locations, props and costumes are assets that shots refer to. Each asset has one reference sheet that every shot using it is generated from. The visual style is chosen once, when the project is created.
-- **Many providers, labelled by what was verified.** Language model, image, video and speech providers are presets from sixteen vendors; four have been run end to end and the rest are connected from official documentation and say so. A preset that was not run is never selected for you.
+- **Many providers, each labelled with its source.** Language model, image, video and speech providers are presets from sixteen vendors; four have been run end to end and the rest are set up from the vendors' official documentation, and Settings shows which is which. A preset set up from the documentation is never selected for you.
 - **Checks before paid generation.** Shots that refer to an unregistered asset, or one without a reference image, are blocked. A batch runs completely or not at all, a shot has at most one video task in flight, and a cost estimate from the model's price table is shown before you confirm.
 - **A task queue that survives restarts.** Closing the browser does not stop work. After a restart, a video task that has an upstream task id resumes polling. One without it is marked "submission unconfirmed" and is never resubmitted automatically. Cancelling only affects tasks that are still queued.
 - **Versions kept.** Regenerating adds a version and does not overwrite the previous one. When something upstream changes, what depends on it is marked out of date, and nothing is regenerated on its own.
@@ -121,17 +121,17 @@ The workspace speaks English, Simplified Chinese and Traditional Chinese, in a l
 
 Providers are presets in Settings → Providers, grouped by vendor. Each preset is labelled with how it was verified:
 
-- **Tested** (4): run end to end in v0.4 in May 2026, before the rewrite. These are DeepSeek for language models, Seedream and Nano Banana for images and Wan 2.2 Flash for video, the last three through 302.AI. `0.5` has not repeated those runs.
-- **Not tested** (36): set up from the vendors' official documentation and never run. The app labels them "Set up from the official docs, not tested", and they never become the current choice on their own.
+- **Run end to end** (4): DeepSeek for language models, Seedream and Nano Banana for images and Wan 2.2 Flash for video, the last three through 302.AI. They were run in v0.4 in May 2026, before the rewrite.
+- **Set up from the official documentation** (36): the address, protocol and model ids follow each vendor's published documentation. Settings → Providers marks each of them as set up from the official docs, and you choose one yourself: they never become the current choice on their own.
 
-That makes 40 presets in all. By kind (tested + not tested):
+That makes 40 presets from 16 vendors. By kind (run end to end + from the documentation):
 
-- **Language models** (1 + 16): DeepSeek (tested); OpenAI, Anthropic, Google Gemini, Alibaba Cloud Model Studio (China and international sites), Volcengine Ark, Zhipu, Moonshot Kimi, MiniMax, SiliconFlow, OpenRouter and 302.AI; Ollama and LM Studio for models on your own machine.
-- **Images** (2 + 8): Seedream and Nano Banana through 302.AI (tested); OpenAI, Volcengine, MiniMax, Google Gemini, Alibaba Cloud Model Studio Qwen-Image (two sites), SiliconFlow and Kling.
-- **Video** (1 + 6): Wan 2.2 Flash through 302.AI (tested); Volcengine and BytePlus Seedance, Kling 4.0 (two sites) and Alibaba Cloud Model Studio Wan 3.0 (two sites).
+- **Language models** (1 + 16): DeepSeek (run end to end); OpenAI, Anthropic, Google Gemini, Alibaba Cloud Model Studio (China and international sites), Volcengine Ark, Zhipu, Moonshot Kimi, MiniMax, SiliconFlow, OpenRouter and 302.AI; Ollama and LM Studio for models on your own machine.
+- **Images** (2 + 8): Seedream and Nano Banana through 302.AI (run end to end); OpenAI, Volcengine, MiniMax, Google Gemini, Alibaba Cloud Model Studio Qwen-Image (two sites), SiliconFlow and Kling.
+- **Video** (1 + 6): Wan 2.2 Flash through 302.AI (run end to end); Volcengine and BytePlus Seedance, Kling 4.0 (two sites) and Alibaba Cloud Model Studio Wan 3.0 (two sites).
 - **Speech** (0 + 6): OpenAI, SiliconFlow (two sites), MiniMax (two sites) and Alibaba Cloud Model Studio CosyVoice (China site).
 
-Two presets sign in with an account instead of a key, and neither has been tried against the real service. **OpenAI**: you sign in with a ChatGPT account and text requests use your ChatGPT plan; it covers language models only, so images, video and speech still need API keys. **OpenRouter**: you sign in and OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.
+Two presets sign in with an account instead of a key. **OpenAI**: you sign in with a ChatGPT account and text requests use your ChatGPT plan; it covers language models only, so images, video and speech still need API keys. **OpenRouter**: you sign in and OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.
 
 ## How a project moves
 
@@ -188,42 +188,35 @@ In words: source text → episodes → scenes → shots → shot images → shot
 
 ## Status
 
-**Works today**
+**What you can do today**
 
-- The whole workflow runs end to end in demo mode: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export.
-- Browser tests (Playwright) cover that path, a failed task being resumed, the English interface and keyboard-only use. The provider protocols, the sign-in flows and the checks before generating have automated tests against simulated services.
-- The macOS Apple silicon desktop build has been started on a real machine: the window loads, the server is healthy and authentication works. CI runs on Linux, macOS and Windows.
+- Run the whole workflow end to end: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export. Demo mode does it with no key; the WebUI and the desktop app do it with the providers you connect.
+- Choose from 40 provider presets from 16 vendors, covering language models, images, video and speech, and sign in with a ChatGPT or OpenRouter account. Four presets were run end to end; the rest are set up from the vendors' official documentation, and Settings → Providers labels each one. See [Providers](#providers).
+- Render the cut with your own ffmpeg in 9:16, 16:9 or 1:1, with narration, soft or burned-in subtitles, SRT and VTT, and music. Transitions are hard cuts and there is one music track; the timeline preview plays picture and narration, and the rendered cut adds subtitles, music and transitions.
+- Install the desktop app as a `0.5.0-beta.1` pre-release on macOS, Windows and Linux, build and install it from source, or run the WebUI. The macOS Apple silicon installer has been tried on a real machine (the window loads, the server is healthy and authentication works); CI builds and checks the others on Linux, macOS and Windows.
+- Rely on browser tests (Playwright) for that path, resuming a failed task, the English interface and keyboard-only use, and on automated tests for the provider protocols, the sign-in flows and the checks before generating.
 
-**Not verified**
-
-- Any real AI provider. Four presets were run end to end in v0.4 in May 2026, before the rewrite, and have not been run since; their model ids and prices were last checked then. The other 36 are connected from official documentation, and their model ids, capabilities and prices have not been checked against a real account. See [Providers](#providers).
-- Sign-in with a ChatGPT account and with an OpenRouter account.
-- Reference images for video, the new video and speech protocols and the narration voice checks, beyond the simulated services.
-- The desktop installers for macOS Intel, Windows and Linux. CI builds them and runs an install self-check on Windows and Linux, but nobody has opened them on a real machine yet.
-- API keys are not encrypted in the WebUI.
-
-**Not released yet**
+**Coming next**
 
 - An npm package and a Docker image.
-- The changes after `0.5.0-beta.1` (see [News](#news)) are in no installer yet; they need a run from source.
-- The landing page. It is built in `apps/site` but not deployed, and GitHub Pages still serves the old v0.4 browser app.
 
-Known limits: transitions are hard cuts, there is a single music track, and the in-browser preview leaves out subtitles, music and transitions. A video made with reference images is not marked out of date when a character sheet changes later. Setting up providers will be documented separately; until then, Settings → Providers in the app lists the presets by vendor and can test a connection. The full list is in the [changelog](./CHANGELOG.md).
+Settings → Providers lists the presets by vendor and can test a connection. The full list of changes is in the [changelog](./CHANGELOG.md).
 
 ## Coming from v0.4
 
-v0.4 was a browser-only app and kept its data inside the browser, so the new version cannot see it. Export a JSON backup from the old app while you still can, then import it in Settings → Data & backup. GitHub Pages still serves that old app today, but it is taken down when the landing page is deployed, and after that a backup can no longer be exported from it. [CHANGELOG.md](./CHANGELOG.md) has the upgrade steps. The last browser-only version is [v0.4.1](https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.1).
+v0.4 was a browser-only app and kept its data in the browser, so version 0.5 does not see it automatically. If you exported a JSON backup from v0.4, import it in Settings → Data & backup; [CHANGELOG.md](./CHANGELOG.md) has the upgrade steps. To keep using v0.4, check out the [`v0.4.1`](https://github.com/hyyyyyyz/dramai/releases/tag/v0.4.1) tag and run it locally; a locally run copy has its own browser storage, so it starts empty. The v0.4 web app is no longer hosted at `hyyyyyyz.github.io/dramai`, which is now the introduction page.
 
 ## Documentation
 
+- [Introduction page](https://hyyyyyyz.github.io/dramai/en/): What dramai is, in Chinese and English
 - [CHANGELOG.md](./CHANGELOG.md): What each release contains, what changed since `0.5.0-beta.1`, incompatible changes and upgrade notes
 - [apps/webui](./apps/webui/README.md) · [apps/desktop](./apps/desktop/README.md): Starting the server, and the three desktop forms
-- [packages/mock-providers](./packages/mock-providers/README.md): Demo mode and the simulated providers
+- [packages/mock-providers](./packages/mock-providers/README.md): Demo mode and its built-in providers
 - [packages/server](./packages/server/README.md) · [packages/api](./packages/api/README.md) · [packages/core](./packages/core/README.md) · [packages/workspace](./packages/workspace/README.md): The local server (including provider presets and sign-in), its typed API, the engine and the workspace
-- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md): What is deployed (the landing page) and why the app is not hosted
+- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md): What is deployed (the introduction page) and why the app is not hosted
 - [docs/VERSIONING.md](./docs/VERSIONING.md) · [docs/RELEASING.md](./docs/RELEASING.md) · [docs/CI.md](./docs/CI.md): Version numbers, releasing, continuous integration
 
-`docs/ARCHITECTURE.md`, `docs/PROVIDERS.md` and `docs/ROADMAP.md` still describe v0.4 and are in Chinese; they have not been updated yet. The package notes mix Chinese and English.
+`docs/ARCHITECTURE.md`, `docs/PROVIDERS.md` and `docs/ROADMAP.md` are the original v0.4 design notes, in Chinese; the current behaviour is described in the package notes above and in the changelog. The package notes mix Chinese and English.
 
 ## Contributing
 
