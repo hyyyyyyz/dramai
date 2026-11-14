@@ -151,7 +151,7 @@ export function judgeSpeech(
   ) {
     warnings.push({
       code: 'VOICE_UNLISTED',
-      message: `音色“${voice}”不在 ${config.model} 的常用音色清单里；如果是你自己的克隆 / 自定义音色就没问题，不存在的话服务商会拒绝（不收费）`,
+      message: `音色“${voice}”不在 ${config.model} 的常用音色清单里；如果是你自己的克隆 / 自定义音色就没问题，不存在的话服务商会拒绝`,
     })
   }
   return { voice, defaulted, problems, warnings }
