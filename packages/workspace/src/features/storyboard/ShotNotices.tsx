@@ -120,6 +120,12 @@ export function BlockedNotice({
                       {t('storyboard.blocked.goCandidates')}
                     </Button>
                   </Link>
+                ) : action.kind === 'projectVoice' ? (
+                  <Link to={`/projects/${projectId}?voice=1`}>
+                    <Button size="sm" variant="secondary" tabIndex={-1}>
+                      {t('storyboard.blocked.goVoice')}
+                    </Button>
+                  </Link>
                 ) : action.kind === 'providers' ? (
                   <Link to="/settings/providers">
                     <Button size="sm" variant="secondary" tabIndex={-1}>

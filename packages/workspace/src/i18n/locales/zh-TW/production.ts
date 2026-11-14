@@ -76,6 +76,21 @@ export default {
     DURATION_SNAPPED: '鏡頭時長不在模型支援的檔位上，會按最接近的檔位生成',
     OPTIONAL_INPUT_OMITTED: '有一個可選的輸入缺失（比如服裝沒有設定圖），只會用它的文字描述',
     REFS_TRIMMED: '參考圖超過了模型的上限，多出的幾張不會帶上',
+    NARRATION_VOICE_REQUIRED:
+      '專案還沒設定旁白音色，而當前的語音型號沒有預設音色。先去專案設定裡選一個音色',
+    VOICE_NOT_AVAILABLE:
+      '當前的語音型號沒有專案裡選的這個音色（它的音色是封閉清單，只能從清單裡選）。去專案設定裡重新選一個',
+    VOICE_FROM_ANOTHER_SERVICE:
+      '專案裡選的音色是另一家語音服務商的，當前的服務商用不了：多半是換了服務商，忘了換音色。去專案設定裡重新選一個',
+    VOICE_FORMAT_INVALID: '音色的寫法不對（矽基流動的音色要寫成“模型名:音色名”）。去專案設定裡改',
+    INSTRUCTION_TOO_LONG:
+      '風格指令太長：最多 100 個字元（漢字算 2 個），現在是 {{n}}。去專案設定裡縮短它，或者清空',
+    TEXT_TOO_LONG:
+      '這段旁白有 {{chars}} 個字元，當前的語音型號單次最多 {{limit}} 個。把這個鏡頭的旁白縮短、拆成兩個鏡頭，或者換一個單次上限更高的語音服務商',
+    TEXT_TOO_LONG_PLAIN:
+      '這段旁白超過了當前語音型號的單次上限。把這個鏡頭的旁白縮短、拆成兩個鏡頭，或者換一個單次上限更高的語音服務商',
+    VOICE_UNLISTED:
+      '專案裡的音色不在常用清單裡。如果是你自己的克隆或自定義音色就沒問題；不存在的話服務商會拒絕，不收費',
     REFERENCE_NOT_SUPPORTED_VIDEO:
       '當前影片模型不支援參考圖，不能開啟“用角色設定圖作參考”。關掉這個開關改用首幀，或者換一個支援參考圖的影片模型',
     FRAME_WITH_REFS_UNSUPPORTED:
@@ -217,6 +232,7 @@ export default {
       goAsset: '去補「{{name}}」的設定圖',
       goCandidates: '去確認候選',
       goProviders: '去設定服務商',
+      goVoice: '去選音色',
       action: {
         prompts: '補全鏡頭提示詞',
         generateImage: '生成圖片',
@@ -307,6 +323,8 @@ export default {
       costUnknown: '無法估算',
       costOther: '另有 {{list}}（沒有折算）',
       unpriced: '{{count}} 項查不到單價，沒有計入',
+      costRange:
+        '這是個區間：有的服務商按字元計價，MiniMax 國內站把 1 個漢字算 2 個字元，純中文旁白接近上限',
       costNote: '估算，不是帳單。價格以服務商當前頁面為準',
       warningsTitle: '不會攔下，但值得知道',
       partialTitle: '有的沒有加入佇列',

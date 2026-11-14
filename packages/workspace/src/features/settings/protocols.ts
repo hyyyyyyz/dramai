@@ -30,6 +30,8 @@ const KIND_OF: Record<ProtocolId, ProviderKind> = {
   'kling-contents': 'video',
   'dashscope-video': 'video',
   'openai-tts': 'tts',
+  'minimax-t2a': 'tts',
+  'dashscope-cosyvoice': 'tts',
 }
 
 /** Protocols a custom provider of each kind can pick, in the order shown. */
@@ -52,7 +54,7 @@ export const PROTOCOLS_BY_KIND: Record<ProviderKind, readonly ProtocolId[]> = {
     'kling-contents',
     'dashscope-video',
   ],
-  tts: ['openai-tts'],
+  tts: ['openai-tts', 'minimax-t2a', 'dashscope-cosyvoice'],
 }
 
 export const kindOfProtocol = (p: ProtocolId): ProviderKind => KIND_OF[p]

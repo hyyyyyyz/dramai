@@ -7,6 +7,10 @@ export default {
       'No tasks yet. Progress shows up here when you generate images or videos or plan episodes',
     emptyFilter: 'Nothing in this group right now',
     workerError: 'The job runner hit an error',
+    muteNotSet: {
+      title: 'The timeline’s default mute wasn’t set',
+      body: 'The video was generated and saved; nothing failed. Only the step that starts this new clip’s own audio muted didn’t finish: if its model has its own audio, check the clip’s audio volume on the timeline',
+    },
     workerErrorBody:
       'The background runner reported an error, so some jobs may not advance. Details are in the server log; restarting the service usually recovers it',
     triggerRunning: '{{n}} running',
@@ -34,6 +38,12 @@ export default {
     target: { shot: 'shot {{n}}', removed: 'a deleted item', edit: 'edit by instruction' },
     ignoredNote:
       'Result marked as ignored: it runs to completion and is billed as usual, and lands in the version history without becoming current',
+    ignoredInputs: 'Inputs that were not used this time: {{list}}',
+    ignoredInput: {
+      instructions: 'style instruction (this model doesn’t take it, so it was not used)',
+      language: 'language hint (this model doesn’t take it, so it was not used)',
+      speed: 'speed (outside the provider’s range, adjusted into it)',
+    },
     ignoredLabel: 'result ignored',
     queuePosition: 'Position {{n}} in line',
     elapsed: '{{duration}} so far',

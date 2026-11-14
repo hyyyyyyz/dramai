@@ -17,7 +17,8 @@ import type { JobListItem } from '@dramai/api'
 import { Button, IconButton, Progress, iconProps, cn } from '@dramai/ui/v2'
 import { useFormat } from '@/i18n/format'
 import { ProviderErrorNotice } from './ProviderErrorNotice'
-import { failureKind, isKnownOperation, jobActions } from './job-model'
+import { providerErrorOf } from '@/features/settings/provider-model'
+import { failureKind, ignoredInputsOf, isKnownOperation, jobActions } from './job-model'
 
 const LANE_ICON: Record<JobListItem['type'], LucideIcon> = {
   text: FileText,
@@ -142,6 +143,23 @@ export function TaskItem({
           <div className="text-xs leading-normal text-muted-foreground">{sub.join(' · ')}</div>
         )}
 
+        {job.status === 'succeeded' && ignoredInputsOf(job.result).length > 0 && (
+          <div
+            className="mt-0.5 text-xs leading-normal text-muted-foreground"
+            data-testid="ignored-inputs"
+          >
+            {t('jobs.ignoredInputs', {
+              list: ignoredInputsOf(job.result)
+                .map((k) =>
+                  t(`jobs.ignoredInput.${k}` as 'jobs.ignoredInput.instructions', {
+                    defaultValue: k,
+                  }),
+                )
+                .join(t('storyboard.batch.listSep')),
+            })}
+          </div>
+        )}
+
         {job.status === 'running' && (
           <>
             <Progress
@@ -190,6 +208,12 @@ export function TaskItem({
               </div>
             )}
             <ProviderErrorNotice code={job.error?.code} />
+            {/* a code with no explanation of ours (a newer server): show the server's own words */}
+            {job.error?.message && !providerErrorOf(job.error.code) && (
+              <div className="text-xs leading-normal text-muted-foreground" data-testid="raw-error">
+                {job.error.message}
+              </div>
+            )}
             {job.error?.code && (
               <div className="font-mono text-xs text-subtle" title={job.error.message}>
                 {job.error.code}

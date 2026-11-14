@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { Asset, GenerateItem, Verdict } from '@dramai/api'
 import { Button, Checkbox, Frame, Notice, Pill, Skeleton, useToast } from '@dramai/ui/v2'
@@ -8,6 +9,7 @@ import { qk } from '@/data/keys'
 import {
   useCall,
   useProviderCapability,
+  useProject,
   useProviders,
   usePreflight,
   useSettings,
@@ -17,9 +19,10 @@ import { CapabilityValue } from '@/features/settings/CapabilityGrid'
 import { CostBox } from './CostBox'
 import { costHeadline } from './cost'
 import { batchTargetId, type BatchCandidate, type BatchKind } from './batch-model'
-import { visibleReasons } from './reasons'
+import { VOICE_REASONS, visibleReasons } from './reasons'
 import { useReasonText } from './use-reason-text'
 import { VideoRefsControl } from './VideoRefsControl'
+import { instructionWeight } from '@/features/settings/voice-model'
 import { VIDEO_PLAN_WARNINGS, frameOutcome } from './video-refs-model'
 import { usedReferenceNames } from './version-model'
 import { useFormat } from '@/i18n/format'
@@ -52,7 +55,6 @@ export function BatchConfirmDialog({
   const { t } = useTranslation()
   const fmt = useFormat()
   const { toast } = useToast()
-  const reasonText = useReasonText(assets, { video: kind === 'shot_video' })
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(candidates.map((c) => c.shotId)),
   )
@@ -81,6 +83,15 @@ export function BatchConfirmDialog({
     (p) => p.id === settings.data?.activeProviders[providerKind],
   )
   const cap = useProviderCapability(provider?.id ?? '', Boolean(provider))
+  // narration: the numbers behind "too long" come from the model's limit and the project's style instruction
+  const project = useProject(projectId)
+  const reasonText = useReasonText(assets, {
+    video: kind === 'shot_video',
+    speech: {
+      limit: cap.data?.capability.maxPromptChars,
+      instructionChars: instructionWeight(project.data?.narrationVoice?.instructions ?? ''),
+    },
+  })
 
   const verdictOf = (shotId: string) =>
     pre.data?.results.find((v) => v.targetId === batchTargetId(kind, shotId))
@@ -241,7 +252,20 @@ export function BatchConfirmDialog({
                     {checked && v?.status === 'blocked' && (
                       <ul className="mt-1 flex flex-col gap-1 text-muted-foreground">
                         {visibleReasons(v.reasons).map((r, i) => (
-                          <li key={`${r.code}-${i}`}>{reasonText(r)}</li>
+                          <li key={`${r.code}-${i}`}>
+                            {reasonText(r, { chars: c.narrationChars })}
+                            {VOICE_REASONS.includes(r.code) && (
+                              <>
+                                {' '}
+                                <Link
+                                  to={`/projects/${projectId}?voice=1`}
+                                  className="text-accent-text underline underline-offset-2"
+                                >
+                                  {t('storyboard.blocked.goVoice')}
+                                </Link>
+                              </>
+                            )}
+                          </li>
                         ))}
                       </ul>
                     )}

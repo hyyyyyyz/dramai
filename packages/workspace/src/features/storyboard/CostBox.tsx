@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useFormat } from '@/i18n/format'
-import { costHeadline, type Totals } from './cost'
+import { costHeadline, hasRange, type Totals } from './cost'
 
 export function CostBox({ totals }: { totals: Totals }) {
   const { t } = useTranslation()
@@ -27,6 +27,7 @@ export function CostBox({ totals }: { totals: Totals }) {
       </div>
       <div className="max-w-xs text-xs text-muted-foreground">
         {totals.unpriced > 0 && <p>{t('storyboard.batch.unpriced', { count: totals.unpriced })}</p>}
+        {hasRange(totals) && <p data-testid="cost-range-note">{t('storyboard.batch.costRange')}</p>}
         <p>{t('storyboard.batch.costNote')}</p>
       </div>
     </div>

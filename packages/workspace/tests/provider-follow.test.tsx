@@ -1,8 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-// The server's own list, read straight from its source (a test may reach across packages; the app may not).
-import { PROTECTED_HEADERS as SERVER_PROTECTED } from '../../core/src/util/merge'
+import { PROTECTED_REQUEST_HEADERS } from '@dramai/api'
 import { PROTECTED_HEADERS, PROTECTED_HEADER_NAMES } from '@/features/settings/dialect-model'
 import { ALL_PROTOCOLS, kindOfProtocol } from '@/features/settings/protocols'
 import { apiError, fakeServer } from './fixtures'
@@ -56,9 +55,10 @@ const open = async (name: string) => {
   return card
 }
 
-describe('the protected header list stays in step with the server', () => {
-  it('is the same set as packages/core/src/util/merge.ts', () => {
-    expect([...PROTECTED_HEADERS].sort()).toEqual([...SERVER_PROTECTED].sort())
+describe('the protected header list is the contract’s', () => {
+  it('is the list @dramai/api exports, not a copy', () => {
+    expect([...PROTECTED_HEADERS].sort()).toEqual([...PROTECTED_REQUEST_HEADERS].sort())
+    expect(PROTECTED_HEADER_NAMES).toBe(PROTECTED_REQUEST_HEADERS)
     expect(PROTECTED_HEADER_NAMES).toHaveLength(13)
   })
   it('the explanation shows the names, and each one is refused as a header name', async () => {

@@ -94,6 +94,22 @@ export default {
       'An optional input is missing (for example a costume has no sheet), so only its text description is used',
     REFS_TRIMMED:
       'There are more reference images than the model allows; the extra ones won’t be sent',
+    NARRATION_VOICE_REQUIRED:
+      'The project has no narration voice yet, and the current speech model has no default voice. Choose a voice in the project settings first',
+    VOICE_NOT_AVAILABLE:
+      'The current speech model doesn’t have the voice chosen in the project (its voices are a closed list, so only those can be used). Choose another in the project settings',
+    VOICE_FROM_ANOTHER_SERVICE:
+      'The voice chosen in the project belongs to another speech provider and the current one can’t use it: most likely the provider was switched and the voice wasn’t. Choose a voice again in the project settings',
+    VOICE_FORMAT_INVALID:
+      'The voice is not written the right way (SiliconFlow voices are written “model:voice”). Fix it in the project settings',
+    INSTRUCTION_TOO_LONG:
+      'The style instruction is too long: at most 100 characters (a Chinese character counts as 2), and it is {{n}} now. Shorten or clear it in the project settings',
+    TEXT_TOO_LONG:
+      'This narration has {{chars}} characters, and the current speech model takes at most {{limit}} at a time. Shorten the narration of this shot, split it into two shots, or choose a speech provider with a higher limit',
+    TEXT_TOO_LONG_PLAIN:
+      'This narration is longer than the current speech model takes at a time. Shorten the narration of this shot, split it into two shots, or choose a speech provider with a higher limit',
+    VOICE_UNLISTED:
+      'The voice in the project isn’t in the list of common ones. That’s fine for your own cloned or custom voice; if it doesn’t exist the provider refuses and doesn’t charge',
     REFERENCE_NOT_SUPPORTED_VIDEO:
       'This video model doesn’t accept reference images, so “Use character sheets as references” can’t be on. Turn the switch off to use the first frame, or choose a video model that supports references',
     FRAME_WITH_REFS_UNSUPPORTED:
@@ -253,6 +269,7 @@ export default {
       goAsset: 'Add a sheet for “{{name}}”',
       goCandidates: 'Review candidates',
       goProviders: 'Set up providers',
+      goVoice: 'Choose the voice',
       action: {
         prompts: 'Fill in shot prompts',
         generateImage: 'Generate image',
@@ -350,6 +367,8 @@ export default {
       costOther: 'Plus {{list}} (not converted)',
       unpriced_one: '{{count}} item has no known unit price and isn’t counted',
       unpriced_other: '{{count}} items have no known unit price and aren’t counted',
+      costRange:
+        'This is a range: some providers price by character, and MiniMax’s China site counts a Chinese character as 2, so narration in Chinese only comes close to the upper end',
       costNote: 'An estimate, not a bill. The provider’s current page is authoritative',
       warningsTitle: 'Won’t block, but good to know',
       partialTitle: 'Some were not queued',

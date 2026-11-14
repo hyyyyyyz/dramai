@@ -255,6 +255,10 @@ export default {
       title: 'This video model needs the shot image as its first frame, and this shot has none yet',
       body: 'Generate the shot image first, then the video',
     },
+    VOICE_MISSING: {
+      title: 'The provider says there is no such voice',
+      body: 'Choose a voice again in the project settings. If it is your own cloned voice, check that it belongs to this provider’s account and hasn’t expired',
+    },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: 'The base URL isn’t allowed, so no sign-in token was sent',
       body: 'The base URL for account sign-in is fixed. Delete this provider in Settings and add it again from the preset',

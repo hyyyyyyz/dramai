@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { FolderOpen, SlidersHorizontal } from 'lucide-react'
 import { Button, EmptyState, Skeleton, iconProps, iconPropsLg } from '@dramai/ui/v2'
@@ -44,7 +44,9 @@ export function OverviewPage() {
   const candidates = useCandidates(projectId)
   const settings = useSettings()
   const providers = useProviders()
-  const [editing, setEditing] = useState(false)
+  // `?voice=1` (from the notice after switching the speech provider) opens the settings where the voice is chosen
+  const [search, setSearch] = useSearchParams()
+  const [editing, setEditing] = useState(search.get('voice') === '1')
   const activeOps = useActiveOps(projectId)
   const invalidate = [qk.jobs, qk.episodes(projectId), qk.projects]
   const breakdown = useCall('episodes.breakdown', { invalidate })
@@ -253,7 +255,18 @@ export function OverviewPage() {
           </Block>
         </div>
       </div>
-      {editing && <ProjectSettingsDialog project={p} onClose={() => setEditing(false)} />}
+      {editing && (
+        <ProjectSettingsDialog
+          project={p}
+          onClose={() => {
+            setEditing(false)
+            if (search.has('voice')) {
+              search.delete('voice')
+              setSearch(search, { replace: true })
+            }
+          }}
+        />
+      )}
     </>
   )
 }

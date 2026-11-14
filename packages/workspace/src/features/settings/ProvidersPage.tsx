@@ -10,6 +10,7 @@ import { AddProvider } from './AddProvider'
 import { ProviderCard } from './ProviderCard'
 import { KINDS, type ProviderKind } from './protocols'
 import { VerificationNote } from './ProviderBadges'
+import { VoiceSwitchNotice } from './VoiceSwitchNotice'
 
 /** 设置 · 服务商：四类服务（大模型、文生图、图生视频、配音），每类可有多个配置，选一个“使用中”。 */
 export function ProvidersPage() {
@@ -19,6 +20,8 @@ export function ProvidersPage() {
   const projects = useProjects()
   const updateSettings = useCall('settings.update', { invalidate: [qk.settings] })
   const [justAdded, setJustAdded] = useState<string>()
+  // the speech provider that was just made current, and the one before it: voices chosen for the old one may not fit
+  const [voiceSwitch, setVoiceSwitch] = useState<{ next: string; previous?: string }>()
 
   if (providers.isError || settings.isError)
     return <ErrorNotice error={providers.error ?? settings.error} />
@@ -30,10 +33,22 @@ export function ProvidersPage() {
       </div>
     )
   const active = settings.data.activeProviders
-  const activate = (kind: ProviderKind, id: string) =>
-    updateSettings.mutate({
-      body: { ...settings.data, activeProviders: { ...settings.data.activeProviders, [kind]: id } },
-    })
+  const activate = (kind: ProviderKind, id: string) => {
+    const previous = settings.data.activeProviders.tts
+    updateSettings.mutate(
+      {
+        body: {
+          ...settings.data,
+          activeProviders: { ...settings.data.activeProviders, [kind]: id },
+        },
+      },
+      {
+        onSuccess: () => {
+          if (kind === 'tts' && id !== previous) setVoiceSwitch({ next: id, previous })
+        },
+      },
+    )
+  }
   const ttsProjects = (projects.data?.items ?? []).filter((p) => p.narrationDelivery === 'tts')
 
   return (
@@ -77,6 +92,15 @@ export function ProvidersPage() {
                   {t('providers.ttsMissingGo')}
                 </Link>
               </Notice>
+            )}
+            {kind === 'tts' && voiceSwitch && voiceSwitch.next === active.tts && current && (
+              <VoiceSwitchNotice
+                nextId={voiceSwitch.next}
+                previousId={voiceSwitch.previous}
+                providerName={current.label}
+                projects={projects.data?.items ?? []}
+                onDismiss={() => setVoiceSwitch(undefined)}
+              />
             )}
             {kind === 'llm' && !current && <Notice tone="warn">{t('providers.llmMissing')}</Notice>}
             {items.length === 0 && (

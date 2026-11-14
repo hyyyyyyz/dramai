@@ -24,20 +24,38 @@ export function RevisionList({
   // System revisions are described in the interface's language from what they are, not from the server's Chinese summary
   // (and an automatic change is the system's, not an "agent edit"). Everything else shows the summary it was saved with.
   const titleOf = (r: TimelineView['revisions'][number]): string => {
-    if (r.reason === 'native_audio_default') {
-      const names = (r.changedClipIds ?? []).map((id) => clipName(view.revision.content, id))
-      return names.length > 0
-        ? t('compose.revisions.nativeAudioClips', {
-            clips: names.join(t('compose.revisions.listSep')),
-          })
-        : t('compose.revisions.nativeAudio')
+    switch (r.reason) {
+      case 'native_audio_default': {
+        const names = (r.changedClipIds ?? []).map((id) => clipName(view.revision.content, id))
+        return names.length > 0
+          ? t('compose.revisions.nativeAudioClips', {
+              clips: names.join(t('compose.revisions.listSep')),
+            })
+          : t('compose.revisions.nativeAudio')
+      }
+      case 'initial':
+        return t('compose.revisions.initial')
+      case 'sync_shots':
+        return t('compose.revisions.syncShots')
+      case 'rollback':
+        return r.restoredFrom
+          ? t('compose.revisions.restoredTo', { n: r.restoredFrom })
+          : t('compose.revisions.rollbackPlain')
     }
+    // No reason: a revision saved before reasons existed (or by the user). The first revision and a rollback are
+    // still recognised from their own fields; any other summary, and any reason this version doesn't know, is shown
+    // as the server wrote it.
     if (r.restoredFrom) return t('compose.revisions.restoredTo', { n: r.restoredFrom })
-    if (r.number === 1 && r.parent === undefined) return t('compose.revisions.initial')
+    if (r.number === 1 && r.parent === undefined && !r.reason) return t('compose.revisions.initial')
     return r.summary
   }
+  // Made by the system itself (not an edit by a person or an agent), except a rollback, which the person asked for.
+  const bySystem = (r: TimelineView['revisions'][number]) =>
+    r.reason === 'native_audio_default' || r.reason === 'initial' || r.reason === 'sync_shots'
   const authorOf = (r: TimelineView['revisions'][number]) =>
-    r.reason ? t('compose.revisions.author.system') : t(`compose.revisions.author.${r.author.kind}`)
+    bySystem(r)
+      ? t('compose.revisions.author.system')
+      : t(`compose.revisions.author.${r.author.kind}`)
   return (
     <Block title={t('compose.revisions.title')} aria-label={t('compose.revisions.title')}>
       <ul className="flex flex-col p-4">
@@ -48,7 +66,9 @@ export function RevisionList({
           >
             <span className="font-mono text-muted-foreground tabular-nums">{r.number}</span>
             <div className="min-w-0">
-              <div className={r.reason ? undefined : 'truncate'}>{titleOf(r)}</div>
+              <div className={r.reason === 'native_audio_default' ? undefined : 'truncate'}>
+                {titleOf(r)}
+              </div>
               <small className="text-xs text-muted-foreground">
                 {[
                   authorOf(r),

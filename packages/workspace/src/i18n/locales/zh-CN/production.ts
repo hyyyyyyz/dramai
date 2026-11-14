@@ -76,6 +76,21 @@ export default {
     DURATION_SNAPPED: '镜头时长不在模型支持的档位上，会按最接近的档位生成',
     OPTIONAL_INPUT_OMITTED: '有一个可选的输入缺失（比如服装没有设定图），只会用它的文字描述',
     REFS_TRIMMED: '参考图超过了模型的上限，多出的几张不会带上',
+    NARRATION_VOICE_REQUIRED:
+      '项目还没设置旁白音色，而当前的语音型号没有默认音色。先去项目设置里选一个音色',
+    VOICE_NOT_AVAILABLE:
+      '当前的语音型号没有项目里选的这个音色（它的音色是封闭清单，只能从清单里选）。去项目设置里重新选一个',
+    VOICE_FROM_ANOTHER_SERVICE:
+      '项目里选的音色是另一家语音服务商的，当前的服务商用不了：多半是换了服务商，忘了换音色。去项目设置里重新选一个',
+    VOICE_FORMAT_INVALID: '音色的写法不对（硅基流动的音色要写成“模型名:音色名”）。去项目设置里改',
+    INSTRUCTION_TOO_LONG:
+      '风格指令太长：最多 100 个字符（汉字算 2 个），现在是 {{n}}。去项目设置里缩短它，或者清空',
+    TEXT_TOO_LONG:
+      '这段旁白有 {{chars}} 个字符，当前的语音型号单次最多 {{limit}} 个。把这个镜头的旁白缩短、拆成两个镜头，或者换一个单次上限更高的语音服务商',
+    TEXT_TOO_LONG_PLAIN:
+      '这段旁白超过了当前语音型号的单次上限。把这个镜头的旁白缩短、拆成两个镜头，或者换一个单次上限更高的语音服务商',
+    VOICE_UNLISTED:
+      '项目里的音色不在常用清单里。如果是你自己的克隆或自定义音色就没问题；不存在的话服务商会拒绝，不收费',
     REFERENCE_NOT_SUPPORTED_VIDEO:
       '当前视频模型不支持参考图，不能开启“用角色设定图作参考”。关掉这个开关改用首帧，或者换一个支持参考图的视频模型',
     FRAME_WITH_REFS_UNSUPPORTED:
@@ -217,6 +232,7 @@ export default {
       goAsset: '去补「{{name}}」的设定图',
       goCandidates: '去确认候选',
       goProviders: '去设置服务商',
+      goVoice: '去选音色',
       action: {
         prompts: '补全镜头提示词',
         generateImage: '生成图片',
@@ -307,6 +323,8 @@ export default {
       costUnknown: '无法估算',
       costOther: '另有 {{list}}（没有折算）',
       unpriced: '{{count}} 项查不到单价，没有计入',
+      costRange:
+        '这是个区间：有的服务商按字符计价，MiniMax 国内站把 1 个汉字算 2 个字符，纯中文旁白接近上限',
       costNote: '估算，不是账单。价格以服务商当前页面为准',
       warningsTitle: '不会拦下，但值得知道',
       partialTitle: '有的没有加入队列',

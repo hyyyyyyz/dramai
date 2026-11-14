@@ -6,6 +6,10 @@ export default {
     empty: '还没有任务。生成图片、视频或规划分集时，进度会出现在这里',
     emptyFilter: '这一类现在没有任务',
     workerError: '任务执行器出错了',
+    muteNotSet: {
+      title: '时间线的默认静音没有设上',
+      body: '视频已经生成并保存了，没有失败。只是这个新片段的原声默认静音这一步没完成：如果它的模型自带声音，请在时间线上看一下这个片段的原声音量',
+    },
     workerErrorBody:
       '后台执行器报告了一个错误，部分任务可能不会推进。详情在服务端日志里；重启服务通常能恢复',
     triggerRunning: '{{n}} 进行中',
@@ -27,6 +31,12 @@ export default {
     },
     target: { shot: '镜头 {{n}}', removed: '已删除的对象', edit: '指令修改' },
     ignoredNote: '结果已标记为忽略：照常跑完、照常计费，产物进版本历史，但不会自动成为当前版本',
+    ignoredInputs: '这次没有用上的输入：{{list}}',
+    ignoredInput: {
+      instructions: '风格指令（这个型号不支持，没有使用）',
+      language: '语言提示（这个型号不支持，没有使用）',
+      speed: '语速（超出服务商的范围，已调整到范围内）',
+    },
     ignoredLabel: '结果被忽略',
     queuePosition: '排在第 {{n}} 位',
     elapsed: '已进行 {{duration}}',

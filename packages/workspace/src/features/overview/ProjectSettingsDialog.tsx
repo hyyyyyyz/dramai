@@ -4,13 +4,15 @@ import type { AspectRatio, Project } from '@dramai/api'
 import { Button, Field, Hint, Input, Label, Notice } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
-import { useCall } from '@/data/queries'
+import { useCall, useProviderCapability, useProviders, useSettings } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import {
   AspectRatioPicker,
   NarrationPicker,
   type NarrationValue,
 } from '@/features/projects/pickers'
+import { VoiceSettings } from './VoiceSettings'
+import { draftOfVoice, voiceBody, voiceDraftProblem, type VoiceDraft } from './voice-draft'
 
 /** 项目设置：标题、画幅、旁白交付。风格在“素材”页里改。 */
 export function ProjectSettingsDialog({
@@ -24,9 +26,30 @@ export function ProjectSettingsDialog({
   const [name, setName] = useState(project.name)
   const [aspect, setAspect] = useState<AspectRatio>(project.aspectRatio)
   const [narration, setNarration] = useState<NarrationValue>(project.narrationDelivery)
+  const [voice, setVoice] = useState<VoiceDraft>(() => draftOfVoice(project.narrationVoice))
+  const settings = useSettings()
+  const providers = useProviders()
+  const ttsProvider = providers.data?.items.find((p) => p.id === settings.data?.activeProviders.tts)
+  const ttsCap = useProviderCapability(ttsProvider?.id ?? '', Boolean(ttsProvider))
   const update = useCall('projects.update', { invalidate: [qk.projects, qk.project(project.id)] })
   const changedAspect = aspect !== project.aspectRatio
-  const valid = name.trim() !== ''
+  const voiceProblem =
+    narration === 'tts' && ttsProvider
+      ? voiceDraftProblem(
+          voice,
+          ttsProvider.protocol,
+          ttsProvider.model,
+          ttsCap.data?.capability.defaultVoice,
+        )
+      : undefined
+  const valid = name.trim() !== '' && !voiceProblem
+  const voiceChange = voiceBody(
+    project,
+    voice,
+    ttsProvider
+      ? { providerConfigId: ttsProvider.id, defaultVoice: ttsCap.data?.capability.defaultVoice }
+      : undefined,
+  )
   const save = async () => {
     if (!valid) return
     try {
@@ -36,6 +59,9 @@ export function ProjectSettingsDialog({
           name: name.trim(),
           ...(changedAspect ? { aspectRatio: aspect } : {}),
           ...(narration !== project.narrationDelivery ? { narrationDelivery: narration } : {}),
+          ...(narration === 'tts' && voiceChange !== undefined
+            ? { narrationVoice: voiceChange }
+            : {}),
         },
       })
       onClose()
@@ -85,6 +111,15 @@ export function ProjectSettingsDialog({
           />
           <Hint>{t('projects.new.narrationHint')}</Hint>
         </div>
+        {narration === 'tts' && (
+          <div className="flex flex-col gap-2">
+            <Label>{t('narrationVoice.title')}</Label>
+            <VoiceSettings draft={voice} onChange={setVoice} />
+            {voiceProblem === 'voice_needed' && (
+              <Notice tone="warn">{t('narrationVoice.voiceNeeded')}</Notice>
+            )}
+          </div>
+        )}
         {update.isError && <ErrorNotice error={update.error} />}
       </div>
     </Modal>

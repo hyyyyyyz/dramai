@@ -146,6 +146,8 @@ export default {
     'kling-contents': 'Kling 4.0 (video)',
     'dashscope-video': 'Alibaba Model Studio Wan 3.0 (video)',
     'openai-tts': 'OpenAI-compatible (speech)',
+    'minimax-t2a': 'MiniMax (speech)',
+    'dashscope-cosyvoice': 'Alibaba CosyVoice (speech)',
     'openai-responses': 'OpenAI Responses (text)',
     'anthropic-messages': 'Anthropic Messages (text)',
     'volcengine-images': 'Volcengine Seedream (image)',
@@ -155,6 +157,18 @@ export default {
     'gemini-chat': 'Gemini generateContent (text)',
   },
   providers: {
+    voiceSwitch: {
+      title: 'After switching to “{{name}}”, some projects need their narration voice chosen again',
+      from_another_service:
+        'The voice “{{voice}}” of “{{project}}” belongs to the previous provider; the new one can’t use it.',
+      not_available: 'The voice “{{voice}}” of “{{project}}” doesn’t exist on the new provider.',
+      required:
+        '“{{project}}” has no voice yet, and this model of the new provider has no default voice.',
+      unlisted:
+        'The voice “{{voice}}” of “{{project}}” isn’t in the new provider’s list of common voices; that’s fine if it’s your own voice.',
+      go: 'Choose the voice again',
+      dismiss: 'Got it',
+    },
     intro:
       'API keys are stored only on the computer running dramai and are never shown again after saving; you can only replace them. Every request is sent by the local service with no relay in between. If a model lacks a capability, generation fails and says why; it never silently switches to another model',
     kinds: {

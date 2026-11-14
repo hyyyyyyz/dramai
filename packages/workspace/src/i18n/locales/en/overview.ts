@@ -102,4 +102,45 @@ export default {
       none: 'None yet',
     },
   },
+  narrationVoice: {
+    title: 'Narration voice',
+    for: 'Uses the current speech provider: {{name}} ({{model}})',
+    noProvider:
+      'No speech provider is selected yet. Add and select one in Settings first, then come back to pick a voice',
+    label: 'Voice',
+    typed: 'Voice name (typed)',
+    choose: 'Choose a voice',
+    useDefault: 'Default ({{voice}})',
+    defaultIs: 'If you choose none, the model’s default voice is used: {{voice}}',
+    required:
+      '{{model}} has no default voice, so you have to choose one before narration can be generated',
+    voiceNeeded:
+      'To write a style instruction or a language hint, choose a voice first (this model has no default voice)',
+    closedHint: 'This model has only the voices in the list; choose one of them',
+    openHint:
+      'Only the common voices are listed here. For another voice (your own cloned voice, say) choose “Type another voice…” and write it',
+    typeOther: 'Type another voice…',
+    noneHint:
+      'This model has no system voices, so a voice name can only be typed (leave it empty if you don’t need one)',
+    unknownHint: 'This model has no voice list, so type the voice name as the provider writes it',
+    siliconflowFormat:
+      'SiliconFlow voices are written “model:voice”, for example {{model}}:alex; choosing from the list writes it for you',
+    formatBad:
+      'That isn’t the right form: write “model:voice” (or a speech:… address from an uploaded reference audio)',
+    documented:
+      'The voice list comes from the official documentation and hasn’t been tested; the provider’s own list is what counts',
+    notInList:
+      '{{model}} doesn’t have this voice. Choose another from the list, or generation will be blocked',
+    unlisted:
+      'This voice isn’t in the list of common ones. That’s fine for your own cloned or custom voice; if it doesn’t exist the provider refuses and doesn’t charge',
+    instructions: 'Style instruction (optional)',
+    instructionsHint:
+      'Describe the tone and mood in plain words, for example “calm, with a hint of a smile”',
+    instructionsTooLong:
+      'The style instruction is too long: at most {{max}} characters, a Chinese character counts as 2, and it is {{n}} now',
+    ignoredInstructions: '{{model}} ignores style instructions; what you typed will not be used',
+    language: 'Language hint (optional)',
+    languageHint: 'For example zh, en, ja',
+    ignoredLanguage: '{{model}} ignores the language hint; what you typed will not be used',
+  },
 }

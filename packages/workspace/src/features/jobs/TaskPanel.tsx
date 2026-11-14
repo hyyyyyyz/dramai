@@ -18,7 +18,7 @@ import { useNow } from '@/lib/use-now'
 import { useErrorText } from '@/features/common/use-error-text'
 import { TaskItem } from './TaskItem'
 import { jobContext } from './job-context'
-import { groupJobs, jobCounts, type JobGroup } from './job-model'
+import { groupJobs, jobCounts, workerErrorKind, type JobGroup } from './job-model'
 import { useJobOps } from './job-ops-context'
 
 type Filter = 'all' | 'running' | 'queued' | 'attention'
@@ -99,11 +99,16 @@ export function TaskPanel({ onClose, embedded }: { onClose?: () => void; embedde
       </Tabs>
 
       <div className={embedded ? 'flex-1 p-3' : 'min-h-0 flex-1 overflow-y-auto p-3'}>
-        {snapshot.workerError && (
-          <Notice tone="danger" className="mb-3" title={t('jobs.workerError')}>
-            {t('jobs.workerErrorBody')}
-          </Notice>
-        )}
+        {snapshot.workerError &&
+          (workerErrorKind(snapshot.workerError) === 'mute_not_set' ? (
+            <Notice tone="info" className="mb-3" title={t('jobs.muteNotSet.title')}>
+              {t('jobs.muteNotSet.body')}
+            </Notice>
+          ) : (
+            <Notice tone="danger" className="mb-3" title={t('jobs.workerError')}>
+              {t('jobs.workerErrorBody')}
+            </Notice>
+          ))}
         {ops.error !== undefined && (
           <Notice tone="danger" className="mb-3" role="alert">
             {errorText(ops.error)}

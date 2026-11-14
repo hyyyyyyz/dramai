@@ -144,3 +144,19 @@ export const KNOWN_OPERATIONS = [
 export type KnownOperation = (typeof KNOWN_OPERATIONS)[number]
 export const isKnownOperation = (op: string): op is KnownOperation =>
   (KNOWN_OPERATIONS as readonly string[]).includes(op)
+
+/** The inputs a finished job did not use (`result.ignoredInputs`): fields it was given that the model doesn't take. */
+export function ignoredInputsOf(result: Record<string, unknown> | undefined): string[] {
+  const v = result?.ignoredInputs
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+}
+
+/**
+ * A `job.worker_error` event is a runner problem, except one the server sends after the work itself succeeded: the
+ * timeline's default mute for a new clip could not be set ("时间线默认静音没有完成（视频已保存）…"). That one is only
+ * a missing convenience, not a failed generation, so it must not look like one. The server sends only text for it, so
+ * it is recognised by its opening words; a machine-readable code would be better (asked of the backend).
+ */
+export function workerErrorKind(message: string): 'mute_not_set' | 'runner' {
+  return message.trimStart().startsWith('时间线默认静音没有完成') ? 'mute_not_set' : 'runner'
+}

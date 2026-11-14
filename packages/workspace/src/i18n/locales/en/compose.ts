@@ -79,6 +79,8 @@ export default {
       cutFrom: 'cut rendered from this one',
       restoredTo: 'Rolled back to revision {{n}}',
       initial: 'Initial timeline',
+      syncShots: 'Synced with the shot order',
+      rollbackPlain: 'Rolled back to an earlier revision',
       nativeAudio:
         'The model of some clips can’t turn its own audio off, so their audio starts muted; you can raise it',
       nativeAudioClips:

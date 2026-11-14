@@ -6,6 +6,10 @@ export default {
     empty: '還沒有任務。生成圖片、影片或規劃分集時，進度會出現在這裡',
     emptyFilter: '這一類現在沒有任務',
     workerError: '任務執行器出錯了',
+    muteNotSet: {
+      title: '時間線的預設靜音沒有設上',
+      body: '影片已經生成並儲存了，沒有失敗。只是這個新片段的原聲預設靜音這一步沒完成：如果它的模型自帶聲音，請在時間線上看一下這個片段的原聲音量',
+    },
     workerErrorBody:
       '後臺執行器報告了一個錯誤，部分任務可能不會推進。詳情在服務端日誌裡；重啟服務通常能恢復',
     triggerRunning: '{{n}} 進行中',
@@ -27,6 +31,12 @@ export default {
     },
     target: { shot: '鏡頭 {{n}}', removed: '已刪除的物件', edit: '指令修改' },
     ignoredNote: '結果已標記為忽略：照常跑完、照常計費，產物進版本歷史，但不會自動成為當前版本',
+    ignoredInputs: '這次沒有用上的輸入：{{list}}',
+    ignoredInput: {
+      instructions: '風格指令（這個型號不支援，沒有使用）',
+      language: '語言提示（這個型號不支援，沒有使用）',
+      speed: '語速（超出服務商的範圍，已調整到範圍內）',
+    },
     ignoredLabel: '結果被忽略',
     queuePosition: '排在第 {{n}} 位',
     elapsed: '已進行 {{duration}}',

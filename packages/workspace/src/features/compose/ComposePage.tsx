@@ -164,6 +164,7 @@ export function ComposePage() {
                 t('storyboard.scene.untitled'),
             }),
             thumb: currentImage(x.shot)?.file.path,
+            narrationChars: [...(x.shot.narration ?? '')].length,
             target: { kind: 'shot_audio', shotId: id } as const,
           },
         ]

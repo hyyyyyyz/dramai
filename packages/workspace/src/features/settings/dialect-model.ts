@@ -1,4 +1,4 @@
-import type { ProviderDialectDto } from '@dramai/api'
+import { PROTECTED_REQUEST_HEADERS, type ProviderDialectDto } from '@dramai/api'
 import { kindOfProtocol, type ProtocolId } from './protocols'
 
 export type MaxTokensField = NonNullable<ProviderDialectDto['maxTokensField']>
@@ -90,28 +90,13 @@ export interface HeaderRow {
 }
 
 /**
- * Header names the server manages and silently ignores overrides of (case-insensitive). This is a copy of
- * `PROTECTED_HEADERS` in packages/core/src/util/merge.ts (the workspace cannot import the server's package);
- * a test compares the two so they cannot drift apart unnoticed.
+ * Header names the server manages and silently ignores overrides of (case-insensitive). The list is the contract's:
+ * `PROTECTED_REQUEST_HEADERS` from `@dramai/api`, and the server's tests check it against what is really enforced.
  */
-export const PROTECTED_HEADERS: ReadonlySet<string> = new Set([
-  'authorization',
-  'proxy-authorization',
-  'cookie',
-  'x-api-key',
-  'x-goog-api-key',
-  'x-key',
-  'api-key',
-  'content-type',
-  'content-length',
-  'transfer-encoding',
-  'connection',
-  'host',
-  'anthropic-version',
-])
+export const PROTECTED_HEADERS: ReadonlySet<string> = new Set(PROTECTED_REQUEST_HEADERS)
 
 /** The protected names as shown to the user. */
-export const PROTECTED_HEADER_NAMES: readonly string[] = [...PROTECTED_HEADERS]
+export const PROTECTED_HEADER_NAMES: readonly string[] = PROTECTED_REQUEST_HEADERS
 
 export type HeaderProblem = {
   index: number

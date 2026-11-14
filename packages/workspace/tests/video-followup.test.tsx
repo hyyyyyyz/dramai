@@ -260,31 +260,80 @@ describe('system revisions are described in the interface language', () => {
     expect(agent).toHaveTextContent('智能体')
   })
 
-  it('English and Traditional Chinese', async () => {
-    for (const [locale, text] of [
+  it('English and Traditional Chinese: the mute explanation, and a rollback said once in its title', async () => {
+    for (const [locale, text, rolled, note] of [
       [
         'en',
         'The model of these clips can’t turn its own audio off, so their audio starts muted; you can raise it: c1',
+        /rolled back to revision 1/i,
+        /restored from|rolled back from/i,
       ],
-      ['zh-TW', '這些片段的模型關不掉自帶的聲音，原聲預設靜音，可以調高：c1'],
+      [
+        'zh-TW',
+        '這些片段的模型關不掉自帶的聲音，原聲預設靜音，可以調高：c1',
+        '回滾到修訂 1',
+        /回滾自/,
+      ],
     ] as const) {
       await switchLocale(locale)
       const { unmount } = render(
         view([
-          { number: 1, summary: '初始时间线' },
+          { number: 1, summary: '初始时间线', reason: 'initial' },
           {
             number: 2,
             author: { kind: 'agent' },
             changedClipIds: ['clip_1'],
             reason: 'native_audio_default',
           },
+          { number: 3, summary: '回滚到修订 1', restoredFrom: 1, reason: 'rollback' },
         ]),
       )
       expect(screen.getByText(text)).toBeInTheDocument()
+      // the rollback is said once: the title carries it and the note line does not repeat it
+      // (a substring match, so the title and the note line would both be counted)
+      expect(screen.getAllByText(rolled)).toHaveLength(1)
+      expect(screen.queryByText(note)).toBeNull()
       if (locale === 'en') expect(screen.getByText('Initial timeline')).toBeInTheDocument()
-      expect(screen.queryByText(/restored from|回滾自/i)).toBeNull()
       unmount()
     }
+  })
+
+  it('reason codes decide the text: initial, sync_shots, rollback; a person’s edit keeps its summary', () => {
+    render(
+      view([
+        { number: 1, summary: 'whatever', reason: 'initial' },
+        { number: 2, summary: '同步镜头顺序', reason: 'sync_shots' },
+        { number: 3, summary: '回滚到修订 1', restoredFrom: 1, reason: 'rollback' },
+        { number: 4, summary: '我改了音量' },
+      ]),
+    )
+    expect(screen.getByText('初始时间线')).toBeInTheDocument()
+    expect(screen.getByText('同步镜头顺序').closest('li')).toHaveTextContent('系统（自动）')
+    // a rollback is the person's own action, so it is attributed to them
+    expect(screen.getByText('回滚到修订 1').closest('li')).toHaveTextContent('你')
+    expect(screen.getByText('我改了音量').closest('li')).toHaveTextContent('你')
+  })
+
+  it('an old revision without a reason falls back to the first-revision and restoredFrom rules', () => {
+    render(
+      view([
+        { number: 1, summary: '初始时间线' },
+        { number: 2, summary: '随便', restoredFrom: 1 },
+      ]),
+    )
+    expect(screen.getByText('初始时间线')).toBeInTheDocument()
+    expect(screen.getByText('回滚到修订 1')).toBeInTheDocument()
+  })
+
+  it('a reason this version has never heard of shows the summary the server wrote', () => {
+    render(
+      view([
+        { number: 1 },
+        { number: 2, summary: '服务端写的新类型说明', reason: 'brand_new_reason' as never },
+      ]),
+    )
+    const row = screen.getByText('服务端写的新类型说明').closest('li')!
+    expect(row).toHaveTextContent('你')
   })
 })
 

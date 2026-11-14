@@ -71,6 +71,8 @@ export default {
       cutFrom: '成片按這一版渲染',
       restoredTo: '回滾到修訂 {{n}}',
       initial: '初始時間線',
+      syncShots: '同步鏡頭順序',
+      rollbackPlain: '回滾到舊修訂',
       nativeAudio: '有的片段的模型關不掉自帶的聲音，這些片段的原聲預設靜音，可以調高',
       nativeAudioClips: '這些片段的模型關不掉自帶的聲音，原聲預設靜音，可以調高：{{clips}}',
       listSep: '、',

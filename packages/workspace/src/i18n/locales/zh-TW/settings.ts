@@ -139,6 +139,8 @@ export default {
     'kling-contents': '可靈 4.0（影片）',
     'dashscope-video': '阿里百鍊 萬相 3.0（影片）',
     'openai-tts': 'OpenAI 相容（語音）',
+    'minimax-t2a': 'MiniMax（語音）',
+    'dashscope-cosyvoice': '阿里百鍊 CosyVoice（語音）',
     'openai-responses': 'OpenAI Responses（文字）',
     'anthropic-messages': 'Anthropic Messages（文字）',
     'volcengine-images': '火山方舟 Seedream（生圖）',
@@ -148,6 +150,17 @@ export default {
     'gemini-chat': 'Gemini generateContent（文字）',
   },
   providers: {
+    voiceSwitch: {
+      title: '換成「{{name}}」後，有的專案的旁白音色要重新選',
+      from_another_service:
+        '「{{project}}」的音色“{{voice}}”是之前那家服務商的，新的服務商用不了。',
+      not_available: '「{{project}}」的音色“{{voice}}”在新的服務商上沒有。',
+      required: '「{{project}}」還沒選音色，而新的服務商的這個型號沒有預設音色。',
+      unlisted:
+        '「{{project}}」的音色“{{voice}}”不在新服務商的常用清單裡；如果是你自己的音色就沒問題。',
+      go: '去重選音色',
+      dismiss: '知道了',
+    },
     intro:
       'API Key 只儲存在執行 dramai 的這臺電腦上，儲存後不會再顯示出來，只能替換。所有請求由本地服務發出，不經過任何中轉。模型缺少某項能力時，生成會失敗並告訴你原因，不會悄悄換成別的模型',
     kinds: {

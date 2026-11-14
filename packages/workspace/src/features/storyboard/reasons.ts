@@ -46,6 +46,13 @@ export const REASON_CODES = [
   'FIRST_FRAME_REPLACED_BY_REFERENCE',
   'VIDEO_REFS_EMPTY',
   'AUDIO_NOT_DISABLEABLE',
+  'NARRATION_VOICE_REQUIRED',
+  'VOICE_NOT_AVAILABLE',
+  'VOICE_FROM_ANOTHER_SERVICE',
+  'VOICE_FORMAT_INVALID',
+  'INSTRUCTION_TOO_LONG',
+  'TEXT_TOO_LONG',
+  'VOICE_UNLISTED',
 ] as const
 export type ReasonCode = (typeof REASON_CODES)[number]
 export const isReasonCode = (code: string): code is ReasonCode =>
@@ -70,6 +77,7 @@ export type ReasonAction =
   | { kind: 'providers' }
   | { kind: 'tasks' }
   | { kind: 'edit' }
+  | { kind: 'projectVoice' }
 
 export function reasonAction(r: { code: string; assetId?: string }): ReasonAction | undefined {
   switch (r.code) {
@@ -98,7 +106,14 @@ export function reasonAction(r: { code: string; assetId?: string }): ReasonActio
     case 'ASPECT_UNSUPPORTED':
     case 'NARRATION_NOT_TTS':
       return { kind: 'providers' }
+    case 'NARRATION_VOICE_REQUIRED':
+    case 'VOICE_NOT_AVAILABLE':
+    case 'VOICE_FROM_ANOTHER_SERVICE':
+    case 'VOICE_FORMAT_INVALID':
+    case 'INSTRUCTION_TOO_LONG':
+      return { kind: 'projectVoice' }
     case 'DURATION_UNSUPPORTED':
+    case 'TEXT_TOO_LONG':
     case 'NARRATION_EMPTY':
     case 'VOICE_CONFLICT':
       return { kind: 'edit' }
@@ -106,3 +121,12 @@ export function reasonAction(r: { code: string; assetId?: string }): ReasonActio
       return undefined
   }
 }
+
+/** Reasons that are fixed where the project's narration voice is chosen. */
+export const VOICE_REASONS: readonly string[] = [
+  'NARRATION_VOICE_REQUIRED',
+  'VOICE_NOT_AVAILABLE',
+  'VOICE_FROM_ANOTHER_SERVICE',
+  'VOICE_FORMAT_INVALID',
+  'INSTRUCTION_TOO_LONG',
+]

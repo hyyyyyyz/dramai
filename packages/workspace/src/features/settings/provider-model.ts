@@ -147,6 +147,8 @@ export const PROVIDER_ERROR_CODES = [
   'TASK_CANCELLED',
   'TASK_UNKNOWN',
   'FIRST_FRAME_REQUIRED',
+  // speech providers
+  'VOICE_MISSING',
 ] as const
 export type ProviderErrorCode = (typeof PROVIDER_ERROR_CODES)[number]
 
@@ -182,6 +184,26 @@ function videoCodeOf(code: string): ProviderErrorCode | undefined {
     case 'KLING_1302':
     case 'KLING_1303':
       return 'HTTP_RATE_LIMIT'
+    // MiniMax speech: `MINIMAX_<status_code>` (authentication, balance, rate limit, content, bad parameter, no such voice)
+    case 'MINIMAX_1004':
+    case 'MINIMAX_2049':
+      return 'HTTP_AUTH'
+    case 'MINIMAX_1008':
+    case 'MINIMAX_2053':
+      return 'BALANCE_INSUFFICIENT'
+    case 'MINIMAX_1002':
+    case 'MINIMAX_1039':
+    case 'MINIMAX_2045':
+      return 'HTTP_RATE_LIMIT'
+    case 'MINIMAX_1026':
+    case 'MINIMAX_1027':
+      return 'CONTENT_REJECTED'
+    case 'MINIMAX_2013':
+      return 'invalid_request_error'
+    case 'MINIMAX_20132':
+    case 'MINIMAX_2054':
+    case 'MINIMAX_2042':
+      return 'VOICE_MISSING'
     default:
       if (code.startsWith('InputImageSensitiveContentDetected')) return 'VIDEO_FACE_REJECTED'
       if (code.startsWith('Throttling')) return 'HTTP_RATE_LIMIT'
@@ -238,6 +260,7 @@ export const PROVIDER_ERROR_ACTION: Record<ProviderErrorCode, 'manage' | 'settin
   TASK_CANCELLED: undefined,
   TASK_UNKNOWN: undefined,
   FIRST_FRAME_REQUIRED: undefined,
+  VOICE_MISSING: undefined,
 }
 
 /**
