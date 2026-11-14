@@ -459,9 +459,9 @@ export const en: Content = {
       {
         q: 'How do characters stay consistent between shots?',
         a: [
-          'dramai’s approach is to make one reference sheet per asset and then generates shot images from several reference images, so every shot that uses an asset is generated from the same sheet.',
+          'dramai’s approach is to make one reference sheet per asset and then generate shot images from several reference images, so every shot that uses an asset is generated from the same sheet.',
           'Whether reference images can be used depends on the image model, and Settings shows each model’s reference-image support. When a model lacks a capability the task fails with an explanation; it never switches models quietly.',
-          'For video, the sheets can also be sent to the video model as reference images (off by default). With some models turning that on means the strict first frame is not used, and the confirmation dialog says so first. This option was added after 0.5.0-beta.1, so run from source first.',
+          'For video, the sheets can also be sent to the video model as reference images (off by default). With some models, turning that on means the strict first frame is not used, and the confirmation dialog says so first. This option was added after 0.5.0-beta.1, so run from source first.',
         ],
       },
       {
