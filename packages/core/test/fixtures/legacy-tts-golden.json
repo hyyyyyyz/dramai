@@ -1,0 +1,1190 @@
+{
+  "requests": {
+    "plain/minimal": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/chinese": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "你好，世界。这是一句旁白。",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/voice-nova": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "nova",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/voice-empty-string": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/format-wav": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "wav"
+        }
+      }
+    },
+    "plain/format-ogg": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "ogg"
+        }
+      }
+    },
+    "plain/format-mp3": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/speed-1": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 1
+        }
+      }
+    },
+    "plain/speed-1.25": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 1.25
+        }
+      }
+    },
+    "plain/speed-0": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/speed-0.25": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 0.25
+        }
+      }
+    },
+    "plain/speed-4": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 4
+        }
+      }
+    },
+    "plain/empty-text": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/long-text": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/newlines": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "第一行\n第二行\n\n第四行",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "plain/everything": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1",
+          "input": "旁白。",
+          "voice": "onyx",
+          "response_format": "wav",
+          "speed": 0.9
+        }
+      }
+    },
+    "trailing-slash/minimal": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/chinese": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "你好，世界。这是一句旁白。",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/voice-nova": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "nova",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/voice-empty-string": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/format-wav": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "wav"
+        }
+      }
+    },
+    "trailing-slash/format-ogg": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "ogg"
+        }
+      }
+    },
+    "trailing-slash/format-mp3": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/speed-1": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 1
+        }
+      }
+    },
+    "trailing-slash/speed-1.25": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 1.25
+        }
+      }
+    },
+    "trailing-slash/speed-0": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/speed-0.25": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 0.25
+        }
+      }
+    },
+    "trailing-slash/speed-4": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 4
+        }
+      }
+    },
+    "trailing-slash/empty-text": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/long-text": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/newlines": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "第一行\n第二行\n\n第四行",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "trailing-slash/everything": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-secret"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "tts-1-hd",
+          "input": "旁白。",
+          "voice": "onyx",
+          "response_format": "wav",
+          "speed": 0.9
+        }
+      }
+    },
+    "no-key/minimal": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/chinese": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "你好，世界。这是一句旁白。",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/voice-nova": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "nova",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/voice-empty-string": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/format-wav": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "wav"
+        }
+      }
+    },
+    "no-key/format-ogg": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "ogg"
+        }
+      }
+    },
+    "no-key/format-mp3": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/speed-1": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 1
+        }
+      }
+    },
+    "no-key/speed-1.25": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 1.25
+        }
+      }
+    },
+    "no-key/speed-0": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/speed-0.25": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 0.25
+        }
+      }
+    },
+    "no-key/speed-4": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 4
+        }
+      }
+    },
+    "no-key/empty-text": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/long-text": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/newlines": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "第一行\n第二行\n\n第四行",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "no-key/everything": {
+      "method": "POST",
+      "url": "https://api.example.com/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "gpt-4o-mini-tts",
+          "input": "旁白。",
+          "voice": "onyx",
+          "response_format": "wav",
+          "speed": 0.9
+        }
+      }
+    },
+    "proxy-path/minimal": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/chinese": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "你好，世界。这是一句旁白。",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/voice-nova": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "nova",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/voice-empty-string": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/format-wav": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "wav"
+        }
+      }
+    },
+    "proxy-path/format-ogg": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "ogg"
+        }
+      }
+    },
+    "proxy-path/format-mp3": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/speed-1": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 1
+        }
+      }
+    },
+    "proxy-path/speed-1.25": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 1.25
+        }
+      }
+    },
+    "proxy-path/speed-0": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/speed-0.25": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 0.25
+        }
+      }
+    },
+    "proxy-path/speed-4": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "x",
+          "voice": "alloy",
+          "response_format": "mp3",
+          "speed": 4
+        }
+      }
+    },
+    "proxy-path/empty-text": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/long-text": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/newlines": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "第一行\n第二行\n\n第四行",
+          "voice": "alloy",
+          "response_format": "mp3"
+        }
+      }
+    },
+    "proxy-path/everything": {
+      "method": "POST",
+      "url": "https://gw.example.com/openai/v1/audio/speech",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-a b"
+      },
+      "body": {
+        "type": "json",
+        "value": {
+          "model": "my-own-model",
+          "input": "旁白。",
+          "voice": "onyx",
+          "response_format": "wav",
+          "speed": 0.9
+        }
+      }
+    }
+  },
+  "responses": {
+    "mp3-header": {
+      "status": "sync",
+      "outputs": [
+        {
+          "kind": "bytes",
+          "bytes": {
+            "__bytes": [1, 2]
+          },
+          "mime": "audio/mpeg"
+        }
+      ]
+    },
+    "wav-with-charset": {
+      "status": "sync",
+      "outputs": [
+        {
+          "kind": "bytes",
+          "bytes": {
+            "__bytes": [1, 2]
+          },
+          "mime": "audio/wav"
+        }
+      ]
+    },
+    "ogg": {
+      "status": "sync",
+      "outputs": [
+        {
+          "kind": "bytes",
+          "bytes": {
+            "__bytes": [5]
+          },
+          "mime": "audio/ogg"
+        }
+      ]
+    },
+    "x-wav": {
+      "status": "sync",
+      "outputs": [
+        {
+          "kind": "bytes",
+          "bytes": {
+            "__bytes": [5]
+          },
+          "mime": "audio/x-wav"
+        }
+      ]
+    },
+    "no-header": {
+      "status": "sync",
+      "outputs": [
+        {
+          "kind": "bytes",
+          "bytes": {
+            "__bytes": [1]
+          },
+          "mime": "audio/mpeg"
+        }
+      ]
+    },
+    "octet-stream": {
+      "status": "sync",
+      "outputs": [
+        {
+          "kind": "bytes",
+          "bytes": {
+            "__bytes": [1]
+          },
+          "mime": "audio/mpeg"
+        }
+      ]
+    },
+    "json-content-type": {
+      "status": "sync",
+      "outputs": [
+        {
+          "kind": "bytes",
+          "bytes": {
+            "__bytes": [1]
+          },
+          "mime": "audio/mpeg"
+        }
+      ]
+    },
+    "empty-bytes": {
+      "status": "failed",
+      "message": "TTS 响应为空"
+    },
+    "missing-bytes": {
+      "status": "failed",
+      "message": "TTS 响应为空"
+    }
+  }
+}
