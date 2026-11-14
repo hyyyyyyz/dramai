@@ -622,11 +622,20 @@ export const TIMELINE_REVISION_REASONS_KNOWN = [
 ] as const
 export const timelineRevisionReason = z.union([z.enum(TIMELINE_REVISION_REASONS_KNOWN), z.string()])
 
+/**
+ * 修订的作者种类：已知值，**或任意字符串**（同修订原因码的办法：以后再加种类时，旧版客户端校验响应不会整体失败，
+ * 遇到不认识的值就按“其他”显示）。已知值：`creator` 用户自己（包括用户触发的回滚）；`system` 系统按规则自动产生
+ * （第一份时间线、同步镜头顺序、自动静音——不是用户，也不是智能体）；`agent` / `external` 现在没有任何代码写入，
+ * 保留给以后（开发数据里早先的自动静音修订记的是 `agent`，照常读取）。
+ */
+export const REVISION_AUTHOR_KINDS_KNOWN = ['creator', 'system', 'agent', 'external'] as const
+export const revisionAuthorKind = z.union([z.enum(REVISION_AUTHOR_KINDS_KNOWN), z.string()])
+
 export const timelineRevision = z.object({
   number: z.number(),
   parent: z.number().optional(),
   author: z.object({
-    kind: z.enum(['creator', 'agent', 'external']),
+    kind: revisionAuthorKind,
     userId: z.string().optional(),
   }),
   summary: z.string(),

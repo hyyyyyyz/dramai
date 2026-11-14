@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { AdmissionTarget } from '../src/admission/index.ts'
 import { evaluateArtifacts } from '../src/artifacts/staleness.ts'
@@ -22,6 +26,7 @@ let media: MediaEnv | undefined
 let env: PipelineEnv
 let narr: Shot[]
 let wavBytes: Uint8Array
+let flacBytes: Uint8Array
 const calls: Array<{
   method: string
   url: string
@@ -62,6 +67,21 @@ beforeAll(async () => {
   if (!media) return
   env = await makePipelineEnv(media, { aspectRatio: '9:16' })
   wavBytes = await env.media.wav(1)
+  {
+    // the same sound as flac, to cut in the middle of a frame
+    const dir = await mkdtemp(join(tmpdir(), 'dramai-flac-'))
+    await writeFile(join(dir, 'a.wav'), wavBytes)
+    execFileSync(media.bins.ffmpeg, [
+      '-v',
+      'error',
+      '-y',
+      '-i',
+      join(dir, 'a.wav'),
+      join(dir, 'a.flac'),
+    ])
+    flacBytes = new Uint8Array(await readFile(join(dir, 'a.flac')))
+    await rm(dir, { recursive: true, force: true })
+  }
   const inner = env.providers.fetch
   env.deps.providers = {
     get: async (id) => [...PROVIDERS, ...ALL].find((p) => p.id === id),
@@ -78,10 +98,10 @@ beforeAll(async () => {
         if (mode.minimax === 'business-error')
           return json({ base_resp: { status_code: 1004, status_msg: 'login fail: bad key' } })
         const hexOf = (b: Uint8Array) => Buffer.from(b).toString('hex')
-        const okBody = (audio: string) =>
+        const okBody = (audio: string, format = 'wav') =>
           json({
             data: { audio, status: 2 },
-            extra_info: { audio_format: 'wav', audio_length: 1500 },
+            extra_info: { audio_format: format, audio_length: 1500 },
             base_resp: { status_code: 0, status_msg: 'success' },
           })
         // valid hex, but what it decodes to is not audio / a wav cut in the middle of a sample
@@ -93,6 +113,9 @@ beforeAll(async () => {
           return okBody(hexOf(new Uint8Array(300).map((_, i) => (i * 37) % 251)))
         if (mode.minimax === 'truncated')
           return okBody(hexOf(wavBytes.slice(0, Math.floor(wavBytes.length / 2) | 1)))
+        // a flac cut in the middle of a frame: it opens and has an audio stream, the decoder reports errors
+        if (mode.minimax === 'flac-cut')
+          return okBody(hexOf(flacBytes.slice(0, Math.floor(flacBytes.length / 2))), 'flac')
         if (mode.minimax === 'bad-hex')
           return json({ data: { audio: 'not-hex!', status: 2 }, base_resp: { status_code: 0 } })
         return json({
@@ -574,18 +597,39 @@ describe('exec 32: audio the probe tool clearly cannot decode is not a product',
     },
   )
 
-  real(
-    'a wav cut in the middle of a sample: the decoder reports errors - the job fails the same way',
-    async () => {
-      const shot = narr[2] ?? narr[0]!
-      const filesBefore = await audioFiles()
-      const { job, before, after } = await run('truncated', shot)
-      expect(job.status).toBe('failed')
-      expect(job.error).toMatchObject({ category: 'submission_unknown', code: 'AUDIO_UNREADABLE' })
-      expect(after).toBe(before)
-      expect(await audioFiles()).toBe(filesBefore)
-    },
-  )
+  // tier 2: it opens and has an audio stream, but the decoder reports errors - it may be a false alarm, so the audio is
+  // kept (the user already paid for it) and the user is asked to listen to it
+  const flawedCases: Array<[string, string]> = [
+    ['a wav cut in the middle of a sample', 'truncated'],
+    ['a flac with damaged frames', 'flac-cut'],
+  ]
+  for (const [name, modeName] of flawedCases) {
+    real(
+      `${name}: the job succeeds, the version is saved, and a warning notice with a stable code is sent`,
+      async () => {
+        const shot = narr[2] ?? narr[0]!
+        const events = env.ports.events
+        const noticesBefore = events.ofType('job.notice').length
+        const errorsBefore = events.ofType('job.worker_error').length
+        const { job, before, after, version } = await run(modeName, shot)
+        expect(job.status, JSON.stringify(job.error)).toBe('succeeded')
+        expect(after).toBe(before + 1) // the version exists
+        expect(version).toBeDefined()
+        const notices = events.ofType('job.notice').slice(noticesBefore)
+        expect(notices).toHaveLength(1)
+        expect(notices[0]).toMatchObject({
+          level: 'warning',
+          code: 'audio_decode_warnings',
+          projectId: env.projectId,
+          jobId: job.id,
+          shotId: shot.id,
+        })
+        expect(notices[0]!.message).toContain('试听')
+        expect(events.ofType('job.worker_error').length).toBe(errorsBefore) // never an executor error
+        expect(version!.facts?.durationSec).toBeGreaterThan(0) // the duration that could be read is kept
+      },
+    )
+  }
 
   real('a retry of such a failure needs the user to confirm "may be charged again"', async () => {
     const shot = narr[0]!
@@ -618,10 +662,12 @@ describe('exec 32: audio the probe tool clearly cannot decode is not a product',
                     source: 'option',
                   },
                 }
+          const noticesBefore = env.ports.events.ofType('job.notice').length
           const { job, before, after, version } = await run('garbage', shot)
           expect(job.status, kind).toBe('succeeded')
           expect(after, kind).toBe(before + 1)
           expect(version!.facts?.durationSec, kind).toBeUndefined()
+          expect(env.ports.events.ofType('job.notice').length, kind).toBe(noticesBefore)
         }
       } finally {
         env.deps.media = media
@@ -631,9 +677,11 @@ describe('exec 32: audio the probe tool clearly cannot decode is not a product',
 
   real('good audio is unaffected: still saved, with the measured duration', async () => {
     const shot = narr[2] ?? narr[0]!
+    const noticesBefore = env.ports.events.ofType('job.notice').length
     const { job, version, before, after } = await run('ok', shot)
     expect(job.status).toBe('succeeded')
     expect(after).toBe(before + 1)
     expect(version!.facts?.durationSec).toBeGreaterThan(1.2)
+    expect(env.ports.events.ofType('job.notice').length).toBe(noticesBefore) // no hint at all
   })
 })

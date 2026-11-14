@@ -99,7 +99,7 @@ export async function ensureTimeline(
       name: episode.title,
       content: init.content,
       nextClipNumber: init.nextClipNumber,
-      author: { kind: 'creator' },
+      author: { kind: 'system' },
       now: deps.clock.now(),
     })
     await tx.timelines.put(doc)
@@ -141,7 +141,7 @@ export async function syncTimelineWithShots(
     const updated = appendRevision(doc, {
       content: { ...head.content, clips },
       summary: '同步镜头顺序',
-      author: { kind: 'creator' },
+      author: { kind: 'system' },
       now: deps.clock.now(),
       nextClipNumber: next,
       reason: 'sync_shots',

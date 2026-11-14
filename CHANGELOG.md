@@ -56,6 +56,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   model without a profile behave exactly as before.
 - Timeline revisions made by the system (the first timeline of an episode, synchronising with the shot order, a
   rollback) carry a machine-readable reason, like the automatic mute does; older revisions are read as before.
+- The author of a timeline revision can now be `system` (made by the app by rule - not the user and not an agent):
+  the first timeline, synchronising with the shot order and the automatic mute use it. A rollback and the user's
+  own edits stay `creator`; older revisions keep the author they were saved with. A client that does not know a
+  revision author kind reads it as an unknown string instead of failing.
 - `@dramai/api` exports the list of request headers that cannot be overridden by a provider's extra headers.
 - A speech provider's capability now says which optional inputs it takes (a style instruction with its official
   limit and how it is counted, a language hint); the over-long text and over-long instruction reasons carry the
@@ -65,10 +69,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- A narration whose audio the probe tool clearly cannot decode (not audio, no audio stream, no duration, decode
-  errors such as a cut-off wav) now fails with `AUDIO_UNREADABLE` instead of being saved as a finished version; a
-  retry asks for confirmation because the service may have charged. Nothing changes when the probe tool is missing
-  or broken. Videos and images are not checked.
+- A narration that is certainly not audio (the probe tool runs and cannot open the file, or finds no audio stream)
+  now fails with `AUDIO_UNREADABLE` instead of being saved as a finished version; a retry asks for confirmation
+  because the service may have charged. Audio that opens but looks damaged (no readable duration, decode errors such
+  as a cut-off wav) is still saved and the job succeeds, with a `job.notice` warning (`audio_decode_warnings`)
+  asking you to listen to it. Nothing changes when the probe tool is missing or broken. Videos and images are not
+  checked.
 
 - After a restart that interrupted a finished job just before it was marked succeeded, the shot no longer gets a
   second copy of the same version (this happened in 0.5.0-beta.1 as well). It covers every task that resumes a

@@ -80,7 +80,7 @@ export function nativeAudioDefaultVolume(
  * - 片段的音量**从来没有被改过**：它在这份时间线所有修订里的 `sourceVolume` 始终是同一个值，并且正好是“没有视频时的默认值”
  *   （台词 / 无声镜头 1，旁白镜头 0.3）。用户调过——哪怕调回了原来的数——历史里就有第二个值，就不改。
  *   不需要给片段加字段：时间线的修订历史本来就是追加式、完整保留的。
- * 改动是时间线上追加的一个修订（`author: agent`，`changedClipIds` 列出片段，摘要说明原因），用户可以在时间线上调高或回滚；
+ * 改动是时间线上追加的一个修订（`author: system`，`changedClipIds` 列出片段，摘要说明原因），用户可以在时间线上调高或回滚；
  * 和用户同时编辑时，服务端的 `baseRevision` 检查会让用户那边得到一次“修订冲突”并刷新，不会丢编辑。
  * 返回改了的片段 id（可能为空）。它自己要在一个事务里调用（读时间线、追加修订、写回是一个整体），
  * 但**不能**和保存视频版本放在同一个事务里：见 `applyNativeAudioDefaultAfterSave`。
@@ -124,7 +124,7 @@ export async function applyNativeAudioDefaultOnFirstVideo(
     },
     summary:
       '默认音量：这个模型无法关闭自带音频，而这个镜头没有使用原生人声，片段原声默认静音（可以在时间线上调高）',
-    author: { kind: 'agent' },
+    author: { kind: 'system' },
     now: deps.clock.now(),
     changedClipIds: [...ids],
     reason: 'native_audio_default',

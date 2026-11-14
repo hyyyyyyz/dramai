@@ -178,7 +178,7 @@ describe('follow-up 1: the default volume does not depend on the order', () => {
       const autos = docAfter.revisions.slice(docBefore.revisions.length)
       expect(autos.length).toBeGreaterThan(0)
       for (const r of autos) {
-        expect(r.author.kind).toBe('agent')
+        expect(r.author.kind).toBe('system') // not the user, and not an agent: the app, by rule
         expect(r.changedClipIds!.length).toBeGreaterThan(0)
         expect(r.summary).toContain('默认音量')
         expect(r.reason).toBe('native_audio_default') // machine-readable; the summary is only for reading
@@ -225,7 +225,7 @@ describe('follow-up 1: the default volume does not depend on the order', () => {
       const autoRevs = latest.revisions.filter((r) => r.reason === 'native_audio_default')
       expect(autoRevs.length).toBeGreaterThan(0)
       expect(
-        autoRevs.every((r) => r.reason === 'native_audio_default' && r.author.kind === 'agent'),
+        autoRevs.every((r) => r.reason === 'native_audio_default' && r.author.kind === 'system'),
       ).toBe(true)
       const v = await volumes(w.env, w.ep.id)
       expect(v[raised.id]).toBe(0.8)
@@ -548,6 +548,77 @@ describe('exec 25: the automatic mute must never cost a paid-for video', () => {
       expect(clip.sourceVolume).toBe(0)
       expect(latest.revisions.map((r) => r.reason)).toEqual(['initial', 'native_audio_default'])
       expect(doc.revisions).toHaveLength(1)
+    },
+  )
+})
+
+describe('exec 35: the system author does not count as "the user changed the volume"', () => {
+  real(
+    'after an automatic mute (author system), the clips the user has not touched are still recognised as untouched; the initial and sync revisions are system too',
+    async () => {
+      const w = await setup()
+      const narr = w.shots.filter((s) => !s.dialogue.some((d) => d.text.trim()) && s.narration)
+      expect(narr.length).toBeGreaterThan(2)
+      const [a, b, c] = narr as [Shot, Shot, Shot]
+      const first = await ensureTimeline(w.env.deps, w.ep.id)
+      expect(first.revisions[0]).toMatchObject({ author: { kind: 'system' }, reason: 'initial' })
+      // shot a gets its video: an automatic revision by the system
+      await gen(w.env, KLING, [a.id])
+      let doc = await ensureTimeline(w.env.deps, w.ep.id)
+      expect(doc.revisions.at(-1)).toMatchObject({
+        author: { kind: 'system' },
+        reason: 'native_audio_default',
+      })
+      // the user has not touched b and c: a later video for each of them is still muted, by the same rule
+      await gen(w.env, KLING, [b.id])
+      await gen(w.env, KLING, [c.id])
+      const v = await volumes(w.env, w.ep.id)
+      expect([v[a.id], v[b.id], v[c.id]]).toEqual([0, 0, 0])
+      doc = await ensureTimeline(w.env.deps, w.ep.id)
+      const autos = doc.revisions.filter((r) => r.reason === 'native_audio_default')
+      expect(autos).toHaveLength(3)
+      expect(autos.every((r) => r.author.kind === 'system')).toBe(true)
+      // and a clip the user DID change (a revision by the creator) is still never touched
+      const head = headRevision(doc)
+      const clip = head.content.clips.find((x) => x.shotId === narr[3]?.id)
+      if (clip && narr[3]) {
+        const edited = appendRevision(doc, {
+          content: updateClip(head.content, clip.id, { sourceVolume: 0.8 }),
+          summary: 'user',
+          author: { kind: 'creator' },
+          now: w.env.deps.clock.now(),
+        })
+        await w.env.deps.store.timelines.put(edited)
+        await gen(w.env, KLING, [narr[3].id])
+        expect((await volumes(w.env, w.ep.id))[narr[3].id]).toBe(0.8)
+      }
+    },
+  )
+
+  real(
+    'a revision an older development build recorded with author agent is read as before and still not counted as the user',
+    async () => {
+      const w = await setup()
+      const narr = w.shots.filter((s) => !s.dialogue.some((d) => d.text.trim()) && s.narration)
+      const [a, b] = narr as [Shot, Shot]
+      const doc = await ensureTimeline(w.env.deps, w.ep.id)
+      const head = headRevision(doc)
+      const clipA = head.content.clips.find((x) => x.shotId === a.id)!
+      // the old shape: an automatic mute of a's clip recorded by 'agent'
+      await w.env.deps.store.timelines.put(
+        appendRevision(doc, {
+          content: updateClip(head.content, clipA.id, { sourceVolume: 0 }),
+          summary: '默认音量：旧版本记的',
+          author: { kind: 'agent' },
+          now: w.env.deps.clock.now(),
+          changedClipIds: [clipA.id],
+          reason: 'native_audio_default',
+        }),
+      )
+      await gen(w.env, KLING, [b.id])
+      const v = await volumes(w.env, w.ep.id)
+      expect(v[a.id]).toBe(0)
+      expect(v[b.id]).toBe(0)
     },
   )
 })
