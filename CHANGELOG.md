@@ -8,6 +8,65 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Account sign-in (not tested against the real services).** Two providers can be used with an account instead of
+  an API key. **OpenAI**: "Sign in with ChatGPT", so text requests use your ChatGPT plan; it covers language models
+  only (the `openai-responses` protocol), and images, video and speech still need API keys. It was built from OpenAI's
+  official documentation only: dramai calls only the public `https://api.openai.com/v1` and never a ChatGPT back-end
+  endpoint. **OpenRouter**: OAuth with PKCE; OpenRouter hands dramai an API key of your own, which is stored and used
+  like one you pasted, and usage is billed to your OpenRouter account. Its documentation describes no refresh and no
+  revocation, so signing out clears the key on this computer and links to OpenRouter's page where you delete it.
+  For both: the address of a sign-in provider is fixed and anything else is refused (checked again before a token is
+  read); the authorisation comes back to a local address, so you have to sign in on the computer that runs dramai
+  (from another machine sign-in is not offered); a callback with the wrong state is ignored; no token or key appears in a
+  response, a log or a URL (a signed-in OpenRouter key is shown only as a mask). Settings → Providers has a sign-in panel per channel (`providers.login.*`).
+- **How a provider authenticates, and whether a preset was tested.** A provider has an `auth` method: API key,
+  account sign-in or none (a model on your own machine). Data saved before this is read as an API key when it holds
+  a key and as none otherwise, and nothing is rewritten until you save. Every preset carries a verification status:
+  tested (with the date) or set up from the official documentation and not tested. The four v0.4 presets stay
+  tested (2026-05-04); every preset added since is not tested, is labelled so in Settings and in the add-provider
+  catalog, and never becomes the current choice on its own.
+- **Text providers (not tested against the real services).** Three new protocols, all streamed: `openai-responses`,
+  `anthropic-messages` and `gemini-chat`. `openai-chat` gains per-provider dialect options (a JSON object merged
+  into the request body, extra request headers, the output-length field name `max_tokens` or `max_completion_tokens`,
+  and the JSON output mode `json_object` or `prompt_only`) and now copes with the stream shapes vendors send: array
+  content, reasoning fields (never put into the text), comment lines and inline `<think>` tags; an empty output cut
+  off by the length limit is a clear error. Without dialect options the request is unchanged, so the tested
+  DeepSeek preset behaves as before. Sixteen presets, connected from the official documentation: OpenAI (API key,
+  and ChatGPT sign-in), Anthropic, Google Gemini, Alibaba Cloud Model Studio (China and international sites),
+  Volcengine Ark, Zhipu, Moonshot, MiniMax, SiliconFlow, OpenRouter (API key, and sign-in), 302.AI, and Ollama and
+  LM Studio (no authentication). The dialect options are under "Advanced" on a text provider, and a button lists the
+  models of providers that can (OpenAI-style, Anthropic, Gemini).
+- **Image providers (not tested against the real services).** New protocols `volcengine-images` (Seedream direct),
+  `dashscope-image` (Qwen-Image), `siliconflow-images` and `kling-image`. `openai-images` now writes the request by
+  model name: `gpt-image*` follows OpenAI's official reference (no `response_format` or `negative_prompt`, references
+  through `/images/edits`), `MiniMax-H3-Image*` uses MiniMax's edit form, and every other name keeps the earlier
+  request unchanged, which the tested 302.AI Seedream preset relies on; the choice can be set explicitly with the
+  new `imageStyle` dialect option. `gemini-image` sends only `x-goog-api-key` to Google's official address. Eight
+  presets (OpenAI GPT Image, Volcengine Seedream, MiniMax H3, Google Gemini, Alibaba Qwen-Image on the China and
+  international sites, SiliconFlow, Kling) and sixteen model profiles whose capabilities are all marked unverified.
+  A model profile can carry a minimum total pixel count, and the output size is raised to it while keeping the
+  ratio. A generated image is downloaded as soon as the job succeeds, with its address saved first, so a restart
+  resumes the download.
+- **A preset catalog grouped by vendor.** Add provider now opens a catalog grouped by vendor (sixteen), with the
+  region (China, international, local) and the verification status of each preset, and a search by name, vendor and
+  address host. A preset with a `{placeholder}` in its address (for example Alibaba's `{WorkspaceId}`) or without a
+  suggested model gets a second step. `providers.fromPreset` creates the provider in one step and accepts a
+  `baseUrl` and a `model`; account-sign-in presets pin their address and only the model can be changed. Preset
+  names, notes and known limitations are localised (English and Traditional Chinese) as long as you have not edited
+  them. A failed `providers.test` carries a machine-readable `code` next to the unchanged `error` text.
+- **Provider addresses are checked.** On `providers.create`, `providers.fromPreset` and `providers.update` (when the
+  address changes) the address must be http or https without a user name, password, query string or fragment, with no
+  unfilled `{placeholder}` (also percent-encoded), and plain http is accepted only for this machine and the local
+  network, never for link-local addresses. Rows saved earlier are never rejected on read.
+- **Extra request headers on every kind of provider.** `dialect.extraHeaders` applies to text, image, video and
+  speech requests (including the polling requests), to the connection test and to the model list, never to the
+  download of a result. Authorisation, cookie, host, content type and protocol-version headers cannot be overridden.
+- **A landing page (`apps/site`), built but not deployed.** A static Astro site in Chinese (default) and English
+  (`/en/`), with `pnpm dev:site`, `pnpm build:site` and `pnpm preview:site`. Its tests and post-build checks cover
+  internal links and anchors, matching content in both languages, no requests to third-party hosts, and
+  hreflang, canonical and sitemap consistency. The new workflow `deploy-site.yml` replaces the old `deploy.yml`
+  (which published the browser-only workspace) and can only be started by hand, with a confirmation box; it has not
+  been run, so GitHub Pages still serves the old browser-only workspace. See `docs/DEPLOYMENT.md`.
 - **Video providers (not tested against the real services).** Three new video protocols, connected from
   the official documentation only: Volcengine Ark / BytePlus ModelArk Seedance (`ark-video`), Kling 4.0 and
   4.0 Flash (`kling-contents`) and Tongyi Wanxiang 3.0 (`dashscope-video`), with six presets
@@ -69,6 +128,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- A poll response that carries an explicit error and no task state (`{ code: non-zero, message }`,
+  `{ output: { code, message } }`, `{ error }`) now fails the task at once with that message, instead of waiting for
+  the whole poll timeout; this covers the Kling, DashScope, Volcengine and generic video protocols too. Success
+  envelopes (`0` and every 2xx code, `ok`, `success`, an empty error) and an unknown or empty state without an error
+  still keep polling, as before.
 - The Alibaba CosyVoice style-instruction limit is now counted by the official rule (only Chinese characters count
   2; kana, Hangul, punctuation, letters and digits count 1), so a Japanese instruction is no longer stopped wrongly;
   `countText` is exported from `@dramai/api` for the front end. A very short valid AAC is no longer judged "not
@@ -93,6 +157,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- `docs/DEPLOYMENT.md` is rewritten for the landing page: what is deployed, how the deployment workflow is run, and
+  what visitors of the old browser-only workspace see afterwards.
 - A price list now belongs to a site: the China-site CNY prices of Wan 3.0 no longer price the international
   preset.
 - Protocols can declare request headers that user-supplied extra headers must not override.
