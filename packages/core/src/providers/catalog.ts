@@ -35,6 +35,8 @@ const protocol = z.enum([
   'kling-contents',
   'dashscope-video',
   'openai-tts',
+  'minimax-t2a',
+  'dashscope-cosyvoice',
   'openai-responses',
   'anthropic-messages',
   'gemini-chat',
@@ -80,6 +82,16 @@ const capabilitySchema = z.object({
   firstFrameWithRefs: support.optional(),
   audioToggle: support.optional(),
   refVideoMaxTotalSec: z.number().positive().optional(),
+  voices: claim(
+    z.array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().optional(),
+        lang: z.string().optional(),
+      }),
+    ),
+  ).optional(),
+  defaultVoice: z.string().min(1).optional(),
 })
 
 const priceSchema = z.object({
@@ -163,6 +175,8 @@ export function defaultCapability(protocolId: ProtocolId): ModelCapability {
     case 'kling-image':
       return { ...base, media: 'image', modes: { t2i: 'supported' } }
     case 'openai-tts':
+    case 'minimax-t2a':
+    case 'dashscope-cosyvoice':
       return { ...base, media: 'audio', modes: { tts: 'supported' } }
     case 'openai-chat':
     case 'openai-responses':

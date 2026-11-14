@@ -308,10 +308,18 @@ async function submit<I>(
   }
   if (parsed.status === 'failed') {
     // 2xx 但读不出任务号/结果：请求已被受理的可能性不能排除。
+    if (parsed.rejected) {
+      // 上游在响应里明确说这次请求失败：没有任务、没有费用
+      throw new ProviderError('upstream_failed', parsed.message, {
+        body: snippet(raw),
+        submission: 'rejected',
+        code: parsed.code ?? 'UPSTREAM_REJECTED',
+      })
+    }
     throw new ProviderError('parse', parsed.message, {
       body: snippet(raw),
       submission: 'unknown',
-      code: 'UNREADABLE_RESPONSE',
+      code: parsed.code ?? 'UNREADABLE_RESPONSE',
     })
   }
   return parsed

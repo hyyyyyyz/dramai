@@ -714,6 +714,8 @@ export const protocolId = z.enum([
   'kling-contents',
   'dashscope-video',
   'openai-tts',
+  'minimax-t2a',
+  'dashscope-cosyvoice',
   'openai-responses',
   'anthropic-messages',
   'gemini-chat',
@@ -830,6 +832,14 @@ export const modelCapability = z.object({
   firstFrameWithRefs: support.optional(),
   audioToggle: support.optional(),
   refVideoMaxTotalSec: z.number().optional(),
+  /** 语音：预置音色清单（`supported` = 封闭清单，`unverified` = 只列了一部分，可以手填别的）。 */
+  voices: claim(
+    z.array(
+      z.object({ id: z.string(), label: z.string().optional(), lang: z.string().optional() }),
+    ),
+  ).optional(),
+  /** 语音：项目没设置旁白音色时用的默认音色；没有 = 必须先设置音色。 */
+  defaultVoice: z.string().optional(),
 })
 
 export const priceEntry = z.object({

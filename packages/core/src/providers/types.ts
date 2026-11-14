@@ -24,6 +24,8 @@ export type ProtocolId =
   | 'kling-contents'
   | 'dashscope-video'
   | 'openai-tts'
+  | 'minimax-t2a'
+  | 'dashscope-cosyvoice'
   | 'openai-responses'
   | 'anthropic-messages'
   | 'gemini-chat'
@@ -41,6 +43,8 @@ export const SYNC_PROTOCOLS: readonly ProtocolId[] = [
   'openai-images',
   'gemini-image',
   'openai-tts',
+  'minimax-t2a',
+  'dashscope-cosyvoice',
   'openai-responses',
   'anthropic-messages',
   'gemini-chat',
@@ -201,7 +205,11 @@ export type OutputRef =
 export type GenerateParse =
   | { status: 'sync'; outputs: OutputRef[] }
   | { status: 'async'; taskId: string }
-  | { status: 'failed'; message: string }
+  /**
+   * 提交响应读不出成品。`rejected: true` = 上游在响应里**明确说了这次请求失败**（如 HTTP 200 里的业务错误码）：
+   * 没有任务、没有费用，可以带上游的稳定码（`code`）；缺省 = 响应读不懂，请求可能已受理（提交结果未知）。
+   */
+  | { status: 'failed'; message: string; code?: string; rejected?: boolean }
 
 export type PollParse =
   | { status: 'queued' | 'processing'; progress?: number; message?: string }
@@ -229,6 +237,11 @@ export interface MediaProtocol<Input> {
    * 不能覆盖它们；和全局保护名单（鉴权头、内容类型头、传输层头…）一起生效，比较不分大小写。
    */
   protectedHeaders?: readonly string[]
+  /**
+   * 输入里"设了、但这个协议 / 型号不会发出（或被夹到了范围内）"的字段名，纯函数。管线把它记进任务结果
+   * （`ignoredInputs`），不静默丢弃。不实现 = 没有被丢弃的字段。
+   */
+  ignoredInputs?(auth: AuthContext, input: Input): string[]
 }
 
 export interface ImageGenInput {
@@ -293,6 +306,20 @@ export interface SpeechInput {
   voice?: string
   format?: 'mp3' | 'wav' | 'ogg'
   speed?: number
+  /** 风格指令（自然语言，如“语速放缓、带一点疲惫”）。OpenAI gpt-4o-mini-tts、CosyVoice 支持；其余丢弃并记录。 */
+  instructions?: string
+  /** 语言提示（`zh` / `en` / `ja` / `ko` …）。MiniMax、CosyVoice 支持；其余丢弃并记录。 */
+  language?: string
+}
+
+/** 画像里的一个预置音色。 */
+export interface VoiceEntry {
+  /** 发给上游的音色值（`voice` 参数原样）。 */
+  id: string
+  /** 给人看的名字（官方页面上的叫法）。 */
+  label?: string
+  /** 语言 / 方言说明（官方页面上的叫法）。 */
+  lang?: string
 }
 
 // === 模型能力与价目 ===
@@ -363,6 +390,13 @@ export interface ModelCapability {
   audioToggle?: Support
   /** 参考视频的总时长上限（秒），与 `refAudioMaxTotalSec` 对称。 */
   refVideoMaxTotalSec?: number
+  /**
+   * 语音：预置音色清单。`support: 'supported'` = **封闭清单**，官方写明就这些；`unverified` = **开放清单**，
+   * 只列了一部分（还有克隆 / 自定义音色等），手填其他的也可以。`maxPromptChars` 对语音型号表示单次输入的字符数上限。
+   */
+  voices?: Claim<VoiceEntry[]>
+  /** 语音：项目没设置旁白音色时用的默认音色；没写 = 这个型号没有可靠的默认值，必须先设置音色。 */
+  defaultVoice?: string
 }
 
 /**
