@@ -27,6 +27,7 @@ let env: PipelineEnv
 let narr: Shot[]
 let wavBytes: Uint8Array
 let flacBytes: Uint8Array
+let aacBytes: Uint8Array
 const calls: Array<{
   method: string
   url: string
@@ -80,6 +81,26 @@ beforeAll(async () => {
       join(dir, 'a.flac'),
     ])
     flacBytes = new Uint8Array(await readFile(join(dir, 'a.flac')))
+    // a very short, valid bare ADTS AAC (the reviewer's sample): ffprobe cannot open it when the file is named .mp3
+    execFileSync(media.bins.ffmpeg, [
+      '-v',
+      'error',
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440:duration=0.1',
+      '-ar',
+      '8000',
+      '-ac',
+      '1',
+      '-c:a',
+      'aac',
+      '-f',
+      'adts',
+      join(dir, 's.aac'),
+    ])
+    aacBytes = new Uint8Array(await readFile(join(dir, 's.aac')))
     await rm(dir, { recursive: true, force: true })
   }
   const inner = env.providers.fetch
@@ -116,6 +137,8 @@ beforeAll(async () => {
         // a flac cut in the middle of a frame: it opens and has an audio stream, the decoder reports errors
         if (mode.minimax === 'flac-cut')
           return okBody(hexOf(flacBytes.slice(0, Math.floor(flacBytes.length / 2))), 'flac')
+        // the response says nothing we know about the format (default type audio/mpeg -> a ".mp3" guess for the probe file)
+        if (mode.minimax === 'adts-aac') return okBody(hexOf(aacBytes), 'aac')
         if (mode.minimax === 'bad-hex')
           return json({ data: { audio: 'not-hex!', status: 2 }, base_resp: { status_code: 0 } })
         return json({
@@ -684,4 +707,46 @@ describe('exec 32: audio the probe tool clearly cannot decode is not a product',
     expect(version!.facts?.durationSec).toBeGreaterThan(1.2)
     expect(env.ports.events.ofType('job.notice').length).toBe(noticesBefore) // no hint at all
   })
+})
+
+describe('exec 41: the probe is not misled by the file name we choose', () => {
+  const versionsOf = async (shotId: string) =>
+    (await env.deps.store.shots.get(shotId))!.narrationAudio.versions.length
+
+  real(
+    'a very short valid bare AAC (named .mp3 by the type guess) is audio, not "certainly not audio"',
+    async () => {
+      mode.minimax = 'adts-aac'
+      await setVoice({ providerConfigId: 'minimax', voice: 'Chinese (Mandarin)_News_Anchor' })
+      const shot = narr[2] ?? narr[0]!
+      const before = await versionsOf(shot.id)
+      const { job, version } = await narrate(MINIMAX, shot)
+      mode.minimax = 'ok'
+      expect(job.status, JSON.stringify(job.error)).toBe('succeeded')
+      expect(await versionsOf(shot.id)).toBe(before + 1)
+      expect(version!.facts?.durationSec).toBeGreaterThan(0)
+    },
+  )
+
+  real(
+    'the probe cannot be run at all because our own temp directory is unusable: unsure, never "not audio" - the audio is saved',
+    async () => {
+      if (process.platform === 'win32') return
+      mode.minimax = 'garbage' // even bytes that would be tier 1: with no working probe nothing may be concluded
+      await setVoice({ providerConfigId: 'minimax', voice: 'Chinese (Mandarin)_News_Anchor' })
+      const shot = narr[1] ?? narr[0]!
+      const before = await versionsOf(shot.id)
+      const saved = process.env.TMPDIR
+      process.env.TMPDIR = '/nonexistent-dramai-tmp'
+      try {
+        const { job } = await narrate(MINIMAX, shot)
+        expect(job.status, JSON.stringify(job.error)).toBe('succeeded')
+        expect(await versionsOf(shot.id)).toBe(before + 1)
+      } finally {
+        if (saved === undefined) delete process.env.TMPDIR
+        else process.env.TMPDIR = saved
+        mode.minimax = 'ok'
+      }
+    },
+  )
 })

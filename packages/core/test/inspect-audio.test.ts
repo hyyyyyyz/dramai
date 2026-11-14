@@ -93,6 +93,21 @@ describe.skipIf(!posix)('inspectAudio: the two tiers and "the tool is the proble
     expect(gone.verdict).toBe('unknown')
   })
 
+  it('messages that can come from OUR OWN handling or from tool misuse are never tier 1', async () => {
+    for (const msg of [
+      'x: No such file or directory',
+      'x: Permission denied',
+      'Error opening input: Permission denied',
+      'Error opening input: Invalid data found when processing input; x: No such file or directory',
+      'Unrecognized option; Invalid argument',
+      'Unsupported codec with id 86076',
+      'x: Is a directory',
+    ]) {
+      const r = await run(`echo "${msg}" >&2; exit 1`, 'exit 0')
+      expect(r.verdict, msg).toBe('unknown')
+    }
+  })
+
   it('a decode check that cannot start does not change the answer', async () => {
     const ffprobe = await script('ffprobe-ok', `echo '${audioJson('2.0')}'`)
     const r = await inspectAudio(

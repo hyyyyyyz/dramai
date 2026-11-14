@@ -450,9 +450,16 @@ export type AudioInspection =
   | { verdict: 'flawed'; info: MediaInfo; reason: string }
   | { verdict: 'unknown' }
 
-/** ffprobe / ffmpeg 对“这个文件本身读不了”的原话（不包括工具自己的问题，如找不到命令、权限）。 */
+/**
+ * ffprobe / ffmpeg 对“这个文件的**内容**不是它能认的媒体”的原话——只放格式层面的、不可能由我们自己的处理造成的那几句。
+ * 故意**不放**：`Error opening input`（文件不存在、没有权限也会这样说）、`Invalid argument`（参数不对）、`Unsupported codec`
+ * （合法音频只是工具不会解），这些落到 `unknown`，不会被判成“确定不是音频”。
+ */
 const INPUT_ERROR =
-  /Invalid data found when processing input|End of file|moov atom not found|could not find codec parameters|no 'data' tag found|Failed to find two consecutive MPEG audio frames|Error opening input|Unsupported codec|Invalid argument/i
+  /Invalid data found when processing input|End of file|moov atom not found|could not find codec parameters|no 'data' tag found|Failed to find two consecutive MPEG audio frames/i
+/** 说明是我们自己的处理出了问题（文件没写好、目录不可读写）而不是文件内容的问题：一律不算第一档。 */
+const OUR_OWN_PROBLEM =
+  /No such file or directory|Permission denied|Is a directory|Input\/output error/i
 const DECODE_ERROR =
   /Decoding error|Error while decoding|decode_frame\(\) failed|Invalid PCM packet/i
 
@@ -476,14 +483,18 @@ export async function inspectAudio(bins: FfmpegBinaries, file: string): Promise<
         file,
       ])
       if (res.code !== 0) {
-        return INPUT_ERROR.test(res.stderr)
+        return INPUT_ERROR.test(res.stderr) && !OUR_OWN_PROBLEM.test(res.stderr)
           ? { verdict: 'not_audio', reason: firstLine(res.stderr) }
           : { verdict: 'unknown' }
       }
       info = parseFfprobeJson(res.stdout)
     } else {
       const res = await runProcess(bins.ffmpeg, ['-hide_banner', '-i', file])
-      if (INPUT_ERROR.test(res.stderr) && !/Stream #/.test(res.stderr)) {
+      if (
+        INPUT_ERROR.test(res.stderr) &&
+        !OUR_OWN_PROBLEM.test(res.stderr) &&
+        !/Stream #/.test(res.stderr)
+      ) {
         return { verdict: 'not_audio', reason: firstLine(res.stderr) }
       }
       info = parseFfmpegBanner(res.stderr)

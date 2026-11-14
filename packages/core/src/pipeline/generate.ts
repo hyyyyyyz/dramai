@@ -321,9 +321,18 @@ async function inspectAudioBytes(
   let dir: string | undefined
   try {
     dir = await mkdtemp(join(tmpdir(), 'dramai-probe-'))
-    const file = join(dir, `f.${ext}`)
+    // 探测用的临时文件**不带扩展名**，让工具完全按内容判断：由响应类型猜出来的扩展名可能是错的
+    // （很短的合法 AAC 被命名成 .mp3 就打不开）。保存时用的扩展名另算，不受这里影响。
+    const file = join(dir, 'f')
     await writeFile(file, bytes)
-    const r = await inspectAudio(deps.media.bins, file)
+    let r = await inspectAudio(deps.media.bins, file)
+    if (r.verdict === 'not_audio') {
+      // 判成“确定不是音频”之前换一种方式再试一次：带上猜出来的扩展名（个别格式靠扩展名才认得出）。再打不开才算
+      const named = join(dir, `f.${ext}`)
+      await writeFile(named, bytes)
+      const again = await inspectAudio(deps.media.bins, named)
+      if (again.verdict !== 'not_audio') r = again
+    }
     if (r.verdict === 'not_audio') return { bad: r.reason }
     if (r.verdict === 'unknown') return {}
     return {
@@ -337,6 +346,7 @@ async function inspectAudioBytes(
       ...(r.verdict === 'flawed' ? { flawed: r.reason } : {}),
     }
   } catch {
+    // 临时目录不可写、文件没写成……是我们自己的处理出了问题，不是音频的问题：不确定，照常保存
     return {}
   } finally {
     if (dir) await removeRetry(dir)
