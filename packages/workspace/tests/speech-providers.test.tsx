@@ -14,7 +14,7 @@ import { ProvidersPage } from '@/features/settings/ProvidersPage'
 import { ALL_PROTOCOLS, PROTOCOLS_BY_KIND, kindOfProtocol } from '@/features/settings/protocols'
 import {
   NO_SPEECH_INPUTS,
-  countText,
+  countWith,
   instructionCount,
   voiceFit,
   voiceFormatProblem,
@@ -79,6 +79,11 @@ function speechCap(over: Record<string, unknown>, speechInputs?: Inputs) {
   return {
     ...base,
     ...(speechInputs ? { speechInputs } : {}),
+    // what the server says it uses when no voice is chosen (here: the profile's default, or none)
+    speechDefaultVoice:
+      typeof over.defaultVoice === 'string'
+        ? { voice: over.defaultVoice, source: 'profile' }
+        : { source: 'none' },
     capability: {
       ...base.capability,
       media: 'audio' as const,
@@ -151,10 +156,10 @@ describe('voice rules', () => {
     expect(voiceFormatProblem('https://api.openai.com/v1', 'gpt-4o-mini-tts', 'alloy')).toBe(false)
   })
   it('counts the way the server says: characters, or a Chinese character as 2; an unknown way gives nothing', () => {
-    expect(countText('abc平静', 'characters')).toBe(5)
-    expect(countText('abc平静', 'cjk_double')).toBe(7)
-    expect(countText('abc', 'some_new_way')).toBeUndefined()
-    expect(countText('abc', undefined)).toBeUndefined()
+    expect(countWith('abc平静', 'characters')).toBe(5)
+    expect(countWith('abc平静', 'cjk_double')).toBe(7)
+    expect(countWith('abc', 'some_new_way')).toBeUndefined()
+    expect(countWith('abc', undefined)).toBeUndefined()
   })
   it('the instruction limit and counting come from the capability, per model', () => {
     const text = '平'.repeat(60)

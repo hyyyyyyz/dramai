@@ -5,7 +5,7 @@ import { useProviderCapability, useProviders, useSettings } from '@/data/queries
 import { OTHER, type VoiceDraft } from './voice-draft'
 import {
   NO_SPEECH_INPUTS,
-  defaultVoiceState,
+  speechDefaultOf,
   instructionCount,
   isSiliconflow,
   voiceFit,
@@ -42,9 +42,10 @@ export function VoiceSettings({
   const capability = cap.data.capability
   const kind = voiceListKind(capability)
   const list = voicesOf(capability)
-  const fallback = capability.defaultVoice
-  // whether the model has a default voice, as the server says: known, none, or not said (then nothing is concluded)
-  const defaultState = defaultVoiceState(cap.data)
+  // the voice used when none is chosen, as the server says (the same function generation and the pre-flight use)
+  const dflt = speechDefaultOf(cap.data)
+  const fallback = dflt.state === 'known' ? dflt.voice : undefined
+  const defaultState = dflt.state
   const speed = live.narrationVoice?.speed
   const fit = voiceFit(capability, draft.voice.trim())
   const typed =

@@ -8,10 +8,10 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Project } from '@dramai/api'
-import { countText as backendCountText } from '../../core/src/providers/text-count'
+import { countText as contractCountText } from '@dramai/api'
 import { ProjectSettingsDialog } from '@/features/overview/ProjectSettingsDialog'
 import { BatchConfirmDialog } from '@/features/storyboard/BatchConfirmDialog'
-import { countText } from '@/features/settings/voice-model'
+import { countWith } from '@/features/settings/voice-model'
 import { voiceIssues } from '@/features/settings/voice-issues'
 import { fakeServer } from './fixtures'
 import recorded from './fixtures/real-speech/recorded.json'
@@ -78,74 +78,104 @@ const save = () => userEvent.click(screen.getByRole('button', { name: '保存' }
 
 // ---------------------------------------------------------------- 1. a model with no profile has an unknown default
 
-describe('review 1: tts-1 and a relay’s model are not said to have "no default voice"', () => {
-  it('the real server says nothing about a default for tts-1 (declared: false, no defaultVoice), yet the pre-flight accepts it', () => {
-    const cap = capabilities.tts1!
-    expect(cap.declared).toBe(false)
-    expect((cap.capability as { defaultVoice?: string }).defaultVoice).toBeUndefined()
-    const r = (
-      scenarios.noVoiceTts1!.preflight as {
-        results: { status: string; warnings: { code: string }[] }[]
-      }
-    ).results[0]!
-    expect(r.status).toBe('accepted')
-    expect(r.warnings.map((w) => w.code)).toEqual(['NARRATION_VOICE_DEFAULTED'])
+describe('review 1 / default voice: the server says what is used when no voice is chosen (`speechDefaultVoice`)', () => {
+  const sources = (key: CapKey) =>
+    (capabilities[key] as unknown as { speechDefaultVoice?: { voice?: string; source: string } })
+      .speechDefaultVoice
+
+  it('the three kinds of source, as the real server recorded them: a profile (OpenAI), the protocol (tts-1, a relay’s tts-1), none (CosyVoice 3.5)', () => {
+    expect(sources('openai')).toEqual({ voice: 'alloy', source: 'profile' })
+    expect(sources('tts1')).toEqual({ voice: 'alloy', source: 'protocol' })
+    expect(sources('relayTts1')).toEqual({ voice: 'alloy', source: 'protocol' })
+    expect(sources('cosy35')).toEqual({ source: 'none' })
+    // and the pre-flight agrees with each: tts-1 goes ahead on that default, CosyVoice 3.5 cannot
+    const r = (k: string) =>
+      (scenarios[k]!.preflight as { results: { status: string; reasons: { code: string }[] }[] })
+        .results[0]!
+    expect(r('noVoiceTts1').status).toBe('accepted')
+    expect(r('noVoiceCosy35').reasons.map((x) => x.code)).toEqual(['NARRATION_VOICE_REQUIRED'])
   })
 
-  it('the dialog does not say a voice is required, does not block saving, and the title shows no error', async () => {
+  it('tts-1 (source: protocol): the default alloy is named, nothing says a voice is required, and the title shows no error', async () => {
     const { server } = open('noVoiceTts1')
+    expect(await screen.findByText('不选就用这个型号的默认音色：alloy')).toBeInTheDocument()
+    expect(screen.queryByText(/必须选一个音色/)).toBeNull()
+    expect(screen.queryByText(/没有声明默认音色/)).toBeNull()
+    expect(screen.queryByText(/请填写标题/)).toBeNull()
+    // a language hint with no voice chosen is written with the default voice, and the dialog says so
+    await userEvent.type(screen.getByRole('textbox', { name: '语言提示（可选）' }), 'zh')
+    expect(await screen.findByTestId('voice-pinned')).toHaveTextContent('默认音色 alloy')
+    expect(screen.queryByTestId('voice-not-saved')).toBeNull()
+    await save()
+    await waitFor(() => expect(patches(server)).toHaveLength(1))
+    expect(patches(server)[0]!.narrationVoice).toMatchObject({ voice: 'alloy', language: 'zh' })
+  })
+
+  it('a profile’s default (OpenAI) is named the same way', async () => {
+    open('withSpeed')
+    expect(await screen.findByRole('option', { name: '默认（alloy）' })).toBeInTheDocument()
+  })
+
+  it('source: none (CosyVoice 3.5) says a voice is required, as the pre-flight does, and the inputs are not saved without one', async () => {
+    open('noVoiceCosy35')
+    expect(await screen.findByText(/没有默认音色，必须选一个音色才能生成配音/)).toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox', { name: '风格指令（可选）' }), '平静')
+    expect(await screen.findByTestId('voice-not-saved')).toBeInTheDocument()
+  })
+
+  it('switching: tts-1 and OpenAI have a default, so a project without a voice is not flagged; CosyVoice 3.5 flags it', () => {
+    const p = [{ ...scenarios.noVoiceTts1!.project, narrationDelivery: 'tts' as const }]
+    expect(voiceIssues(p, capabilities.tts1 as never)).toEqual([])
+    expect(voiceIssues(p, capabilities.relayTts1 as never)).toEqual([])
+    expect(voiceIssues(p, capabilities.openai as never)).toEqual([])
+    expect(voiceIssues(p, capabilities.cosy35 as never).map((i) => i.kind)).toEqual(['required'])
+  })
+
+  it('a response without the field (a server older than this one) concludes nothing: no "required", no block', async () => {
+    const s = serve('noVoiceTts1')
+    const cap = capabilities.tts1 as unknown as Record<string, unknown>
+    const { speechDefaultVoice: _drop, ...older } = cap
+    void _drop
+    const server = fakeServer({
+      ...Object.fromEntries(
+        Object.entries(recorded.providers).map(([k, p]) => [
+          `GET /api/providers/${(p as { id: string }).id}/capability`,
+          () => (k === 'tts1' ? older : recorded.capabilities[k as CapKey]),
+        ]),
+      ),
+      'GET /api/settings': () => ({ activeProviders: { tts: idOf('tts1') }, cost: {} }),
+      'GET /api/providers': () => ({ items: Object.values(recorded.providers) }),
+    })
+    renderApp(<ProjectSettingsDialog project={s.sc.project} onClose={() => {}} />, {
+      client: server.client,
+    })
     expect(
       await screen.findByText(/没有声明默认音色。不选的话，生成前的检查会告诉你能不能用/),
     ).toBeInTheDocument()
     expect(screen.queryByText(/必须选一个音色/)).toBeNull()
-    await userEvent.type(screen.getByRole('textbox', { name: '语言提示（可选）' }), 'zh')
-    // the language hint is ignored by tts-1 and says so; a voice is needed to write it, and the dialog says that
-    expect(await screen.findByTestId('voice-not-saved')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '保存' })).toBeEnabled()
-    // the title field has no error: the form is valid
-    expect(screen.queryByText(/请填写标题/)).toBeNull()
-    await userEvent.type(screen.getByRole('textbox', { name: /标题/ }), '改')
-    await save()
-    await waitFor(() => expect(patches(server)).toHaveLength(1))
-    expect(patches(server)[0]).not.toHaveProperty('narrationVoice')
-  })
-
-  it('a model whose profile has voices but no default (CosyVoice 3.5) still says a voice is required, as the pre-flight does', async () => {
-    const r = (scenarios.noVoiceCosy35!.preflight as { results: { reasons: { code: string }[] }[] })
-      .results[0]!
-    expect(r.reasons.map((x) => x.code)).toEqual(['NARRATION_VOICE_REQUIRED'])
-    open('noVoiceCosy35')
-    expect(await screen.findByText(/没有默认音色，必须选一个音色才能生成配音/)).toBeInTheDocument()
-  })
-
-  it('switching to tts-1 does not tell projects without a voice that there is no default; CosyVoice 3.5 does', () => {
-    const p = [{ ...scenarios.noVoiceTts1!.project, narrationDelivery: 'tts' as const }]
-    expect(voiceIssues(p, capabilities.tts1 as never)).toEqual([])
-    expect(voiceIssues(p, capabilities.relayTts1 as never)).toEqual([])
-    expect(voiceIssues(p, capabilities.cosy35 as never).map((i) => i.kind)).toEqual(['required'])
   })
 })
 
 // ---------------------------------------------------------------- 2. a refusal by the contract is explained
 
-describe('review 2: a style instruction the contract refuses says which field and why', () => {
-  it('1001 characters on OpenAI (limit shown 4096): no request goes out, and the dialog names the field and the limit', async () => {
+describe('review 2: a request the contract refuses says which field and why', () => {
+  it('over the contract’s 20000 characters: no request goes out, and the dialog names the field and the limit', async () => {
     const { server } = open('withSpeed')
     const box = await screen.findByRole('textbox', { name: '风格指令（可选）' })
     await userEvent.click(box)
-    await userEvent.paste('平'.repeat(1001))
+    await userEvent.paste('平'.repeat(20001))
     await save()
     expect(
-      await screen.findByText('「风格指令」不能这样保存：最多 1000 个字符'),
+      await screen.findByText('「风格指令」不能这样保存：最多 20000 个字符'),
     ).toBeInTheDocument()
     expect(screen.queryByText(/出了点问题/)).toBeNull()
     expect(patches(server)).toHaveLength(0)
   })
-  it('1000 characters is saved', async () => {
+  it('20000 characters is saved', async () => {
     const { server } = open('withSpeed')
     const box = await screen.findByRole('textbox', { name: '风格指令（可选）' })
     await userEvent.click(box)
-    await userEvent.paste('平'.repeat(1000))
+    await userEvent.paste('平'.repeat(20000))
     await save()
     await waitFor(() => expect(patches(server)).toHaveLength(1))
   })
@@ -271,7 +301,7 @@ describe('review 4: a voice of another service on a closed list is shown as what
 
 // ---------------------------------------------------------------- 5. counting is the server's
 
-describe('review 5: the local count of the Alibaba way (a Chinese character is 2) is the server’s', () => {
+describe('review 5: the count is the contract’s, and the Alibaba way counts only Chinese characters as 2', () => {
   const samples = [
     'Hello 世界！😀 ok'.repeat(7),
     '平静，略带笑意。Calm & warm.'.repeat(6),
@@ -279,24 +309,35 @@ describe('review 5: the local count of the Alibaba way (a Chinese character is 2
     '  平静地说  ',
     '한글 음절 그리고 日本語のかな ひらがな カタカナ',
     '全角標點，、。！？：；「」『』（）',
-    'é ä 組合字符 🇨🇳🇯🇵',
+    'é ä 組合字符 🇨🇳🇯🇵',
     '𠀀𠀁 𝒜𝒷 😀😀😀',
   ]
   it.each(samples.map((s, i) => [i, s] as const))(
-    'sample %i gives the same number as the server’s function',
+    'sample %i: what the screen counts is what the contract’s function counts',
     (_i, text) => {
-      expect(countText(text, 'cjk_double')).toBe(backendCountText('cjk_double', text))
-      expect(countText(text, 'characters')).toBe(backendCountText('characters', text))
+      expect(countWith(text, 'cjk_double')).toBe(contractCountText('cjk_double', text))
+      expect(countWith(text, 'characters')).toBe(contractCountText('characters', text))
     },
   )
-  it('in the dialog: the count shown is the count of the trimmed text, the way the server counts it', async () => {
+  it('the rule itself, on small cases whose numbers can be checked by hand', () => {
+    const n = (t: string) => countWith(t, 'cjk_double')
+    expect(n('😀')).toBe(1) // an emoji is 1
+    expect(n('한글')).toBe(2) // Hangul is 1 each
+    expect(n('かな')).toBe(2) // kana is 1 each
+    expect(n('日本語のかな')).toBe(9) // 3 Han × 2 + 3 kana
+    expect(n('，。！')).toBe(3) // punctuation is 1 each
+    expect(n('ＡＢＣ１２３')).toBe(6) // full-width letters and digits are 1 each
+    expect(n('𠀀')).toBe(2) // a Han character outside the BMP is 2
+    expect(n('平静')).toBe(4)
+  })
+  it('in the dialog: the count shown is the contract’s count of the trimmed text', async () => {
     open('instructionTooLong')
     const text = ' ' + 'Hello 世界！😀 ok'.repeat(7) + ' '
     const box = await screen.findByRole('textbox', { name: '风格指令（可选）' })
     await userEvent.clear(box)
     await userEvent.click(box)
     await userEvent.paste(text)
-    const n = backendCountText('cjk_double', text.trim())
+    const n = contractCountText('cjk_double', text.trim())
     expect(await screen.findByTestId('instruction-count')).toHaveTextContent(`已写 ${n} / 100`)
   })
 })

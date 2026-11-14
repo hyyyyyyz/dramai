@@ -11,6 +11,7 @@ import {
   NarrationPicker,
   type NarrationValue,
 } from '@/features/projects/pickers'
+import { speechDefaultOf } from '@/features/settings/voice-model'
 import { VoiceSettings } from './VoiceSettings'
 import { draftOfVoice, voiceOutcome, type VoiceDraft } from './voice-draft'
 
@@ -39,11 +40,12 @@ export function ProjectSettingsDialog({
   const changedName = name.trim() !== base.name
   const changedAspect = aspect !== base.aspectRatio
   const changedNarration = narration !== base.narrationDelivery
+  const dflt = speechDefaultOf(ttsCap.data ?? {})
   const voiceOut =
     narration === 'tts' && ttsProvider && ttsCap.data
       ? voiceOutcome(base, project, voice, {
           providerConfigId: ttsProvider.id,
-          defaultVoice: ttsCap.data.capability.defaultVoice,
+          defaultVoice: dflt.state === 'known' ? dflt.voice : undefined,
         })
       : ({ kind: 'none' } as const)
   // the title is the only thing that can make the form invalid

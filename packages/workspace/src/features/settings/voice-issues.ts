@@ -1,5 +1,5 @@
 import type { Project } from '@dramai/api'
-import { defaultVoiceState, voiceFit, voiceListKind } from './voice-model'
+import { speechDefaultOf, voiceFit, voiceListKind } from './voice-model'
 
 export type VoiceIssue = {
   project: Pick<Project, 'id' | 'name'>
@@ -14,7 +14,9 @@ export type VoiceIssue = {
   kind: 'not_available' | 'unlisted' | 'unchecked' | 'required'
 }
 
-type View = Parameters<typeof defaultVoiceState>[0]
+type View = Parameters<typeof speechDefaultOf>[0] & {
+  capability: Parameters<typeof voiceListKind>[0] & object
+}
 
 /** The voice of each narrated project against the speech provider that was just made current. */
 export function voiceIssues(
@@ -27,8 +29,8 @@ export function voiceIssues(
     if (p.narrationDelivery !== 'tts') continue
     const voice = p.narrationVoice?.voice?.trim()
     if (!voice) {
-      // only when the server says the model has no default: for a model that doesn't say, nothing is claimed
-      if (defaultVoiceState(next) === 'none') out.push({ project: p, kind: 'required' })
+      // only when the server says there is no default voice (`speechDefaultVoice.source: 'none'`)
+      if (speechDefaultOf(next).state === 'none') out.push({ project: p, kind: 'required' })
       continue
     }
     const fit = voiceFit(next.capability, voice)
