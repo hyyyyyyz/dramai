@@ -745,6 +745,29 @@ export const providerVerification = z.discriminatedUnion('status', [
   z.object({ status: z.literal('tested'), testedAt: z.string() }),
   z.object({ status: z.literal('documented'), source: z.string() }),
 ])
+/**
+ * 额外请求头（`providerDialect.extraHeaders`）里服务端自己管理、**悄悄忽略覆盖**的头名（小写，比较不分大小写）：
+ * 鉴权头、内容类型头、传输层的头、`Cookie` 等。界面应直接引用这份名单做提示和校验，不要自己抄一份。
+ * 服务端的实际名单在 `packages/core/src/util/merge.ts`，服务端的测试比较两份，改了一处不改另一处会红。
+ * 个别协议另外必须设置的头（如百炼的 `X-DashScope-Async`）是协议自己声明的，不在这个全局名单里；
+ * 用户填了它们也会被忽略。
+ */
+export const PROTECTED_REQUEST_HEADERS = [
+  'authorization',
+  'proxy-authorization',
+  'cookie',
+  'x-api-key',
+  'x-goog-api-key',
+  'x-key',
+  'api-key',
+  'content-type',
+  'content-length',
+  'transfer-encoding',
+  'connection',
+  'host',
+  'anthropic-version',
+] as const
+
 /** 方言差异：额外请求体、输出长度字段名、JSON 模式（文本服务商）。预设预填，用户可以看、可以改。 */
 export const providerDialect = z.object({
   extraBody: z.record(z.string(), z.unknown()).optional(),

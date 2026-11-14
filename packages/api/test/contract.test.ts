@@ -242,3 +242,13 @@ describe('frontend gap contract additions', () => {
     expect(seen?.get('x-dramai-locale')).toBe('en')
   })
 })
+
+describe('protected request headers', () => {
+  it('are exported from the contract, lower case, without duplicates', async () => {
+    const { PROTECTED_REQUEST_HEADERS } = await import('../src/index.ts')
+    expect(PROTECTED_REQUEST_HEADERS).toContain('authorization')
+    expect(PROTECTED_REQUEST_HEADERS).toContain('content-type')
+    expect(PROTECTED_REQUEST_HEADERS.every((h) => h === h.toLowerCase())).toBe(true)
+    expect(new Set(PROTECTED_REQUEST_HEADERS).size).toBe(PROTECTED_REQUEST_HEADERS.length)
+  })
+})
