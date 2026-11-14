@@ -534,3 +534,22 @@ describe('exec 31: the admission matrix (configurations x inputs)', () => {
     expect([...blockedCodes].filter((c) => c !== 'UNVERIFIED_NEEDS_CONFIRMATION')).toEqual([])
   })
 })
+
+describe('exec 41: the hints and reasons make no charging claim without a basis', () => {
+  it('VOICE_UNLISTED and every other speech message are free of "not charged" statements', async () => {
+    const w = await makeWorld()
+    const claim = /不收费|免费|不计费|没有费用|不会收费/
+    const seen: string[] = []
+    for (const [p, voice] of [
+      [MINIMAX, 'my_cloned_voice_01'],
+      [OPENAI, 'zzz'],
+      [SF, 'alloy'],
+      [COSY, 'my_clone'],
+    ] as const) {
+      const v = await verdict(w, p, { voice: nv(p.id, voice), narration: '字'.repeat(200000) })
+      for (const x of [...v.reasons, ...v.warnings]) seen.push(x.message)
+    }
+    expect(seen.length).toBeGreaterThan(4)
+    for (const m of seen) expect(m).not.toMatch(claim)
+  })
+})

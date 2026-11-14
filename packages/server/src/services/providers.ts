@@ -9,6 +9,7 @@ import {
   PROVIDER_PRESETS,
   ProviderError,
   sendRequest,
+  speechDefaultVoiceOf,
   speechInputSupportOf,
   testProvider,
 } from '@dramai/core'
@@ -384,6 +385,7 @@ export class ProviderService {
       declared: found.declared,
       capability: found.capability,
       ...(speechInputs ? { speechInputs } : {}),
+      ...(speechInputs ? { speechDefaultVoice: speechDefaultVoiceOf(cfg, this.d.models) } : {}),
       pricing: found.profile?.pricing ?? [],
       quirks: found.profile?.quirks ?? [],
       provenance: found.profile?.provenance,

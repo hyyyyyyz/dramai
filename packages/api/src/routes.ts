@@ -57,8 +57,8 @@ const narrationVoice = z.object({
   providerConfigId: z.string(),
   voice: z.string(),
   speed: z.number().positive().optional(),
-  /** 风格指令（自然语言）。支持的型号才会发，其余丢弃并记在任务结果的 `ignoredInputs` 里。 */
-  instructions: z.string().max(1000).optional(),
+  /** 风格指令（自然语言）。支持的型号才会发，其余丢弃并记在任务结果的 `ignoredInputs` 里。契约只挡明显不合理的长度（不能比任何一家声明的上限小，OpenAI 是 4096）；各家的上限由准入检查按服务商分别把关。 */
+  instructions: z.string().max(20000).optional(),
   /** 语言提示（`zh` / `en` …）。 */
   language: z.string().max(20).optional(),
 })

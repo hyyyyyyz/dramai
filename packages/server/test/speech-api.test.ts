@@ -215,3 +215,84 @@ describe('exec 32: what a speech model takes, over HTTP', () => {
     })
   })
 })
+
+describe('exec 41: the voice that is used when none is chosen, told by the capability', () => {
+  it('providers.capability.speechDefaultVoice is what generation and the pre-flight use', async () => {
+    const h = await boot()
+    const mk = async (presetId: string, model?: string, baseUrl?: string) => {
+      const p = await h.client.call('providers.fromPreset', {
+        body: { presetId, apiKey: 'sk-test-123456789012', ...(baseUrl ? { baseUrl } : {}) },
+      })
+      if (model)
+        await h.client.call('providers.update', { params: { providerId: p.id }, body: { model } })
+      return p
+    }
+    const cases: Array<
+      [string, string | undefined, string | undefined, { voice?: string; source: string }]
+    > = [
+      ['openai-tts-key', undefined, undefined, { voice: 'alloy', source: 'profile' }], // gpt-4o-mini-tts has a profile
+      ['openai-tts-key', 'tts-1', undefined, { voice: 'alloy', source: 'protocol' }], // no profile: the old default
+      ['openai-tts-key', 'some-relay-model', undefined, { voice: 'alloy', source: 'protocol' }],
+      [
+        'minimax-tts-cn',
+        undefined,
+        undefined,
+        { voice: 'Chinese (Mandarin)_News_Anchor', source: 'profile' },
+      ],
+      ['minimax-tts-cn', 'my-own-speech', undefined, { source: 'none' }], // a new protocol, no profile: must choose
+      [
+        'aliyun-cosyvoice-cn',
+        'cosyvoice-v3.5-plus',
+        'https://ws1.cn-beijing.maas.aliyuncs.com',
+        { source: 'none' },
+      ],
+      [
+        'aliyun-cosyvoice-cn',
+        'cosyvoice-v3-flash',
+        'https://ws1.cn-beijing.maas.aliyuncs.com',
+        { voice: 'longanyang', source: 'profile' },
+      ],
+      [
+        'siliconflow-tts-cn',
+        undefined,
+        undefined,
+        { voice: 'FunAudioLLM/CosyVoice2-0.5B:alex', source: 'profile' },
+      ],
+    ]
+    for (const [preset, model, baseUrl, expected] of cases) {
+      const p = await mk(preset, model, baseUrl)
+      const cap = await h.client.call('providers.capability', { params: { providerId: p.id } })
+      expect(cap.speechDefaultVoice, `${preset} ${model ?? ''}`).toEqual(expected)
+    }
+  })
+
+  it('and the pre-flight agrees: a project without a narration voice is accepted exactly when the capability names a default', async () => {
+    const h = await boot()
+    for (const [preset, model, hasDefault] of [
+      ['openai-tts-key', 'tts-1', true],
+      ['minimax-tts-cn', 'my-own-speech', false],
+    ] as const) {
+      const p = await h.client.call('providers.fromPreset', {
+        body: { presetId: preset, apiKey: 'sk-test-123456789012' },
+      })
+      await h.client.call('providers.update', { params: { providerId: p.id }, body: { model } })
+      const cap = await h.client.call('providers.capability', { params: { providerId: p.id } })
+      expect(cap.speechDefaultVoice!.voice !== undefined).toBe(hasDefault)
+      const r = await h.client.call('generate.preflight', {
+        params: { projectId: 'p1' },
+        body: { items: [{ target: { kind: 'shot_audio', shotId: 'sh1' }, providerId: p.id }] },
+      })
+      const codes = r.results[0]!.reasons.map((x) => x.code)
+      expect(codes.includes('NARRATION_VOICE_REQUIRED'), preset).toBe(!hasDefault)
+    }
+  })
+
+  it('a provider that is not a speech provider has none', async () => {
+    const h = await boot()
+    const llm = await h.client.call('providers.fromPreset', {
+      body: { presetId: 'deepseek-llm', apiKey: 'sk-ds-123456789012' },
+    })
+    const c = await h.client.call('providers.capability', { params: { providerId: llm.id } })
+    expect(c).not.toHaveProperty('speechDefaultVoice')
+  })
+})

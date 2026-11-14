@@ -959,6 +959,13 @@ export const providerCapabilityView = z.object({
   capability: modelCapability,
   /** 只有语音服务商有。 */
   speechInputs: speechInputSupport.optional(),
+  /**
+   * 只有语音服务商有：**不选音色时实际会用哪个音色**，和生成、预检用的是同一个函数。`source`：`profile` 画像里的默认音色；
+   * `protocol` 没有画像的 OpenAI 兼容型号一直以来的 `alloy`；`none` 没有默认音色，不选就发不出请求
+   * （两个新协议的自填型号、CosyVoice v3.5 / v2），没有 `voice`。注意：这和 `capability.defaultVoice`（只是画像里写的）不同——
+   * 没有画像的 `tts-1`、中转站型号 `capability.defaultVoice` 为空，但不选音色时会用 `alloy`，预检放行。
+   */
+  speechDefaultVoice: z.object({ voice: z.string().optional(), source: z.string() }).optional(),
   pricing: z.array(priceEntry),
   quirks: z.array(z.string()),
   provenance: z.string().optional(),

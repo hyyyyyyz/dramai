@@ -61,7 +61,22 @@ export function defaultSpeechVoice(
   protocol: ProtocolId,
   capability: ModelCapability,
 ): string | undefined {
-  return capability.defaultVoice ?? (protocol === 'openai-tts' ? 'alloy' : undefined)
+  return speechDefaultVoice(protocol, capability).voice
+}
+
+/**
+ * 不选音色时实际会用哪个音色，以及它从哪来：`profile` = 画像里的 `defaultVoice`；`protocol` = 没有画像（或画像没写）的
+ * `openai-tts` 型号一直以来的 `alloy`；`none` = 没有默认音色，不选就发不出请求（两个新协议的自填型号、CosyVoice v3.5 / v2）。
+ * **生成时和准入用的就是这个函数**（`defaultSpeechVoice` 是它的 `voice`），`providers.capability` 给界面的也是它。
+ */
+export function speechDefaultVoice(
+  protocol: ProtocolId,
+  capability: ModelCapability,
+): { voice?: string; source: 'profile' | 'protocol' | 'none' } {
+  if (capability.defaultVoice !== undefined)
+    return { voice: capability.defaultVoice, source: 'profile' }
+  if (protocol === 'openai-tts') return { voice: 'alloy', source: 'protocol' }
+  return { source: 'none' }
 }
 
 const preview = (ids: string[]) => ids.slice(0, 5).join('、') + (ids.length > 5 ? ' 等' : '')
@@ -151,7 +166,7 @@ export function judgeSpeech(
   ) {
     warnings.push({
       code: 'VOICE_UNLISTED',
-      message: `音色“${voice}”不在 ${config.model} 的常用音色清单里；如果是你自己的克隆 / 自定义音色就没问题，不存在的话服务商会拒绝（不收费）`,
+      message: `音色“${voice}”不在 ${config.model} 的常用音色清单里；如果是你自己的克隆 / 自定义音色就没问题，不存在的话服务商会拒绝`,
     })
   }
   return { voice, defaulted, problems, warnings }
@@ -172,4 +187,16 @@ export function speechInputSupportOf(
     return undefined // 文本协议不是媒体协议
   }
   return protocol.speechInputs?.({ baseUrl: config.baseUrl, model: config.model })
+}
+
+/**
+ * 这个服务商配置不选音色时实际会用的音色（和生成时同一个函数），给界面用（`providers.capability`）。
+ * 不是语音协议返回 `undefined`。
+ */
+export function speechDefaultVoiceOf(
+  config: Pick<ProviderConfig, 'protocol' | 'model' | 'baseUrl' | 'capabilityOverrides'>,
+  models: ModelRegistry,
+): { voice?: string; source: 'profile' | 'protocol' | 'none' } | undefined {
+  if (speechInputSupportOf(config) === undefined) return undefined
+  return speechDefaultVoice(config.protocol, models.lookup(config).capability)
 }
