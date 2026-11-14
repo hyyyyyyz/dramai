@@ -32,6 +32,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   on the timeline; clips that already had a video or that you changed are left alone, and the way a cut is
   composed is unchanged.
 
+- **Speech providers (not tested against the real services).** Narration voice-over can now use MiniMax
+  (new protocol `minimax-t2a`, synchronous), Alibaba CosyVoice (new protocol `dashscope-cosyvoice`, HTTP
+  non-streaming), SiliconFlow and OpenAI, with six presets (documented, never selected automatically) and
+  profiles that list the preset voices, the single-request text limit and the price in the official unit per
+  site. All of it was built from the official documentation only. Requests of the existing `openai-tts`
+  protocol are unchanged.
+- Before any money is spent, the pre-flight check now stops a narration whose voice does not exist on the chosen
+  speech provider (including a voice name carried over from another service after switching provider), whose
+  voice is spelled wrongly, or whose text is longer than the provider accepts. The narration voice setting can
+  carry an optional style instruction and language hint; inputs a provider cannot use are not sent and are listed
+  in the job result.
+- Timeline revisions made by the system (the first timeline of an episode, synchronising with the shot order, a
+  rollback) carry a machine-readable reason, like the automatic mute does; older revisions are read as before.
+- `@dramai/api` exports the list of request headers that cannot be overridden by a provider's extra headers.
+
+### Fixed
+
+- After a restart that interrupted a finished video or image job just before it was marked succeeded, the shot no
+  longer gets a second copy of the same version (this happened in 0.5.0-beta.1 as well).
+
 ### Changed
 
 - A price list now belongs to a site: the China-site CNY prices of Wan 3.0 no longer price the international
