@@ -168,9 +168,11 @@ function AddProviderForm({
   const canProbe = !login && missing.length === 0
 
   const fetched = list.result?.outcome === 'models' ? list.result.items : undefined
-  const candidates: { id: string; label?: string }[] = fetched
-    ? fetched.map((m) => ({ id: m.id, label: m.label !== m.id ? m.label : undefined }))
-    : (known.data?.items ?? []).map((m) => ({ id: m.id, label: m.displayName }))
+  // only the model id: it is the value that goes to the interface. Names the model data or the provider gives it
+  // (display names carry vendor and product names) are not shown.
+  const candidates: { id: string }[] = (fetched ?? known.data?.items ?? []).map((m) => ({
+    id: m.id,
+  }))
 
   const chooseProtocol = (p: ProtocolId) => {
     setProtocol(p)
@@ -414,9 +416,7 @@ function AddProviderForm({
         {candidates.length > 0 && (
           <datalist id={candidatesId}>
             {candidates.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
+              <option key={m.id} value={m.id} />
             ))}
           </datalist>
         )}

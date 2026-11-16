@@ -125,15 +125,17 @@ describe('list the models of a draft', () => {
   })
 
   it('no model list for the interface type is not an error: a neutral line, and the suggestions from the model data stay', async () => {
-    const { server } = page({ routes: { 'POST /api/providers/probe': replay('image.models') } })
+    const { server } = page({
+      routes: { 'POST /api/providers/probe': replay('image.models.noList') },
+    })
     const d = await openForm('image')
-    await fill(d, { url: 'https://img.example.com/v1', key: KEY })
+    await fill(d, { protocol: 'kling-image', url: 'https://kimg.example.com', key: KEY })
     await userEvent.click(listButton(d))
     expect(
       await within(d).findByText('这个接口类型没有模型列表接口，可以从下面的候选里选，或手动填写'),
     ).toBeInTheDocument()
     expect(within(d).queryByRole('alert')).toBeNull()
-    expect(candidates(d)).toEqual(knownFor('image', 'openai-images').map((m) => m.id))
+    expect(candidates(d)).toEqual(knownFor('image', 'kling-image').map((m) => m.id))
     expect(probeCalls(server)).toHaveLength(1)
   })
 
@@ -194,6 +196,47 @@ describe('suggestions from the model data', () => {
     expect(modelBox(d)).toHaveValue('') // nothing is chosen for the user
     expect(within(d).getByText(/候选只是方便选择，不是限制/)).toBeInTheDocument()
     expect(d.textContent).not.toMatch(/推荐|推薦|recommend|常用|popular/i)
+  })
+
+  it('the suggestions show the model id and nothing else: no display names, in the markup or on screen', async () => {
+    page()
+    const d = await openForm('image')
+    await waitFor(() => expect(candidates(d).length).toBeGreaterThan(0))
+    const names = knownFor('image', 'openai-images')
+      .map((m) => m.displayName)
+      .filter((n): n is string => !!n)
+    expect(names.length).toBeGreaterThan(0) // the data does carry display names
+    for (const o of d.querySelectorAll('datalist option')) {
+      // what a browser shows for an option is its label, else its text, else its value: all of them are the id
+      const shown = o.getAttribute('label') || o.textContent || o.getAttribute('value')
+      expect(shown).toBe(o.getAttribute('value'))
+    }
+    for (const n of names) expect(d.innerHTML).not.toContain(n)
+  })
+
+  it('a list the provider sent shows ids only too, whatever labels it came with', async () => {
+    const r = P['llm.models'].response as {
+      outcome: 'models'
+      items: { id: string; label: string }[]
+    }
+    page({
+      routes: {
+        'POST /api/providers/probe': () => ({
+          ...r,
+          items: r.items.map((m) => ({ ...m, label: `Some Product Name for ${m.id}` })),
+        }),
+      },
+    })
+    const d = await openForm('llm')
+    await fill(d, { url: 'https://llm.example.com/v1', key: KEY })
+    await userEvent.click(listButton(d))
+    await within(d).findByText(/取到 2 个模型/)
+    expect(candidates(d)).toEqual(r.items.map((m) => m.id))
+    expect(d.innerHTML).not.toContain('Some Product Name')
+    for (const o of d.querySelectorAll('datalist option'))
+      expect(o.getAttribute('label') || o.textContent || o.getAttribute('value')).toBe(
+        o.getAttribute('value'),
+      )
   })
 
   it('a kind with none (large model) has no list and no empty shell', async () => {
