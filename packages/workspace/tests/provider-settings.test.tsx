@@ -87,6 +87,22 @@ describe('how a provider authenticates', () => {
     expect(within(keyed).getByText('API Key')).toBeInTheDocument()
   })
 
+  it('the capability area has no “preset verified on” line, and the profile’s verification note is not shown either', async () => {
+    const view = {
+      ...makeCapabilityView(),
+      provenance: 'Vendor reference page, checked 2026-11-13. Not tested.',
+      capability: { ...makeCapabilityView().capability, verifiedAt: '2026-05-04' },
+    }
+    page({
+      providers: [makeKeyProvider({ verifiedAt: '2026-05-04' })],
+      routes: { 'GET /api/providers/prov_key/capability': () => view },
+    })
+    const c = await card('DeepSeek')
+    await userEvent.click(within(c).getByRole('button', { name: /展开/ }))
+    await within(c).findByText('模型能力') // the capability area has loaded
+    expect(c.textContent).not.toMatch(/预设验证于|2026-05-04|Vendor reference page|Not tested/)
+  })
+
   it('no card shows a verification label: not the tested date, not “documented, not tested”, not its source', async () => {
     // the data still carries `verification` / `verifiedAt`; the page just does not show them
     page({ providers: [makeKeyProvider(), makeLoginProvider()] })

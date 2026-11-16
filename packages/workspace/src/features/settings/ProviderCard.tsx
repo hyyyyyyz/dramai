@@ -321,7 +321,6 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
               </ul>
             </Notice>
           )}
-          {cap.data.provenance && <Hint>{cap.data.provenance}</Hint>}
         </>
       )}
       {(provider.acceptedUnverified?.length ?? 0) > 0 && (
