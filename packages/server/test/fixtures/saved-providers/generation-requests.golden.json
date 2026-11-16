@@ -52,9 +52,7 @@
           }
         ],
         "generationConfig": {
-          "responseModalities": [
-            "IMAGE"
-          ],
+          "responseModalities": ["IMAGE"],
           "imageConfig": {
             "aspectRatio": "9:16"
           }
@@ -122,17 +120,11 @@
         },
         "resolutions": {
           "support": "supported",
-          "value": [
-            "none"
-          ]
+          "value": ["none"]
         },
         "aspectRatios": {
           "support": "unverified",
-          "value": [
-            "9:16",
-            "16:9",
-            "1:1"
-          ]
+          "value": ["9:16", "16:9", "1:1"]
         }
       },
       "pricing": [
@@ -177,17 +169,11 @@
         },
         "resolutions": {
           "support": "supported",
-          "value": [
-            "none"
-          ]
+          "value": ["none"]
         },
         "aspectRatios": {
           "support": "unverified",
-          "value": [
-            "9:16",
-            "16:9",
-            "1:1"
-          ],
+          "value": ["9:16", "16:9", "1:1"],
           "note": "画幅经 generationConfig.imageConfig.aspectRatio 传出，服务商是否严格遵守没验证"
         }
       },
@@ -196,10 +182,7 @@
           "currency": "PTC",
           "unit": "per_image",
           "amount": 0.35,
-          "range": [
-            0.2,
-            0.5
-          ],
+          "range": [0.2, 0.5],
           "note": "302.AI 页面给的是 0.2–0.5 PTC/张的区间，amount 取中值"
         }
       ],
@@ -235,25 +218,16 @@
         "durations": {
           "support": "supported",
           "value": {
-            "values": [
-              5
-            ]
+            "values": [5]
           }
         },
         "resolutions": {
           "support": "supported",
-          "value": [
-            "480P",
-            "720P"
-          ]
+          "value": ["480P", "720P"]
         },
         "aspectRatios": {
           "support": "supported",
-          "value": [
-            "9:16",
-            "16:9",
-            "1:1"
-          ]
+          "value": ["9:16", "16:9", "1:1"]
         },
         "aspectFromSource": true,
         "sizeStep": 2

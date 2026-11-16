@@ -443,7 +443,11 @@ describe('testProvider (ok / failed / unverifiable)', () => {
       json({ models: [{ name: 'models/gemini-2.5-flash-image' }] }),
     ])
     const r = await testProvider(
-      { baseUrl: 'https://relay.example.test', protocol: 'gemini-image', model: 'gemini-2.5-flash-image' },
+      {
+        baseUrl: 'https://relay.example.test',
+        protocol: 'gemini-image',
+        model: 'gemini-2.5-flash-image',
+      },
       'k',
       { fetch },
     )

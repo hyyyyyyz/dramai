@@ -617,7 +617,11 @@ describe('restart recovery', () => {
 
   it('legacy jobs without a config id resume only when exactly one enabled config matches', () => {
     const legacy = {
-      providerSnapshot: { protocol: 'aliyun-video', baseUrl: 'https://relay-cn.example.test', model: 'm' },
+      providerSnapshot: {
+        protocol: 'aliyun-video',
+        baseUrl: 'https://relay-cn.example.test',
+        model: 'm',
+      },
     } as Job
     expect(checkProviderSnapshot(legacy, [CONFIG]).ok).toBe(true)
     expect(checkProviderSnapshot(legacy, [CONFIG, { ...CONFIG, id: 'cfg-2' }]).ok).toBe(false)

@@ -17,7 +17,12 @@ import type { MediaEnv } from './fakes.ts'
  * `generation-requests.golden.json` was produced by the code from before the presets were removed (set UPDATE_GOLDEN=1
  * to regenerate it on such a checkout).
  */
-const IDS = ['302ai-chat', '302-image-seedream', '302-image-nano-banana', '302-i2v-wan-flash'] as const
+const IDS = [
+  '302ai-chat',
+  '302-image-seedream',
+  '302-image-nano-banana',
+  '302-i2v-wan-flash',
+] as const
 type FixtureId = (typeof IDS)[number]
 interface Fixture {
   stored: ProviderConfig
@@ -26,7 +31,10 @@ interface Fixture {
 const dir = new URL('./fixtures/saved-providers/', import.meta.url)
 const fixture = (id: FixtureId): Fixture =>
   JSON.parse(readFileSync(new URL(`${id}.json`, dir), 'utf8')) as Fixture
-const FIXTURES = Object.fromEntries(IDS.map((id) => [id, fixture(id)])) as Record<FixtureId, Fixture>
+const FIXTURES = Object.fromEntries(IDS.map((id) => [id, fixture(id)])) as Record<
+  FixtureId,
+  Fixture
+>
 const KEY = 'sk-fixture-not-a-real-key'
 const goldenUrl = new URL('generation-requests.golden.json', dir)
 
@@ -57,7 +65,10 @@ describe('providers saved from presets that are no longer in the catalogue: read
     const list = (await h.client.call('providers.list')).items
     for (const id of IDS) {
       const { dto } = FIXTURES[id]
-      expect(list.find((p) => p.id === dto.id), id).toEqual(dto)
+      expect(
+        list.find((p) => p.id === dto.id),
+        id,
+      ).toEqual(dto)
       expect(await h.client.call('providers.get', { params: { providerId: dto.id } }), id).toEqual(
         dto,
       )
@@ -68,7 +79,11 @@ describe('providers saved from presets that are no longer in the catalogue: read
     const h = await startServer({ startWorker: false })
     await seed(h)
     const presets = (await h.client.call('presets.list')).items
-    for (const id of IDS) expect(presets.some((p) => p.id === id), id).toBe(false)
+    for (const id of IDS)
+      expect(
+        presets.some((p) => p.id === id),
+        id,
+      ).toBe(false)
     // the stored `presetId` stays as it was; reading, listing and the capability view all work regardless
     for (const id of IDS) {
       const { dto } = FIXTURES[id]
@@ -102,7 +117,11 @@ describe('providers saved from presets that are no longer in the catalogue: read
       params: { providerId: dto.id },
       body: { label: 'My Seedream', model: 'doubao-seedream-5-0-260128', enabled: false },
     })
-    expect(edited).toMatchObject({ label: 'My Seedream', enabled: false, protocol: 'openai-images' })
+    expect(edited).toMatchObject({
+      label: 'My Seedream',
+      enabled: false,
+      protocol: 'openai-images',
+    })
     expect(edited.baseUrl).toBe(dto.baseUrl)
     await h.client.call('providers.delete', { params: { providerId: dto.id } })
     const left = (await h.client.call('providers.list')).items.map((p) => p.id)
@@ -121,13 +140,16 @@ describe('providers saved from presets that are no longer in the catalogue: text
           seen.push({
             url,
             auth: (init?.headers as Record<string, string> | undefined)?.Authorization,
-            body: init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : undefined,
+            body: init?.body
+              ? (JSON.parse(String(init.body)) as Record<string, unknown>)
+              : undefined,
           })
           if (url.endsWith('/models'))
             return new Response(JSON.stringify({ data: [{ id: 'gpt-4o-mini' }] }), { status: 200 })
           const ev = (d: unknown) => `data: ${JSON.stringify(d)}\n\n`
           return new Response(
-            ev({ choices: [{ delta: { content: 'ok' }, finish_reason: 'stop' }] }) + 'data: [DONE]\n\n',
+            ev({ choices: [{ delta: { content: 'ok' }, finish_reason: 'stop' }] }) +
+              'data: [DONE]\n\n',
             { status: 200 },
           )
         }) as never,
@@ -197,7 +219,9 @@ describe('providers saved from presets that are no longer in the catalogue: a wh
     const { items: assets } = await h.client.call('assets.list', {
       params: { projectId: prepared.projectId },
     })
-    const detail = await h.client.call('episodes.get', { params: { episodeId: prepared.episode.id } })
+    const detail = await h.client.call('episodes.get', {
+      params: { episodeId: prepared.episode.id },
+    })
     const shot = detail.shots[0]!
 
     const run = async (item: Record<string, unknown>) => {
@@ -225,7 +249,9 @@ describe('providers saved from presets that are no longer in the catalogue: a wh
         params: { providerId: FIXTURES[id].dto.id },
       })
     // the first request of each kind (sheet / shot image / video submit / poll / download), as sent
-    const firsts = sent.filter((r, i) => sent.findIndex((x) => x.method === r.method && x.url === r.url) === i)
+    const firsts = sent.filter(
+      (r, i) => sent.findIndex((x) => x.method === r.method && x.url === r.url) === i,
+    )
     const result = { requests: firsts, capabilities }
     if (process.env.UPDATE_GOLDEN) writeFileSync(goldenUrl, JSON.stringify(result, null, 2) + '\n')
     const golden = JSON.parse(readFileSync(goldenUrl, 'utf8')) as typeof result
@@ -233,7 +259,11 @@ describe('providers saved from presets that are no longer in the catalogue: a wh
     // every request and every capability fact is compared as it was.
     const facts = (v: unknown) =>
       JSON.parse(JSON.stringify(v), (k, x) =>
-        k === 'provenance' || k === 'note' ? undefined : k === 'quirks' ? (x as unknown[]).length : x,
+        k === 'provenance' || k === 'note'
+          ? undefined
+          : k === 'quirks'
+            ? (x as unknown[]).length
+            : x,
       )
     expect(facts(result)).toEqual(facts(golden))
     // and the key really was the saved one

@@ -16,9 +16,7 @@
     "status": "tested",
     "testedAt": "2026-05-04"
   },
-  "knownLimitations": [
-    "单价是 0.2–0.5 PTC 的区间，成本估算只能给出区间。"
-  ],
+  "knownLimitations": ["单价是 0.2–0.5 PTC 的区间，成本估算只能给出区间。"],
   "hasKey": true,
   "keyMask": "sk-…-key"
 }

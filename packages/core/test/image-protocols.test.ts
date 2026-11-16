@@ -607,7 +607,10 @@ describe('v0.4 tested image routes: the whole request with two reference images 
 
   it('Nano Banana through a relay (gemini-image: both auth headers)', () => {
     expect(
-      geminiImage.buildGenerateRequest(auth('gemini-2.5-flash-image', 'https://relay.example.test'), refs),
+      geminiImage.buildGenerateRequest(
+        auth('gemini-2.5-flash-image', 'https://relay.example.test'),
+        refs,
+      ),
     ).toEqual({
       method: 'POST',
       url: 'https://relay.example.test/v1beta/models/gemini-2.5-flash-image:generateContent',

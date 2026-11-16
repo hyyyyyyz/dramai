@@ -18,10 +18,7 @@
       "testedAt": "2026-05-04"
     },
     "verifiedAt": "2026-05-04",
-    "knownLimitations": [
-      "时长固定 5 秒；不支持首尾帧；不带人声。",
-      "输出比例跟随起始帧。"
-    ]
+    "knownLimitations": ["时长固定 5 秒；不支持首尾帧；不带人声。", "输出比例跟随起始帧。"]
   },
   "dto": {
     "id": "prov_714ea8f16148",
@@ -41,10 +38,7 @@
       "status": "tested",
       "testedAt": "2026-05-04"
     },
-    "knownLimitations": [
-      "时长固定 5 秒；不支持首尾帧；不带人声。",
-      "输出比例跟随起始帧。"
-    ],
+    "knownLimitations": ["时长固定 5 秒；不支持首尾帧；不带人声。", "输出比例跟随起始帧。"],
     "hasKey": true,
     "keyMask": "sk-…-key"
   }
