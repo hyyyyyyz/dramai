@@ -346,35 +346,49 @@ export async function startMockProviders(options: StartOptions = {}): Promise<Mo
           }),
         )
       default:
-        // internal 以及其它：一份正常的列表
+        // internal 以及其它：一份正常的列表，形态跟着路径走（和上面的 /models 一样，不混在一起）
         return answer(
           200,
-          c.json({
-            object: 'list',
-            data: [{ id: 'probe-model', object: 'model' }],
-            models: [{ name: 'models/probe-model' }],
-          }),
+          c.req.path.endsWith('/v1beta/models')
+            ? c.json({
+                models: [
+                  { name: 'models/probe-model', supportedGenerationMethods: ['generateContent'] },
+                ],
+              })
+            : c.json({ object: 'list', data: [{ id: 'probe-model', object: 'model' }] }),
         )
     }
   })
 
-  // 测试连接用的模型列表
-  const modelList = (c: Context) => {
+  // 模型列表（测试连接、获取模型列表用）。每个路径只返回它自己那种形态——真实的服务不会把两种混在一个响应里，
+  // 而解析器看到 `models[]` 就按 Gemini / 账号登录那种形态读：
+  //   `/models`、`/v1/models` → OpenAI 形态 `{ object: 'list', data: [{ id }] }`
+  //   `/v1beta/models`        → Gemini 形态 `{ models: [{ name: 'models/<id>', supportedGenerationMethods }] }`
+  const listedIds = [
+    'deepseek-chat',
+    'gemini-2.5-flash-image',
+    'doubao-seedream-5-0-260128',
+    'tts-1',
+    'mock-llm',
+  ]
+  const openAiModelList = (c: Context) => {
     record(c, { status: 200 })
     return c.json({
       object: 'list',
-      data: [
-        'deepseek-chat',
-        'gemini-2.5-flash-image',
-        'doubao-seedream-5-0-260128',
-        'tts-1',
-        'mock-llm',
-      ].map((id) => ({ id, object: 'model' })),
-      models: [{ name: 'models/gemini-2.5-flash-image' }],
+      data: listedIds.map((id) => ({ id, object: 'model' })),
     })
   }
-  both('get', '/models', modelList)
-  app.get('/v1beta/models', modelList)
+  const geminiModelList = (c: Context) => {
+    record(c, { status: 200 })
+    return c.json({
+      models: listedIds.map((id) => ({
+        name: `models/${id}`,
+        supportedGenerationMethods: ['generateContent'],
+      })),
+    })
+  }
+  both('get', '/models', openAiModelList)
+  app.get('/v1beta/models', geminiModelList)
 
   // --- 图片 ---
   const imageResponse = (
