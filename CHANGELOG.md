@@ -155,8 +155,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- The preset list was adjusted: the presets of one vendor that came with `0.5.0-beta.1` were removed. Providers
-  already saved from them keep working.
 - `docs/DEPLOYMENT.md` is rewritten for the landing page: what is deployed, how the deployment workflow is run, and
   what visitors of the old browser-only workspace see afterwards.
 - A price list now belongs to a site: the China-site CNY prices of Wan 3.0 no longer price the international
