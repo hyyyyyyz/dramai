@@ -1,7 +1,7 @@
 {
   "meta": {
     "note": "Recorded from the real server by record.mjs; keys are fake; no upstream request was made.",
-    "commit": "47c5fa6",
+    "commit": "3d34f48",
     "upstreamRequests": 0
   },
   "providers": {
@@ -18,7 +18,7 @@
         "apiKey": "sk-record-123456789012"
       },
       "stored": {
-        "id": "prov_87d10da4dce8",
+        "id": "prov_d5bb73e1b226",
         "label": "My text service",
         "kind": "llm",
         "protocol": "openai-chat",
@@ -45,7 +45,7 @@
         "apiKey": "sk-record-123456789012"
       },
       "stored": {
-        "id": "prov_e7260ddddca1",
+        "id": "prov_36617ab80cae",
         "label": "My image service",
         "kind": "image",
         "protocol": "openai-images",
@@ -72,7 +72,7 @@
         "apiKey": "sk-record-123456789012"
       },
       "stored": {
-        "id": "prov_68f76955b093",
+        "id": "prov_04664118b944",
         "label": "My video service",
         "kind": "video",
         "protocol": "kling-contents",
@@ -99,7 +99,7 @@
         "apiKey": "sk-record-123456789012"
       },
       "stored": {
-        "id": "prov_92a5cb493bdd",
+        "id": "prov_d48437bb2992",
         "label": "My voice service",
         "kind": "tts",
         "protocol": "openai-tts",
@@ -125,7 +125,7 @@
         }
       },
       "stored": {
-        "id": "prov_ed2ac1bc0031",
+        "id": "prov_4215942ed7ff",
         "label": "My local model",
         "kind": "llm",
         "protocol": "openai-chat",
@@ -174,7 +174,7 @@
       "kind": "llm",
       "protocol": "openai-chat",
       "baseUrl": "https://openrouter.ai/api/v1",
-      "suggestedModel": "anthropic/claude-sonnet-5.5",
+      "suggestedModel": "openrouter/auto",
       "auth": {
         "type": "account_login",
         "channel": "openrouter"
@@ -210,7 +210,7 @@
         }
       },
       "stored": {
-        "id": "prov_878128457c00",
+        "id": "prov_16219d60743f",
         "label": "Sign in openai-chatgpt",
         "kind": "llm",
         "protocol": "openai-responses",
@@ -237,19 +237,19 @@
         "kind": "llm",
         "protocol": "openai-chat",
         "baseUrl": "https://openrouter.ai/api/v1",
-        "model": "anthropic/claude-sonnet-5.5",
+        "model": "openrouter/auto",
         "auth": {
           "type": "account_login",
           "channel": "openrouter"
         }
       },
       "stored": {
-        "id": "prov_b62b25127095",
+        "id": "prov_331dbb93a00d",
         "label": "Sign in openrouter",
         "kind": "llm",
         "protocol": "openai-chat",
         "baseUrl": "https://openrouter.ai/api/v1",
-        "model": "anthropic/claude-sonnet-5.5",
+        "model": "openrouter/auto",
         "enabled": true,
         "auth": {
           "type": "account_login",

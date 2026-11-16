@@ -1,14 +1,14 @@
 {
   "meta": {
     "note": "Recorded from the real server (upstream stubbed, fake keys). Regenerate with record.mjs in this folder.",
-    "commit": "6fa48686194579d87de80114be12fbe16310df23",
+    "commit": "3d34f48e6dbd81a030c9052828b288d1658aac5b",
     "coreServerApiDirtyWhenRecorded": false,
     "command": "node --conditions=dramai-source --experimental-strip-types packages/workspace/tests/fixtures/real-speech/record.mjs",
     "upstreamRequests": 0
   },
   "providers": {
     "openai": {
-      "id": "prov_071b66b67267",
+      "id": "prov_6bd40fcc9380",
       "label": "OpenAI · 语音合成（API Key）",
       "kind": "tts",
       "protocol": "openai-tts",
@@ -34,7 +34,7 @@
       "keyMask": "sk-…9012"
     },
     "minimax": {
-      "id": "prov_a7676747ae17",
+      "id": "prov_30653616d23d",
       "label": "MiniMax · 语音合成（国内站）",
       "kind": "tts",
       "protocol": "minimax-t2a",
@@ -61,7 +61,7 @@
       "keyMask": "sk-…9012"
     },
     "siliconflow": {
-      "id": "prov_b3301f863096",
+      "id": "prov_ff18c6d92ec0",
       "label": "硅基流动 · 语音合成（国内站）",
       "kind": "tts",
       "protocol": "openai-tts",
@@ -87,7 +87,7 @@
       "keyMask": "sk-…9012"
     },
     "cosyFlash": {
-      "id": "prov_1fd32d984e61",
+      "id": "prov_75fbd877b0e0",
       "label": "阿里云百炼 · CosyVoice 语音合成（国内站）",
       "kind": "tts",
       "protocol": "dashscope-cosyvoice",
@@ -114,7 +114,7 @@
       "keyMask": "sk-…9012"
     },
     "tts1": {
-      "id": "prov_f9aec57dfaad",
+      "id": "prov_7a6f03807075",
       "label": "tts-1",
       "kind": "tts",
       "protocol": "openai-tts",
@@ -140,7 +140,7 @@
       "keyMask": "sk-…9012"
     },
     "relay": {
-      "id": "prov_bd83190c99ae",
+      "id": "prov_924b06dde0ba",
       "label": "relay",
       "kind": "tts",
       "protocol": "openai-tts",
@@ -166,7 +166,7 @@
       "keyMask": "sk-…9012"
     },
     "relayTts1": {
-      "id": "prov_237e13aef361",
+      "id": "prov_8566f7764d2c",
       "label": "relay tts-1",
       "kind": "tts",
       "protocol": "openai-tts",
@@ -192,7 +192,7 @@
       "keyMask": "sk-…9012"
     },
     "cosy35": {
-      "id": "prov_39995f0d6629",
+      "id": "prov_0a995959bc0f",
       "label": "cosy v3.5",
       "kind": "tts",
       "protocol": "dashscope-cosyvoice",
@@ -319,7 +319,7 @@
         "官方：按 token 计价（文本输入 $0.60 / 1M，音频输出 $12.00 / 1M），不按字符，这里不估价。",
         "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 及其快照已弃用，计划 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；新接入请考虑这一点。"
       ],
-      "provenance": "官方 speech 参考页 developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create（2026-11-13 核对）。未实测。"
+      "provenance": "官方 speech 参考页 developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create（2026-11-13 核对）。"
     },
     "minimax": {
       "declared": true,
@@ -501,7 +501,7 @@
         "官方：风格指令（instructions）没有对应字段，会被丢弃并记录；情绪只有固定枚举，这一版不发。",
         "国内（api.minimax.cn）和国际（api.minimax.io）按两套账号处理，Key 是否互通官方没写。"
       ],
-      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。未实测。"
+      "provenance": "官方：platform.minimax.io/docs/api-reference/speech-t2a-http、/docs/faq/system-voice-id、/docs/api-reference/errorcode，价格 /docs/guides/pricing-paygo 与 platform.minimax.cn/docs/guides/pricing-paygo（2026-11-13 核对）。"
     },
     "siliconflow": {
       "declared": true,
@@ -594,7 +594,7 @@
         "官方提醒：支持的型号会变化，以平台“语音”标签下的型号列表为准。",
         "官方：情绪 / 方言指令要写在输入文本前面，用 <|endofprompt|> 隔开（如“用四川话说<|endofprompt|>……”）；支持 [laughter]、[breath] 等标签。这一版不自动拼接。"
       ],
-      "provenance": "官方：docs.siliconflow.cn/docs/api/audio-speech-post 与 docs.siliconflow.com/en/userguide/capabilities/text-to-speech（2026-11-13 核对）。未实测。"
+      "provenance": "官方：docs.siliconflow.cn/docs/api/audio-speech-post 与 docs.siliconflow.com/en/userguide/capabilities/text-to-speech（2026-11-13 核对）。"
     },
     "cosyFlash": {
       "declared": true,
@@ -748,7 +748,7 @@
         "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
         "官方：单价 1 元 / 万字符（北京），RPM 180。"
       ],
-      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。"
     },
     "tts1": {
       "declared": false,
@@ -893,7 +893,7 @@
         "官方：按 token 计价（文本输入 $0.60 / 1M，音频输出 $12.00 / 1M），不按字符，这里不估价。",
         "官方：tts-1、tts-1-hd、gpt-4o-mini-tts 及其快照已弃用，计划 2027-01-06 关停，官方建议迁移到 Realtime API 的 gpt-realtime-2.1-mini；新接入请考虑这一点。"
       ],
-      "provenance": "官方 speech 参考页 developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create（2026-11-13 核对）。未实测。"
+      "provenance": "官方 speech 参考页 developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create（2026-11-13 核对）。"
     },
     "relayTts1": {
       "declared": false,
@@ -996,19 +996,19 @@
         "官方：风格 / 方言 / 情绪指令（instruction）最多 100 个字符，汉字算 2 个；语速 rate 0.5–2。",
         "官方页面没有写单次文本长度上限，这里不填，不猜。",
         "官方页面没有写错误响应的结构；错误按百炼通用的 {code, message} 读（与万相协议相同），没有核实。",
-        "单价只在检索摘要里见过，没有在官方页面核对，这里不填。"
+        "单价这里不填。"
       ],
-      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。未实测。"
+      "provenance": "官方：help.aliyun.com/zh/model-studio/cosyvoice-tts-http-api、/cosyvoice-voice-list、/text-to-speech、/cosyvoice-v3-flash（2026-11-13 核对）。"
     }
   },
   "scenarios": {
     "noVoiceTts1": {
       "provider": "tts1",
-      "projectId": "proj_333c4bdc7903",
+      "projectId": "proj_cee6888e8af7",
       "shotId": "sh_e1",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_333c4bdc7903",
+        "id": "proj_cee6888e8af7",
         "name": "no voice, tts-1",
         "aspectRatio": "9:16",
         "style": {
@@ -1016,7 +1016,7 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049364
+          "expandedAt": 1794834661430
         },
         "narrationDelivery": "tts",
         "episodeOrder": ["e1"],
@@ -1027,8 +1027,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049364,
-        "updatedAt": 1794628049364
+        "createdAt": 1794834661430,
+        "updatedAt": 1794834661430
       },
       "preflight": {
         "ok": true,
@@ -1060,11 +1060,11 @@
     },
     "noVoiceRelay": {
       "provider": "relay",
-      "projectId": "proj_aacd555ddc82",
+      "projectId": "proj_62bad19ee3b5",
       "shotId": "sh_e2",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_aacd555ddc82",
+        "id": "proj_62bad19ee3b5",
         "name": "no voice, relay",
         "aspectRatio": "9:16",
         "style": {
@@ -1072,7 +1072,7 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049369
+          "expandedAt": 1794834661435
         },
         "narrationDelivery": "tts",
         "episodeOrder": ["e2"],
@@ -1083,8 +1083,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049369,
-        "updatedAt": 1794628049369
+        "createdAt": 1794834661435,
+        "updatedAt": 1794834661435
       },
       "preflight": {
         "ok": false,
@@ -1128,11 +1128,11 @@
     },
     "noVoiceCosy35": {
       "provider": "cosy35",
-      "projectId": "proj_e9e6c080343b",
+      "projectId": "proj_3766803a827f",
       "shotId": "sh_e3",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_e9e6c080343b",
+        "id": "proj_3766803a827f",
         "name": "no voice, cosy 3.5",
         "aspectRatio": "9:16",
         "style": {
@@ -1140,7 +1140,7 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049371
+          "expandedAt": 1794834661440
         },
         "narrationDelivery": "tts",
         "episodeOrder": ["e3"],
@@ -1151,8 +1151,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049371,
-        "updatedAt": 1794628049371
+        "createdAt": 1794834661440,
+        "updatedAt": 1794834661440
       },
       "preflight": {
         "ok": false,
@@ -1191,11 +1191,11 @@
     },
     "foreignOnClosed": {
       "provider": "openai",
-      "projectId": "proj_d9b0413f7a98",
+      "projectId": "proj_d10d36878b58",
       "shotId": "sh_e4",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_d9b0413f7a98",
+        "id": "proj_d10d36878b58",
         "name": "foreign on closed",
         "aspectRatio": "9:16",
         "style": {
@@ -1203,11 +1203,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049373
+          "expandedAt": 1794834661443
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_a7676747ae17",
+          "providerConfigId": "prov_30653616d23d",
           "voice": "Chinese (Mandarin)_News_Anchor"
         },
         "episodeOrder": ["e4"],
@@ -1218,8 +1218,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049373,
-        "updatedAt": 1794628049373
+        "createdAt": 1794834661443,
+        "updatedAt": 1794834661443
       },
       "preflight": {
         "ok": false,
@@ -1258,11 +1258,11 @@
     },
     "foreignOnOpen": {
       "provider": "minimax",
-      "projectId": "proj_41b93b2fed28",
+      "projectId": "proj_3eb82202be0e",
       "shotId": "sh_e5",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_41b93b2fed28",
+        "id": "proj_3eb82202be0e",
         "name": "foreign on open",
         "aspectRatio": "9:16",
         "style": {
@@ -1270,11 +1270,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049376
+          "expandedAt": 1794834661445
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_071b66b67267",
+          "providerConfigId": "prov_6bd40fcc9380",
           "voice": "nova"
         },
         "episodeOrder": ["e5"],
@@ -1285,8 +1285,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049376,
-        "updatedAt": 1794628049376
+        "createdAt": 1794834661445,
+        "updatedAt": 1794834661445
       },
       "preflight": {
         "ok": false,
@@ -1340,11 +1340,11 @@
     },
     "foreignOnNone": {
       "provider": "cosy35",
-      "projectId": "proj_66d07fd14a5e",
+      "projectId": "proj_e1999bda68f0",
       "shotId": "sh_e6",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_66d07fd14a5e",
+        "id": "proj_e1999bda68f0",
         "name": "foreign on none",
         "aspectRatio": "9:16",
         "style": {
@@ -1352,11 +1352,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049379
+          "expandedAt": 1794834661448
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_071b66b67267",
+          "providerConfigId": "prov_6bd40fcc9380",
           "voice": "alloy"
         },
         "episodeOrder": ["e6"],
@@ -1367,8 +1367,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049379,
-        "updatedAt": 1794628049379
+        "createdAt": 1794834661448,
+        "updatedAt": 1794834661448
       },
       "preflight": {
         "ok": false,
@@ -1407,11 +1407,11 @@
     },
     "foreignOnRelay": {
       "provider": "relayTts1",
-      "projectId": "proj_8fb26bd58d7a",
+      "projectId": "proj_9440f0f0b3df",
       "shotId": "sh_e7",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_8fb26bd58d7a",
+        "id": "proj_9440f0f0b3df",
         "name": "foreign on relay",
         "aspectRatio": "9:16",
         "style": {
@@ -1419,11 +1419,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049381
+          "expandedAt": 1794834661450
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_a7676747ae17",
+          "providerConfigId": "prov_30653616d23d",
           "voice": "male-qn-qingse"
         },
         "episodeOrder": ["e7"],
@@ -1434,8 +1434,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049381,
-        "updatedAt": 1794628049381
+        "createdAt": 1794834661450,
+        "updatedAt": 1794834661450
       },
       "preflight": {
         "ok": true,
@@ -1462,11 +1462,11 @@
     },
     "narrationTooLong": {
       "provider": "openai",
-      "projectId": "proj_0e5a28b45fa4",
+      "projectId": "proj_7737e5992a7b",
       "shotId": "sh_e8",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_0e5a28b45fa4",
+        "id": "proj_7737e5992a7b",
         "name": "narration too long",
         "aspectRatio": "9:16",
         "style": {
@@ -1474,11 +1474,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049383
+          "expandedAt": 1794834661452
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_071b66b67267",
+          "providerConfigId": "prov_6bd40fcc9380",
           "voice": "nova"
         },
         "episodeOrder": ["e8"],
@@ -1489,8 +1489,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049383,
-        "updatedAt": 1794628049383
+        "createdAt": 1794834661452,
+        "updatedAt": 1794834661452
       },
       "preflight": {
         "ok": false,
@@ -1534,11 +1534,11 @@
     },
     "instructionTooLong": {
       "provider": "cosyFlash",
-      "projectId": "proj_6a95f4da99ab",
+      "projectId": "proj_eeadd5855ab6",
       "shotId": "sh_e9",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_6a95f4da99ab",
+        "id": "proj_eeadd5855ab6",
         "name": "instruction too long",
         "aspectRatio": "9:16",
         "style": {
@@ -1546,11 +1546,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049385
+          "expandedAt": 1794834661455
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_1fd32d984e61",
+          "providerConfigId": "prov_75fbd877b0e0",
           "voice": "longanyang",
           "instructions": "平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平平"
         },
@@ -1562,8 +1562,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049385,
-        "updatedAt": 1794628049385
+        "createdAt": 1794834661455,
+        "updatedAt": 1794834661455
       },
       "preflight": {
         "ok": false,
@@ -1619,11 +1619,11 @@
     },
     "withSpeed": {
       "provider": "openai",
-      "projectId": "proj_f1cb44e31227",
+      "projectId": "proj_3c28b092b848",
       "shotId": "sh_e10",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_f1cb44e31227",
+        "id": "proj_3c28b092b848",
         "name": "voice with speed",
         "aspectRatio": "9:16",
         "style": {
@@ -1631,11 +1631,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049387
+          "expandedAt": 1794834661458
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_071b66b67267",
+          "providerConfigId": "prov_6bd40fcc9380",
           "voice": "nova",
           "speed": 1.25
         },
@@ -1647,8 +1647,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049387,
-        "updatedAt": 1794628049387
+        "createdAt": 1794834661458,
+        "updatedAt": 1794834661458
       },
       "preflight": {
         "ok": false,
@@ -1687,11 +1687,11 @@
     },
     "withSpeedAndInstructions": {
       "provider": "openai",
-      "projectId": "proj_ea14a3d03e65",
+      "projectId": "proj_37e5d09e6dcf",
       "shotId": "sh_e11",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_ea14a3d03e65",
+        "id": "proj_37e5d09e6dcf",
         "name": "voice, speed, instructions",
         "aspectRatio": "9:16",
         "style": {
@@ -1699,11 +1699,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049389
+          "expandedAt": 1794834661461
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_071b66b67267",
+          "providerConfigId": "prov_6bd40fcc9380",
           "voice": "nova",
           "speed": 1.25,
           "instructions": "轻声"
@@ -1716,8 +1716,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049389,
-        "updatedAt": 1794628049389
+        "createdAt": 1794834661461,
+        "updatedAt": 1794834661461
       },
       "preflight": {
         "ok": false,
@@ -1756,11 +1756,11 @@
     },
     "paddedVoice": {
       "provider": "openai",
-      "projectId": "proj_8e67c0cee5e9",
+      "projectId": "proj_930ee60376fc",
       "shotId": "sh_e12",
       "project": {
         "schemaVersion": 1,
-        "id": "proj_8e67c0cee5e9",
+        "id": "proj_930ee60376fc",
         "name": "padded voice",
         "aspectRatio": "9:16",
         "style": {
@@ -1768,11 +1768,11 @@
           "label": "未指定",
           "description": "",
           "imageKeywords": "",
-          "expandedAt": 1794628049392
+          "expandedAt": 1794834661463
         },
         "narrationDelivery": "tts",
         "narrationVoice": {
-          "providerConfigId": "prov_071b66b67267",
+          "providerConfigId": "prov_6bd40fcc9380",
           "voice": " nova ",
           "speed": 1
         },
@@ -1784,8 +1784,8 @@
           "asset": 0,
           "material": 0
         },
-        "createdAt": 1794628049392,
-        "updatedAt": 1794628049392
+        "createdAt": 1794834661463,
+        "updatedAt": 1794834661463
       },
       "preflight": {
         "ok": false,

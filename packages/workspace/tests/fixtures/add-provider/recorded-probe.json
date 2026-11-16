@@ -1,7 +1,7 @@
 {
   "meta": {
     "note": "Recorded from the real server by record-probe.mjs; the upstream is a stand-in fetch; keys are fake.",
-    "commit": "e927f31",
+    "commit": "3d34f48",
     "providersStoredAfterAllProbes": 0,
     "upstreamAsked": 21,
     "keyAppearsInAnyResponse": false
@@ -376,7 +376,7 @@
       },
       "response": {
         "outcome": "unverifiable",
-        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来实测。"
+        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来确认。"
       },
       "upstreamAsked": []
     },
@@ -410,7 +410,7 @@
       },
       "response": {
         "outcome": "unverifiable",
-        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来实测。"
+        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来确认。"
       },
       "upstreamAsked": []
     },
@@ -504,7 +504,7 @@
       },
       "response": {
         "outcome": "unverifiable",
-        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来实测。"
+        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来确认。"
       },
       "upstreamAsked": []
     },
@@ -690,6 +690,12 @@
         "kind": "image",
         "protocols": ["volcengine-images"],
         "displayName": "即梦 Seedream 5.5（方舟直连）"
+      },
+      {
+        "id": "gemini-2.5-flash-image",
+        "kind": "image",
+        "protocols": ["gemini-image"],
+        "displayName": "Nano Banana (Gemini 2.5 Flash Image)"
       },
       {
         "id": "gemini-3-pro-image",
@@ -974,7 +980,7 @@
       "kind": "llm",
       "protocol": "openai-chat",
       "baseUrl": "https://openrouter.ai/api/v1",
-      "suggestedModel": "anthropic/claude-sonnet-5.5"
+      "suggestedModel": "openrouter/auto"
     }
   ]
 }
