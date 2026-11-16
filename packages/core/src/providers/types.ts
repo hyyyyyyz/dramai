@@ -465,6 +465,11 @@ export interface ModelProfile {
   quirks: string[]
   /** 这份画像的依据与日期。 */
   provenance: string
+  /**
+   * `false` = 画像和价目照常用于已有配置，但不作为"已知型号"候选列出（`knownModels` 跳过它）。
+   * 用于价目是某个转售平台自己的点数（`PTC`）的条目：它们留着给旧配置估价，不推荐给新配置。缺省 = 列出。
+   */
+  candidate?: boolean
 }
 
 /** 模型"想怎么被写提示词"：与提示词的语义内容分层（A16/A17）。 */

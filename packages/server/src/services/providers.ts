@@ -1,4 +1,9 @@
-import type { LoginStatusDto, ProviderConfigDto } from '@dramai/api'
+import type {
+  LoginStatusDto,
+  ProviderConfigDto,
+  ProviderProbeInput,
+  ProviderProbeResult,
+} from '@dramai/api'
 import {
   checkBaseUrl,
   configFromPreset,
@@ -12,6 +17,7 @@ import {
   speechDefaultVoiceOf,
   speechInputSupportOf,
   testProvider,
+  upstreamErrorCode,
 } from '@dramai/core'
 import type {
   Clock,
@@ -33,6 +39,21 @@ import type { ServerStore } from '../storage/sqlite-store.ts'
 import type { SettingsService } from './settings.ts'
 
 export const secretRefFor = (providerId: string): string => `provider:${providerId}`
+
+/** `providers.probe` 的入参（见 `@dramai/api` 的 `providerProbe`）。 */
+export type ProbeInput = ProviderProbeInput
+
+const REDACTED = '[redacted]'
+
+/** 把返回值里出现的草稿 Key（原样、URL 编码、JSON 转义三种写法）替换掉。没有 Key 时原样返回。 */
+function redactProbe(result: ProviderProbeResult, secret: string | undefined): ProviderProbeResult {
+  if (!secret) return result
+  const forms = [...new Set([secret, encodeURIComponent(secret), JSON.stringify(secret).slice(1, -1)])]
+  const clean = (s: string) => forms.reduce((acc, f) => (f ? acc.split(f).join(REDACTED) : acc), s)
+  return JSON.parse(JSON.stringify(result), (_k, v) =>
+    typeof v === 'string' ? clean(v) : v,
+  ) as ProviderProbeResult
+}
 
 export interface ProviderServiceDeps {
   store: ServerStore
@@ -278,6 +299,105 @@ export class ProviderService {
     const next = { ...cfg, secretRef: undefined, auth: { type: 'api_key' as const } }
     await this.d.store.providers.put(next)
     return next
+  }
+
+  /**
+   * 对一份**没保存**的草稿取模型列表或测试连接。不创建、不修改任何东西；草稿的 Key 只在这一次请求里用，
+   * 不写 SecretStore，也不会出现在返回值里（上游把 Key 回显在错误体里时，这里替换成 `[redacted]`）。
+   *
+   * 顺序与 `create` 一致：先核对账号登录的限制，再用同一个 `checkedBaseUrl` 校验地址——两者都在发任何请求之前，
+   * 被拒绝的地址用同一个错误码。请求本身复用 `testProvider` / `modelListRequest` / `sendRequest`（超时、重定向、
+   * 受保护请求头的处理都是它们现有的）。
+   */
+  async probe(input: ProbeInput): Promise<ProviderProbeResult> {
+    const { auth } = input
+    if (auth.type === 'account_login') {
+      const problem =
+        input.kind !== 'llm'
+          ? '账号登录目前只覆盖文本（大模型）服务商'
+          : loginEndpointProblem(auth.channel, input)
+      if (problem) throw new HttpError(400, 'AUTH_NOT_ALLOWED', problem)
+    }
+    const baseUrl = this.checkedBaseUrl(input.baseUrl)
+    if (auth.type === 'account_login') {
+      // 令牌挂在已保存的服务商上：登录只能在添加之后进行，这里不发任何请求
+      return {
+        outcome: 'login_after_save',
+        channel: auth.channel,
+        message: '账号登录要先添加这个服务商，再在服务商卡片上登录；添加之前不能测试连接或获取模型列表',
+      }
+    }
+    const secret = auth.type === 'api_key' ? auth.apiKey : undefined
+    const extraHeaders = input.dialect?.extraHeaders
+    const result =
+      input.action === 'models'
+        ? await this.probeModels(input.protocol, baseUrl, secret, extraHeaders)
+        : await this.probeTest(input, baseUrl, secret)
+    return redactProbe(result, secret)
+  }
+
+  private async probeTest(
+    input: ProbeInput,
+    baseUrl: string,
+    secret: string | undefined,
+  ): Promise<ProviderProbeResult> {
+    try {
+      const res = await testProvider(
+        {
+          baseUrl,
+          protocol: input.protocol,
+          model: input.model ?? '',
+          ...(input.dialect?.extraHeaders
+            ? { dialect: { extraHeaders: input.dialect.extraHeaders } }
+            : {}),
+        },
+        secret,
+        this.d.executor,
+      )
+      // 没填型号就没有"型号在不在列表里"可说
+      if (res.outcome === 'ok' && !input.model) delete res.modelListed
+      return res
+    } catch (err) {
+      return {
+        outcome: 'failed',
+        error: err instanceof Error ? err.message : String(err),
+        ...(err instanceof ProviderError ? { code: err.code } : {}),
+      }
+    }
+  }
+
+  private async probeModels(
+    protocol: ProbeInput['protocol'],
+    baseUrl: string,
+    secret: string | undefined,
+    extraHeaders: Record<string, string> | undefined,
+  ): Promise<ProviderProbeResult> {
+    const req = modelListRequest(protocol, baseUrl, secret, extraHeaders)
+    if (!req) {
+      return { outcome: 'no_model_list', message: '这个接口类型没有模型列表接口' }
+    }
+    try {
+      const raw = await sendRequest(
+        { method: 'GET', url: req.url, headers: req.headers },
+        this.d.executor ?? {},
+        { timeoutMs: 20_000 },
+      )
+      if (raw.status < 200 || raw.status >= 300) {
+        return {
+          outcome: 'failed',
+          status: raw.status,
+          code: upstreamErrorCode(protocol, raw.json) ?? `HTTP_${raw.status}`,
+          error: `HTTP ${raw.status}${raw.text ? ` · ${raw.text.slice(0, 180)}` : ''}`,
+        }
+      }
+      return { outcome: 'models', items: req.parse(raw.json) }
+    } catch (err) {
+      return {
+        outcome: 'failed',
+        error: err instanceof Error ? err.message : String(err),
+        ...(err instanceof ProviderError ? { code: err.code } : {}),
+      }
+    }
   }
 
   async test(id: string): Promise<TestConnectionResult> {

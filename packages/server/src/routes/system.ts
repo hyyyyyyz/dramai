@@ -1,4 +1,6 @@
 import {
+  knownModels,
+  LOGIN_CHANNEL_ENDPOINTS,
   localizeProviderPreset,
   localizeVendor,
   localizeStyleGroup,
@@ -6,6 +8,7 @@ import {
   pick,
   PROVIDER_PRESETS,
 } from '@dramai/core'
+import type { LoginChannelId } from '@dramai/core'
 import { SERVER_EVENT_TYPES } from '@dramai/api'
 import type { Context } from 'hono'
 import type { ServerContext } from '../context.ts'
@@ -181,6 +184,25 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
     items: await ctx.providers.models(params.providerId),
   }))
   r.handle('providers.test', async ({ params }) => ctx.providers.test(params.providerId))
+  r.handle('providers.probe', async ({ body }) => ctx.providers.probe(body))
+  r.handle('models.known', async ({ query }) => ({
+    items: knownModels(ctx.catalog.models, { kind: query.kind, protocol: query.protocol }),
+  }))
+  r.handle('providers.loginChannels', async () => ({
+    items: (Object.keys(LOGIN_CHANNEL_ENDPOINTS) as LoginChannelId[]).map((channel) => {
+      const fixed = LOGIN_CHANNEL_ENDPOINTS[channel]
+      const suggested = PROVIDER_PRESETS.find(
+        (p) => p.auth.type === 'account_login' && p.auth.channel === channel,
+      )?.suggestedModel
+      return {
+        channel,
+        kind: 'llm' as const,
+        protocol: fixed.protocol,
+        baseUrl: fixed.baseUrl,
+        ...(suggested ? { suggestedModel: suggested } : {}),
+      }
+    }),
+  }))
   r.handle('providers.capability', async ({ params }) =>
     ctx.providers.capability(await ctx.providers.require(params.providerId)),
   )

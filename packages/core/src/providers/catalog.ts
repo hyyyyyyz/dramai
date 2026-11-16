@@ -11,6 +11,7 @@ import type {
   PriceEntry,
   ProtocolId,
   ProviderConfig,
+  ProviderKind,
 } from './types.ts'
 import { parseJsonText } from '../util/text.ts'
 
@@ -120,6 +121,7 @@ const profileSchema = z.object({
   }),
   quirks: z.array(z.string()),
   provenance: z.string(),
+  candidate: z.boolean().optional(),
 })
 
 const fileSchema = z.object({
@@ -237,6 +239,56 @@ export class ModelRegistry {
       capability,
     }
   }
+}
+
+/** 某个已知型号：请求里的 model 名、它属于哪一类、在哪些接口类型（协议）下有画像。 */
+export interface KnownModel {
+  id: string
+  kind: ProviderKind
+  protocols: ProtocolId[]
+  displayName?: string
+}
+
+const KIND_OF_MEDIA = { image: 'image', video: 'video', audio: 'tts' } as const satisfies Record<
+  ModelCapability['media'],
+  ProviderKind
+>
+
+/**
+ * 模型资料里能对应到这一类（可选再限定一个接口类型）的型号，作为"添加服务商"表单的候选，**不是白名单**。
+ * 对应关系全部来自数据：画像的 `protocol` 字段和 `capability.media`（image / video / audio→tts）。
+ * 文本（llm）类没有画像，结果为空——文本型号要向服务商取列表。
+ * 画像上标了 `candidate: false` 的不列出（它们照常用于已有配置的能力与估价）。
+ * 顺序中性：按 id 的字母序，`protocols` 也按字母序；不返回验证状态、价格或任何推荐。
+ */
+export function knownModels(
+  registry: Pick<ModelRegistry, 'all'>,
+  query: { kind: ProviderKind; protocol?: ProtocolId },
+): KnownModel[] {
+  const byId = new Map<string, KnownModel>()
+  const profiles = registry
+    .all()
+    .filter(
+      (p) =>
+        p.candidate !== false &&
+        KIND_OF_MEDIA[p.capability.media] === query.kind &&
+        (query.protocol === undefined || p.protocol === query.protocol),
+    )
+    .sort((a, b) => (a.protocol < b.protocol ? -1 : a.protocol > b.protocol ? 1 : 0))
+  for (const p of profiles) {
+    const found = byId.get(p.apiModel)
+    if (found) {
+      if (!found.protocols.includes(p.protocol)) found.protocols.push(p.protocol)
+    } else {
+      byId.set(p.apiModel, {
+        id: p.apiModel,
+        kind: query.kind,
+        protocols: [p.protocol],
+        ...(p.displayName ? { displayName: p.displayName } : {}),
+      })
+    }
+  }
+  return [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
 export function loadModelRegistryFromDir(dir: string, into = new ModelRegistry()): ModelRegistry {

@@ -102,6 +102,25 @@ export const providerCreate = providerWritable.extend({
 })
 export const providerUpdate = providerWritable.partial()
 
+/**
+ * 还没保存的服务商草稿（`providers.probe`）。字段和 `providers.create` 同形；`auth` 里带着草稿的 Key，
+ * 只用于这一次请求，不保存、不记录。`model` 可以不填（测试连接时不判断模型是否在列表里）。
+ */
+export const providerProbe = z.object({
+  action: z.enum(['models', 'test']),
+  kind: S.providerKind,
+  protocol: S.protocolId,
+  baseUrl: z.string().min(1),
+  auth: z.discriminatedUnion('type', [
+    z.object({ type: z.literal('api_key'), apiKey: z.string().min(1).optional() }),
+    z.object({ type: z.literal('none') }),
+    z.object({ type: z.literal('account_login'), channel: S.loginChannelId }),
+  ]),
+  model: z.string().min(1).optional(),
+  dialect: S.providerDialect.optional(),
+})
+export type ProviderProbeInput = z.infer<typeof providerProbe>
+
 export const shotUpdate = z.object({
   title: z.string().optional(),
   scriptExcerpt: z.string().optional(),
@@ -254,6 +273,16 @@ export const routes = {
       manageUrl: z.string().optional(),
     }),
   }),
+  /**
+   * 对一份**没保存**的草稿取模型列表（`action: 'models'`）或测试连接（`action: 'test'`）。不创建、不修改任何东西，
+   * 草稿里的 Key 只用于这一次请求。地址规则与 `providers.create` 完全一致：被拒绝的地址用同一个错误码（400，
+   * `BASE_URL_*`），拒绝之前不发任何请求。账号登录的草稿返回 `login_after_save`，不发请求。
+   * 测试连接对同样配置发的请求、成功判定和错误码与 `providers.test` 完全相同。
+   */
+  'providers.probe': route('POST', '/api/providers/probe', {
+    body: providerProbe,
+    response: S.providerProbeResult,
+  }),
   'providers.models': route('GET', '/api/providers/:providerId/models', {
     response: items(S.providerModel),
   }),
@@ -263,6 +292,16 @@ export const routes = {
   'providers.acceptUnverified': route('PUT', '/api/providers/:providerId/accepted-unverified', {
     body: z.object({ keys: z.array(z.string()) }),
     response: S.providerConfig,
+  }),
+
+  /** 模型资料里能对应到这一类（可再限定一个接口类型）的型号，字母序。只是候选；创建接口仍接受任何型号名。 */
+  'models.known': route('GET', '/api/models/known', {
+    query: z.object({ kind: S.providerKind, protocol: S.protocolId.optional() }),
+    response: items(S.knownModel),
+  }),
+  /** 账号登录通道的固定配置（地址、接口类型、建议型号）。 */
+  'providers.loginChannels': route('GET', '/api/login-channels', {
+    response: items(S.loginChannelConfig),
   }),
 
   // 项目

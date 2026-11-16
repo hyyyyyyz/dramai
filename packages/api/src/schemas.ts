@@ -993,6 +993,44 @@ export const testConnectionResult = z.discriminatedUnion('outcome', [
   z.object({ outcome: z.literal('unverifiable'), reason: z.string() }),
 ])
 
+/**
+ * `providers.probe` 的结果（对一份没保存的草稿）。`ok` / `failed` / `unverifiable` 与 `testConnectionResult` 逐字段相同
+ * （测试连接）；其余三种只在别的情形出现：
+ * - `models`：取到的模型列表（`action: 'models'`）；
+ * - `no_model_list`：这个接口类型没有模型列表接口（不是错误；表单改用 `models.known` 的候选或手填）；
+ * - `login_after_save`：账号登录要先添加服务商、再登录；这次没有发任何请求。
+ * 列模型时请求失败也是 `failed`（带 `status` / `code`），不是 HTTP 错误。
+ */
+export const providerProbeResult = z.discriminatedUnion('outcome', [
+  ...testConnectionResult.options,
+  z.object({ outcome: z.literal('models'), items: z.array(providerModel) }),
+  z.object({ outcome: z.literal('no_model_list'), message: z.string() }),
+  z.object({
+    outcome: z.literal('login_after_save'),
+    channel: loginChannelId,
+    message: z.string(),
+  }),
+])
+
+export type ProviderProbeResult = z.infer<typeof providerProbeResult>
+
+/** `models.known` 的一项：请求里的 model 名、属于哪一类、在哪些接口类型下有画像。只是候选，不是白名单。 */
+export const knownModel = z.object({
+  id: z.string(),
+  kind: providerKind,
+  protocols: z.array(protocolId),
+  displayName: z.string().optional(),
+})
+
+/** 账号登录通道的固定配置：地址和接口类型是钉死的（令牌只发到这里）。 */
+export const loginChannelConfig = z.object({
+  channel: loginChannelId,
+  kind: providerKind,
+  protocol: protocolId,
+  baseUrl: z.string(),
+  suggestedModel: z.string().optional(),
+})
+
 export const providerPreset = z.object({
   id: z.string(),
   label: z.string(),
