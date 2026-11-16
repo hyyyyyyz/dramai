@@ -236,6 +236,12 @@ export default {
       addressPlaceholder: 'https://你的服务地址/v1',
       addressHint: '地址见服务商的接口文档',
       modelHint: '填服务商接口文档里的模型名，或者先获取上面的模型列表再选择',
+      model: {
+        placeholder: '请选择',
+        manual: '手动输入…',
+        backToList: '从列表选择',
+        filter: '筛选型号',
+      },
       probe: {
         needAddress: '接口地址',
         needKey: 'API Key',
@@ -245,7 +251,7 @@ export default {
         noList: '这个接口类型没有模型列表接口，请手动填写模型名',
         noListKnown: '这个接口类型没有模型列表接口，可以从下面的候选里选，或手动填写',
         loginAfterSave: '账号登录要先添加，之后在服务商卡片上登录，再获取模型列表',
-        candidatesNote: '候选只是方便选择，不是限制，可以手动输入别的型号',
+        candidatesNote: '候选只是方便选择，不是限制：选“手动输入”可以填别的型号',
       },
       create: '添加',
     },

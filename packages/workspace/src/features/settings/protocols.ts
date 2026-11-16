@@ -57,15 +57,38 @@ export const PROTOCOLS_BY_KIND: Record<ProviderKind, readonly ProtocolId[]> = {
   tts: ['openai-tts', 'minimax-t2a', 'dashscope-cosyvoice'],
 }
 
+/**
+ * Interface types that can no longer be picked when adding a provider. Their requests carry a path prefix
+ * (`/aliyun/…`, `/volcengine/…`) that exists only on the relay platform that was taken out, so the vendors' own
+ * addresses answer 404 for them (the vendors' own interfaces are `dashscope-video` and `ark-video`). Providers that
+ * were saved with one of them still show, edit, test and generate as before, and the names stay.
+ */
+export const NOT_ADDABLE: ReadonlySet<ProtocolId> = new Set(['aliyun-video', 'volcengine-video'])
+
+/** What the "Add provider" form offers per kind: `PROTOCOLS_BY_KIND` without the ones that cannot be added any more. */
+export const ADDABLE_PROTOCOLS_BY_KIND: Record<ProviderKind, readonly ProtocolId[]> = {
+  llm: PROTOCOLS_BY_KIND.llm.filter((p) => !NOT_ADDABLE.has(p)),
+  image: PROTOCOLS_BY_KIND.image.filter((p) => !NOT_ADDABLE.has(p)),
+  video: PROTOCOLS_BY_KIND.video.filter((p) => !NOT_ADDABLE.has(p)),
+  tts: PROTOCOLS_BY_KIND.tts.filter((p) => !NOT_ADDABLE.has(p)),
+}
+
 export const kindOfProtocol = (p: ProtocolId): ProviderKind => KIND_OF[p]
 export const ALL_PROTOCOLS = Object.keys(KIND_OF) as ProtocolId[]
 
-/** Text protocols that can list their models (`providers.models`). */
+/**
+ * Interface types whose server can list their models (`providers.models`, `providers.probe` with `models`): the card
+ * shows "Get model list" for these only. A test holds it to what the real server answers for every interface type
+ * (tests/fixtures/add-provider/recorded-probe.json, `modelsByProtocol`).
+ */
 export const LISTS_MODELS: ReadonlySet<ProtocolId> = new Set([
   'openai-chat',
   'openai-responses',
   'anthropic-messages',
   'gemini-chat',
+  'openai-images',
+  'gemini-image',
+  'openai-tts',
 ])
 
 /** The display name of a protocol. A protocol with no copy shows its id instead of breaking the page. */

@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PROTOCOLS_BY_KIND } from '@/features/settings/protocols'
+import { ADDABLE_PROTOCOLS_BY_KIND, PROTOCOLS_BY_KIND } from '@/features/settings/protocols'
 import en from '@/i18n/locales/en'
 import zh from '@/i18n/locales/zh-CN'
 import zhTW from '@/i18n/locales/zh-TW'
@@ -16,6 +16,7 @@ import {
   page,
   posts,
   recorded,
+  setModel,
   type,
   type Kind,
 } from './add-provider-kit'
@@ -74,6 +75,43 @@ describe('the form opens at once, with nothing in front of it', () => {
   })
 })
 
+describe('the interface types that can be added', () => {
+  const options = async (kind: Kind) => {
+    const d = await openForm(kind)
+    return within(within(d).getByRole('combobox', { name: /API 协议/ }))
+      .getAllByRole('option')
+      .map((o) => (o as HTMLOptionElement).value)
+  }
+  it.each(['llm', 'image', 'tts'] as const)(
+    '%s: the drop-down is the full list, as it was',
+    async (kind) => {
+      page()
+      expect(await options(kind)).toEqual([...PROTOCOLS_BY_KIND[kind]])
+    },
+  )
+  it('video: the two that exist only on the relay that was taken out are not offered; the rest keep their order, and the first of them is the default', async () => {
+    page()
+    const d = await openForm('video')
+    const select = within(d).getByRole('combobox', { name: /API 协议/ })
+    const values = within(select)
+      .getAllByRole('option')
+      .map((o) => (o as HTMLOptionElement).value)
+    expect(values).toEqual(
+      PROTOCOLS_BY_KIND.video.filter((p) => !['aliyun-video', 'volcengine-video'].includes(p)),
+    )
+    expect(values).not.toContain('aliyun-video')
+    expect(values).not.toContain('volcengine-video')
+    expect(select).toHaveValue(values[0])
+    expect(d.textContent).not.toMatch(/推荐|推薦|recommend/i)
+  })
+  it('the full list and the names are untouched: every protocol still has its name in the three languages', () => {
+    for (const dict of [zh, zhTW, en])
+      for (const kind of Object.keys(PROTOCOLS_BY_KIND) as Kind[])
+        for (const p of PROTOCOLS_BY_KIND[kind])
+          expect((dict.protocol as Record<string, string>)[p], p).toBeTruthy()
+  })
+})
+
 describe.each(['llm', 'image', 'video', 'tts'] as const)('adding a %s provider', (kind) => {
   const { request, stored } = PROVIDERS[kind === 'llm' ? 'llm' : kind]
 
@@ -93,13 +131,13 @@ describe.each(['llm', 'image', 'video', 'tts'] as const)('adding a %s provider',
       within(protocol)
         .getAllByRole('option')
         .map((o) => (o as HTMLOptionElement).value),
-    ).toEqual([...PROTOCOLS_BY_KIND[kind]])
+    ).toEqual([...ADDABLE_PROTOCOLS_BY_KIND[kind]])
 
     await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
     await userEvent.selectOptions(protocol, request.protocol)
     await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
     await userEvent.type(within(dialog).getByLabelText('API Key'), request.apiKey!)
-    await type(within(dialog).getByLabelText(/^模型/), request.model)
+    await setModel(dialog, request.model)
     await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
 
     await waitFor(() => expect(posts(server)).toHaveLength(1))
@@ -126,9 +164,9 @@ describe('required inputs', () => {
       'https://a.example.com/v1',
     )
     expect(add).toBeDisabled()
-    await userEvent.type(within(dialog).getByLabelText(/^模型/), 'm')
+    await setModel(dialog, 'm')
     expect(add).toBeEnabled()
-    await userEvent.clear(within(dialog).getByLabelText(/^模型/))
+    await setModel(dialog, '')
     expect(add).toBeDisabled()
     expect(noWrites(server)).toEqual([])
   })
@@ -137,7 +175,7 @@ describe('required inputs', () => {
     const { server } = page()
     const dialog = await openForm()
     await userEvent.type(within(dialog).getByRole('textbox', { name: /名称/ }), 'X')
-    await userEvent.type(within(dialog).getByLabelText(/^模型/), 'm')
+    await setModel(dialog, 'm')
     const address = within(dialog).getByRole('textbox', { name: /Base URL/ })
     await userEvent.type(address, 'https://a.example.com/v1?key=1')
     expect(address).toHaveAttribute('aria-invalid', 'true')
@@ -160,7 +198,7 @@ describe('required inputs', () => {
         within(dialog).getByRole('textbox', { name: /Base URL/ }),
         'http://169.254.169.254/v1',
       )
-      await type(within(dialog).getByLabelText(/^模型/), 'm')
+      await setModel(dialog, 'm')
       await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
       const address = within(dialog).getByRole('textbox', { name: /Base URL/ })
       await waitFor(() => expect(address).toHaveAttribute('aria-invalid', 'true'))
@@ -186,7 +224,7 @@ describe('required inputs', () => {
       within(dialog).getByRole('textbox', { name: /Base URL/ }),
       'https://%7BWorkspaceId%7D.example.com',
     )
-    await type(within(dialog).getByLabelText(/^模型/), 'm')
+    await setModel(dialog, 'm')
     await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
     expect(
       await within(dialog).findByText(/还有没替换的占位符：\{WorkspaceId\}/),
@@ -210,7 +248,7 @@ describe('the model can be typed by hand, and nothing new has to be used', () =>
     await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
     await userEvent.click(within(dialog).getByRole('radio', { name: '无需鉴权' }))
     expect(within(dialog).queryByLabelText('API Key')).toBeNull()
-    await type(within(dialog).getByLabelText(/^模型/), request.model)
+    await setModel(dialog, request.model)
     await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
     await waitFor(() => expect(posts(server)).toHaveLength(1))
     expect(posts(server)[0]!.body).toEqual(request) // `auth: none`, and no key
@@ -351,7 +389,7 @@ describe('one request at a time', () => {
     const { request } = PROVIDERS.llm
     await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
     await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
-    await type(within(dialog).getByLabelText(/^模型/), request.model)
+    await setModel(dialog, request.model)
   }
   const slowPage = () => {
     let release!: () => void
@@ -424,7 +462,7 @@ describe('closing, cancelling and failing create nothing', () => {
       'https://a.example.com/v1',
     )
     await userEvent.type(within(dialog).getByLabelText('API Key'), 'sk-typed-123456')
-    await type(within(dialog).getByLabelText(/^模型/), 'm')
+    await setModel(dialog, 'm')
   }
 
   it('Cancel, the close button and Esc each leave without a request, and the next form is empty', async () => {
@@ -495,7 +533,7 @@ describe('closing, cancelling and failing create nothing', () => {
       within(dialog).getByRole('textbox', { name: /Base URL/ }),
       'https://a.example.com/v1',
     )
-    await type(within(dialog).getByLabelText(/^模型/), 'm')
+    await setModel(dialog, 'm')
     expect(within(dialog).getByRole('button', { name: '添加' })).toBeDisabled()
     expect(noWrites(server)).toEqual([])
   })
@@ -548,7 +586,7 @@ describe('keyboard', () => {
     const dialog = await openForm()
     await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
     await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
-    await type(within(dialog).getByLabelText(/^模型/), request.model)
+    await setModel(dialog, request.model)
     await userEvent.keyboard('{Enter}')
     await waitFor(() => expect(posts(server)).toHaveLength(1))
   })

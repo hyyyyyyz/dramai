@@ -43,7 +43,11 @@ const server = await createServer({
         e.name = 'TimeoutError'
         throw e
       }
-      const auth = headers.get('authorization') ?? headers.get('x-api-key') ?? ''
+      const auth =
+        headers.get('authorization') ??
+        headers.get('x-api-key') ??
+        headers.get('x-goog-api-key') ??
+        ''
       if (auth.includes(BAD))
         return json(401, {
           error: {
@@ -51,6 +55,15 @@ const server = await createServer({
             type: 'invalid_request_error',
             code: 'invalid_api_key',
           },
+        })
+      // Gemini-style listing lives under /v1beta/models and answers in its own shape
+      if (url.pathname.endsWith('/v1beta/models'))
+        return json(200, {
+          models: [1, 2].map((n) => ({
+            name: `models/gemini-model-${n}`,
+            displayName: `Model ${n}`,
+            supportedGenerationMethods: ['generateContent'],
+          })),
         })
       return json(200, {
         object: 'list',
@@ -202,6 +215,35 @@ try {
       upstreamAsked: asked.slice(sentBefore),
     }
   }
+  // the model-list answer of every interface type, so a test can hold the card's list of listable types to it
+  const KINDS = {
+    llm: ['openai-chat', 'openai-responses', 'anthropic-messages', 'gemini-chat'],
+    image: [
+      'openai-images',
+      'gemini-image',
+      'volcengine-images',
+      'dashscope-image',
+      'siliconflow-images',
+      'kling-image',
+    ],
+    video: [
+      'aliyun-video',
+      'volcengine-video',
+      'kling-video',
+      'generic-video',
+      'ark-video',
+      'kling-contents',
+      'dashscope-video',
+    ],
+    tts: ['openai-tts', 'minimax-t2a', 'dashscope-cosyvoice'],
+  }
+  const modelsByProtocol = {}
+  for (const [kind, list] of Object.entries(KINDS))
+    for (const protocol of list) {
+      const body = { action: 'models', ...draft(kind, protocol, 'https://proto.example.com') }
+      const r = await api.call('providers.probe', { body })
+      modelsByProtocol[protocol] = { outcome: r.outcome, count: r.items?.length }
+    }
   const refused = {}
   for (const [name, baseUrl] of Object.entries(refusedAddresses)) {
     const sentBefore = asked.length
@@ -256,6 +298,7 @@ try {
           keyAppearsInAnyResponse: text.includes(KEY) || text.includes(BAD),
         },
         probes,
+        modelsByProtocol,
         refused,
         known,
         loginChannels,

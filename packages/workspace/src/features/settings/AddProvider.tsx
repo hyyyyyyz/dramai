@@ -8,10 +8,16 @@ import { qk } from '@/data/keys'
 import { useCall, useKnownModels, useLoginChannels as useLoginChannelConfigs } from '@/data/queries'
 import { useApi } from '@/data/use-api'
 import { ErrorNotice } from '@/features/common/error-text'
+import { ModelSelect } from './ModelSelect'
 import { TestResult } from './TestConnection'
 import { addressSendable, baseUrlCodeOf, useBaseUrlMessage } from './base-url'
 import type { LoginChannel } from './login-channels'
-import { PROTOCOLS_BY_KIND, protocolLabel, type ProtocolId, type ProviderKind } from './protocols'
+import {
+  ADDABLE_PROTOCOLS_BY_KIND,
+  protocolLabel,
+  type ProtocolId,
+  type ProviderKind,
+} from './protocols'
 
 /** Add a provider: one form, opened straight from the button. No catalog, no suggestions. */
 export function AddProvider({
@@ -121,7 +127,7 @@ function AddProviderForm({
 }) {
   const { t } = useTranslation()
   const create = useCall('providers.create', { invalidate: [qk.providers] })
-  const protocols = PROTOCOLS_BY_KIND[kind]
+  const protocols = ADDABLE_PROTOCOLS_BY_KIND[kind]
   const channels = useLoginChannels(kind)
   const [label, setLabel] = useState('')
   const [protocol, setProtocol] = useState<ProtocolId>(protocols[0]!)
@@ -135,7 +141,6 @@ function AddProviderForm({
   const [apiKey, setApiKey] = useState('')
   const [mode, setMode] = useState<AuthMode>('api_key')
   const [channel, setChannel] = useState<LoginChannel>()
-  const candidatesId = useId()
   const probeHintId = useId()
 
   // sign-in is offered only when a channel exists for the chosen interface type
@@ -170,9 +175,7 @@ function AddProviderForm({
   const fetched = list.result?.outcome === 'models' ? list.result.items : undefined
   // only the model id: it is the value that goes to the interface. Names the model data or the provider gives it
   // (display names carry vendor and product names) are not shown.
-  const candidates: { id: string }[] = (fetched ?? known.data?.items ?? []).map((m) => ({
-    id: m.id,
-  }))
+  const candidates = (fetched ?? known.data?.items ?? []).map((m) => m.id)
 
   const chooseProtocol = (p: ProtocolId) => {
     setProtocol(p)
@@ -267,7 +270,9 @@ function AddProviderForm({
       closeLabel={t('common.close')}
       dismissOnBackdrop={false}
       footer={
-        <>
+        // wide: the three buttons in one row on the right; on a phone "Test connection" is a row of its own above, so
+        // the main action is never left alone on a second line
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 max-[480px]:flex-col max-[480px]:items-stretch">
           <Button
             variant="secondary"
             disabled={!canProbe}
@@ -277,13 +282,15 @@ function AddProviderForm({
           >
             {t('providers.test.action')}
           </Button>
-          <Button variant="ghost" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button variant="primary" disabled={!valid} loading={create.isPending} onClick={submit}>
-            {t('providers.add.create')}
-          </Button>
-        </>
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="primary" disabled={!valid} loading={create.isPending} onClick={submit}>
+              {t('providers.add.create')}
+            </Button>
+          </div>
+        </div>
       }
     >
       <form
@@ -396,30 +403,16 @@ function AddProviderForm({
           )}
         </div>
 
-        <Field
-          label={t('providers.form.model')}
-          required
+        <ModelSelect
+          value={shownModel}
+          onChange={(v) => (login ? setLoginModel(v) : setModel(v))}
+          options={candidates}
           hint={
             candidates.length > 0
               ? t('providers.add.probe.candidatesNote')
               : t('providers.add.modelHint')
           }
-        >
-          <Input
-            mono
-            list={candidates.length > 0 ? candidatesId : undefined}
-            autoComplete="off"
-            value={shownModel}
-            onChange={(e) => (login ? setLoginModel(e.target.value) : setModel(e.target.value))}
-          />
-        </Field>
-        {candidates.length > 0 && (
-          <datalist id={candidatesId}>
-            {candidates.map((m) => (
-              <option key={m.id} value={m.id} />
-            ))}
-          </datalist>
-        )}
+        />
 
         {test.result && test.result.outcome !== 'models' && (
           <TestOutcome result={test.result} loginNote={t('providers.add.probe.loginAfterSave')} />

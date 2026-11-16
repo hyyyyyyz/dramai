@@ -1,9 +1,9 @@
 {
   "meta": {
     "note": "Recorded from the real server by record-probe.mjs; the upstream is a stand-in fetch; keys are fake.",
-    "commit": "19190dd",
+    "commit": "e927f31",
     "providersStoredAfterAllProbes": 0,
-    "upstreamAsked": 11,
+    "upstreamAsked": 21,
     "keyAppearsInAnyResponse": false
   },
   "probes": {
@@ -265,10 +265,26 @@
         }
       },
       "response": {
-        "outcome": "no_model_list",
-        "message": "这个接口类型没有模型列表接口"
+        "outcome": "models",
+        "items": [
+          {
+            "id": "text-model-1",
+            "label": "text-model-1"
+          },
+          {
+            "id": "text-model-2",
+            "label": "text-model-2"
+          }
+        ]
       },
-      "upstreamAsked": []
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "img.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
     },
     "image.test": {
       "request": {
@@ -309,10 +325,26 @@
         }
       },
       "response": {
-        "outcome": "no_model_list",
-        "message": "这个接口类型没有模型列表接口"
+        "outcome": "models",
+        "items": [
+          {
+            "id": "gemini-model-1",
+            "label": "Model 1"
+          },
+          {
+            "id": "gemini-model-2",
+            "label": "Model 2"
+          }
+        ]
       },
-      "upstreamAsked": []
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "gimg.example.com",
+          "path": "/v1beta/models",
+          "body": false
+        }
+      ]
     },
     "image.models.noList": {
       "request": {
@@ -394,10 +426,26 @@
         }
       },
       "response": {
-        "outcome": "no_model_list",
-        "message": "这个接口类型没有模型列表接口"
+        "outcome": "models",
+        "items": [
+          {
+            "id": "text-model-1",
+            "label": "text-model-1"
+          },
+          {
+            "id": "text-model-2",
+            "label": "text-model-2"
+          }
+        ]
       },
-      "upstreamAsked": []
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "tts.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
     },
     "tts.test": {
       "request": {
@@ -513,6 +561,75 @@
         "message": "账号登录要先添加这个服务商，再在服务商卡片上登录；添加之前不能测试连接或获取模型列表"
       },
       "upstreamAsked": []
+    }
+  },
+  "modelsByProtocol": {
+    "openai-chat": {
+      "outcome": "models",
+      "count": 2
+    },
+    "openai-responses": {
+      "outcome": "models",
+      "count": 2
+    },
+    "anthropic-messages": {
+      "outcome": "models",
+      "count": 2
+    },
+    "gemini-chat": {
+      "outcome": "models",
+      "count": 2
+    },
+    "openai-images": {
+      "outcome": "models",
+      "count": 2
+    },
+    "gemini-image": {
+      "outcome": "models",
+      "count": 2
+    },
+    "volcengine-images": {
+      "outcome": "no_model_list"
+    },
+    "dashscope-image": {
+      "outcome": "no_model_list"
+    },
+    "siliconflow-images": {
+      "outcome": "no_model_list"
+    },
+    "kling-image": {
+      "outcome": "no_model_list"
+    },
+    "aliyun-video": {
+      "outcome": "no_model_list"
+    },
+    "volcengine-video": {
+      "outcome": "no_model_list"
+    },
+    "kling-video": {
+      "outcome": "no_model_list"
+    },
+    "generic-video": {
+      "outcome": "no_model_list"
+    },
+    "ark-video": {
+      "outcome": "no_model_list"
+    },
+    "kling-contents": {
+      "outcome": "no_model_list"
+    },
+    "dashscope-video": {
+      "outcome": "no_model_list"
+    },
+    "openai-tts": {
+      "outcome": "models",
+      "count": 2
+    },
+    "minimax-t2a": {
+      "outcome": "no_model_list"
+    },
+    "dashscope-cosyvoice": {
+      "outcome": "no_model_list"
     }
   },
   "refused": {

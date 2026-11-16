@@ -10,6 +10,9 @@ import { useLocale } from './render'
 import {
   PROVIDERS,
   knownFor,
+  modelControl,
+  modelOptions,
+  setModel,
   noWrites,
   openForm,
   page,
@@ -52,9 +55,6 @@ const otherWrites = (server: ReturnType<typeof page>['server']) =>
   noWrites(server).filter((c) => c.path !== '/api/providers/probe')
 const listButton = (d: HTMLElement) => within(d).getByRole('button', { name: '获取模型列表' })
 const testButton = (d: HTMLElement) => within(d).getByRole('button', { name: '测试连接' })
-const modelBox = (d: HTMLElement) => within(d).getByLabelText(/^模型/)
-const candidates = (d: HTMLElement) =>
-  [...d.querySelectorAll('datalist option')].map((o) => o.getAttribute('value'))
 /** A response that is held back until `release()`. */
 const gate = <T,>(value: () => T) => {
   let release!: () => void
@@ -74,7 +74,7 @@ async function fill(
   await type(within(d).getByRole('textbox', { name: /Base URL/ }), opts.url)
   if (opts.none) await userEvent.click(within(d).getByRole('radio', { name: '无需鉴权' }))
   else if (opts.key) await userEvent.type(within(d).getByLabelText('API Key'), opts.key)
-  if (opts.model) await type(modelBox(d), opts.model)
+  if (opts.model) await setModel(d, opts.model)
 }
 
 describe('list the models of a draft', () => {
@@ -91,9 +91,11 @@ describe('list the models of a draft', () => {
     await userEvent.click(listButton(d))
     expect(await within(d).findByText(/取到 2 个模型/)).toBeInTheDocument()
     expect(probeCalls(server).map((c) => c.body)).toEqual([request])
-    expect(candidates(d)).toEqual((response as { items: { id: string }[] }).items.map((m) => m.id))
+    expect(modelOptions(d)).toEqual(
+      (response as { items: { id: string }[] }).items.map((m) => m.id),
+    )
     // choosing = typing one of them; typing another is allowed too
-    await type(modelBox(d), 'a-model-that-is-not-listed')
+    await setModel(d, 'a-model-that-is-not-listed')
     await type(within(d).getByRole('textbox', { name: /名称/ }), 'Mine')
     await userEvent.click(within(d).getByRole('button', { name: '添加' }))
     await waitFor(() => expect(posts(server)).toHaveLength(1))
@@ -135,7 +137,7 @@ describe('list the models of a draft', () => {
       await within(d).findByText('这个接口类型没有模型列表接口，可以从下面的候选里选，或手动填写'),
     ).toBeInTheDocument()
     expect(within(d).queryByRole('alert')).toBeNull()
-    expect(candidates(d)).toEqual(knownFor('image', 'kling-image').map((m) => m.id))
+    expect(modelOptions(d)).toEqual(knownFor('image', 'kling-image').map((m) => m.id))
     expect(probeCalls(server)).toHaveLength(1)
   })
 
@@ -158,7 +160,7 @@ describe('list the models of a draft', () => {
       expect(within(alert).getByTestId('provider-error')).toBeInTheDocument() // the same explanation a failed task gets
       expect(screen.getByRole('dialog', { name: /添加服务商/ })).toBeInTheDocument()
       expect(within(d).getByRole('textbox', { name: /名称/ })).toHaveValue('Mine')
-      expect(modelBox(d)).toHaveValue('my-model')
+      expect(modelControl(d)).toHaveValue('my-model')
       expect(within(d).getByLabelText('API Key')).toHaveValue(request.auth.apiKey ?? KEY)
       // never the key: not in the page text, and the server's own echo of it is already redacted
       expect(document.body.textContent).not.toContain('sk-bad')
@@ -187,13 +189,16 @@ describe('list the models of a draft', () => {
 })
 
 describe('suggestions from the model data', () => {
-  it('a kind that has some offers them in the model box, in the order the server gave, with nothing marked or moved', async () => {
+  it('a kind that has some shows them in a visible drop-down, in the order the server gave, with “Choose a model” first and nothing marked or moved', async () => {
     page()
     const d = await openForm('image')
     await waitFor(() =>
-      expect(candidates(d)).toEqual(knownFor('image', 'openai-images').map((m) => m.id)),
+      expect(modelOptions(d)).toEqual(knownFor('image', 'openai-images').map((m) => m.id)),
     )
-    expect(modelBox(d)).toHaveValue('') // nothing is chosen for the user
+    const select = modelControl(d)
+    expect(select.tagName).toBe('SELECT')
+    expect(select).toHaveValue('') // nothing is chosen for the user
+    expect(within(select).getAllByRole('option')[0]).toHaveTextContent('请选择')
     expect(within(d).getByText(/候选只是方便选择，不是限制/)).toBeInTheDocument()
     expect(d.textContent).not.toMatch(/推荐|推薦|recommend|常用|popular/i)
   })
@@ -201,15 +206,14 @@ describe('suggestions from the model data', () => {
   it('the suggestions show the model id and nothing else: no display names, in the markup or on screen', async () => {
     page()
     const d = await openForm('image')
-    await waitFor(() => expect(candidates(d).length).toBeGreaterThan(0))
+    await waitFor(() => expect(modelOptions(d).length).toBeGreaterThan(0))
     const names = knownFor('image', 'openai-images')
       .map((m) => m.displayName)
       .filter((n): n is string => !!n)
     expect(names.length).toBeGreaterThan(0) // the data does carry display names
-    for (const o of d.querySelectorAll('datalist option')) {
-      // what a browser shows for an option is its label, else its text, else its value: all of them are the id
-      const shown = o.getAttribute('label') || o.textContent || o.getAttribute('value')
-      expect(shown).toBe(o.getAttribute('value'))
+    for (const o of within(modelControl(d)).getAllByRole('option')) {
+      const v = o.getAttribute('value') ?? ''
+      if (v !== '' && !v.startsWith('__dramai')) expect(o.textContent).toBe(v)
     }
     for (const n of names) expect(d.innerHTML).not.toContain(n)
   })
@@ -231,20 +235,19 @@ describe('suggestions from the model data', () => {
     await fill(d, { url: 'https://llm.example.com/v1', key: KEY })
     await userEvent.click(listButton(d))
     await within(d).findByText(/取到 2 个模型/)
-    expect(candidates(d)).toEqual(r.items.map((m) => m.id))
+    expect(modelOptions(d)).toEqual(r.items.map((m) => m.id))
     expect(d.innerHTML).not.toContain('Some Product Name')
-    for (const o of d.querySelectorAll('datalist option'))
-      expect(o.getAttribute('label') || o.textContent || o.getAttribute('value')).toBe(
-        o.getAttribute('value'),
-      )
+    for (const id of modelOptions(d))
+      expect(within(modelControl(d)).getByRole('option', { name: id })).toBeInTheDocument()
   })
 
-  it('a kind with none (large model) has no list and no empty shell', async () => {
+  it('a kind with none (large model) has a plain box: no drop-down, no empty shell', async () => {
     const { server } = page()
     const d = await openForm('llm')
     await waitFor(() => expect(server.calls.some((c) => c.path === '/api/models/known')).toBe(true))
-    expect(d.querySelector('datalist')).toBeNull()
-    expect(modelBox(d)).not.toHaveAttribute('list')
+    expect(modelControl(d).tagName).toBe('INPUT')
+    expect(modelOptions(d)).toEqual([])
+    expect(within(d).queryByRole('button', { name: '从列表选择' })).toBeNull()
     expect(within(d).getByText(/填服务商接口文档里的模型名/)).toBeInTheDocument()
   })
 
@@ -254,18 +257,18 @@ describe('suggestions from the model data', () => {
     const type_ = within(d).getByRole('combobox', { name: /API 协议/ })
     await userEvent.selectOptions(type_, 'kling-contents')
     await waitFor(() =>
-      expect(candidates(d)).toEqual(knownFor('video', 'kling-contents').map((m) => m.id)),
+      expect(modelOptions(d)).toEqual(knownFor('video', 'kling-contents').map((m) => m.id)),
     )
     await userEvent.selectOptions(type_, 'dashscope-video')
     await waitFor(() =>
-      expect(candidates(d)).toEqual(knownFor('video', 'dashscope-video').map((m) => m.id)),
+      expect(modelOptions(d)).toEqual(knownFor('video', 'dashscope-video').map((m) => m.id)),
     )
   })
 
   it('the suggestions are not a whitelist: any typed model is added as typed', async () => {
     const { server } = page({ routes: { 'POST /api/providers': () => PROVIDERS.tts.stored } })
     const d = await openForm('tts')
-    await waitFor(() => expect(candidates(d).length).toBeGreaterThan(0))
+    await waitFor(() => expect(modelOptions(d).length).toBeGreaterThan(0))
     await type(within(d).getByRole('textbox', { name: /名称/ }), 'V')
     await fill(d, { url: 'https://tts.example.com/v1', key: KEY, model: 'not-a-suggestion' })
     await userEvent.click(within(d).getByRole('button', { name: '添加' }))
@@ -388,8 +391,8 @@ describe('what is needed first, and sign-in', () => {
       expect(
         within(d).getByText('账号登录要先添加，之后在服务商卡片上登录，再获取模型列表'),
       ).toBeInTheDocument()
-      expect(modelBox(d)).toHaveValue(c.suggestedModel)
-      await type(modelBox(d), 'my-own')
+      expect(modelControl(d)).toHaveValue(c.suggestedModel)
+      await setModel(d, 'my-own')
       await userEvent.click(listButton(d))
       await userEvent.click(testButton(d))
       expect(probeCalls(server)).toHaveLength(0)
@@ -445,10 +448,10 @@ describe('an answer belongs to the draft it was asked for', () => {
     await fill(d, base)
     await userEvent.click(listButton(d))
     await within(d).findByText(/取到 2 个模型/)
-    expect(candidates(d)).toEqual(['text-model-1', 'text-model-2'])
+    expect(modelOptions(d)).toEqual(['text-model-1', 'text-model-2'])
     await change(d)
     expect(listed(d)).toBeNull()
-    expect(d.querySelector('datalist')).toBeNull()
+    expect(modelOptions(d)).toEqual([])
   })
 
   it('a test result is dropped when the model it was run for changes', async () => {
@@ -457,7 +460,7 @@ describe('an answer belongs to the draft it was asked for', () => {
     await fill(d, { ...base, model: 'text-model-1' })
     await userEvent.click(testButton(d))
     await within(d).findByText('连接成功')
-    await userEvent.type(modelBox(d), '2')
+    await userEvent.type(modelControl(d), '2')
     expect(within(d).queryByText('连接成功')).toBeNull()
   })
 
@@ -472,7 +475,7 @@ describe('an answer belongs to the draft it was asked for', () => {
     g.release()
     await new Promise((r) => setTimeout(r, 50))
     expect(listed(d)).toBeNull()
-    expect(d.querySelector('datalist')).toBeNull()
+    expect(modelOptions(d)).toEqual([])
     expect(listButton(d)).toBeEnabled()
   })
 
@@ -495,13 +498,13 @@ describe('an answer belongs to the draft it was asked for', () => {
     const address = within(d).getByRole('textbox', { name: /Base URL/ })
     await userEvent.type(address, '/b')
     await userEvent.click(listButton(d)) // asked for draft B, answered at once
-    await waitFor(() => expect(candidates(d)).toEqual(['b-model']))
+    await waitFor(() => expect(modelOptions(d)).toEqual(['b-model']))
     await userEvent.type(address, '{Backspace}{Backspace}') // back to draft A
     first.release()
     await new Promise((r) => setTimeout(r, 50))
     // A's answer is the older request: it must not replace anything or show for a draft it no longer matches
     expect(probeCalls(server)).toHaveLength(2)
-    expect(candidates(d)).not.toEqual(['text-model-1', 'text-model-2'])
+    expect(modelOptions(d)).not.toEqual(['text-model-1', 'text-model-2'])
   })
 
   it('closing the form drops everything: the key, the list, the test result; the next form is empty, and a late answer goes nowhere', async () => {
@@ -519,7 +522,7 @@ describe('an answer belongs to the draft it was asked for', () => {
     expect(within(d).getByLabelText('API Key')).toHaveValue('')
     expect(within(d).getByRole('textbox', { name: /Base URL/ })).toHaveValue('')
     expect(listed(d)).toBeNull()
-    expect(d.querySelector('datalist')).toBeNull()
+    expect(modelOptions(d)).toEqual([])
     expect(listButton(d)).toBeDisabled()
     expect(otherWrites(server)).toEqual([])
   })
@@ -546,7 +549,7 @@ describe('an answer belongs to the draft it was asked for', () => {
     }
     const again = await openForm('llm')
     expect(within(again).queryByText('连接成功')).toBeNull()
-    expect(again.querySelector('datalist')).toBeNull()
+    expect(modelOptions(again)).toEqual([])
     expect(within(again).getByLabelText('API Key')).toHaveValue('')
   })
 })
@@ -629,7 +632,7 @@ describe('one request at a time, each by itself', () => {
       'test',
     ])
     // Enter in the model box is the add, not another question
-    await userEvent.click(modelBox(d))
+    await userEvent.click(modelControl(d))
     await userEvent.keyboard('{Enter}')
     await waitFor(() => expect(posts(server)).toHaveLength(1))
     expect(probeCalls(server)).toHaveLength(2)
@@ -678,9 +681,11 @@ describe('the four kinds, from the first question to the add', () => {
       await fill(d, { protocol: request.protocol, url: request.baseUrl, key: KEY })
       await userEvent.click(listButton(d))
       await waitFor(() => expect(probeCalls(server)).toHaveLength(1))
-      await waitFor(() => expect(candidates(d).length).toBeGreaterThanOrEqual(listedChoice ? 2 : 0))
-      const choice = listedChoice ?? candidates(d)[0] ?? 'typed-model'
-      await type(modelBox(d), choice)
+      await waitFor(() =>
+        expect(modelOptions(d).length).toBeGreaterThanOrEqual(listedChoice ? 2 : 0),
+      )
+      const choice = listedChoice ?? modelOptions(d)[0] ?? 'typed-model'
+      await setModel(d, choice)
       await userEvent.click(within(d).getByRole('button', { name: '添加' }))
       await waitFor(() => expect(posts(server)).toHaveLength(1))
       expect(posts(server)[0]!.body).toMatchObject({

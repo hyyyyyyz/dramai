@@ -262,6 +262,12 @@ export default {
       addressHint: 'The address is in the provider’s API documentation',
       modelHint:
         'Use the model name from the provider’s API documentation, or fetch the model list above and pick from it',
+      model: {
+        placeholder: 'Choose a model',
+        manual: 'Type it in…',
+        backToList: 'Choose from the list',
+        filter: 'Filter models',
+      },
       probe: {
         needAddress: 'the base URL',
         needKey: 'the API key',
@@ -274,7 +280,7 @@ export default {
         loginAfterSave:
           'Add the provider first, then sign in on its card and fetch the model list there',
         candidatesNote:
-          'The suggestions are only a convenience, not a limit: you can type any model',
+          'The choices are only a convenience, not a limit: pick “Type it in” to enter another model',
       },
       create: 'Add',
     },

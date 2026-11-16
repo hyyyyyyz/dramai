@@ -60,9 +60,33 @@ export async function openForm(kind: Kind = 'llm') {
 }
 export const type = async (el: HTMLElement, text: string) => {
   await userEvent.clear(el)
-  await userEvent.type(el, text)
+  if (text !== '') await userEvent.type(el, text)
 }
 export const posts = (server: ReturnType<typeof page>['server']) =>
   server.calls.filter((c) => c.method === 'POST' && c.path === '/api/providers')
 export const noWrites = (server: ReturnType<typeof page>['server']) =>
   server.calls.filter((c) => c.method !== 'GET')
+
+/** The model control: a drop-down while there are choices, a box when there are none (or after “Type it in”). */
+export const modelControl = (d: HTMLElement) => within(d).getByLabelText(/^模型/)
+/** The model ids the drop-down offers (not the placeholder, not “Type it in”). */
+export const modelOptions = (d: HTMLElement): string[] => {
+  const c = modelControl(d)
+  if (c.tagName !== 'SELECT') return []
+  return [...c.querySelectorAll('option')]
+    .map((o) => o.getAttribute('value') ?? '')
+    .filter((v) => v !== '' && !v.startsWith('__dramai'))
+}
+/** Put a model in, the way a person would: choose it if it is offered, else switch to “Type it in” and type it. */
+export async function setModel(d: HTMLElement, text: string) {
+  let c = modelControl(d)
+  if (c.tagName === 'SELECT') {
+    if (text !== '' && modelOptions(d).includes(text)) {
+      await userEvent.selectOptions(c, text)
+      return
+    }
+    await userEvent.selectOptions(c, within(c).getByRole('option', { name: /手动输入|Type it in/ }))
+    c = modelControl(d)
+  }
+  await type(c, text)
+}

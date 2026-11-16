@@ -236,6 +236,12 @@ export default {
       addressPlaceholder: 'https://你的服務位址/v1',
       addressHint: '位址見服務商的介面文件',
       modelHint: '填服務商介面文件裡的模型名，或者先獲取上面的模型列表再選擇',
+      model: {
+        placeholder: '請選擇',
+        manual: '手動輸入…',
+        backToList: '從列表選擇',
+        filter: '篩選型號',
+      },
       probe: {
         needAddress: '介面位址',
         needKey: 'API Key',
@@ -245,7 +251,7 @@ export default {
         noList: '這個介面類型沒有模型列表介面，請手動填寫模型名',
         noListKnown: '這個介面類型沒有模型列表介面，可以從下面的候選裡選，或手動填寫',
         loginAfterSave: '帳號登入要先新增，之後在服務商卡片上登入，再獲取模型列表',
-        candidatesNote: '候選只是方便選擇，不是限制，可以手動輸入別的型號',
+        candidatesNote: '候選只是方便選擇，不是限制：選「手動輸入」可以填別的型號',
       },
       create: '新增',
     },
