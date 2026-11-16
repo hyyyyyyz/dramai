@@ -108,7 +108,7 @@ export const en: Content = {
         icon: 'link',
         title: 'Connect a provider with one form',
         tag: 'Source',
-        text: 'Settings → Providers → Add provider: in one form you pick the API protocol, enter the Base URL and an API key, click “Get model list” and pick a model from the Model drop-down, or type one in. Any service that offers an OpenAI-compatible interface can be connected by its Base URL. A ChatGPT account or an OpenRouter account can also sign in instead of pasting a key.',
+        text: 'Settings → Providers → Add provider: in one form you pick the API protocol, enter the Base URL and an API Key, click “Get model list” and pick a model from the Model drop-down, or type one in. A service that offers an OpenAI-compatible interface can be connected by its Base URL. A ChatGPT account or an OpenRouter account can also sign in instead of pasting a key.',
       },
     ],
     locales:
@@ -121,13 +121,13 @@ export const en: Content = {
       steps: [
         'Enter a Name and pick the API protocol',
         'Enter the Base URL',
-        'Choose the Authentication (API key, Account sign-in or No authentication) and enter the API key',
+        'Choose the Authentication (API key, Account sign-in or No authentication) and enter the API Key',
         'Click “Get model list” and pick a Model from the drop-down, or type one in; click “Test connection” if you like, then “Add”',
       ],
       probeNote:
-        '“Get model list” and “Test connection” work before you add anything and save nothing; Test connection sends no generation request. Model is a drop-down: protocols that can list models fill it from the list, the others offer known models as suggestions, and “Type it in…” lets you enter any model yourself.',
+        '“Get model list” and “Test connection” work before you add anything and save nothing; Test connection sends no generation request. Model is a drop-down: protocols that can list models fill it from the list, the others offer the known models from dramai’s model data as suggestions when it has any, and “Type it in…” lets you enter any model yourself.',
       rangeNote:
-        'Any service that offers an OpenAI-compatible interface can be connected by entering its Base URL. API protocols of several model companies are built in as well; you choose them in the “API protocol” list.',
+        'A service that offers an OpenAI-compatible interface can be connected by entering its Base URL. API protocols of several model companies are built in as well; you choose them in the “API protocol” list.',
       docsLabel: 'API protocol reference: docs/PROVIDERS.md',
       accountTitle: 'Account sign-in',
       accountLead:
@@ -174,13 +174,13 @@ export const en: Content = {
         shot: 'compose',
         alt: 'The compose page with a timeline of picture, narration and subtitle tracks and a list of issues',
         title: 'Compose',
-        text: 'A timeline of picture, narration, subtitles and music, with a list of issues that would block rendering',
+        text: 'A timeline of picture, narration, subtitles and music, with a list of issues, blocking ones and warnings',
       },
       {
         shot: 'tasks',
         alt: 'The storyboard with the task panel open: one task needing action, three running and three queued',
         title: 'Task panel',
-        text: 'Tasks that need action, running tasks and the queue, with the storyboard updating beside it. Tasks already submitted to a provider cannot be cancelled and are billed as usual.',
+        text: 'Tasks that need action, running tasks and the queue, with the storyboard updating beside it. Tasks already submitted to a provider cannot be cancelled and may be billed as usual.',
       },
     ],
     stylesTitle: `${STYLE_COUNT} built-in styles, or describe your own`,
@@ -404,7 +404,7 @@ export const en: Content = {
         title: 'Providers',
         items: [
           'Settings → Providers → Add provider, one form: enter a Name, pick the API protocol, enter the Base URL, choose the Authentication, click “Get model list” and pick a Model from the drop-down, or type one in',
-          'Any service with an OpenAI-compatible interface can be connected by its Base URL; Language model, Text-to-image, Image-to-video and Voice-over are each added',
+          'A service with an OpenAI-compatible interface can be connected by its Base URL; Language model, Text-to-image, Image-to-video and Voice-over are each added',
           'Sign-in with a ChatGPT account (language models) or an OpenRouter account instead of pasting a key',
           'Reference images for video (off by default) and narration voice options',
         ],
@@ -452,8 +452,8 @@ export const en: Content = {
       {
         q: 'How do I connect a provider?',
         a: [
-          'Click “Add provider” in Settings → Providers and use the one form: enter a Name, pick the API protocol, enter the Base URL, choose the Authentication (API key, Account sign-in or No authentication) and enter the API key, click “Get model list” and pick a Model from the drop-down, or type one in. Language model, Text-to-image, Image-to-video and Voice-over are each added this way. “Get model list” and “Test connection” work before you add anything and save nothing; Test connection sends no generation request.',
-          'Any service that offers an OpenAI-compatible interface can be connected by entering its Base URL; API protocols of several model companies are built in too, and you choose them in the “API protocol” list. The repository’s `docs/PROVIDERS.md` is the reference for the API protocols.',
+          'Click “Add provider” in Settings → Providers and use the one form: enter a Name, pick the API protocol, enter the Base URL, choose the Authentication (API key, Account sign-in or No authentication) and enter the API Key, click “Get model list” and pick a Model from the drop-down, or type one in. Language model, Text-to-image, Image-to-video and Voice-over are each added this way. “Get model list” and “Test connection” work before you add anything and save nothing; Test connection sends no generation request.',
+          'A service that offers an OpenAI-compatible interface can be connected by entering its Base URL; API protocols of several model companies are built in too, and you choose them in the “API protocol” list. The repository’s `docs/PROVIDERS.md` is the reference for the API protocols.',
           'You can also sign in with an account instead of pasting a key: choose “Account sign-in” as the Authentication, and after adding sign in on the provider card. A ChatGPT account uses your plan and covers text only, with images, video and speech using API keys; an OpenRouter account hands dramai an API key of your own. Sign in on the computer that runs dramai. The form and account sign-in were added after 0.5.0-beta.1, so run from source first. dramai uses only public interfaces and never a ChatGPT back-end endpoint.',
         ],
       },
