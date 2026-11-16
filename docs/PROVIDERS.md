@@ -6,17 +6,17 @@ A provider is a service dramai sends requests to: a language model, an image mod
 
 Open **Settings → Providers** and choose **Add provider** in the kind you want: language model, text-to-image, image-to-video or voice-over. One form opens:
 
-| Field           | What it means                                                                                                                                                          |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name            | The name shown in the settings and in the project's model list.                                                                                                        |
-| API protocol    | Which API the service speaks. The list depends on the kind; see [API protocols](#api-protocols).                                                                       |
-| Base URL        | The base address of that API, for example `https://your-service-address/v1`. dramai appends the request path to it. The rules are under [Base URLs](#base-urls).       |
-| Authentication  | **API key**, **Account sign-in** (only offered when a sign-in channel exists for the chosen protocol) or **No authentication**. See [Authentication](#authentication). |
-| API key         | Write-only: once saved it is never shown again or sent back to the browser, only replaced.                                                                             |
-| Get model list  | Asks the service for its models before anything is saved. See [Models](#models).                                                                                       |
-| Model           | A drop-down of the listed models, or of the models dramai knows for this kind and protocol, with "Type it in…" as the way out: any model name can be entered.          |
-| Test connection | Checks the address and key before anything is saved, where the protocol has a read-only request to check with. See [Test connection](#test-connection).                |
-| Cancel / Add    | Cancel saves nothing. Add saves the provider; choose **Use this** afterwards to make it the one in use for its kind.                                                   |
+| Field           | What it means                                                                                                                                                                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name            | The name shown in the settings and in the project's model list.                                                                                                                                                                                            |
+| API protocol    | Which API the service speaks. The list depends on the kind; see [API protocols](#api-protocols).                                                                                                                                                           |
+| Base URL        | The base address of that API, for example `https://your-service-address/v1`. dramai appends the request path to it. The rules are under [Base URLs](#base-urls).                                                                                           |
+| Authentication  | **API key**, **Account sign-in** (only offered when a sign-in channel exists for the chosen protocol) or **No authentication**. See [Authentication](#authentication).                                                                                     |
+| API key         | Write-only: once saved it is never shown again or sent back to the browser, only replaced.                                                                                                                                                                 |
+| Get model list  | Asks the service for its models before anything is saved. See [Models](#models).                                                                                                                                                                           |
+| Model           | A drop-down of the listed models, or of the models dramai knows for this kind and protocol. The **Type it in** button next to it turns the drop-down into a box where any model name can be entered; **Choose from the list** under the box switches back. |
+| Test connection | Checks the address and key before anything is saved, where the protocol has a read-only request to check with. See [Test connection](#test-connection).                                                                                                    |
+| Cancel / Add    | Cancel saves nothing. Add saves the provider; choose **Use this** afterwards to make it the one in use for its kind.                                                                                                                                       |
 
 Get model list and Test connection need the Base URL, and the API key when the authentication is an API key. They create nothing: the draft is only sent as the request.
 
@@ -121,7 +121,7 @@ Names may contain only letters, digits and hyphens, and a value may not contain 
 ## Models
 
 - **Get model list.** For the seven protocols marked **List** above, the form asks the service for its models (`providers.probe` with the action `models`, which saves nothing) and fills the Model drop-down with their ids. If the service answers with an empty list, the suggestions stay. The card of a saved provider has the same button (`providers.models`); both go through one implementation in `packages/server/src/services/providers.ts`.
-- **Suggestions.** Where dramai has model data for the chosen kind and protocol, the drop-down also offers those model names (`models.known`, from `packages/core/data/models/models.json`); the protocols marked **Known** have data. They are a convenience, not a limit: **Type it in…** accepts any model name, as the service expects it. With more than 30 choices, the drop-down has a filter box.
+- **Suggestions.** Where dramai has model data for the chosen kind and protocol, the drop-down also offers those model names (`models.known`, from `packages/core/data/models/models.json`); the protocols marked **Known** have data. They are a convenience, not a limit: **Type it in** (a button next to the drop-down) turns it into a box that accepts any model name, as the service expects it. With more than 30 choices, the drop-down has a filter box.
 - **What dramai knows about a model.** Capabilities (modes, reference images, frame and duration options, aspect ratios), known limitations and prices come from the model data, matched by the protocol and the model name. A model that is not in that data is used with conservative defaults, and the settings page says so.
 - **Cost estimates.** The estimate shown before a batch uses the price entries in that data. A model without a price entry shows "Can't be estimated". An estimate is not a bill: the service's own pricing page is authoritative.
 

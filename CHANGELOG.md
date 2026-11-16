@@ -42,7 +42,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Adding a provider is one form.** Settings → Providers → Add provider opens one form for each kind (language
   model, text-to-image, image-to-video, voice-over): name, API protocol, Base URL, authentication (API key, account
   sign-in or none), API key and model. The model is a drop-down of the list the service returns, or of the models
-  dramai has data for, with "Type it in…" as the way out; a filter box appears with more than 30 choices. Get model list and
+  dramai has data for, with a "Type it in" button next to it that turns it into a box for any model name; a filter box appears with more than 30 choices. Get model list and
   Test connection work on the unsaved draft and create nothing; Test connection sends only the read-only list
   request, or says the connection cannot be verified automatically. Account sign-in is completed on the provider's
   card after adding. A failed `providers.test` carries a
