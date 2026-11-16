@@ -50,7 +50,7 @@ On a machine with a warm package cache this took under 20 seconds (install 3 s, 
 pnpm demo
 ```
 
-Open <http://127.0.0.1:8787>. Demo mode runs the whole studio on your machine with built-in simulated providers: no account, no key, and no request leaves your computer. It generates placeholder content, storyboard-style sketches of a figure in a frame marked DEMO and short clips built from them, so you can follow the workflow from text to cut; with real providers the pictures and videos come from the models you choose. Create a project, upload a short story, plan episodes, break them into shots, confirm the characters and locations, then generate images and video and compose the cut. The demo's language model reads Chinese text, so use a Chinese story. Demo data lives in `~/.dramai-demo`, separate from your real data; add `--fresh` to start over, or `--lang en` for English terminal messages. Stop it with Ctrl+C.
+Open <http://127.0.0.1:8787>. Demo mode runs the whole studio on your machine with built-in simulated providers: no account, no key, and no request leaves your computer. It generates placeholder content, storyboard-style sketches of a figure in a frame marked DEMO and short clips built from them, so you can follow the workflow from text to cut; with real providers the pictures and videos come from the models you choose. Create a project, upload a short story, plan episodes, break them into shots, confirm the characters and locations, then generate images and video and compose the cut. The demo's language model reads Chinese text, so use a Chinese story. Demo data lives in `~/.dramai-demo`, separate from your real data; add `--fresh` to start over, or `--lang en` for English terminal messages and demo provider names. Stop it with Ctrl+C.
 
 ### 2. WebUI, with your own providers
 
@@ -98,7 +98,7 @@ The desktop app keeps your data in your user folder (for example `~/Library/Appl
 
 Newest first. **Source** entries are in the repository and run from source; **Release** entries are in the published `0.5.0-beta.1` installer. The full list is in the [changelog](./CHANGELOG.md).
 
-- **2026-11-15 · Source · Adding a provider is one form.** Settings → Providers → Add provider: choose an API protocol, enter the Base URL, choose an API key or account sign-in, get the model list and choose a model; the model list and the connection test work before anything is saved. The API protocols of the four kinds are listed in [docs/PROVIDERS.md](./docs/PROVIDERS.md). See the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-16 · Source · Adding a provider is one form.** Settings → Providers → Add provider: choose an API protocol, enter the Base URL, choose an API key or account sign-in, get the model list and choose a model; the model list and the connection test work before anything is saved. The API protocols of the four kinds are listed in [docs/PROVIDERS.md](./docs/PROVIDERS.md). See the [changelog](./CHANGELOG.md#unreleased).
 - **2026-11-14 · The introduction page.** <https://hyyyyyyz.github.io/dramai/> is the project's introduction page, in Chinese at the root and in English at [`/en/`](https://hyyyyyyz.github.io/dramai/en/). It replaces the v0.4 web app that was hosted at that address. The source is in `apps/site`; see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
 - **2026-11-13 · Source · Speech providers and narration voices.** Two new API protocols for narration. A project's narration voice can carry a style instruction and a language hint where the provider takes them, and the check before generating covers the voice and the text length. See the [changelog](./CHANGELOG.md#unreleased).
 - **2026-11-13 · Source · Video providers and reference images.** Three more API protocols for video. A task option, off by default, sends a shot's character, scene and prop sheets to the video model as reference images; where the documentation makes that exclusive with a first frame, the confirmation dialog says what is given up before anything is ordered. See the [changelog](./CHANGELOG.md#unreleased).
@@ -122,7 +122,7 @@ The workspace speaks English, Simplified Chinese and Traditional Chinese, in a l
 
 Settings → Providers → Add provider opens one form for each of the four kinds: language model, text-to-image, image-to-video and voice-over. Choose the API protocol, enter the Base URL and an API key (or choose account sign-in), get the model list and choose a model, optionally test the connection, and add it.
 
-Any service that offers an OpenAI-compatible interface can be added by its address. The API-protocol list also holds the interfaces of several model companies; all of them are in [docs/PROVIDERS.md](./docs/PROVIDERS.md), together with the address rules and how models and prices are matched.
+A service that offers an OpenAI-compatible interface can be added by entering its address. The API-protocol list also holds the interfaces of several model companies; all of them are in [docs/PROVIDERS.md](./docs/PROVIDERS.md), together with the address rules and how models and prices are matched.
 
 Get model list and Test connection work before anything is saved and create nothing. For seven API protocols the form can ask the service for its models, and Test connection sends the same read-only request; for the other protocols no request is sent, the connection cannot be verified automatically, and the model is chosen from the suggestions dramai has data for or typed in. Test connection never sends a generation request.
 
@@ -172,14 +172,14 @@ In words: source text → episodes → scenes → shots → shot images → shot
   <img src="./docs/assets/readme/en/compose-light.webp" alt="The compose page with a timeline of picture, narration and subtitle tracks and a list of issues" width="100%" />
 </picture>
 
-**Compose.** A timeline of picture, narration, subtitles and music, with a list of issues that would block rendering.
+**Compose.** A timeline of picture, narration, subtitles and music, with a list of issues, blocking ones and warnings.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/readme/en/tasks-dark.webp" />
   <img src="./docs/assets/readme/en/tasks-light.webp" alt="The storyboard with the task panel open: one task needing action, three running and three queued" width="100%" />
 </picture>
 
-**Task panel.** Tasks that need action, running tasks and the queue, with the storyboard updating beside it. The task at the top was cut off before the provider confirmed it: dramai says so, asks you to check the provider's dashboard, and never resubmits it on its own. Tasks already submitted to a provider cannot be cancelled and are billed as usual.
+**Task panel.** Tasks that need action, running tasks and the queue, with the storyboard updating beside it. The task at the top was cut off before the provider confirmed it: dramai says so, asks you to check the provider's dashboard, and never resubmits it on its own. Tasks already submitted to a provider cannot be cancelled and may be billed as usual.
 
 </details>
 
@@ -195,7 +195,7 @@ In words: source text → episodes → scenes → shots → shot images → shot
 
 **Coming next**
 
-- An npm package and a Docker image.
+- An npm package, a Docker image and a real JianYing draft file.
 
 The full list of changes is in the [changelog](./CHANGELOG.md).
 

@@ -9,7 +9,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Added
 
 - **Account sign-in.** Two providers can be used with an account instead of
-  an API key. **OpenAI**: "Sign in with ChatGPT", so text requests use your ChatGPT plan; it covers language models
+  an API key. **ChatGPT account**: text requests use your ChatGPT plan; it covers language models
   only (the `openai-responses` protocol), and images, video and speech still need API keys. dramai calls only the public `https://api.openai.com/v1` and never a ChatGPT back-end
   endpoint. **OpenRouter**: OAuth with PKCE; OpenRouter hands dramai an API key of your own, which is stored and used
   like one you pasted, and usage is billed to your OpenRouter account. Its documentation describes no refresh and no
@@ -42,10 +42,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Adding a provider is one form.** Settings → Providers → Add provider opens one form for each kind (language
   model, text-to-image, image-to-video, voice-over): name, API protocol, Base URL, authentication (API key, account
   sign-in or none), API key and model. The model is a drop-down of the list the service returns, or of the models
-  dramai has data for, with "Type it in…" as the way out; a filter box appears from 30 choices. Get model list and
+  dramai has data for, with "Type it in…" as the way out; a filter box appears with more than 30 choices. Get model list and
   Test connection work on the unsaved draft and create nothing; Test connection sends only the read-only list
   request, or says the connection cannot be verified automatically. Account sign-in is completed on the provider's
-  card after adding. There is no catalog, no grouping and no search. A failed `providers.test` carries a
+  card after adding. A failed `providers.test` carries a
   machine-readable `code` next to the unchanged `error` text.
 - **Asking before adding.** `providers.probe` lists the models or tests the connection of a provider that is not
   saved yet (nothing is created or stored), `models.known` lists the model ids dramai has data for per kind and
@@ -68,7 +68,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   landing page is deployed at `https://hyyyyyyz.github.io/dramai/` (English at `/en/`) and replaces the v0.4
   browser-only workspace that was hosted there. See `docs/DEPLOYMENT.md`.
 - **Video providers.** Three new video protocols: Volcengine Ark / BytePlus ModelArk Seedance (`ark-video`), Kling 4.0 and
-  4.0 Flash (`kling-contents`) and Tongyi Wanxiang 3.0 (`dashscope-video`), with model profiles (capabilities and
+  4.0 Flash (`kling-contents`) and Alibaba Model Studio Wan 3.0 (`dashscope-video`), with model profiles (capabilities and
   limits per model). The existing video protocols are unchanged.
 - **Reference images for video (off by default).** A task option sends the shot's character, scene and prop
   sheets to the video model. Where the official docs make first frame and reference images mutually exclusive
@@ -89,9 +89,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   on the timeline; clips that already had a video or that you changed are left alone, and the way a cut is
   composed is unchanged.
 
-- **Speech providers.** Narration voice-over can now use MiniMax
-  (new protocol `minimax-t2a`, synchronous), Alibaba CosyVoice (new protocol `dashscope-cosyvoice`, HTTP
-  non-streaming), SiliconFlow and OpenAI, with
+- **Speech providers.** Narration voice-over has two new
+  protocols: `minimax-t2a` (synchronous) and `dashscope-cosyvoice` (HTTP non-streaming), with model
   profiles that list the voices, the single-request text limit and the price in the official unit per
   site. Requests of the existing `openai-tts`
   protocol are unchanged.
