@@ -14,7 +14,8 @@ const prefix = process.argv[3] ?? ''
 mkdirSync(outDir, { recursive: true })
 
 const server = await serveDist()
-const browser = await chromium.launch()
+// Playwright's own Chromium if it is installed, otherwise the Google Chrome installed on this computer.
+const browser = await chromium.launch().catch(() => chromium.launch({ channel: 'chrome' }))
 let failures = 0
 
 const pages = [

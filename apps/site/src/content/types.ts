@@ -1,5 +1,3 @@
-import type { ProviderKindId } from './facts.ts'
-
 export type Locale = 'zh' | 'en'
 
 export type IconName =
@@ -109,12 +107,10 @@ export interface Content {
       sourceTag: string
       title: string
       lead: string
-      testedLabel: string
-      untestedLabel: string
-      /** Header of a kind, `{n}` is replaced by the number of presets of that kind. */
-      kindCount: string
-      kinds: Record<ProviderKindId, { name: string; testedChips: string[] }>
-      kindsNote: string
+      stepsTitle: string
+      steps: string[]
+      rangeNote: string
+      docsLabel: string
       accountTitle: string
       accountLead: string
       account: { name: string; text: string }[]
@@ -126,7 +122,7 @@ export interface Content {
     screens: Screen[]
     stylesTitle: string
     stylesLead: string
-    styleGroups: { name: string; presets: string[] }[]
+    styleGroups: { name: string; styles: string[] }[]
   }
   editions: {
     title: string

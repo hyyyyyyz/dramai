@@ -13,6 +13,9 @@ export const PUBLISHED_VERSION = '0.5.0-beta.1'
 export const REPO = 'https://github.com/hyyyyyyz/dramai'
 export const RELEASES = `${REPO}/releases`
 export const RELEASE_TAG = `${REPO}/releases/tag/v${PUBLISHED_VERSION}`
+/** Reference for the interface types a provider can use. */
+export const PROVIDERS_DOC = `${REPO}/blob/main/docs/PROVIDERS.md`
+
 export const ISSUES = `${REPO}/issues`
 
 export const SITE_ORIGIN = 'https://hyyyyyyz.github.io'

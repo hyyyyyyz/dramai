@@ -1,5 +1,5 @@
 import { PUBLISHED_VERSION, REPO } from './site.ts'
-import { PROVIDER_FACTS as F, STYLE_PRESET_COUNT, kindTotal } from './facts.ts'
+import { STYLE_COUNT } from './facts.ts'
 import type { Content } from './types.ts'
 
 export const zh: Content = {
@@ -63,7 +63,7 @@ export const zh: Content = {
       },
       {
         title: '画面',
-        text: `镜头图以资产设定图为参考生成。画风在建项目时选一次：${STYLE_PRESET_COUNT} 个预设，也可以自己描述。`,
+        text: `镜头图以资产设定图为参考生成。画风在建项目时选一次：${STYLE_COUNT} 种内置画风，也可以自己描述。`,
         out: '产出：每镜一张图',
       },
       {
@@ -104,37 +104,36 @@ export const zh: Content = {
       },
       {
         icon: 'link',
-        title: '多家服务商，每个都标明验证状态',
+        title: '用一个表单接入服务商',
         tag: '源码',
-        text: `内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商的大模型、图片、视频和配音。其中 ${F.tested} 个经过端到端实测，其余 ${F.documented} 个按官方文档接入。设置页按厂商分组，每个预设都标明验证状态。OpenAI 和 OpenRouter 还可以用账号登录。`,
+        text: '设置 → 服务商 → 添加服务商，在一个表单里选接口类型、填接口地址和 API Key，获取模型列表后选模型。任何提供 OpenAI 兼容接口的服务都可以填地址接入。ChatGPT 账号和 OpenRouter 账号还可以登录，代替粘贴 Key。',
       },
     ],
     locales: '工作台提供简体中文、繁体中文和英文界面，有浅色和深色两套主题',
     providers: {
       sourceTag: '源码',
-      title: `服务商：内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商`,
-      lead: `预设分大模型、图片、视频和配音四类，在 设置 → 服务商 里按厂商分组，每个都标明验证状态：${F.tested} 个经过端到端实测（2026 年 5 月，在 v0.4 中跑通），其余 ${F.documented} 个按各厂商的官方文档接入。按官方文档接入的预设不会自动成为当前选择，由你自己选。标着「源码」的内容是 ${PUBLISHED_VERSION} 之后加入的，已发布的安装包对应 ${PUBLISHED_VERSION}，要用它们先从源码运行。`,
-      testedLabel: '端到端实测',
-      untestedLabel: '按官方文档接入',
-      kindCount: '{n} 个预设',
-      kinds: {
-        llm: { name: '大模型', testedChips: ['DeepSeek'] },
-        image: { name: '图片', testedChips: ['302.AI：Seedream、Nano Banana'] },
-        video: { name: '视频', testedChips: ['302.AI：Wan 2.2 Flash'] },
-        speech: { name: '配音', testedChips: [] },
-      },
-      kindsNote:
-        '同一厂商可以有多个预设（例如国内站和国际站、API Key 和账号登录各算一个），所以预设数比厂商数多。Ollama 和 LM Studio 在你自己的机器上跑模型，不需要认证。',
-      accountTitle: `账号登录（${F.accountSignIn} 个预设）`,
+      title: '用一个表单接入服务商',
+      lead: `在 设置 → 服务商 里点「添加服务商」，大模型、图片、视频、配音四类各自添加，用的是同一个表单。标着「源码」的内容是 ${PUBLISHED_VERSION} 之后加入的，已发布的安装包对应 ${PUBLISHED_VERSION}，要用它们先从源码运行。`,
+      stepsTitle: '四步接入',
+      steps: [
+        '选接口类型',
+        '填接口地址',
+        '选鉴权方式（API Key 或账号登录），填上 Key',
+        '点「获取模型列表」，选一个模型，测试连接后添加',
+      ],
+      rangeNote:
+        '任何提供 OpenAI 兼容接口的服务，都可以填上它的地址接入。另外内置了若干模型公司自己的接口类型，添加时在「接口类型」下拉里选。',
+      docsLabel: '接口类型参考：docs/PROVIDERS.md',
+      accountTitle: '账号登录',
       accountLead:
         '代替粘贴 Key。登录要在运行 dramai 的那台电脑上操作，因为授权结果会回到一个本地地址。',
       account: [
         {
-          name: 'OpenAI',
-          text: '用 ChatGPT 账号登录，文本请求走你的 ChatGPT 订阅用量。它覆盖大模型，图片、视频和配音用 API Key。',
+          name: 'ChatGPT 账号',
+          text: '登录后文本请求走你的 ChatGPT 订阅用量。它覆盖大模型，图片、视频和配音用 API Key。',
         },
         {
-          name: 'OpenRouter',
+          name: 'OpenRouter 账号',
           text: '登录后 OpenRouter 把你自己的一把 API Key 交给 dramai，之后和你粘贴的 Key 用法一样，用量记在你的 OpenRouter 账号上。',
         },
       ],
@@ -179,22 +178,22 @@ export const zh: Content = {
         text: '需要处理的、进行中的和排队的任务，分镜页在旁边同步更新。已经提交给服务商的任务不能取消，照常计费。',
       },
     ],
-    stylesTitle: `${STYLE_PRESET_COUNT} 个画风预设，也可以自己描述`,
+    stylesTitle: `${STYLE_COUNT} 种内置画风，也可以自己描述`,
     stylesLead:
-      '画风在建项目时选定，并作为快照保存在项目里。可以不用预设，自己描述风格；留空则由大模型从原文推断。',
+      '画风在建项目时选定，并作为快照保存在项目里。可以不选内置画风，自己描述风格；留空则由大模型从原文推断。',
     styleGroups: [
       {
         name: '漫剧 / 动画',
-        presets: ['少年热血漫', '治愈日常漫', '古风仙侠漫', '校园青春漫', '萌系 Q 版'],
+        styles: ['少年热血漫', '治愈日常漫', '古风仙侠漫', '校园青春漫', '萌系 Q 版'],
       },
       {
         name: '写实短剧',
-        presets: ['现代都市短剧', '悬疑写实', '文艺写实', '纪录片 / 新闻感', 'Vlog / 短视频'],
+        styles: ['现代都市短剧', '悬疑写实', '文艺写实', '纪录片 / 新闻感', 'Vlog / 短视频'],
       },
-      { name: '美术风格', presets: ['水墨画', '油画', '3D CG 动画', '像素艺术', '低多边形'] },
+      { name: '美术风格', styles: ['水墨画', '油画', '3D CG 动画', '像素艺术', '低多边形'] },
       {
         name: '特殊主题',
-        presets: ['Cyberpunk 赛博朋克', 'Steampunk 蒸汽朋克', '童话绘本', '恐怖悬念', '复古 80s'],
+        styles: ['Cyberpunk 赛博朋克', 'Steampunk 蒸汽朋克', '童话绘本', '恐怖悬念', '复古 80s'],
       },
     ],
   },
@@ -260,7 +259,7 @@ export const zh: Content = {
       '分镜图和设定图：生图模型',
       '镜头视频：生视频模型',
       '旁白：只有选了在 dramai 里用 TTS 才需要，留到后期自己配则不用',
-      '账号登录的预设：用量记在对应的账号上，OpenAI 是你的 ChatGPT 订阅用量，OpenRouter 是你的 OpenRouter 账号',
+      '账号登录：用量记在对应的账号上，ChatGPT 账号是你的订阅用量，OpenRouter 账号记在你的 OpenRouter 账号上',
     ],
     freeTitle: '不向服务商付费的部分',
     free: ['合成、字幕和导出：在你的电脑上用 ffmpeg 完成', 'dramai 本身'],
@@ -282,7 +281,7 @@ export const zh: Content = {
     shotAlt: '批量生成视频前的确认对话框：参考图开关、模型、画幅、预估费用和提示',
     shotCaption:
       '批量生成前的确认。截图来自演示模式，金额是演示用的虚构币种。最上面的选项会把角色、场景和道具设定图作为参考图交给视频模型；它默认关闭，在这里也打不开，因为演示用的视频模型不接受参考图。',
-    fine: `预估按各模型的价目表计算，价格以服务商当前页面为准。${F.tested} 个已实测预设的模型名和价格核对于 2026 年 5 月。`,
+    fine: '预估按各模型的价目表计算，价格以服务商当前页面为准。',
   },
   install: {
     title: '安装',
@@ -317,7 +316,7 @@ export const zh: Content = {
       note: `目前只发布了 ${PUBLISHED_VERSION}，它在 Releases 里标为预发布（Pre-release）。发布页上的 \`SHA256SUMS.txt\` 是校验和。安装包的体积约 115 到 150 MB。`,
       snapshotTitle: `安装包对应 ${PUBLISHED_VERSION}`,
       snapshot:
-        '之后加入的内容先从源码运行：新增的文本、图片、视频和配音服务商，OpenAI 和 OpenRouter 账号登录，按厂商分组的预设目录，视频的参考图，以及旁白音色选项。可以用下面的 WebUI 从源码运行，也可以在本机编译桌面端（`pnpm desktop:install`），两种都包含全部内容。',
+        '之后加入的内容先从源码运行：新增的接口类型，ChatGPT 账号和 OpenRouter 账号登录，添加服务商的新表单，视频的参考图，以及旁白音色选项。可以用下面的 WebUI 从源码运行，也可以在本机编译桌面端（`pnpm desktop:install`），两种都包含全部内容。',
       unsignedTitle: '第一次打开安装包',
       unsigned: [
         '安装包未做代码签名，macOS 和 Windows 第一次打开时会有系统提示，按下面的步骤放行',
@@ -368,8 +367,8 @@ export const zh: Content = {
       providers: {
         title: '服务商',
         items: [
-          `内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商的大模型、图片、视频和配音`,
-          `其中 ${F.tested} 个经过端到端实测，其余 ${F.documented} 个按官方文档接入，设置页里每个预设都标明验证状态`,
+          '设置 → 服务商 → 添加服务商，用一个表单：选接口类型，填接口地址和 API Key，获取模型列表后选模型',
+          '任何提供 OpenAI 兼容接口的服务都可以填地址接入；大模型、图片、视频、配音各自添加',
           '用 ChatGPT 账号（覆盖大模型）或 OpenRouter 账号登录，代替粘贴 Key',
           '视频参考图（默认关闭）和旁白音色选项',
         ],
@@ -397,7 +396,7 @@ export const zh: Content = {
       {
         q: 'dramai 要付费吗？',
         a: [
-          'dramai 本身免费开源（Apache-2.0）。费用来自你接入的 AI 服务商，按它们的计价收取；用账号登录的预设，用量记在对应的账号上。',
+          'dramai 本身免费开源（Apache-2.0）。费用来自你接入的 AI 服务商，按它们的计价收取；用账号登录时，用量记在对应的账号上。',
         ],
       },
       {
@@ -405,7 +404,7 @@ export const zh: Content = {
         a: [
           '不会经过由我们运营的任何服务，因为没有这样的服务。素材和成片在你的数据目录里；API Key 保存在本机，桌面版有系统密钥库时用它加密，WebUI 下是数据目录里的 `secrets.json`（macOS 和 Linux 上文件权限设为仅本人可读）。',
           '生成时，素材内容和提示词会由本机的服务按你的配置发给你选的 AI 服务商，这一步无法避免。桌面版启动时还会匿名查询一次 GitHub 上有没有新版本，可以在菜单里关掉。',
-          '用账号登录时，登录得到的令牌或 Key 不会出现在接口响应、日志和地址里，只有 OpenRouter 的 Key 会以遮罩的形式显示。',
+          '用账号登录时，登录得到的令牌或 Key 不会出现在接口响应、日志和地址里，登录得到的 Key 只以遮罩的形式显示。',
         ],
       },
       {
@@ -415,11 +414,11 @@ export const zh: Content = {
         ],
       },
       {
-        q: '内置了哪些服务商？',
+        q: '怎么接入服务商？',
         a: [
-          `内置 ${F.total} 个预设，覆盖 ${F.vendors} 个厂商，分大模型（${kindTotal('llm')}）、图片（${kindTotal('image')}）、视频（${kindTotal('video')}）和配音（${kindTotal('speech')}）四类，在 设置 → 服务商 里按厂商分组，每个都标明验证状态。`,
-          `其中 ${F.tested} 个经过端到端实测：DeepSeek，302.AI 上的 Seedream 和 Nano Banana，以及 302.AI 上的 Wan 2.2 Flash（2026 年 5 月，在 v0.4 中跑通）。其余 ${F.documented} 个按各厂商的官方文档接入，不会自动成为当前选择，由你自己选。`,
-          '也可以用 ChatGPT 订阅或 OpenRouter 账号登录来代替粘贴 Key：OpenAI 的登录覆盖大模型，图片、视频和配音用 API Key；OpenRouter 登录后会把你自己的一把 Key 交给 dramai。账号登录在 0.5.0-beta.1 之后加入，先从源码运行。dramai 只访问 OpenAI 的公开接口，不碰 ChatGPT 的后端接口。',
+          '在 设置 → 服务商 里点「添加服务商」，用一个表单：选接口类型，填接口地址和 API Key（或用账号登录），点「获取模型列表」后选模型。大模型、图片、视频、配音四类各自添加。',
+          '任何提供 OpenAI 兼容接口的服务，都可以填上它的地址接入；另外内置了若干模型公司自己的接口类型，在「接口类型」下拉里选。接口类型的参考见仓库里的 `docs/PROVIDERS.md`。',
+          '也可以用账号登录来代替粘贴 Key：ChatGPT 账号登录走你的订阅用量，只覆盖文本，图片、视频和配音用 API Key；OpenRouter 账号登录后会把你自己的一把 Key 交给 dramai。登录要在运行 dramai 的那台电脑上操作。这个表单和账号登录在 0.5.0-beta.1 之后加入，先从源码运行。dramai 只用公开的接口，不碰 ChatGPT 的后端接口。',
         ],
       },
       {
@@ -441,7 +440,7 @@ export const zh: Content = {
         a: [
           '建项目时选一种：在 dramai 里用 TTS 配音并合进成片；留到后期，导出后在剪辑软件里配；或者不要旁白。',
           '视频模型自带的人声和旁白不能同时出现：一个镜头既有台词又有旁白时，工作台会提示只保留一个。',
-          `音色可以在项目设置里选，服务商支持时还能带风格指令和语言提示；生成前会检查音色和文本长度。配音服务商有 OpenAI、硅基流动、MiniMax 和阿里 CosyVoice，共 ${kindTotal('speech')} 个预设，按官方文档接入，在 0.5.0-beta.1 之后加入，先从源码运行。`,
+          `音色可以在项目设置里选，服务商支持时还能带风格指令和语言提示；生成前会检查音色和文本长度。配音服务商在 设置 → 服务商 里添加，音色选项在 0.5.0-beta.1 之后加入，先从源码运行。`,
         ],
       },
       {
@@ -454,7 +453,7 @@ export const zh: Content = {
         q: '安装包有什么要注意的？',
         a: [
           '安装包未做代码签名，macOS 和 Windows 第一次打开时会有系统提示，放行的步骤在上面的安装一节。也可以用 `pnpm desktop:install` 在本机编译安装，这样没有下载警告。',
-          `已发布的安装包对应 ${PUBLISHED_VERSION}，之后加入的内容（新增的服务商、账号登录、预设目录、视频参考图和旁白音色选项）先从源码运行。`,
+          `已发布的安装包对应 ${PUBLISHED_VERSION}，之后加入的内容（新增的接口类型、账号登录、添加服务商的新表单、视频参考图和旁白音色选项）先从源码运行。`,
         ],
       },
       {
@@ -483,7 +482,7 @@ export const zh: Content = {
       ],
     },
     legal:
-      'Apache License 2.0。dramai 在思路上参考了 xhongc/ai_story 和 freestylefly/director_ai，是独立的 TypeScript 实现，不包含两者的源代码。本页提到的第三方厂商、产品和服务名称，如「剪映」「通义万相」「即梦」「DeepSeek」「302.AI」「OpenAI」「OpenRouter」，归各自所有者，只作事实提及，与 dramai 无隶属关系。',
+      'Apache License 2.0。dramai 在思路上参考了 xhongc/ai_story 和 freestylefly/director_ai，是独立的 TypeScript 实现，不包含两者的源代码。文中提到的第三方名称只作事实提及，归各自所有者，与本项目无隶属关系。',
   },
   notFound: {
     title: '找不到这个页面 · dramai',

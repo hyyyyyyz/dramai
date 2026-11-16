@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { checkText, loadProviderNames } from './content-rules.mjs'
 import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -195,8 +196,7 @@ const parity = {
   features: /<li>\s*<span class="ic"/g,
   screenshots: /<figure class="screen"/g,
   'style chips': /<li class="chip"/g,
-  'provider chips': /<li class="chip pchip/g,
-  'provider kinds': /<div class="kind"/g,
+  'provider steps': /<ol class="steps"/g,
   'source tags': /class="src-tag"/g,
   'edition rows': /<tr>\s*<th scope="row"/g,
   'platform rows': /<li>\s*<div class="pn-head"/g,
@@ -279,6 +279,28 @@ if (
   !readFileSync(path.join(dist, 'robots.txt'), 'utf8').includes(`${ORIGIN}${BASE}sitemap-index.xml`)
 )
   fail('robots.txt does not point at the sitemap')
+
+// ---------- 4. what the text may say (page text and alt/aria-label/title attributes, not resource paths) ----------
+const providerNames = await loadProviderNames()
+for (const [name, html] of pages) {
+  const stripped = html.replace(/<(script|style|svg)\b[\s\S]*?<\/\1>/gi, ' ')
+  const attrs = [...stripped.matchAll(/\s(?:alt|aria-label|title)="([^"]*)"/g)].map((m) => m[1])
+  const body = stripped.replace(/<head>[\s\S]*?<\/head>/i, ' ')
+  const meta = [...html.matchAll(/<meta[^>]*\scontent="([^"]*)"/g)].map((m) => m[1])
+  const titleTag = /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? ''
+  const text = [
+    body.replace(/<[^>]+>/g, ' '),
+    ...attrs,
+    ...meta.filter((m) => !/^https?:|^#|^width=|^light|^noindex/.test(m)),
+    titleTag,
+  ]
+    .join(' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&#x27;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+  for (const problem of checkText(text, providerNames)) fail(`${name}: ${problem}`)
+}
 
 // ---------- result ----------
 if (errors.length) {

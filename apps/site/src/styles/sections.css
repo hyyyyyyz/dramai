@@ -1204,60 +1204,6 @@ code {
 .providers .block-lead {
   max-width: 800px;
 }
-.kinds {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 32px;
-  margin-top: 32px;
-}
-.kind h4 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px 16px;
-  margin: 0 0 12px;
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-}
-.kcount {
-  color: var(--subtle);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 400;
-}
-.kind-row {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  gap: 8px 12px;
-  align-items: start;
-}
-.kind-row + .kind-row {
-  margin-top: 8px;
-}
-.kl {
-  padding-top: 4px;
-  color: var(--subtle);
-  font-size: 12px;
-  line-height: 20px;
-}
-.pchip {
-  gap: 8px;
-  height: auto;
-  min-height: 28px;
-  padding: 2px 8px;
-  white-space: normal;
-}
-.pchip.ok {
-  border-color: var(--border-strong);
-}
-.pchip.ok .dot {
-  background: var(--success);
-}
-.providers .fine {
-  margin-top: 24px;
-}
 .provider-notes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1299,7 +1245,6 @@ code {
   border-color: var(--accent);
 }
 @media (max-width: 900px) {
-  .kinds,
   .provider-notes {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1308,13 +1253,6 @@ code {
   .providers {
     margin-top: 64px;
     padding-top: 48px;
-  }
-  .kind-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
-  }
-  .kl {
-    padding-top: 0;
   }
 }
 
@@ -1329,4 +1267,50 @@ code {
 .status-next b {
   color: var(--foreground);
   font-weight: 500;
+}
+
+.steps {
+  counter-reset: step;
+  margin-top: 12px;
+}
+.steps li {
+  position: relative;
+  padding-left: 32px;
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.7;
+  counter-increment: step;
+}
+.steps li + li {
+  margin-top: 8px;
+}
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+}
+.provider-notes .range {
+  margin-top: 16px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.provider-notes h4.second {
+  margin-top: 32px;
+}
+.textlink {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

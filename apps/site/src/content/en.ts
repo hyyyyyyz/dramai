@@ -1,5 +1,5 @@
 import { PUBLISHED_VERSION, REPO } from './site.ts'
-import { PROVIDER_FACTS as F, STYLE_PRESET_COUNT, kindTotal } from './facts.ts'
+import { STYLE_COUNT } from './facts.ts'
 import type { Content } from './types.ts'
 
 export const en: Content = {
@@ -65,7 +65,7 @@ export const en: Content = {
       },
       {
         title: 'Pictures',
-        text: `Shot images are generated with the asset reference sheets as references. Pick the look once, when you create the project: ${STYLE_PRESET_COUNT} presets, or describe your own.`,
+        text: `Shot images are generated with the asset reference sheets as references. Pick the look once, when you create the project: ${STYLE_COUNT} built-in styles, or describe your own.`,
         out: 'Produces: one image per shot',
       },
       {
@@ -106,39 +106,38 @@ export const en: Content = {
       },
       {
         icon: 'link',
-        title: 'Many providers, each with its verification status',
+        title: 'Connect a provider with one form',
         tag: 'Source',
-        text: `${F.total} built-in presets covering ${F.vendors} vendors, for language models, images, video and speech. ${F.tested} of them have been run end to end and the other ${F.documented} are connected from official documentation. Settings groups them by vendor and labels every preset with its verification status. OpenAI and OpenRouter can also be used by signing in with an account.`,
+        text: 'Settings → Providers → Add provider: in one form you pick the interface type, enter the address and an API key, then fetch the model list and pick a model. Any service that offers an OpenAI-compatible interface can be connected by its address. A ChatGPT account or an OpenRouter account can also sign in instead of pasting a key.',
       },
     ],
     locales:
       'The workspace speaks English, Simplified Chinese and Traditional Chinese, in a light and a dark theme',
     providers: {
       sourceTag: 'Source',
-      title: `Providers: ${F.total} built-in presets covering ${F.vendors} vendors`,
-      lead: `Presets come in four kinds, language models, images, video and speech, grouped by vendor in Settings → Providers, and each one carries its verification status: ${F.tested} have been run end to end (May 2026, in v0.4) and the other ${F.documented} are connected from the vendors’ official documentation. A preset connected from documentation never becomes the current choice on its own; you pick it. Items marked “Source” were added after ${PUBLISHED_VERSION}; the published installers match ${PUBLISHED_VERSION}, so to use them run from source first.`,
-      testedLabel: 'Run end to end',
-      untestedLabel: 'From official docs',
-      kindCount: '{n} presets',
-      kinds: {
-        llm: { name: 'Language models', testedChips: ['DeepSeek'] },
-        image: { name: 'Images', testedChips: ['302.AI: Seedream, Nano Banana'] },
-        video: { name: 'Video', testedChips: ['302.AI: Wan 2.2 Flash'] },
-        speech: { name: 'Speech', testedChips: [] },
-      },
-      kindsNote:
-        'A vendor can have several presets (for example one for the China site and one for the international site, or one for an API key and one for account sign-in), so there are more presets than vendors. Ollama and LM Studio run models on your own machine and need no authentication.',
-      accountTitle: `Account sign-in (${F.accountSignIn} presets)`,
+      title: 'Connect a provider with one form',
+      lead: `Click “Add provider” in Settings → Providers. Language models, images, video and speech are each added the same way, with the same form. Items marked “Source” were added after ${PUBLISHED_VERSION}; the published installers match ${PUBLISHED_VERSION}, so to use them run from source first.`,
+      stepsTitle: 'Four steps',
+      steps: [
+        'Pick the interface type',
+        'Enter the address',
+        'Choose how to authenticate (API key or account sign-in) and enter the key',
+        'Click “Fetch model list”, pick a model, test the connection and add it',
+      ],
+      rangeNote:
+        'Any service that offers an OpenAI-compatible interface can be connected by entering its address. Interface types of several model companies are built in as well; you choose them in the “Interface type” list when adding.',
+      docsLabel: 'Interface type reference: docs/PROVIDERS.md',
+      accountTitle: 'Account sign-in',
       accountLead:
         'Instead of pasting a key. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.',
       account: [
         {
-          name: 'OpenAI',
-          text: 'Sign in with a ChatGPT account and text requests use your ChatGPT plan. It covers language models; images, video and speech use API keys.',
+          name: 'ChatGPT account',
+          text: 'After signing in, text requests use your ChatGPT plan. It covers language models; images, video and speech use API keys.',
         },
         {
-          name: 'OpenRouter',
-          text: 'You sign in and OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account.',
+          name: 'OpenRouter account',
+          text: 'After signing in, OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account.',
         },
       ],
       optionsTitle: 'Two more options',
@@ -182,13 +181,13 @@ export const en: Content = {
         text: 'Tasks that need action, running tasks and the queue, with the storyboard updating beside it. Tasks already submitted to a provider cannot be cancelled and are billed as usual.',
       },
     ],
-    stylesTitle: `${STYLE_PRESET_COUNT} style presets, or describe your own`,
+    stylesTitle: `${STYLE_COUNT} built-in styles, or describe your own`,
     stylesLead:
-      'The look is chosen when the project is created and kept as a snapshot. You can skip the presets and describe a style yourself; leave it empty and the language model infers one from the text.',
+      'The look is chosen when the project is created and kept as a snapshot. You can skip the built-in styles and describe a style yourself; leave it empty and the language model infers one from the text.',
     styleGroups: [
       {
         name: 'Anime',
-        presets: [
+        styles: [
           'Shonen action manga',
           'Healing slice-of-life',
           'Classical xianxia',
@@ -198,7 +197,7 @@ export const en: Content = {
       },
       {
         name: 'Live-action look',
-        presets: [
+        styles: [
           'Modern urban drama',
           'Suspense realism',
           'Lyrical realism',
@@ -208,11 +207,11 @@ export const en: Content = {
       },
       {
         name: 'Art styles',
-        presets: ['Ink wash painting', 'Oil painting', '3D CG animation', 'Pixel art', 'Low poly'],
+        styles: ['Ink wash painting', 'Oil painting', '3D CG animation', 'Pixel art', 'Low poly'],
       },
       {
         name: 'Themes',
-        presets: [
+        styles: [
           'Cyberpunk',
           'Steampunk',
           'Fairy-tale picture book',
@@ -290,7 +289,7 @@ export const en: Content = {
       'Shot images and reference sheets: an image model',
       'Shot videos: a video model',
       'Narration: only if you choose TTS inside dramai; not if you record it later',
-      'Presets that sign in with an account: usage is billed to that account, your ChatGPT plan for OpenAI and your OpenRouter account for OpenRouter',
+      'Account sign-in: usage is billed to that account, your ChatGPT plan for a ChatGPT account and your OpenRouter account for an OpenRouter account',
     ],
     freeTitle: 'What costs the providers nothing',
     free: ['Composing, subtitles and export: ffmpeg on your own machine', 'dramai itself'],
@@ -313,7 +312,7 @@ export const en: Content = {
       'The confirmation dialog before a batch video job, with the reference-sheet option, the model, aspect ratio, estimated cost and warnings',
     shotCaption:
       'The confirmation before a batch. A demo-mode screenshot: the amount is in the demo’s fictional currency. The option at the top sends character, scene and prop sheets to the video model as references; it is off by default and cannot be turned on here because the demo’s video model does not take references.',
-    fine: `Estimates follow each model’s price table; prices are whatever the provider’s page says today. The model ids and prices of the ${F.tested} tested presets were checked in May 2026.`,
+    fine: 'Estimates follow each model’s price table; prices are whatever the provider’s page says today.',
   },
   install: {
     title: 'Install',
@@ -348,7 +347,7 @@ export const en: Content = {
       note: `Only ${PUBLISHED_VERSION} is published, and it is marked as a Pre-release on the Releases page. \`SHA256SUMS.txt\` on the release lists the checksums. The installers are about 115 to 150 MB.`,
       snapshotTitle: `The installers match ${PUBLISHED_VERSION}`,
       snapshot:
-        'What was added afterwards runs from source first: the additional text, image, video and speech providers, sign-in with OpenAI and OpenRouter, the preset catalog grouped by vendor, reference images for video and the narration voice options. Use the WebUI below from source, or build the desktop app on your machine (`pnpm desktop:install`); both include everything.',
+        'What was added afterwards runs from source first: the additional interface types, sign-in with a ChatGPT account and an OpenRouter account, the new add-provider form, reference images for video and the narration voice options. Use the WebUI below from source, or build the desktop app on your machine (`pnpm desktop:install`); both include everything.',
       unsignedTitle: 'Opening an installer for the first time',
       unsigned: [
         'The installers are not code-signed, so macOS and Windows show a system prompt the first time; follow the steps below to open them',
@@ -402,8 +401,8 @@ export const en: Content = {
       providers: {
         title: 'Providers',
         items: [
-          `${F.total} built-in presets covering ${F.vendors} vendors, for language models, images, video and speech`,
-          `${F.tested} of them have been run end to end and the other ${F.documented} are connected from official documentation; Settings labels every preset with its verification status`,
+          'Settings → Providers → Add provider, one form: pick the interface type, enter the address and an API key, fetch the model list and pick a model',
+          'Any service with an OpenAI-compatible interface can be connected by its address; language models, images, video and speech are each added',
           'Sign-in with a ChatGPT account (language models) or an OpenRouter account instead of pasting a key',
           'Reference images for video (off by default) and narration voice options',
         ],
@@ -431,7 +430,7 @@ export const en: Content = {
       {
         q: 'Does dramai cost money?',
         a: [
-          'dramai itself is free and open source under Apache-2.0. The cost comes from the AI providers you connect, at their prices; for presets that sign in with an account, usage is billed to that account.',
+          'dramai itself is free and open source under Apache-2.0. The cost comes from the AI providers you connect, at their prices; when you sign in with an account, usage is billed to that account.',
         ],
       },
       {
@@ -439,7 +438,7 @@ export const en: Content = {
         a: [
           'Nothing passes through a service we run, because there is none. Materials and finished cuts live in your data directory. API keys stay on your machine: the desktop app encrypts them with the system key store where one exists, and in the WebUI they are in `secrets.json` in the data directory (on macOS and Linux the file permissions limit it to you).',
           'When you generate, the text of your materials and the prompts are sent by the local server to the AI providers you chose; that cannot be avoided. The desktop app also makes one anonymous request to GitHub at launch to see whether a newer version exists; you can turn that off in the menu.',
-          'When you sign in with an account, the token or key you get does not appear in an API response, a log or an address; an OpenRouter key is shown only as a mask.',
+          'When you sign in with an account, the token or key you get does not appear in an API response, a log or an address; a key you get by signing in is shown only as a mask.',
         ],
       },
       {
@@ -449,11 +448,11 @@ export const en: Content = {
         ],
       },
       {
-        q: 'Which providers are built in?',
+        q: 'How do I connect a provider?',
         a: [
-          `There are ${F.total} built-in presets covering ${F.vendors} vendors: ${kindTotal('llm')} for language models, ${kindTotal('image')} for images, ${kindTotal('video')} for video and ${kindTotal('speech')} for speech, grouped by vendor in Settings → Providers, each with its verification status.`,
-          `${F.tested} of them have been run end to end: DeepSeek, Seedream and Nano Banana through 302.AI, and Wan 2.2 Flash through 302.AI (May 2026, in v0.4). The other ${F.documented} are connected from the vendors’ official documentation and never become the current choice on their own; you pick them.`,
-          'You can also sign in with a ChatGPT plan or an OpenRouter account instead of pasting a key. OpenAI sign-in covers language models; images, video and speech use API keys. OpenRouter hands dramai an API key of your own. Account sign-in was added after 0.5.0-beta.1, so run from source first. dramai calls only OpenAI’s public API, never a ChatGPT back-end endpoint.',
+          'Click “Add provider” in Settings → Providers and use the one form: pick the interface type, enter the address and an API key (or sign in with an account), click “Fetch model list” and pick a model. Language models, images, video and speech are each added this way.',
+          'Any service that offers an OpenAI-compatible interface can be connected by entering its address; interface types of several model companies are built in too, and you choose them in the “Interface type” list. The repository’s `docs/PROVIDERS.md` is the reference for the interface types.',
+          'You can also sign in with an account instead of pasting a key: a ChatGPT account uses your plan and covers text only, with images, video and speech using API keys; an OpenRouter account hands dramai an API key of your own. Sign in on the computer that runs dramai. The form and account sign-in were added after 0.5.0-beta.1, so run from source first. dramai uses only public interfaces and never a ChatGPT back-end endpoint.',
         ],
       },
       {
@@ -475,7 +474,7 @@ export const en: Content = {
         a: [
           'You choose when you create the project: voice it with TTS inside dramai and mix it into the cut, leave it for later and record it in your video editor after exporting, or have no narration.',
           'A video model’s built-in voice and narration cannot both appear: when a shot has both dialogue and narration, the workspace asks you to keep only one.',
-          `The voice can be chosen in the project settings and, where the provider takes them, carry a style instruction and a language hint; before generating, the voice and the text length are checked. Speech providers are OpenAI, SiliconFlow, MiniMax and Alibaba CosyVoice, ${kindTotal('speech')} presets in all, connected from official documentation and added after 0.5.0-beta.1, so run from source first.`,
+          `The voice can be chosen in the project settings and, where the provider takes them, carry a style instruction and a language hint; before generating, the voice and the text length are checked. Speech providers are added under Settings → Providers like the others; the voice options were added after 0.5.0-beta.1, so run from source first.`,
         ],
       },
       {
@@ -488,7 +487,7 @@ export const en: Content = {
         q: 'What should I know about the installers?',
         a: [
           'The installers are not code-signed, so macOS and Windows show a system prompt the first time; the steps to open them are in the Install section above. You can also build and install from source with `pnpm desktop:install`, which has no download warnings.',
-          `The published installers match ${PUBLISHED_VERSION}; what was added afterwards (the added providers, account sign-in, the preset catalog, reference images for video and the narration voice options) runs from source first.`,
+          `The published installers match ${PUBLISHED_VERSION}; what was added afterwards (the added interface types, account sign-in, the new add-provider form, reference images for video and the narration voice options) runs from source first.`,
         ],
       },
       {
@@ -518,7 +517,7 @@ export const en: Content = {
       ],
     },
     legal:
-      'Apache License 2.0. dramai draws on xhongc/ai_story and freestylefly/director_ai for ideas and is an independent TypeScript implementation that contains no source code from either. The third-party vendor, product and service names on this page, such as JianYing, Tongyi Wanxiang, Jimeng, DeepSeek, 302.AI, OpenAI and OpenRouter, belong to their owners, are mentioned only as facts and are not affiliated with dramai.',
+      'Apache License 2.0. dramai draws on xhongc/ai_story and freestylefly/director_ai for ideas and is an independent TypeScript implementation that contains no source code from either. Third-party names mentioned on this page are used only as facts, belong to their owners and are not affiliated with this project.',
   },
   notFound: {
     title: 'Page not found · dramai',
