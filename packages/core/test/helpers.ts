@@ -66,7 +66,7 @@ export const imageProvider = (over: Partial<ProviderConfig> = {}): ProviderConfi
   label: 'Nano Banana',
   kind: 'image',
   protocol: 'gemini-image',
-  baseUrl: 'https://api.302.ai',
+  baseUrl: 'https://relay.example.test',
   model: 'gemini-2.5-flash-image',
   enabled: true,
   // Nano Banana 的图生图 / 参考图 / 画幅都没验证过：这里模拟“用户已接受”，需要确认的路径在专门的测试里测。
@@ -79,7 +79,7 @@ export const videoProvider = (over: Partial<ProviderConfig> = {}): ProviderConfi
   label: 'Wan Flash',
   kind: 'video',
   protocol: 'aliyun-video',
-  baseUrl: 'https://api.302ai.cn',
+  baseUrl: 'https://relay-cn.example.test',
   model: 'wan2.2-i2v-flash',
   enabled: true,
   ...over,

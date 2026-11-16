@@ -42,7 +42,6 @@ describe('text provider presets (first batch): documented, not tested', () => {
       'siliconflow',
       'openrouter',
       'openrouter-login',
-      '302ai-chat',
       'ollama-local',
       'lmstudio-local',
       'openai-responses-key',
@@ -107,13 +106,8 @@ describe('text provider presets (first batch): documented, not tested', () => {
     expect(by['zhipu-glm']!.knownLimitations.join('')).toContain('不能关闭')
   })
 
-  it('the four tested presets are untouched: no dialect, same auth, same dates', () => {
-    for (const id of [
-      'deepseek-llm',
-      '302-image-seedream',
-      '302-image-nano-banana',
-      '302-i2v-wan-flash',
-    ]) {
+  it('the tested preset is untouched: no dialect, same auth, same date', () => {
+    for (const id of ['deepseek-llm']) {
       const p = PROVIDER_PRESETS.find((x) => x.id === id)!
       expect(p.dialect, id).toBeUndefined()
       expect(p.verification).toEqual({ status: 'tested', testedAt: '2026-05-04' })

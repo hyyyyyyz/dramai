@@ -155,10 +155,10 @@ describe('Traditional Chinese (zh-Hant) built-in data', () => {
     expect(localizeStylePreset(style('modern_drama'), 'zh-Hant').label).toBe('現代都會短劇') // 都市 -> 都會
     expect(localizeStylePreset(style('cyberpunk'), 'zh-Hant').label).toBe('Cyberpunk 賽博龐克') // 朋克 -> 龐克
     expect(localizeStylePreset(style('lyrical'), 'zh-Hant').description).toContain('底片') // 胶片 -> 底片
-    const wan = PROVIDER_PRESETS.find((p) => p.id === '302-i2v-wan-flash')!
+    const wan = PROVIDER_PRESETS.find((p) => p.id === 'volcengine-seedance')!
     expect(localizeProviderPreset(wan, 'zh-Hant').knownLimitations.join('')).toContain('影格') // 帧 -> 影格
     expect(/^[\u0020-\u007e]+$/.test(style('cyberpunk').imageKeywords)).toBe(true) // prompt material is never translated
-    expect(localizeProviderPreset(wan, 'zh-Hant').notes).toContain('0.2 PTC')
+    expect(localizeProviderPreset(wan, 'zh-Hant').notes).toContain('影格') // 帧 -> 影格 in the notes too
   })
 
   it('built-in names of a stored style are translated, user-written text is not', () => {

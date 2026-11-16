@@ -398,7 +398,6 @@ describe('video presets through the API', () => {
     const { h } = await boot()
     const video = (await h.client.call('presets.list')).items.filter((p) => p.kind === 'video')
     expect(video.map((p) => p.id).sort()).toEqual([
-      '302-i2v-wan-flash',
       'aliyun-wan3-cn',
       'aliyun-wan3-intl',
       'byteplus-seedance',

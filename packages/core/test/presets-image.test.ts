@@ -119,19 +119,13 @@ describe('image provider presets (first batch): documented, not tested', () => {
     }
   })
 
-  it('the tested 302.AI presets and their profiles are untouched', () => {
-    const seed = PROVIDER_PRESETS.find((p) => p.id === '302-image-seedream')!
-    expect(seed).toMatchObject({
-      protocol: 'openai-images',
-      baseUrl: 'https://api.302.ai/doubao',
-      verification: { status: 'tested' },
-    })
+  it('the profiles of the v0.4 tested image models are untouched', () => {
     const profile = catalog.models.lookup({
       protocol: 'openai-images',
       model: 'doubao-seedream-5-0-260128',
     })
     expect(profile.capability.verifiedAt).toBe('2026-05-04')
-    expect(profile.capability.refImages.support).toBe('unsupported') // the 302 path: URLs expected
+    expect(profile.capability.refImages.support).toBe('unsupported') // the /doubao path: URLs expected
     // the direct route is a separate profile with its own claims
     const direct = catalog.models.lookup({
       protocol: 'volcengine-images',

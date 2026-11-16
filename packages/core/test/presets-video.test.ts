@@ -11,14 +11,14 @@ import { getMediaProtocol } from '../src/providers/protocols/index.ts'
 
 const catalog = loadCatalog()
 const videoPresets = PROVIDER_PRESETS.filter((p) => p.kind === 'video')
-const newOnes = videoPresets.filter((p) => p.id !== '302-i2v-wan-flash')
+const newOnes = videoPresets
 const models = catalog.models.all().filter((m) => m.capability.media === 'video')
 const newProfiles = models.filter((m) =>
   ['ark-video', 'kling-contents', 'dashscope-video'].includes(m.protocol),
 )
 
 describe('video presets (P3c first batch): documented, not tested', () => {
-  it('the six new presets and the one tested 302.AI preset', () => {
+  it('the six video presets, none of them tested', () => {
     expect(newOnes.map((p) => p.id).sort()).toEqual([
       'aliyun-wan3-cn',
       'aliyun-wan3-intl',
@@ -28,19 +28,7 @@ describe('video presets (P3c first batch): documented, not tested', () => {
       'volcengine-seedance',
     ])
     const tested = videoPresets.filter((p) => p.verification.status === 'tested')
-    expect(tested.map((p) => p.id)).toEqual(['302-i2v-wan-flash'])
-  })
-
-  it('the tested Wan Flash preset is exactly what it was', () => {
-    const p = PROVIDER_PRESETS.find((x) => x.id === '302-i2v-wan-flash')!
-    expect(p).toMatchObject({
-      kind: 'video',
-      protocol: 'aliyun-video',
-      baseUrl: 'https://api.302ai.cn',
-      suggestedModel: 'wan2.2-i2v-flash',
-      verification: { status: 'tested', testedAt: '2026-05-04' },
-      verifiedAt: '2026-05-04',
-    })
+    expect(tested.map((p) => p.id)).toEqual([])
   })
 
   it.each(newOnes.map((p) => [p.id, p] as const))('%s', (_id, p) => {

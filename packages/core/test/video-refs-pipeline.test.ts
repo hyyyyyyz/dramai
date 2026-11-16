@@ -51,7 +51,7 @@ const WAN3: ProviderConfig = {
   enabled: true,
   secretRef: 'k-vid',
 }
-const OLD = PROVIDERS.find((p) => p.id === 'vid')! // the tested 302.AI Wan Flash
+const OLD = PROVIDERS.find((p) => p.id === 'vid')! // the v0.4 Wan Flash route (aliyun-video through a relay)
 
 beforeAll(async () => {
   media = await locateMedia()
@@ -393,7 +393,7 @@ describe('video with reference images (task parameter videoRefs, default off)', 
         label: 'My own Wan',
         kind: 'video',
         protocol: 'aliyun-video',
-        baseUrl: 'https://api.302ai.cn',
+        baseUrl: 'https://relay-cn.example.test',
         model: 'my-own-wan',
         enabled: true,
         secretRef: 'k-vid',

@@ -40,7 +40,7 @@ const KLING: ProviderConfig = {
   enabled: true,
   secretRef: 'k-vid',
 }
-const WAN = PROVIDERS.find((p) => p.id === 'vid')! // 302.AI Wan Flash: can switch audio off, profile has no audioToggle fact
+const WAN = PROVIDERS.find((p) => p.id === 'vid')! // v0.4 Wan Flash (aliyun-video through a relay): can switch audio off, profile has no audioToggle fact
 
 async function setup(): Promise<{
   env: PipelineEnv

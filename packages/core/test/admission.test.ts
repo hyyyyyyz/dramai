@@ -117,7 +117,7 @@ describe('single-target admission (A2)', () => {
       id: 'seedream',
       protocol: 'openai-images',
       model: 'doubao-seedream-5-0-260128',
-      baseUrl: 'https://api.302.ai/doubao',
+      baseUrl: 'https://relay.example.test/doubao',
     })
     const v = await evaluateTarget(await ctxFor(w), shotImage(w, seedream))
     expect(v.status).toBe('blocked')
@@ -515,7 +515,7 @@ describe('batch admission is all-or-nothing', () => {
       providerSnapshot: {
         providerConfigId: 'prov-img',
         protocol: 'gemini-image',
-        baseUrl: 'https://api.302.ai',
+        baseUrl: 'https://relay.example.test',
         model: 'gemini-2.5-flash-image',
       },
     })
@@ -641,7 +641,7 @@ describe('unverified capabilities: neither blocked nor silently allowed', () => 
       id: 's',
       protocol: 'openai-images',
       model: 'doubao-seedream-5-0-260128',
-      baseUrl: 'https://api.302.ai/doubao',
+      baseUrl: 'https://relay.example.test/doubao',
       acceptedUnverified: [],
     })
     const v = await evaluateTarget(await ctxFor(w), {

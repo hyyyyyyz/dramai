@@ -740,25 +740,16 @@ describe('model profiles, capabilities and price table', () => {
 })
 
 describe('provider presets', () => {
-  it('keeps the four v0.4 presets, tested, with their notes intact', () => {
+  it('keeps the tested v0.4 preset (the only one tested) with its notes intact', () => {
     expect(
       PROVIDER_PRESETS.filter((p) => p.verification.status === 'tested').map((p) => p.id),
-    ).toEqual(['deepseek-llm', '302-image-seedream', '302-image-nano-banana', '302-i2v-wan-flash'])
+    ).toEqual(['deepseek-llm'])
     for (const p of PROVIDER_PRESETS.filter((x) => x.verification.status === 'tested')) {
       expect(p.verification).toEqual({ status: 'tested', testedAt: '2026-05-04' })
       expect(p.auth).toEqual({ type: 'api_key' })
     }
     const byId = Object.fromEntries(PROVIDER_PRESETS.map((p) => [p.id, p]))
-    expect(byId['302-image-seedream'].notes).toContain('locked character 参考图当前不通')
-    expect(byId['302-image-nano-banana'].notes).toContain('base URL 不带 /v1')
-    expect(byId['302-i2v-wan-flash'].notes).toContain('性价比之王')
     expect(byId['deepseek-llm'].notes).toContain('验证 2026-05')
-    expect(byId['302-i2v-wan-flash']).toMatchObject({
-      baseUrl: 'https://api.302ai.cn',
-      suggestedModel: 'wan2.2-i2v-flash',
-      protocol: 'aliyun-video',
-      kind: 'video',
-    })
   })
 
   it('every preset has a verification status (tested with a date, or documented with a source) and known limitations', () => {
@@ -830,7 +821,7 @@ describe('prices keep the provider currency; conversion is an optional user sett
   it('stores the provider’s original unit and currency (PTC points), without a hidden exchange rate', () => {
     for (const p of catalog.models.all()) {
       for (const price of p.pricing) {
-        // 价目按各家官方页面的原始币种存，从不折算：302.AI 的价目是 PTC 点数，官方页面抄来的未实测价目是 USD / CNY
+        // 价目按各家官方页面的原始币种存，从不折算：有的价目是平台点数 PTC，官方页面抄来的未实测价目是 USD / CNY
         expect(price.currency, p.id).toMatch(/^(PTC|USD|CNY)$/)
         expect(['per_image', 'per_second', 'per_call', 'per_1k_chars']).toContain(price.unit)
       }

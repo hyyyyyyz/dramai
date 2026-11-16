@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { buildExpectations } from '../src/artifacts/staleness.ts'
-import { configFromPreset, PROVIDER_PRESETS } from '../src/providers/presets.ts'
 import { runGeneration } from '../src/providers/executor.ts'
 import {
   aliyunVideo,
@@ -19,7 +18,8 @@ import { makeWorld } from './helpers.ts'
  *
  * - 黄金文件由 `b06d198`（视频协议改动之前）的代码生成：19 组输入 × 各协议的完整请求
  *   （URL、方法、头、体）、提交响应解析、轮询请求、正常轮询响应的解析结果。
- * - 已实测的 302.AI 通义万相 Wan2.2 Flash 预设走一遍执行器（提交 → 轮询 → 下载）的整个请求序列。
+ * - v0.4 实测过的通义万相 Wan2.2 Flash（`aliyun-video` 协议经聚合平台透传）走一遍执行器（提交 → 轮询 → 下载）的整个请求序列；
+ *   现在用自定义服务商配置（同协议、同型号、同请求）固定它。
  * - 视频产物的依据（buildExpectations）逐项钉住。
  */
 
@@ -46,15 +46,19 @@ describe('legacy video protocols: requests and normal responses are exactly the 
   })
 })
 
-describe('the tested preset 302-i2v-wan-flash: the whole request sequence', () => {
+describe('the v0.4 tested Wan2.2 Flash route (a custom provider): the whole request sequence', () => {
   it('submit → poll → download', async () => {
-    const preset = PROVIDER_PRESETS.find((p) => p.id === '302-i2v-wan-flash')!
-    const config = configFromPreset(preset, { id: 'prov-1', secretRef: 'k' })
-    expect(config).toMatchObject({
-      protocol: 'aliyun-video',
-      baseUrl: 'https://api.302ai.cn',
+    const config = {
+      id: 'prov-1',
+      label: 'Wan Flash through a relay',
+      kind: 'video' as const,
+      protocol: 'aliyun-video' as const,
+      baseUrl: 'https://relay-cn.example.test',
       model: 'wan2.2-i2v-flash',
-    })
+      auth: { type: 'api_key' as const },
+      secretRef: 'k',
+      enabled: true,
+    }
     const calls: Array<{ method: string; url: string; headers: unknown; body?: unknown }> = []
     const fetch = async (url: string, init?: RequestInit) => {
       calls.push({
@@ -92,7 +96,7 @@ describe('the tested preset 302-i2v-wan-flash: the whole request sequence', () =
     expect(calls).toEqual([
       {
         method: 'POST',
-        url: 'https://api.302ai.cn/aliyun/api/v1/services/aigc/video-generation/video-synthesis',
+        url: 'https://relay-cn.example.test/aliyun/api/v1/services/aigc/video-generation/video-synthesis',
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer sk-secret',
@@ -109,7 +113,7 @@ describe('the tested preset 302-i2v-wan-flash: the whole request sequence', () =
       },
       {
         method: 'GET',
-        url: 'https://api.302ai.cn/aliyun/api/v1/tasks/T1',
+        url: 'https://relay-cn.example.test/aliyun/api/v1/tasks/T1',
         headers: { Authorization: 'Bearer sk-secret' },
         body: undefined,
       },

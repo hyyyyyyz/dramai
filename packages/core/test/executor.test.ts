@@ -443,12 +443,12 @@ describe('testProvider (ok / failed / unverifiable)', () => {
       json({ models: [{ name: 'models/gemini-2.5-flash-image' }] }),
     ])
     const r = await testProvider(
-      { baseUrl: 'https://api.302.ai', protocol: 'gemini-image', model: 'gemini-2.5-flash-image' },
+      { baseUrl: 'https://relay.example.test', protocol: 'gemini-image', model: 'gemini-2.5-flash-image' },
       'k',
       { fetch },
     )
     expect(r).toMatchObject({ outcome: 'ok', modelListed: true })
-    expect(calls[0].url).toBe('https://api.302.ai/v1beta/models')
+    expect(calls[0].url).toBe('https://relay.example.test/v1beta/models')
   })
 
   it('reports HTTP failures and network failures as failed', async () => {

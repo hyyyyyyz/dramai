@@ -22,7 +22,7 @@ import { checkJobRepoContract, createMemoryPorts } from '../src/testing/index.ts
 const SNAPSHOT = {
   providerConfigId: 'cfg-1',
   protocol: 'aliyun-video',
-  baseUrl: 'https://api.302ai.cn',
+  baseUrl: 'https://relay-cn.example.test',
   model: 'wan2.2-i2v-flash',
 }
 const CONFIG: ProviderConfig = {
@@ -30,7 +30,7 @@ const CONFIG: ProviderConfig = {
   label: 'Wan',
   kind: 'video',
   protocol: 'aliyun-video',
-  baseUrl: 'https://api.302ai.cn',
+  baseUrl: 'https://relay-cn.example.test',
   model: 'wan2.2-i2v-flash',
   enabled: true,
 }
@@ -597,7 +597,7 @@ describe('restart recovery', () => {
     const cases: Array<[string, ProviderConfig[]]> = [
       ['gone', []],
       ['other id only', [{ ...CONFIG, id: 'cfg-other' }]],
-      ['baseUrl changed', [{ ...CONFIG, baseUrl: 'https://api.302.ai' }]],
+      ['baseUrl changed', [{ ...CONFIG, baseUrl: 'https://relay.example.test' }]],
       ['protocol changed', [{ ...CONFIG, protocol: 'volcengine-video' }]],
     ]
     for (const [name, configs] of cases) {
@@ -610,14 +610,14 @@ describe('restart recovery', () => {
   })
 
   it('tolerates a trailing slash / case difference in the base URL', async () => {
-    const env = setup({ configs: [{ ...CONFIG, baseUrl: 'HTTPS://api.302ai.cn/' }] })
+    const env = setup({ configs: [{ ...CONFIG, baseUrl: 'HTTPS://relay-cn.example.test/' }] })
     const id = await runningJob(env, { providerJobId: 'up-1' })
     expect((await recoverRunningJobs(env.recoveryDeps)).resumed).toEqual([id])
   })
 
   it('legacy jobs without a config id resume only when exactly one enabled config matches', () => {
     const legacy = {
-      providerSnapshot: { protocol: 'aliyun-video', baseUrl: 'https://api.302ai.cn', model: 'm' },
+      providerSnapshot: { protocol: 'aliyun-video', baseUrl: 'https://relay-cn.example.test', model: 'm' },
     } as Job
     expect(checkProviderSnapshot(legacy, [CONFIG]).ok).toBe(true)
     expect(checkProviderSnapshot(legacy, [CONFIG, { ...CONFIG, id: 'cfg-2' }]).ok).toBe(false)
@@ -752,7 +752,7 @@ describe('worker loop survives errors', () => {
 
 describe('end to end with the provider executor: checkpoint, fail, resume — one submission only', () => {
   const png = { bytes: new Uint8Array([1]), mime: 'image/png' }
-  const auth = { baseUrl: 'https://api.302ai.cn', model: 'wan2.2-i2v-flash', apiKey: 'k' }
+  const auth = { baseUrl: 'https://relay-cn.example.test', model: 'wan2.2-i2v-flash', apiKey: 'k' }
 
   it('submits once; poll failures leave a resumable job; resume polls the same task id', async () => {
     const calls: Array<{ method?: string; url: string }> = []
@@ -1000,7 +1000,7 @@ describe('recovery message for synchronous protocols', () => {
           providerSnapshot: {
             ...SNAPSHOT,
             protocol: 'gemini-image',
-            baseUrl: 'https://api.302.ai',
+            baseUrl: 'https://relay.example.test',
           },
         }),
       )

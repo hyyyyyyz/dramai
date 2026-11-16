@@ -46,12 +46,12 @@ describe('Traditional Chinese for built-in data (zh-Hant)', () => {
     )
 
     const presets = await hant.call('presets.list')
-    const wan = presets.items.find((p) => p.id === '302-i2v-wan-flash')!
+    const wan = presets.items.find((p) => p.id === 'volcengine-seedance')!
     expect(wan.knownLimitations.join('')).toContain('影格')
     expect(JSON.stringify(presets)).not.toContain('视频')
 
     const made = await h.client.call('providers.fromPreset', { body: { presetId: wan.id } })
-    expect(made.label).toContain('通义万相') // stored in Simplified (the source)
+    expect(made.label).toContain('火山方舟') // stored in Simplified (the source)
     const shown = await hant.call('providers.get', { params: { providerId: made.id } })
     expect(shown).toMatchObject({
       label: wan.label,
@@ -60,10 +60,10 @@ describe('Traditional Chinese for built-in data (zh-Hant)', () => {
     })
     await h.client.call('providers.update', {
       params: { providerId: made.id },
-      body: { label: '我的万相' },
+      body: { label: '我的方舟' },
     })
     expect((await hant.call('providers.get', { params: { providerId: made.id } })).label).toBe(
-      '我的万相',
+      '我的方舟',
     ) // user text untouched
   })
 

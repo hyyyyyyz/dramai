@@ -42,13 +42,13 @@ const input = (extra: Partial<ImageGenInput> = {}): ImageGenInput => ({
   ...extra,
 })
 
-describe('openai-images: the legacy (compat) request is byte-for-byte what it was (302.AI Seedream is tested)', () => {
+describe('openai-images: the legacy (compat) request is byte-for-byte what it was (the v0.4 tested Seedream route)', () => {
   it('no references', () => {
     const spec = openaiImages.buildGenerateRequest(
-      auth('doubao-seedream-5-0-260128', 'https://api.302.ai/doubao'),
+      auth('doubao-seedream-5-0-260128', 'https://relay.example.test/doubao'),
       input({ negativePrompt: 'blur', quality: 'hd' }),
     )
-    expect(spec.url).toBe('https://api.302.ai/doubao/images/generations')
+    expect(spec.url).toBe('https://relay.example.test/doubao/images/generations')
     expect(spec.headers).toEqual({
       'Content-Type': 'application/json',
       Authorization: 'Bearer sk-img',
@@ -216,7 +216,7 @@ describe('volcengine-images (Seedream, direct)', () => {
       size: '1024x1792',
     })
   })
-  it('references: one → a string, several → an array, always data URIs in `image` only (not the 302.AI triple)', () => {
+  it('references: one → a string, several → an array, always data URIs in `image` only (not the compat triple)', () => {
     const one = json(volcengineImages.buildGenerateRequest(A, input({ references: [ref(1)] })))
     expect(one.image).toBe(`data:image/png;base64,${b64(1)}`)
     const many = json(
@@ -483,7 +483,7 @@ describe('gemini-image: direct Google vs relays', () => {
     expect(direct.headers['x-goog-api-key']).toBe('sk-img')
     expect(direct.headers).not.toHaveProperty('Authorization')
     const relay = geminiImage.buildGenerateRequest(
-      auth('gemini-2.5-flash-image', 'https://api.302.ai'),
+      auth('gemini-2.5-flash-image', 'https://relay.example.test'),
       input(),
     )
     expect(relay.headers).toMatchObject({
@@ -572,22 +572,22 @@ describe('results are saved right away (URLs expire: 1 hour to 30 days)', () => 
   })
 })
 
-// --- regression pins: the two tested 302.AI image presets, whole requests with references ---
+// --- regression pins: the two v0.4 tested image routes, whole requests with references ---
 // (URL, headers and body are pinned as literals; they are what the code produced before the image
 //  protocols were extended, which the independent review confirmed byte for byte.)
 
-describe('tested 302.AI presets: the whole request with two reference images never changes', () => {
+describe('v0.4 tested image routes: the whole request with two reference images never changes', () => {
   const refs = input({ references: [ref(1), ref(2)] })
 
-  it('302-image-seedream (openai-images, compat style)', () => {
+  it('Seedream through a relay (openai-images, compat style)', () => {
     expect(
       openaiImages.buildGenerateRequest(
-        auth('doubao-seedream-5-0-260128', 'https://api.302.ai/doubao'),
+        auth('doubao-seedream-5-0-260128', 'https://relay.example.test/doubao'),
         refs,
       ),
     ).toEqual({
       method: 'POST',
-      url: 'https://api.302.ai/doubao/images/generations',
+      url: 'https://relay.example.test/doubao/images/generations',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer sk-img' },
       body: {
         type: 'json',
@@ -605,12 +605,12 @@ describe('tested 302.AI presets: the whole request with two reference images nev
     })
   })
 
-  it('302-image-nano-banana (gemini-image through the relay: both auth headers)', () => {
+  it('Nano Banana through a relay (gemini-image: both auth headers)', () => {
     expect(
-      geminiImage.buildGenerateRequest(auth('gemini-2.5-flash-image', 'https://api.302.ai'), refs),
+      geminiImage.buildGenerateRequest(auth('gemini-2.5-flash-image', 'https://relay.example.test'), refs),
     ).toEqual({
       method: 'POST',
-      url: 'https://api.302.ai/v1beta/models/gemini-2.5-flash-image:generateContent',
+      url: 'https://relay.example.test/v1beta/models/gemini-2.5-flash-image:generateContent',
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer sk-img',
@@ -639,12 +639,12 @@ describe('tested 302.AI presets: the whole request with two reference images nev
 
   it('the default dialect (no imageStyle) changes nothing for the tested Seedream request', () => {
     const withDialect = {
-      ...auth('doubao-seedream-5-0-260128', 'https://api.302.ai/doubao'),
+      ...auth('doubao-seedream-5-0-260128', 'https://relay.example.test/doubao'),
       dialect: { imageStyle: 'auto' as const },
     }
     expect(openaiImages.buildGenerateRequest(withDialect, refs)).toEqual(
       openaiImages.buildGenerateRequest(
-        auth('doubao-seedream-5-0-260128', 'https://api.302.ai/doubao'),
+        auth('doubao-seedream-5-0-260128', 'https://relay.example.test/doubao'),
         refs,
       ),
     )

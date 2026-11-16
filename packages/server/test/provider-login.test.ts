@@ -179,7 +179,7 @@ describe('login providers: configuration', () => {
     })
     expect(preset.verifiedAt).toBeUndefined()
     expect(preset.knownLimitations[0]).toContain('只覆盖文本')
-    expect(presets.items.filter((p) => p.verification.status === 'tested')).toHaveLength(4)
+    expect(presets.items.filter((p) => p.verification.status === 'tested')).toHaveLength(1)
 
     const p = await createLoginProvider({ h } as Boot)
     expect(p).toMatchObject({

@@ -45,7 +45,7 @@ const WAN3 = videoProvider({
   baseUrl: 'https://ws1.cn-beijing.maas.aliyuncs.com',
   model: 'wan3.0-video',
 })
-const OLD = videoProvider() // the tested 302.AI Wan Flash
+const OLD = videoProvider() // the v0.4 Wan Flash route (aliyun-video through a relay)
 const target = (
   w: World,
   provider = OLD,

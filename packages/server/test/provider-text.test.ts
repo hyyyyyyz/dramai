@@ -83,7 +83,7 @@ describe('text presets through the API', () => {
       verification: { status: 'documented' },
     })
     expect(by('ollama-local')).toMatchObject({ auth: { type: 'none' }, region: 'local' })
-    expect(items.filter((p) => p.verification.status === 'tested')).toHaveLength(4)
+    expect(items.filter((p) => p.verification.status === 'tested')).toHaveLength(1)
     expect(items.every((p) => p.vendor.id && p.vendor.label)).toBe(true)
     const en = ((await (await h.raw('/api/presets?lang=en')).json()) as { items: typeof items })
       .items
@@ -214,7 +214,7 @@ describe('text presets through the API', () => {
       id: 'kling',
       label: '可灵',
     })
-    expect(items.filter((p) => p.verification.status === 'tested')).toHaveLength(4) // the 302.AI ones are unchanged
+    expect(items.filter((p) => p.verification.status === 'tested')).toHaveLength(1) // only the v0.4 DeepSeek preset
     // connection test of the direct Gemini image provider: x-goog-api-key only
     const gem = await preset(h, 'gemini-image-direct', 'AIza-image-1234567890')
     await h.client.call('providers.test', { params: { providerId: gem.id } })
