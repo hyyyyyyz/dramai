@@ -124,6 +124,11 @@ const cases = {
     ...draft('image', 'openai-images', 'https://img.example.com/v1'),
     model: 'image-model-1',
   },
+  // the three protocols whose model list the server is about to learn to fetch: re-record when it does
+  'image.gemini.models': {
+    action: 'models',
+    ...draft('image', 'gemini-image', 'https://gimg.example.com'),
+  },
   'image.models.noList': {
     action: 'models',
     ...draft('image', 'kling-image', 'https://kimg.example.com'),

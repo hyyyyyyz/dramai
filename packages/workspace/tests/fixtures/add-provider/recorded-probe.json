@@ -1,7 +1,7 @@
 {
   "meta": {
     "note": "Recorded from the real server by record-probe.mjs; the upstream is a stand-in fetch; keys are fake.",
-    "commit": "0c5e28f",
+    "commit": "19190dd",
     "providersStoredAfterAllProbes": 0,
     "upstreamAsked": 11,
     "keyAppearsInAnyResponse": false
@@ -296,6 +296,23 @@
           "body": false
         }
       ]
+    },
+    "image.gemini.models": {
+      "request": {
+        "action": "models",
+        "kind": "image",
+        "protocol": "gemini-image",
+        "baseUrl": "https://gimg.example.com",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "no_model_list",
+        "message": "这个接口类型没有模型列表接口"
+      },
+      "upstreamAsked": []
     },
     "image.models.noList": {
       "request": {
