@@ -24,6 +24,8 @@ export type RouteHandler<N extends RouteName> = (
 /** 修改类，但不改库、或要等外部网络的路由：不占事务（否则会把所有读写挡在外面）。 */
 const NO_TRANSACTION: ReadonlySet<RouteName> = new Set<RouteName>([
   'providers.test',
+  // 对没保存的草稿取模型列表 / 测试连接：等上游期间不能占着全局写事务（它不读不写库）
+  'providers.probe',
   'generate.preflight',
   'episodes.preflight',
 ])

@@ -197,6 +197,21 @@ export function parseGeminiErrorBody(text: string): {
 
 // === 模型列表（GET /v1beta/models） ===
 
+/** 模型列表里上游给什么就是什么，不按能力方法过滤（生图模型走的不一定是 generateContent）。 */
+export function parseGeminiAnyModels(json: unknown): Array<{ id: string; label: string }> {
+  const models = asRecord(json)?.models
+  if (!Array.isArray(models)) return []
+  const out: Array<{ id: string; label: string }> = []
+  for (const entry of models) {
+    const e = asRecord(entry)
+    const name = str(e?.name)
+    if (!name) continue
+    const id = shortModel(name)
+    out.push({ id, label: str(e?.displayName) ?? id })
+  }
+  return out
+}
+
 export function parseGeminiModels(json: unknown): Array<{ id: string; label: string }> {
   const models = asRecord(json)?.models
   if (!Array.isArray(models)) return []

@@ -57,10 +57,54 @@ describe('redactText / redactDeep', () => {
     })
   })
 
-  it('a secret too short to be a credential (a one-letter test key) is left alone instead of mangling the text', () => {
+  it('a secret too short to be a credential (under 8 characters) is left alone instead of mangling the text', () => {
     expect(redactText('ok, unknown', ['k'])).toBe('ok, unknown')
-    expect(redactText('ok, unknown', ['abcde'])).toBe('ok, unknown')
-    expect(redactText('x abcdef y', ['abcdef'])).toBe(`x ${REDACTED} y`)
+    expect(redactText('ok, unknown', ['unknown'])).toBe('ok, unknown') // 7 characters
+    expect(redactText('x abcdefgh y', ['abcdefgh'])).toBe(`x ${REDACTED} y`) // 8
+  })
+
+  it('finds the key written the ways an upstream is likely to repeat it', () => {
+    const secret = `sk-a"b/c&d<e>é'f+g h_0123456789`
+    const written: Record<string, string> = {
+      raw: secret,
+      url: encodeURIComponent(secret),
+      form: encodeURIComponent(secret).replace(/%20/g, '+'),
+      json: JSON.stringify(secret).slice(1, -1),
+      'json, slash escaped': JSON.stringify(secret).slice(1, -1).replace(/\//g, '\\/'),
+      'json, unicode escaped (lower)': JSON.stringify(secret).slice(1, -1).replace(/é/g, '\\u00e9'),
+      'json, unicode escaped (upper)': JSON.stringify(secret).slice(1, -1).replace(/é/g, '\\u00E9'),
+      'json, both (PHP default)': JSON.stringify(secret)
+        .slice(1, -1)
+        .replace(/\//g, '\\/')
+        .replace(/é/g, '\\u00e9'),
+      'html (&#39;)': secret
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;'),
+      'html (&#x27;)': secret
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;'),
+      base64: Buffer.from(secret).toString('base64'),
+      'base64, no padding': Buffer.from(secret).toString('base64').replace(/=+$/, ''),
+      base64url: Buffer.from(secret).toString('base64url'),
+    }
+    for (const [name, form] of Object.entries(written)) {
+      expect(redactText(`before ${form} after`, [secret]), name).toBe(`before ${REDACTED} after`)
+    }
+  })
+
+  it('does not guess at partial echoes: a truncated or split key is left as it is (the stated limit)', () => {
+    expect(redactText('key sk-echo-0123****cdef', ['sk-echo-0123456789abcdef'])).toBe(
+      'key sk-echo-0123****cdef',
+    )
+    expect(redactText('sk-echo- 0123456789abcdef', ['sk-echo-0123456789abcdef'])).toBe(
+      'sk-echo- 0123456789abcdef',
+    )
   })
 
   it('a ProviderError keeps its kind, status, code and flags; only message and body change; unchanged errors stay the same object', () => {

@@ -15,6 +15,7 @@ import {
   ProviderError,
   RESULT_TEXT_FIELDS,
   redactFields,
+  redactText,
   redactProviderError,
   sendRequest,
   speechDefaultVoiceOf,
@@ -31,6 +32,7 @@ import type {
   IdGenerator,
   Locale,
   ModelRegistry,
+  ProtocolId,
   ProviderConfig,
   ProviderKind,
   SecretStore,
@@ -364,25 +366,15 @@ export class ProviderService {
     secret: string | undefined,
     extraHeaders: Record<string, string> | undefined,
   ): Promise<ProviderProbeResult> {
-    const req = modelListRequest(protocol, baseUrl, secret, extraHeaders)
-    if (!req) {
-      return { outcome: 'no_model_list', message: '这个接口类型没有模型列表接口' }
-    }
     try {
-      const raw = await sendRequest(
-        { method: 'GET', url: req.url, headers: req.headers },
-        this.d.executor ?? {},
-        { timeoutMs: 20_000 },
-      )
-      if (raw.status < 200 || raw.status >= 300) {
-        return {
-          outcome: 'failed',
-          status: raw.status,
-          code: upstreamErrorCode(protocol, raw.json) ?? `HTTP_${raw.status}`,
-          error: `HTTP ${raw.status}${raw.text ? ` · ${raw.text.slice(0, 180)}` : ''}`,
-        }
+      const listed = await this.listModels(protocol, baseUrl, secret, extraHeaders)
+      if (listed.kind === 'unsupported') {
+        return { outcome: 'no_model_list', message: '这个接口类型没有模型列表接口' }
       }
-      return { outcome: 'models', items: req.parse(raw.json) }
+      if (listed.kind === 'http') {
+        return { outcome: 'failed', status: listed.status, code: listed.code, error: listed.error }
+      }
+      return { outcome: 'models', items: listed.items }
     } catch (err) {
       return {
         outcome: 'failed',
@@ -390,6 +382,46 @@ export class ProviderService {
         ...(err instanceof ProviderError ? { code: err.code } : {}),
       }
     }
+  }
+
+  /**
+   * 取模型列表的唯一实现：`providers.models`（已保存的服务商）和 `providers.probe`（草稿）都走这里，
+   * 发的请求、判定、失败时给出的上游信息（状态码、稳定码、响应体前 180 个字符）完全一致，且都已去掉凭据。
+   * 网络类错误（连不上、超时）抛 `ProviderError`（已去掉凭据）。
+   */
+  private async listModels(
+    protocol: ProtocolId,
+    baseUrl: string,
+    bearer: string | undefined,
+    extraHeaders: Record<string, string> | undefined,
+  ): Promise<
+    | { kind: 'unsupported' }
+    | { kind: 'ok'; items: Array<{ id: string; label: string }> }
+    | { kind: 'http'; status: number; code: string; error: string }
+  > {
+    const req = modelListRequest(protocol, baseUrl, bearer, extraHeaders)
+    if (!req) return { kind: 'unsupported' }
+    let raw
+    try {
+      raw = await sendRequest(
+        { method: 'GET', url: req.url, headers: req.headers },
+        this.d.executor ?? {},
+        { timeoutMs: 20_000 },
+      )
+    } catch (err) {
+      throw redactProviderError(err, [bearer])
+    }
+    if (raw.status < 200 || raw.status >= 300) {
+      return {
+        kind: 'http',
+        status: raw.status,
+        code: upstreamErrorCode(protocol, raw.json) ?? `HTTP_${raw.status}`,
+        error: redactText(`HTTP ${raw.status}${raw.text ? ` · ${raw.text.slice(0, 180)}` : ''}`, [
+          bearer,
+        ]),
+      }
+    }
+    return { kind: 'ok', items: req.parse(raw.json) }
   }
 
   async test(id: string): Promise<TestConnectionResult> {
@@ -461,7 +493,8 @@ export class ProviderService {
 
   /**
    * 这个服务商当前能用的模型。支持列表接口的协议（openai-chat / openai-responses / anthropic-messages /
-   * gemini-chat）取列表；图片、视频、语音协议没有统一的列表接口，返回 `MODEL_LIST_UNSUPPORTED`。
+   * gemini-chat / openai-images / gemini-image / openai-tts）取列表，上游给什么就是什么；其余图片、视频、语音协议
+   * 没有统一的列表接口，返回 `MODEL_LIST_UNSUPPORTED`。非 2xx 时 502，信息里带上游响应体的前 180 个字符（已去掉凭据）。
    * 登录方式下取 `/v1/models` 里 `visibility == "list"` 的那些。
    */
   async models(id: string): Promise<Array<{ id: string; label: string }>> {
@@ -475,24 +508,21 @@ export class ProviderService {
       }
       throw err
     }
-    const req = modelListRequest(cfg.protocol, cfg.baseUrl, bearer, cfg.dialect?.extraHeaders)
-    if (!req) throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
-    let raw
-    try {
-      raw = await sendRequest(
-        { method: 'GET', url: req.url, headers: req.headers },
-        this.d.executor ?? {},
-        { timeoutMs: 20_000 },
-      )
-    } catch (err) {
-      throw redactProviderError(err, [bearer])
-    }
-    if (raw.status < 200 || raw.status >= 300) {
-      throw new HttpError(502, 'PROVIDER_REQUEST_FAILED', `服务商返回 HTTP ${raw.status}`, {
-        status: raw.status,
+    const listed = await this.listModels(
+      cfg.protocol,
+      cfg.baseUrl,
+      bearer,
+      cfg.dialect?.extraHeaders,
+    )
+    if (listed.kind === 'unsupported')
+      throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
+    if (listed.kind === 'http') {
+      throw new HttpError(502, 'PROVIDER_REQUEST_FAILED', `服务商返回 ${listed.error}`, {
+        status: listed.status,
+        code: listed.code,
       })
     }
-    return req.parse(raw.json)
+    return listed.items
   }
 
   capability(cfg: ProviderConfig) {

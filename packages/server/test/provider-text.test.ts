@@ -136,7 +136,7 @@ describe('text presets through the API', () => {
     expect(call.headers.Authorization).toBe('Bearer sk-qwen-1234567890')
   })
 
-  it('model lists: OpenAI-compatible, Anthropic (retired models dropped), Gemini (generateContent only); image/video/speech have none', async () => {
+  it('model lists: OpenAI-compatible, Anthropic (retired models dropped), Gemini (generateContent only); video has none', async () => {
     const { h, seen } = await boot()
     const ollama = await preset(h, 'ollama-local')
     expect(
@@ -165,13 +165,14 @@ describe('text presets through the API', () => {
     const img = await h.client.call('providers.create', {
       body: {
         label: 'i',
-        kind: 'image',
-        protocol: 'openai-images',
-        baseUrl: 'https://x.example/v1',
+        kind: 'video',
+        protocol: 'ark-video',
+        baseUrl: 'https://x.example/api/v3',
         model: 'm',
         apiKey: 'k1234567890',
       },
     })
+    // video protocols (and the other image / speech ones) still have no model list
     await expect(
       h.client.call('providers.models', { params: { providerId: img.id } }),
     ).rejects.toMatchObject({ code: 'MODEL_LIST_UNSUPPORTED' })
