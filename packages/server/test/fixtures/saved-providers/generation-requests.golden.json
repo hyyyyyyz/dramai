@@ -1,0 +1,286 @@
+{
+  "requests": [
+    {
+      "method": "POST",
+      "url": "https://api.302.ai/doubao/images/generations",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-fixture-not-a-real-key"
+      },
+      "body": {
+        "model": "doubao-seedream-5-0-260128",
+        "prompt": "<long string>",
+        "n": 1,
+        "response_format": "b64_json",
+        "size": "1792x1008"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "https://api.302.ai/v1beta/models/gemini-2.5-flash-image:generateContent",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-fixture-not-a-real-key",
+        "x-goog-api-key": "sk-fixture-not-a-real-key"
+      },
+      "body": {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "<long string>"
+              },
+              {
+                "inline_data": {
+                  "mime_type": "image/png",
+                  "data": "<long string>"
+                }
+              },
+              {
+                "inline_data": {
+                  "mime_type": "image/png",
+                  "data": "<long string>"
+                }
+              },
+              {
+                "inline_data": {
+                  "mime_type": "image/png",
+                  "data": "<long string>"
+                }
+              }
+            ]
+          }
+        ],
+        "generationConfig": {
+          "responseModalities": [
+            "IMAGE"
+          ],
+          "imageConfig": {
+            "aspectRatio": "9:16"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "url": "https://api.302ai.cn/aliyun/api/v1/services/aigc/video-generation/video-synthesis",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer sk-fixture-not-a-real-key",
+        "X-DashScope-Async": "enable"
+      },
+      "body": {
+        "model": "wan2.2-i2v-flash",
+        "input": {
+          "prompt": "<long string>",
+          "img_url": "<long string>"
+        },
+        "parameters": {
+          "resolution": "720P",
+          "duration": 5,
+          "prompt_extend": true,
+          "watermark": false
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "url": "https://api.302ai.cn/aliyun/api/v1/tasks/task-1",
+      "headers": {
+        "Authorization": "Bearer sk-fixture-not-a-real-key"
+      }
+    }
+  ],
+  "capabilities": {
+    "302-image-seedream": {
+      "declared": true,
+      "capability": {
+        "media": "image",
+        "verifiedAt": "2026-05-04",
+        "modes": {
+          "t2i": "supported",
+          "i2i": "unsupported"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0,
+          "note": "经 302.AI 的 /doubao 子路径，锁定角色参考图当前不通：服务商期望参考图是 URL 而不是 base64（2026-05 实测）"
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "supported",
+          "value": [
+            "none"
+          ]
+        },
+        "aspectRatios": {
+          "support": "unverified",
+          "value": [
+            "9:16",
+            "16:9",
+            "1:1"
+          ]
+        }
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_image",
+          "amount": 0.035
+        }
+      ],
+      "quirks": [
+        "经 302.AI 的 /doubao 子路径调用时，锁定角色参考图当前不通：服务商期望参考图是 URL 而不是 base64（2026-05 实测）。因此这里标为不支持 i2i；需要多参考图一致性时，准入检查会显式失败而不是静默降级为纯文生图。"
+      ],
+      "provenance": "v0.4 预设备注（302.AI，2026-05 验证）。画幅未验证。"
+    },
+    "302-image-nano-banana": {
+      "declared": true,
+      "capability": {
+        "media": "image",
+        "verifiedAt": "2026-05-04",
+        "modes": {
+          "t2i": "supported",
+          "i2i": "unverified"
+        },
+        "refImages": {
+          "support": "unverified",
+          "value": 3,
+          "note": "参考图上限 3 取自 Google 公开文档的口径，未在本项目验证；参考图是否真的被用于保持角色一致也没验证"
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "unsupported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "unsupported"
+        },
+        "resolutions": {
+          "support": "supported",
+          "value": [
+            "none"
+          ]
+        },
+        "aspectRatios": {
+          "support": "unverified",
+          "value": [
+            "9:16",
+            "16:9",
+            "1:1"
+          ],
+          "note": "画幅经 generationConfig.imageConfig.aspectRatio 传出，服务商是否严格遵守没验证"
+        }
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_image",
+          "amount": 0.35,
+          "range": [
+            0.2,
+            0.5
+          ],
+          "note": "302.AI 页面给的是 0.2–0.5 PTC/张的区间，amount 取中值"
+        }
+      ],
+      "quirks": [
+        "画幅通过 generationConfig.imageConfig.aspectRatio 显式传出，不传时服务商给默认比例。",
+        "指令跟随比 Seedream 更精准，但更贵（预设备注，2026-05）。"
+      ],
+      "provenance": "文生图的协议与价格来自 v0.4 预设备注（302.AI，2026-05 端到端验证）；图生图 / 参考图 / 画幅未验证。"
+    },
+    "302-i2v-wan-flash": {
+      "declared": true,
+      "capability": {
+        "media": "video",
+        "verifiedAt": "2026-05-04",
+        "modes": {
+          "i2v": "supported"
+        },
+        "refImages": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refVideos": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "refAudios": {
+          "support": "unsupported",
+          "value": 0
+        },
+        "firstFrame": "supported",
+        "lastFrame": "unsupported",
+        "nativeAudio": "unsupported",
+        "durations": {
+          "support": "supported",
+          "value": {
+            "values": [
+              5
+            ]
+          }
+        },
+        "resolutions": {
+          "support": "supported",
+          "value": [
+            "480P",
+            "720P"
+          ]
+        },
+        "aspectRatios": {
+          "support": "supported",
+          "value": [
+            "9:16",
+            "16:9",
+            "1:1"
+          ]
+        },
+        "aspectFromSource": true,
+        "sizeStep": 2
+      },
+      "pricing": [
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.02,
+          "dimensions": {
+            "resolution": "480P"
+          }
+        },
+        {
+          "currency": "PTC",
+          "unit": "per_second",
+          "amount": 0.04,
+          "dimensions": {
+            "resolution": "720P"
+          }
+        }
+      ],
+      "quirks": [
+        "时长固定 5 秒（预设备注）。",
+        "输出比例跟随输入的起始帧，所以起始帧必须已经是项目画幅。"
+      ],
+      "provenance": "v0.4 预设备注与协议注释（302.AI，2026-05 验证）。480P 来自价目表，只有 720P 是端到端跑过的。"
+    }
+  }
+}

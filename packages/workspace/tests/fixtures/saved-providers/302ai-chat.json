@@ -1,0 +1,25 @@
+{
+  "id": "prov_3e54199d78c9",
+  "label": "302.AI（对话）",
+  "kind": "llm",
+  "protocol": "openai-chat",
+  "baseUrl": "https://api.302.ai/v1",
+  "model": "gpt-4o-mini",
+  "enabled": true,
+  "auth": {
+    "type": "api_key"
+  },
+  "presetId": "302ai-chat",
+  "notes": "聚合平台，模型名透传各家上游。和已有的 302.AI 生图、视频预设用同一个账号。按官方文档接入，未实测。",
+  "verification": {
+    "status": "documented",
+    "source": "https://doc.302.ai/147522039e0.md"
+  },
+  "knownLimitations": [
+    "默认模型名只是官方文档里的示例，请在 302.AI 的模型列表里换成你要用的文本模型。",
+    "文本主力模型清单、关思考写法和 JSON 输出支持都随上游模型而异，官方文档没有逐一说明。",
+    "国内环境用 api.302ai.com，Key 是否与海外互通文档没写。"
+  ],
+  "hasKey": true,
+  "keyMask": "sk-…-key"
+}
