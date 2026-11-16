@@ -503,7 +503,7 @@ export const TEXT_PRESETS: readonly ProviderPreset[] = [
     region: 'global',
     protocol: 'openai-chat',
     baseUrl: 'https://openrouter.ai/api/v1',
-    suggestedModel: 'anthropic/claude-sonnet-5.5',
+    suggestedModel: 'openrouter/auto', // 与 LOGIN_CHANNEL_SUGGESTED_MODEL.openrouter 相同（测试核对）
     auth: { type: 'account_login', channel: 'openrouter' },
     source: 'https://openrouter.ai/docs/guides/overview/auth/oauth',
     zh: {

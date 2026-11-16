@@ -185,16 +185,32 @@ describe('providers.loginChannels', () => {
     }
   })
 
-  it('needs no presets of its own: the suggested model is only an extra', async () => {
+  it('suggests a model without choosing a company for the user: ChatGPT keeps its own, OpenRouter gets its auto router', async () => {
     const h = await startServer({ startWorker: false })
     const { items } = await h.client.call('providers.loginChannels')
+    expect(Object.fromEntries(items.map((i) => [i.channel, i.suggestedModel]))).toEqual({
+      'openai-chatgpt': 'gpt-6.1-sol',
+      openrouter: 'openrouter/auto',
+    })
     for (const i of items) {
-      expect(typeof (i.suggestedModel ?? '')).toBe('string')
       expect(
         Object.keys(i)
           .sort()
           .filter((k) => !['channel', 'kind', 'protocol', 'baseUrl', 'suggestedModel'].includes(k)),
       ).toEqual([])
     }
+    // creating a sign-in provider with the suggested model is accepted, and a saved one is unaffected by the suggestion
+    const or = items.find((i) => i.channel === 'openrouter')!
+    const made = await h.client.call('providers.create', {
+      body: {
+        label: 'or',
+        kind: 'llm',
+        protocol: or.protocol,
+        baseUrl: or.baseUrl,
+        model: or.suggestedModel!,
+        auth: { type: 'account_login', channel: 'openrouter' },
+      },
+    })
+    expect(made.model).toBe('openrouter/auto')
   })
 })

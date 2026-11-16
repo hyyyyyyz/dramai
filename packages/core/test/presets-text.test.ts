@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loginEndpointProblem } from '../src/providers/auth.ts'
+import { LOGIN_CHANNEL_SUGGESTED_MODEL, loginEndpointProblem } from '../src/providers/auth.ts'
 import {
   configFromPreset,
   localizeProviderPreset,
@@ -127,5 +127,15 @@ describe('text provider presets (first batch): documented, not tested', () => {
     expect(
       configFromPreset(PROVIDER_PRESETS.find((p) => p.id === 'ollama-local')!, { id: 'c2' }),
     ).toMatchObject({ auth: { type: 'none' } })
+  })
+})
+
+describe('the sign-in channels’ suggested models', () => {
+  it('the sign-in presets suggest what the channel suggests (OpenRouter: its own auto router, not one company’s model)', () => {
+    for (const p of PROVIDER_PRESETS) {
+      if (p.auth.type === 'account_login')
+        expect(p.suggestedModel, p.id).toBe(LOGIN_CHANNEL_SUGGESTED_MODEL[p.auth.channel])
+    }
+    expect(LOGIN_CHANNEL_SUGGESTED_MODEL.openrouter).toBe('openrouter/auto')
   })
 })

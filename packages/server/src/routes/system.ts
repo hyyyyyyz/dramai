@@ -1,6 +1,7 @@
 import {
   knownModels,
   LOGIN_CHANNEL_ENDPOINTS,
+  LOGIN_CHANNEL_SUGGESTED_MODEL,
   localizeProviderPreset,
   localizeVendor,
   localizeStyleGroup,
@@ -191,15 +192,12 @@ export function registerSystemRoutes(r: RouteRegistry, ctx: ServerContext): void
   r.handle('providers.loginChannels', async () => ({
     items: (Object.keys(LOGIN_CHANNEL_ENDPOINTS) as LoginChannelId[]).map((channel) => {
       const fixed = LOGIN_CHANNEL_ENDPOINTS[channel]
-      const suggested = PROVIDER_PRESETS.find(
-        (p) => p.auth.type === 'account_login' && p.auth.channel === channel,
-      )?.suggestedModel
       return {
         channel,
         kind: 'llm' as const,
         protocol: fixed.protocol,
         baseUrl: fixed.baseUrl,
-        ...(suggested ? { suggestedModel: suggested } : {}),
+        suggestedModel: LOGIN_CHANNEL_SUGGESTED_MODEL[channel],
       }
     }),
   }))

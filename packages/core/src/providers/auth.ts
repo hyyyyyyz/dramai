@@ -31,6 +31,16 @@ export const LOGIN_CHANNEL_ENDPOINTS: Record<
   openrouter: { baseUrl: 'https://openrouter.ai/api/v1', protocol: 'openai-chat' },
 }
 
+/**
+ * 登录通道的建议型号（添加表单预填进模型框）。ChatGPT 通道只有 OpenAI 自己的型号；OpenRouter 通道给它自己的自动路由
+ * 型号 `openrouter/auto`（按提示词在它的型号里选，不替用户选某一家公司的型号）。依据：OpenRouter 公开文档里的型号 id，
+ * 没有联网核实。
+ */
+export const LOGIN_CHANNEL_SUGGESTED_MODEL: Record<LoginChannelId, string> = {
+  'openai-chatgpt': 'gpt-6.1-sol',
+  openrouter: 'openrouter/auto',
+}
+
 /** 地址是不是这个通道允许的那一个（规范化后比较：https、主机、路径；不接受用户信息、端口、查询串）。 */
 export function isAllowedLoginBaseUrl(channel: LoginChannelId, baseUrl: string): boolean {
   try {
