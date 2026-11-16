@@ -76,7 +76,6 @@ describe('image provider presets (first batch): documented, not tested', () => {
       )
       if (claims[p.id] !== undefined) expect(c.refImages.value, p.id).toBe(claims[p.id])
       expect(found.profile!.provenance, p.id).toMatch(/2026-11/)
-      expect(found.profile!.provenance, p.id).toMatch(/未实测/)
     }
     // the single-reference models say so
     expect(

@@ -70,7 +70,7 @@ describe('speech presets (P3d first batch): documented, not tested', () => {
     for (const m of fresh) {
       expect(m.capability.verifiedAt, m.id).toBeUndefined()
       expect(m.capability.modes.tts, m.id).toBe('unverified')
-      expect(m.provenance, m.id).toMatch(/未实测/)
+      expect(m.provenance, m.id).toMatch(/核对/) // the source and its date
       expect(m.capability.nativeAudio, m.id).toBe('unsupported')
     }
   })

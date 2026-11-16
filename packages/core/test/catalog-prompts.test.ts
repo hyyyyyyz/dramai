@@ -571,7 +571,7 @@ describe('model profiles, capabilities and price table', () => {
     const banana = lookup('gemini-image', 'gemini-2.5-flash-image').capability
     expect(banana.modes).toEqual({ t2i: 'supported', i2i: 'unverified' })
     expect(banana.refImages).toMatchObject({ support: 'unverified', value: 3 })
-    expect(banana.refImages.note).toContain('未在本项目验证')
+    expect(banana.refImages.note).toContain('Google 公开文档的口径') // where the claimed value comes from
     // Seedream：参考图不通 → i2i 不支持，参考图上限 0
     const seedream = lookup('openai-images', 'doubao-seedream-5-0-260128')
     expect(seedream.capability.modes).toEqual({ t2i: 'supported', i2i: 'unsupported' })

@@ -109,7 +109,7 @@ describe('video model profiles (P3c): everything is claimed, nothing is verified
     // reference video / audio: the model can, this project cannot send local files yet
     expect(c.refVideos.support).toBe('unsupported')
     expect(c.refAudios.support).toBe('unsupported')
-    expect(m.provenance).toContain('未验证')
+    expect(m.provenance).toMatch(/核对/) // the source and its date
     expect(m.quirks.length).toBeGreaterThan(0)
     expect(m.prompt.referenceBinding).toMatch(/\{n\}/)
     expect(m.prompt.referenceBinding).toMatch(/\{name\}/)

@@ -384,7 +384,7 @@ describe('review fix 6: the first frame takes one of the reference slots on Klin
   it('the Kling profile says it is a conservative, unverified choice', () => {
     const p = models.lookup({ protocol: 'kling-contents', model: 'kling-4.0' }).capability.refImages
     expect(p.note).toContain('保守')
-    expect(p.note).toContain('未验证')
+    expect(p.support).toBe('unverified') // the state says it; the note no longer talks about tests
   })
 })
 

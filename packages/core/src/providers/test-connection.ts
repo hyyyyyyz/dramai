@@ -59,7 +59,7 @@ async function testProviderUnredacted(
     case 'siliconflow-images':
       return {
         outcome: 'unverifiable',
-        reason: '该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来实测。',
+        reason: '该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来确认。',
       }
     case 'gemini-image': {
       const headers: Record<string, string> = {}
