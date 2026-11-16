@@ -58,12 +58,20 @@ export const PROTOCOLS_BY_KIND: Record<ProviderKind, readonly ProtocolId[]> = {
 }
 
 /**
- * Interface types that can no longer be picked when adding a provider. Their requests carry a path prefix
- * (`/aliyun/…`, `/volcengine/…`) that exists only on the relay platform that was taken out, so the vendors' own
- * addresses answer 404 for them (the vendors' own interfaces are `dashscope-video` and `ark-video`). Providers that
- * were saved with one of them still show, edit, test and generate as before, and the names stay.
+ * Interface types that can no longer be picked when adding a provider. Providers saved with one of them still show,
+ * edit, test and generate as before, and the names stay.
+ * - `aliyun-video`, `volcengine-video`: their requests carry a path prefix (`/aliyun/…`, `/volcengine/…`) that exists
+ *   only on the relay platform that was taken out, so the vendors' own addresses answer 404 for them (the vendors'
+ *   own interfaces are `dashscope-video` and `ark-video`).
+ * - `kling-video`: the old-version path with a static Bearer key; the vendor's old-version interface wants a JWT
+ *   signed with an access/secret key pair, so a key pasted into it is very likely refused (the vendor's current
+ *   interface is `kling-contents`).
  */
-export const NOT_ADDABLE: ReadonlySet<ProtocolId> = new Set(['aliyun-video', 'volcengine-video'])
+export const NOT_ADDABLE: ReadonlySet<ProtocolId> = new Set([
+  'aliyun-video',
+  'volcengine-video',
+  'kling-video',
+])
 
 /** What the "Add provider" form offers per kind: `PROTOCOLS_BY_KIND` without the ones that cannot be added any more. */
 export const ADDABLE_PROTOCOLS_BY_KIND: Record<ProviderKind, readonly ProtocolId[]> = {

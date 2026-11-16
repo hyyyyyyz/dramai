@@ -55,10 +55,10 @@ const ok = (items: GenerateItem[]) =>
   makePreflight(
     items.map((it) =>
       makeVerdict(`shot_video:${(it.target as { shotId: string }).shotId}`, {
-        estimate: { priced: true, currency: 'PTC', amount: 0.2, approx: true },
+        estimate: { priced: true, currency: 'PTS', amount: 0.2, approx: true },
       }),
     ),
-    { byCurrency: { PTC: { amount: 0.2 * items.length, approx: true } } },
+    { byCurrency: { PTS: { amount: 0.2 * items.length, approx: true } } },
   )
 
 describe('BatchConfirmDialog', () => {
@@ -229,11 +229,11 @@ describe('BatchConfirmDialog', () => {
   it('cost is shown per currency; items without a price are counted, not guessed', async () => {
     open(() =>
       makePreflight([makeVerdict(tid(1)), makeVerdict(tid(2)), makeVerdict(tid(3))], {
-        byCurrency: { PTC: { amount: 0.2, approx: true } },
+        byCurrency: { PTS: { amount: 0.2, approx: true } },
         unpriced: 2,
       }),
     )
-    expect(await screen.findByTestId('cost-headline')).toHaveTextContent('PTC')
+    expect(await screen.findByTestId('cost-headline')).toHaveTextContent('PTS')
     expect(screen.getByText('2 项查不到单价，没有计入')).toBeInTheDocument()
     expect(
       within(screen.getByTestId('cost-headline').parentElement!).getByText('预估费用'),

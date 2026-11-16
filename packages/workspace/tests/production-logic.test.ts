@@ -271,11 +271,11 @@ describe('cost headline', () => {
       costHeadline(
         {
           ...emptyTotals(),
-          byCurrency: { PTC: { amount: 0.2, approx: true }, USD: { amount: 3, approx: false } },
+          byCurrency: { PTS: { amount: 0.2, approx: true }, USD: { amount: 3, approx: false } },
         },
         money,
       ),
-    ).toBe('≈ PTC 0.2 + USD 3')
+    ).toBe('≈ PTS 0.2 + USD 3')
   })
   it('says nothing when nothing could be priced', () => {
     expect(costHeadline({ ...emptyTotals(), unpriced: 3 }, money)).toBeUndefined()

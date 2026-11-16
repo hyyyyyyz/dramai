@@ -118,7 +118,7 @@ describe('locale-aware formatting', () => {
   it('money: ISO currencies via Intl, provider points as "amount unit"', () => {
     expect(formatMoney('en', 12.5, 'USD')).toBe('$12.50')
     expect(formatMoney('zh-CN', 12.5, 'CNY')).toMatch(/¥12\.50/)
-    expect(formatMoney('en', 0.035, 'PTC')).toBe('0.035 PTC')
+    expect(formatMoney('en', 0.035, 'PTS')).toBe('0.035 PTS')
   })
 
   it('"updated" says today / yesterday in the user’s language', () => {

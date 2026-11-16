@@ -67,7 +67,7 @@ describe('which saved providers offer “Get model list”', () => {
 })
 
 describe('saved providers with an interface type that can no longer be added', () => {
-  it.each(['aliyun-video', 'volcengine-video'] as const)(
+  it.each(['aliyun-video', 'volcengine-video', 'kling-video'] as const)(
     '%s: the card shows, opens and edits as before, and the interface type keeps its name in the box',
     async (protocol) => {
       const saved = { ...wan, id: `prov_${protocol}`, protocol }
@@ -88,6 +88,7 @@ describe('saved providers with an interface type that can no longer be added', (
         .map((o) => (o as HTMLOptionElement).value)
       expect(values).toContain('aliyun-video')
       expect(values).toContain('volcengine-video')
+      expect(values).toContain('kling-video')
       expect(within(card).getByRole('button', { name: /测试连接/ })).toBeEnabled()
     },
   )

@@ -83,7 +83,7 @@ export function formatChars(locale: string, t: TFunction, count: number): string
 
 const ISO_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
 
-/** 金额：ISO 币种用 Intl；PTC 这类服务商点数不是 ISO 币种，写成“数值 单位”。 */
+/** 金额：ISO 币种用 Intl；点数之类不是 ISO 币种的单位，写成“数值 单位”。 */
 export function formatMoney(locale: string, amount: number, currency: string): string {
   if (!ISO_CURRENCIES.has(currency.toUpperCase()))
     return `${formatNumber(locale, amount, { maximumFractionDigits: 4 })} ${currency}`

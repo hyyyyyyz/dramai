@@ -89,7 +89,7 @@ describe('the interface types that can be added', () => {
       expect(await options(kind)).toEqual([...PROTOCOLS_BY_KIND[kind]])
     },
   )
-  it('video: the two that exist only on the relay that was taken out are not offered; the rest keep their order, and the first of them is the default', async () => {
+  it('video: the three that cannot work against the vendors’ own addresses are not offered; the rest keep their order, and the first of them is the default', async () => {
     page()
     const d = await openForm('video')
     const select = within(d).getByRole('combobox', { name: /API 协议/ })
@@ -97,10 +97,14 @@ describe('the interface types that can be added', () => {
       .getAllByRole('option')
       .map((o) => (o as HTMLOptionElement).value)
     expect(values).toEqual(
-      PROTOCOLS_BY_KIND.video.filter((p) => !['aliyun-video', 'volcengine-video'].includes(p)),
+      PROTOCOLS_BY_KIND.video.filter(
+        (p) => !['aliyun-video', 'volcengine-video', 'kling-video'].includes(p),
+      ),
     )
     expect(values).not.toContain('aliyun-video')
     expect(values).not.toContain('volcengine-video')
+    expect(values).not.toContain('kling-video')
+    expect(values).toEqual(['generic-video', 'ark-video', 'kling-contents', 'dashscope-video'])
     expect(select).toHaveValue(values[0])
     expect(d.textContent).not.toMatch(/推荐|推薦|recommend/i)
   })
