@@ -49,8 +49,7 @@
         "suffixFloor": []
       },
       "quirks": [
-        "画幅通过 generationConfig.imageConfig.aspectRatio 显式传出，不传时服务商给默认比例。",
-        "指令跟随比 Seedream 更精准。"
+        "画幅通过 generationConfig.imageConfig.aspectRatio 显式传出，不传时服务商给默认比例。"
       ],
       "provenance": "文生图的协议来自 v0.4 协议注释（2026-05）。"
     },
@@ -607,7 +606,7 @@
         "suffixFloor": []
       },
       "quirks": [
-        "官方：和 MiniMax-H3-Image 参数和限制相同，更快。",
+        "官方：和 MiniMax-H3-Image 参数和限制相同。",
         "官方（H3 generations 页，2026-11 核对）：size 的总像素下限 655,360，上限 20,000,000；本项目的尺寸计算会补足下限。"
       ],
       "provenance": "同 MiniMax-H3-Image（官方文档，2026-11 核对）。价格留空。"
@@ -669,7 +668,7 @@
         "官方：watermark 默认 true（右下角\"AI 生成\"），本协议显式关掉。",
         "官方：size 总像素 921,600~4,624,220，宽高比 [1/16, 16]；提示词建议少于约 300 汉字。",
         "和 openai-images 协议的 /doubao 子路径不同：直连的 image 字段接受 data URI，不需要 URL；那条路径的参考图限制不适用这里。",
-        "官方：结果 URL 24 小时有效，这里要 b64_json，不依赖 URL；限流 500 IPM；Seedance 视频对真人人脸有输入审核，生图人脸走同厂商组合更稳（调研）。"
+        "官方：结果 URL 24 小时有效，这里要 b64_json，不依赖 URL；限流 500 IPM；Seedance 视频对真人人脸有输入审核。"
       ],
       "provenance": "官方文档：www.volcengine.com/docs/82379/1541523（图片生成 API）与 82379/1824121（Seedream 教程），2026-11 核对。单价官方页指向\"模型价格\"页，没读到，留空。"
     },
@@ -955,10 +954,7 @@
         "negative": "none",
         "suffixFloor": []
       },
-      "quirks": [
-        "官方：Qwen-Image-Edit 不支持 image_size，输出比例跟随输入图。",
-        "单张参考图，多角色一致性弱于直连厂商。"
-      ],
+      "quirks": ["官方：Qwen-Image-Edit 不支持 image_size，输出比例跟随输入图。", "单张参考图。"],
       "provenance": "官方 API 参考 docs.siliconflow.com/en/api-reference/images/images-generations（国际站页面，2026-11 核对）；国内站页面当天读不到，地址 api.siliconflow.cn 来自惯例。价格没读到，留空。"
     },
     {
@@ -3652,7 +3648,7 @@
               "id": "loongbrian_v2"
             }
           ],
-          "note": "官方音色列表页里 v2 的音色很多，这里只列了没有 _v3 同名版本的 25 个；与 v3 同名的音色在 v2 也可用（未单独列出）。"
+          "note": "官方音色列表页里 v2 的音色很多，这里只列了没有 _v3 同名版本的 25 个；其它音色以服务商的清单为准。"
         }
       },
       "pricing": [],

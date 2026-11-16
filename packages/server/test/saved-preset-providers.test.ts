@@ -255,15 +255,13 @@ describe('providers saved from presets that are no longer in the catalogue: a wh
     const result = { requests: firsts, capabilities }
     if (process.env.UPDATE_GOLDEN) writeFileSync(goldenUrl, JSON.stringify(result, null, 2) + '\n')
     const golden = JSON.parse(readFileSync(goldenUrl, 'utf8')) as typeof result
-    // Only the free-text provenance, price notes and quirks were reworded (quirks are compared by count) when the vendor name was taken out of them;
+    // Only the free-text provenance, price notes and quirks were reworded when the vendor name was taken out of them;
     // every request and every capability fact is compared as it was.
     const facts = (v: unknown) =>
       JSON.parse(JSON.stringify(v), (k, x) =>
-        k === 'provenance' || k === 'note' || k === 'pricing'
-          ? undefined
-          : k === 'quirks'
-            ? (x as unknown[]).length
-            : x,
+        // quirks are free text that has been reworded and, where a sentence had no source (a comparison with another
+        // model), removed: they are left out of this comparison, the capability facts and the requests are not
+        k === 'provenance' || k === 'note' || k === 'pricing' || k === 'quirks' ? undefined : x,
       )
     expect(facts(result)).toEqual(facts(golden))
     // The one intended change since the golden file was made: the three models' price tables (a reseller's points) were

@@ -28,6 +28,15 @@ describe('the wording of the bundled model data', () => {
     expect(all.filter(([, s]) => WORDS.test(s))).toEqual([])
   })
 
+  it('has no comparisons between models or vendors (better, more accurate, cheaper, faster, weaker than …)', () => {
+    const all: Array<[string, string]> = []
+    raw.models.forEach((m, i) => strings(m, `models[${i}]`, all))
+    // "比 … 更 …", "更 / 最 + quality word", "x 于 y" comparisons, "同厂商组合更稳"-style claims
+    const COMPARISON =
+      /比[^，。；]{0,24}?更|(更|最)(精准|准确|好|强|稳|便宜|快|贵|佳|慢|差)|(弱|强|优|劣)于|胜过|不如/
+    expect(all.filter(([, s]) => COMPARISON.test(s))).toEqual([])
+  })
+
   it('still carries the facts the notes are for: limits and cautions that change what a user does', () => {
     const text = JSON.stringify(raw)
     // a few of the cautions that must survive the rewording
