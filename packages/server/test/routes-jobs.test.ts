@@ -142,26 +142,26 @@ describe('cost summary', () => {
         range: [0.4, 0.8] as [number, number],
         approx: true,
       },
-      { priced: true as const, currency: 'PTC', amount: 10, approx: false },
+      { priced: true as const, currency: 'PTS', amount: 10, approx: false },
       { priced: false as const, reason: '未定价' },
     ]
     const plain = summarizeCosts(estimates)
     expect(plain.byCurrency.CNY).toMatchObject({ amount: 2, approx: true })
-    expect(plain.byCurrency.PTC).toMatchObject({ amount: 10 })
+    expect(plain.byCurrency.PTS).toMatchObject({ amount: 10 })
     expect(plain.unpriced).toBe(1)
     expect(plain.converted).toBeUndefined()
     expect(plain.isEstimate).toBe(true)
-    expect(Object.keys(plain.remaining).sort()).toEqual(['CNY', 'PTC'])
+    expect(Object.keys(plain.remaining).sort()).toEqual(['CNY', 'PTS'])
 
     const conv = summarizeCosts(estimates, {
-      conversion: { targetCurrency: 'CNY', rates: { PTC: 0.1 } },
+      conversion: { targetCurrency: 'CNY', rates: { PTS: 0.1 } },
     })
     expect(conv.converted).toMatchObject({ currency: 'CNY', amount: 3, approx: true })
-    expect(conv.remaining).toEqual({}) // CNY 本币、PTC 有汇率，都折进去了
+    expect(conv.remaining).toEqual({}) // CNY 本币、PTS 有汇率，都折进去了
     // 没有汇率的币种不折算、不猜
     const partial = summarizeCosts(estimates, { conversion: { targetCurrency: 'CNY', rates: {} } })
     expect(partial.converted).toMatchObject({ amount: 2 })
-    expect(Object.keys(partial.remaining)).toEqual(['PTC'])
+    expect(Object.keys(partial.remaining)).toEqual(['PTS'])
   })
 })
 

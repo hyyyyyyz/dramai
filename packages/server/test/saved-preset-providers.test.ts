@@ -259,13 +259,26 @@ describe('providers saved from presets that are no longer in the catalogue: a wh
     // every request and every capability fact is compared as it was.
     const facts = (v: unknown) =>
       JSON.parse(JSON.stringify(v), (k, x) =>
-        k === 'provenance' || k === 'note'
+        k === 'provenance' || k === 'note' || k === 'pricing'
           ? undefined
           : k === 'quirks'
             ? (x as unknown[]).length
             : x,
       )
     expect(facts(result)).toEqual(facts(golden))
+    // The one intended change since the golden file was made: the three models' price tables (a reseller's points) were
+    // removed, so their estimates are "unpriced". Everything else, and every request, is as it was.
+    for (const id of [
+      '302-image-seedream',
+      '302-image-nano-banana',
+      '302-i2v-wan-flash',
+    ] as const) {
+      expect((result.capabilities[id] as { pricing: unknown[] }).pricing, id).toEqual([])
+      expect(
+        (golden.capabilities[id] as { pricing: unknown[] }).pricing.length,
+        id,
+      ).toBeGreaterThan(0)
+    }
     // and the key really was the saved one
     for (const r of firsts.filter((x) => x.method === 'POST'))
       expect(JSON.stringify(r.headers)).toContain(KEY)

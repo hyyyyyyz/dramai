@@ -163,10 +163,22 @@ describe('asset sheets', () => {
           sheetLayout: 'per_angle',
         },
       ])
-      expect(pre.results[0].estimate).toMatchObject({
+      // the v0.4 Nano Banana profile has no price any more: honestly unpriced, the verdict itself is unchanged
+      expect(pre.results[0].estimate).toMatchObject({ priced: false })
+      // the number of images (3) is visible in the estimate of a model that has a price: 3 × 0.0336 USD
+      const priced = await preflightTargets(env.deps, env.projectId, [
+        {
+          target: { kind: 'asset_sheet', assetId: hero.id },
+          provider: { ...env.provider('img'), model: 'gemini-nano-banana-2.1' },
+          sheetLayout: 'per_angle',
+          resolution: '1K',
+        },
+      ])
+      expect(priced.results[0].estimate).toMatchObject({
         priced: true,
-        amount: expect.closeTo(1.05, 5),
-      }) // 3 张
+        currency: 'USD',
+        amount: expect.closeTo(0.1008, 5),
+      })
       await requestGeneration(env.deps, env.projectId, [
         {
           target: { kind: 'asset_sheet', assetId: hero.id },
@@ -745,7 +757,9 @@ describe('read-only preflight for a whole episode', () => {
         ),
       ).toBe(true)
       expect(pre.admission.ok).toBe(false)
-      expect(pre.totals.byCurrency.PTC).toBeDefined()
+      // none of the plan's v0.4 providers has a price any more: nothing is added up, everything is counted as unpriced
+      expect(pre.totals.byCurrency).toEqual({})
+      expect(pre.totals.unpriced).toBeGreaterThan(0)
       // 同一份目标真正提交 → 同样的结论、同样没有任务
       const res = await requestGeneration(env.deps, env.projectId, pre.targets)
       expect(

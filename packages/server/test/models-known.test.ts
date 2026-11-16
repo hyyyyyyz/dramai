@@ -63,26 +63,37 @@ describe('models.known', () => {
     }
   })
 
-  it('leaves out the entries priced in a reseller platform’s points, and names no removed platform', async () => {
+  it('leaves out the combinations that only exist on a relay, lists the real models, and names no removed platform', async () => {
     const h = await startServer({ startWorker: false })
-    const hidden = bundled.models.filter((m) => m.pricing.some((p) => p.currency === 'PTC'))
-    expect(hidden.length).toBeGreaterThan(0)
-    expect(hidden.every((m) => m.candidate === false)).toBe(true) // the data says so
+    const hidden = bundled.models.filter((m) => m.candidate === false)
+    // the data says which: the four aliyun-video models (a path prefix only a relay has) and the openai-images Seedream
+    expect(hidden.map((m) => `${m.protocol}:${m.apiModel}`).sort()).toEqual([
+      'aliyun-video:wan2.2-i2v-flash',
+      'aliyun-video:wan2.2-i2v-plus',
+      'aliyun-video:wan2.5-i2v-preview',
+      'aliyun-video:wan2.7-i2v',
+      'openai-images:doubao-seedream-5-0-260128',
+    ])
     const all = (
       await Promise.all(KINDS.map((kind) => h.client.call('models.known', { query: { kind } })))
     ).flatMap((r) => r.items)
-    // gemini-2.5-flash-image is hidden; the remaining gemini-image entries are listed
-    expect(all.find((i) => i.id === 'gemini-2.5-flash-image')).toBeUndefined()
-    expect(all.some((i) => i.protocols.includes('gemini-image'))).toBe(true)
-    expect(all.some((i) => i.protocols.includes('aliyun-video'))).toBe(false) // all four aliyun-video entries are priced in points
+    // gemini-2.5-flash-image is a real model on Google's own address: it is listed (with its gemini-image protocol)
+    expect(all.find((i) => i.id === 'gemini-2.5-flash-image')).toMatchObject({
+      kind: 'image',
+      protocols: ['gemini-image'],
+    })
+    expect(all.some((i) => i.protocols.includes('aliyun-video'))).toBe(false)
+    expect(all.find((i) => i.id === 'doubao-seedream-5-0-260128')?.protocols).toEqual([
+      'volcengine-images',
+    ])
     expect(JSON.stringify(all)).not.toMatch(/302|PTC/i)
-    // they are still there for the saved providers that use them (capability and price keep working)
+    // the hidden ones are still there for the saved providers that use them (capability and prompt dialect)
     const found = h.server.ctx.catalog.models.lookup({
       protocol: 'aliyun-video',
       model: 'wan2.2-i2v-flash',
     })
     expect(found.declared).toBe(true)
-    expect(found.profile?.pricing.length).toBeGreaterThan(0)
+    expect(found.profile?.pricing).toEqual([]) // no price table: estimates say "unpriced"
   })
 
   it('filters by protocol; a protocol of another kind gives nothing', async () => {

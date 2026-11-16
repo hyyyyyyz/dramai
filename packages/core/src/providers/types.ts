@@ -434,11 +434,11 @@ export interface ModelCapability {
 }
 
 /**
- * 价目：按**服务商的原始计量单位和币种**存（如 PTC、CNY、USD）。
+ * 价目：按**服务商的原始计量单位和币种**存（如 CNY、USD）。
  * 不在这里折算；折算成人民币是用户可改的可选设置（`CostDisplaySettings`），默认不折算。
  */
 export interface PriceEntry {
-  /** 服务商原始币种/点数（PTC、CNY、USD …）。 */
+  /** 服务商原始币种/点数（CNY、USD …）；币种是任意字符串，旧记录里出现的任何值都照常读取。 */
   currency: string
   /** 计价单位。 */
   unit: 'per_image' | 'per_second' | 'per_call' | 'per_1k_chars'
@@ -466,8 +466,8 @@ export interface ModelProfile {
   /** 这份画像的依据与日期。 */
   provenance: string
   /**
-   * `false` = 画像和价目照常用于已有配置，但不作为"已知型号"候选列出（`knownModels` 跳过它）。
-   * 用于价目是某个转售平台自己的点数（`PTC`）的条目：它们留着给旧配置估价，不推荐给新配置。缺省 = 列出。
+   * `false` = 画像照常用于已有配置（能力、提示词写法），但不作为"已知型号"候选列出（`knownModels` 跳过它）。
+   * 用于"协议 + 型号"这个组合只在某个转接服务上成立的条目（官方接口用的是别的协议）。缺省 = 列出。
    */
   candidate?: boolean
 }

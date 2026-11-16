@@ -42,15 +42,7 @@
         },
         "verifiedAt": "2026-05-04"
       },
-      "pricing": [
-        {
-          "currency": "PTC",
-          "unit": "per_image",
-          "amount": 0.35,
-          "range": [0.2, 0.5],
-          "note": "价格页给的是 0.2–0.5 PTC/张的区间，amount 取中值"
-        }
-      ],
+      "pricing": [],
       "prompt": {
         "lang": "en",
         "negative": "inline",
@@ -58,10 +50,9 @@
       },
       "quirks": [
         "画幅通过 generationConfig.imageConfig.aspectRatio 显式传出，不传时服务商给默认比例。",
-        "指令跟随比 Seedream 更精准，但更贵（预设备注，2026-05）。"
+        "指令跟随比 Seedream 更精准（预设备注，2026-05）。"
       ],
-      "provenance": "文生图的协议与价格来自 v0.4 预设备注（2026-05 端到端验证）；图生图 / 参考图 / 画幅未验证。",
-      "candidate": false
+      "provenance": "文生图的协议来自 v0.4 预设备注（2026-05 端到端验证）；图生图 / 参考图 / 画幅未验证。"
     },
     {
       "id": "doubao-seedream-5-0-260128",
@@ -103,13 +94,7 @@
         },
         "verifiedAt": "2026-05-04"
       },
-      "pricing": [
-        {
-          "currency": "PTC",
-          "unit": "per_image",
-          "amount": 0.035
-        }
-      ],
+      "pricing": [],
       "prompt": {
         "lang": "zh",
         "negative": "field",
@@ -164,24 +149,7 @@
         "aspectFromSource": true,
         "sizeStep": 2
       },
-      "pricing": [
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.02,
-          "dimensions": {
-            "resolution": "480P"
-          }
-        },
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.04,
-          "dimensions": {
-            "resolution": "720P"
-          }
-        }
-      ],
+      "pricing": [],
       "prompt": {
         "lang": "zh",
         "negative": "none",
@@ -191,7 +159,7 @@
         "时长固定 5 秒（预设备注）。",
         "输出比例跟随输入的起始帧，所以起始帧必须已经是项目画幅。"
       ],
-      "provenance": "v0.4 预设备注与协议注释（2026-05 验证）。480P 来自价目表，只有 720P 是端到端跑过的。",
+      "provenance": "v0.4 预设备注与协议注释（2026-05 验证）。只有 720P 是端到端跑过的。",
       "candidate": false
     },
     {
@@ -236,31 +204,14 @@
         "aspectFromSource": true,
         "sizeStep": 2
       },
-      "pricing": [
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.03,
-          "dimensions": {
-            "resolution": "480P"
-          }
-        },
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.15,
-          "dimensions": {
-            "resolution": "1080P"
-          }
-        }
-      ],
+      "pricing": [],
       "prompt": {
         "lang": "zh",
         "negative": "none",
         "suffixFloor": []
       },
       "quirks": [],
-      "provenance": "价格来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证。",
+      "provenance": "型号与协议来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证；未定价。",
       "candidate": false
     },
     {
@@ -305,39 +256,14 @@
         "aspectFromSource": true,
         "sizeStep": 2
       },
-      "pricing": [
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.05,
-          "dimensions": {
-            "resolution": "480P"
-          }
-        },
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.1,
-          "dimensions": {
-            "resolution": "720P"
-          }
-        },
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.16,
-          "dimensions": {
-            "resolution": "1080P"
-          }
-        }
-      ],
+      "pricing": [],
       "prompt": {
         "lang": "zh",
         "negative": "none",
         "suffixFloor": []
       },
       "quirks": ["协议注释写明支持音频，但当前适配器还没有发送音频参数。"],
-      "provenance": "价格来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证。",
+      "provenance": "型号与协议来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证；未定价。",
       "candidate": false
     },
     {
@@ -382,31 +308,14 @@
         "aspectFromSource": true,
         "sizeStep": 2
       },
-      "pricing": [
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.1,
-          "dimensions": {
-            "resolution": "720P"
-          }
-        },
-        {
-          "currency": "PTC",
-          "unit": "per_second",
-          "amount": 0.15,
-          "dimensions": {
-            "resolution": "1080P"
-          }
-        }
-      ],
+      "pricing": [],
       "prompt": {
         "lang": "zh",
         "negative": "none",
         "suffixFloor": []
       },
       "quirks": [],
-      "provenance": "价格来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证。",
+      "provenance": "型号与协议来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证；未定价。",
       "candidate": false
     },
     {

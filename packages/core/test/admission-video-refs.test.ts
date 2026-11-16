@@ -459,14 +459,18 @@ describe('review fix 3: prices belong to a site (the CNY price list is the China
     expect(unknown.priced).toBe(false)
   })
 
-  it('profiles with no region on their prices (the tested Wan Flash, PTC) are priced everywhere as before', async () => {
-    const w = await readyWorld()
-    const v = await evaluateTarget(await ctxFor(w), {
-      target: { kind: 'shot_video', shotId: w.shot.id },
-      provider: videoProvider({ baseUrl: 'https://my-relay.example.com' }),
-      resolution: '720P',
-    })
-    expect(v.estimate).toMatchObject({ priced: true, currency: 'PTC' })
+  it('profiles with no region on their prices (the Gemini image models, USD) are priced everywhere as before', async () => {
+    const { estimateCost } = await import('../src/providers/catalog.ts')
+    const profile = models.lookup({
+      protocol: 'gemini-image',
+      model: 'gemini-nano-banana-2.1',
+    }).profile
+    for (const region of [undefined, 'cn', 'global'] as const) {
+      expect(
+        estimateCost(profile, { count: 1, resolution: '1K', region }),
+        String(region),
+      ).toMatchObject({ priced: true, currency: 'USD' })
+    }
   })
 
   it('the other vendors that have a China and an international preset carry no prices at all (nothing to mix up)', async () => {

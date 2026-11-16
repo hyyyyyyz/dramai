@@ -8,7 +8,8 @@ const catalog = loadCatalog()
 /**
  * Providers saved from presets that were removed keep a `presetId` that no longer matches anything. Their site
  * (region) used to come from the preset (`global`); it is now unknown. The region only picks region-specific price
- * entries, and none of these models has one, so the estimate must not change.
+ * entries, and none of these models has one (their points prices were removed altogether), so the estimate does not
+ * depend on it: with or without the old region it is the same honest "unpriced".
  */
 describe('a saved provider whose preset was removed', () => {
   const saved = [
@@ -48,7 +49,7 @@ describe('a saved provider whose preset was removed', () => {
       ).toBe(false)
       const before = estimateCost(profile, { ...s.query, region: 'global' })
       const after = estimateCost(profile, { ...s.query, region: providerRegionOf(s) })
-      expect(before.priced, s.presetId).toBe(true)
+      expect(before, s.presetId).toEqual({ priced: false, reason: '该型号未定价' })
       expect(after, s.presetId).toEqual(before)
     }
   })

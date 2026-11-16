@@ -220,15 +220,28 @@ describe('single-target admission (A2)', () => {
   it('provides a cost estimate from the price table, and "unpriced" when unknown', async () => {
     const w = await makeWorld()
     await giveShotAnImage(w)
-    const priced = await evaluateTarget(await ctxFor(w), shotImage(w))
-    expect(priced.estimate).toMatchObject({ priced: true, currency: 'PTC', approx: true })
+    // the v0.4 Nano Banana / Wan Flash profiles no longer carry a price (their points prices were removed):
+    // the verdicts are what they were, only the estimate is honestly "unpriced"
+    const banana = await evaluateTarget(await ctxFor(w), shotImage(w))
+    expect(banana.estimate).toMatchObject({ priced: false })
     const video = await evaluateTarget(await ctxFor(w), {
       target: { kind: 'shot_video', shotId: w.shot.id },
       provider: videoProvider(),
       resolution: '720P',
     })
     expect(video.status).toBe('accepted')
-    expect(video.estimate).toMatchObject({ priced: true, amount: 0.2 }) // 0.04 PTC/s × 5 s
+    expect(video.estimate).toMatchObject({ priced: false })
+    // a profile that has a price table: Wan 3.0 on the China site, 0.6 CNY per second at 720P × 5 s
+    const wan3 = await evaluateTarget(await ctxFor(w), {
+      target: { kind: 'shot_video', shotId: w.shot.id },
+      provider: videoProvider({
+        protocol: 'dashscope-video',
+        baseUrl: 'https://ws1.cn-beijing.maas.aliyuncs.com',
+        model: 'wan3.0-video',
+      }),
+      resolution: '720P',
+    })
+    expect(wan3.estimate).toMatchObject({ priced: true, currency: 'CNY', amount: 3 })
     const seedance = videoProvider({
       protocol: 'volcengine-video',
       model: 'doubao-seedance-2-0-fast-260128',

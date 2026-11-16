@@ -701,27 +701,61 @@ describe('model profiles, capabilities and price table', () => {
     ])
   })
 
-  it('estimates cost from the price table; unknown prices are reported as unpriced, never guessed', () => {
-    const flash = lookup('aliyun-video', 'wan2.2-i2v-flash').profile
+  // The v0.4 route profiles no longer carry a price. The price machinery (tiers, per-second, ranges, "never guess")
+  // is tested on copies of those profiles with a made-up price table in a non-ISO "points" currency.
+  const pointsOf = (
+    profile: ReturnType<typeof lookup>['profile'],
+    pricing: NonNullable<ReturnType<typeof lookup>['profile']>['pricing'],
+  ) => ({ ...profile!, pricing })
+  const pointsFlash = () =>
+    pointsOf(lookup('aliyun-video', 'wan2.2-i2v-flash').profile, [
+      { currency: 'PTS', unit: 'per_second', amount: 0.02, dimensions: { resolution: '480P' } },
+      { currency: 'PTS', unit: 'per_second', amount: 0.04, dimensions: { resolution: '720P' } },
+    ])
+  const pointsBanana = () =>
+    pointsOf(lookup('gemini-image', 'gemini-2.5-flash-image').profile, [
+      { currency: 'PTS', unit: 'per_image', amount: 0.35, range: [0.2, 0.5] },
+    ])
+
+  it('the profiles that used to carry a points price are now honestly unpriced', () => {
+    for (const [protocol, model, query] of [
+      ['aliyun-video', 'wan2.2-i2v-flash', { seconds: 5, resolution: '720P' }],
+      ['aliyun-video', 'wan2.2-i2v-plus', { seconds: 5, resolution: '480P' }],
+      ['aliyun-video', 'wan2.5-i2v-preview', { seconds: 5, resolution: '720P' }],
+      ['aliyun-video', 'wan2.7-i2v', { seconds: 5, resolution: '720P' }],
+      ['gemini-image', 'gemini-2.5-flash-image', { count: 2 }],
+      ['openai-images', 'doubao-seedream-5-0-260128', { count: 6 }],
+    ] as const) {
+      const profile = lookup(protocol, model).profile
+      expect(profile, model).toBeDefined() // the profile (capability, prompt dialect) is still there
+      expect(profile!.pricing, model).toEqual([])
+      expect(estimateCost(profile, query), model).toEqual({
+        priced: false,
+        reason: '该型号未定价',
+      })
+    }
+  })
+
+  it('estimates cost from a price table; unknown prices are reported as unpriced, never guessed', () => {
+    const flash = pointsFlash()
     expect(estimateCost(flash, { seconds: 5, resolution: '720P' })).toEqual({
       priced: true,
-      currency: 'PTC',
+      currency: 'PTS',
       amount: 0.2,
       approx: false,
     })
     expect(estimateCost(flash, { seconds: 5, resolution: '480P' })).toMatchObject({ amount: 0.1 })
     expect(estimateCost(flash, { seconds: 5, count: 6, resolution: '720P' })).toMatchObject({
       amount: 1.2,
-    }) // 预设备注：6 个分镜 ≈ 1.2 PTC
+    })
     expect(estimateCost(flash, { seconds: 5 })).toMatchObject({ priced: false }) // 没给分辨率就不猜
     expect(estimateCost(flash, { resolution: '720P' })).toMatchObject({ priced: false }) // 按秒计价但没给时长
     expect(estimateCost(flash, { seconds: 5, resolution: '1080P' })).toMatchObject({
       priced: false,
     })
-    const banana = lookup('gemini-image', 'gemini-2.5-flash-image').profile
-    expect(estimateCost(banana, { count: 2 })).toEqual({
+    expect(estimateCost(pointsBanana(), { count: 2 })).toEqual({
       priced: true,
-      currency: 'PTC',
+      currency: 'PTS',
       amount: 0.7,
       range: [0.4, 1],
       approx: true,
@@ -733,9 +767,14 @@ describe('model profiles, capabilities and price table', () => {
       }),
     ).toMatchObject({ priced: false })
     expect(estimateCost(undefined, {})).toMatchObject({ priced: false })
-    expect(
-      estimateCost(lookup('openai-images', 'doubao-seedream-5-0-260128').profile, { count: 6 }),
-    ).toMatchObject({ priced: true, amount: 0.21 })
+    // a bundled table: Wan 3.0 on the China site is priced per second and per resolution tier
+    const wan3 = lookup('dashscope-video', 'wan3.0-video').profile
+    expect(estimateCost(wan3, { seconds: 5, resolution: '720P', region: 'cn' })).toMatchObject({
+      priced: true,
+      currency: 'CNY',
+      amount: 3,
+    })
+    expect(estimateCost(wan3, { seconds: 5, resolution: '720P' })).toMatchObject({ priced: false })
   })
 })
 
@@ -808,8 +847,29 @@ describe('provider presets', () => {
 describe('prices keep the provider currency; conversion is an optional user setting', () => {
   const lookupP = (protocol: ProviderConfig['protocol'], model: string) =>
     catalog.models.lookup({ protocol, model }).profile
-  const flash = () => lookupP('aliyun-video', 'wan2.2-i2v-flash')
-  const banana = () => lookupP('gemini-image', 'gemini-2.5-flash-image')
+  // made-up price tables in a non-ISO "points" currency, on copies of the v0.4 route profiles
+  const flash = () => ({
+    ...lookupP('aliyun-video', 'wan2.2-i2v-flash')!,
+    pricing: [
+      {
+        currency: 'PTS',
+        unit: 'per_second' as const,
+        amount: 0.04,
+        dimensions: { resolution: '720P' },
+      },
+    ],
+  })
+  const banana = () => ({
+    ...lookupP('gemini-image', 'gemini-2.5-flash-image')!,
+    pricing: [
+      {
+        currency: 'PTS',
+        unit: 'per_image' as const,
+        amount: 0.35,
+        range: [0.2, 0.5] as [number, number],
+      },
+    ],
+  })
   const priced = (currency: string, amount: number, range?: [number, number]) => ({
     priced: true as const,
     currency,
@@ -818,27 +878,78 @@ describe('prices keep the provider currency; conversion is an optional user sett
     range,
   })
 
-  it('stores the provider’s original unit and currency (PTC points), without a hidden exchange rate', () => {
+  it('stores the provider’s original unit and currency, without a hidden exchange rate', () => {
     for (const p of catalog.models.all()) {
       for (const price of p.pricing) {
-        // 价目按各家官方页面的原始币种存，从不折算：有的价目是平台点数 PTC，官方页面抄来的未实测价目是 USD / CNY
-        expect(price.currency, p.id).toMatch(/^(PTC|USD|CNY)$/)
+        // 价目按各家官方页面的原始币种存，从不折算：官方页面抄来的价目是 USD / CNY
+        expect(price.currency, p.id).toMatch(/^(USD|CNY)$/)
         expect(['per_image', 'per_second', 'per_call', 'per_1k_chars']).toContain(price.unit)
       }
     }
     const e = estimateCost(flash(), { seconds: 5, resolution: '720P' })
-    expect(e).toMatchObject({ priced: true, currency: 'PTC' }) // 不是 CNY
+    expect(e).toMatchObject({ priced: true, currency: 'PTS' }) // 不是 CNY
+  })
+
+  it('costs recorded earlier in a currency that is no longer in the data (PTC points) are still totalled, shown and converted', () => {
+    // currency is an open string everywhere: an old record, or a user-written price table, may carry any code
+    const old = [priced('PTC', 0.035), priced('PTC', 0.2, [0.1, 0.3]), priced('CNY', 1)]
+    const totals = totalCosts(old)
+    expect(Object.keys(totals.byCurrency).sort()).toEqual(['CNY', 'PTC'])
+    expect(totals.byCurrency.PTC!.amount).toBeCloseTo(0.235, 6)
+    expect(convertTotals(totals).remaining.PTC).toBeDefined() // not converted unless the user set a rate
+    const out = convertTotals(totals, { conversion: { targetCurrency: 'CNY', rates: { PTC: 7 } } })
+    expect(out.converted?.amount).toBeCloseTo(0.235 * 7 + 1, 6)
+    expect(out.remaining).toEqual({})
+  })
+
+  it('a price table the user wrote in their own catalogue folder, in any currency (even PTC), loads and estimates as written', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dramai-user-prices-'))
+    try {
+      await mkdir(join(dir, 'models'), { recursive: true })
+      const base = lookupP('aliyun-video', 'wan2.2-i2v-flash')!
+      await writeFile(
+        join(dir, 'models', 'mine.json'),
+        JSON.stringify({
+          schemaVersion: 1,
+          models: [
+            {
+              ...base,
+              pricing: [
+                {
+                  currency: 'PTC',
+                  unit: 'per_second',
+                  amount: 0.04,
+                  dimensions: { resolution: '720P' },
+                },
+              ],
+            },
+          ],
+        }),
+      )
+      const mine = loadCatalog({ extraDirs: [dir] }).models.lookup({
+        protocol: 'aliyun-video',
+        model: 'wan2.2-i2v-flash',
+      }).profile
+      expect(estimateCost(mine, { seconds: 5, resolution: '720P' })).toEqual({
+        priced: true,
+        currency: 'PTC',
+        amount: 0.2,
+        approx: false,
+      })
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
   })
 
   it('totals different currencies separately — they are never added together', () => {
     const totals = totalCosts([
-      priced('PTC', 1.2),
-      priced('PTC', 0.3),
+      priced('PTS', 1.2),
+      priced('PTS', 0.3),
       priced('USD', 2),
       { priced: false, reason: 'x' },
     ])
     expect(totals).toEqual({
-      byCurrency: { PTC: { amount: 1.5, approx: false }, USD: { amount: 2, approx: false } },
+      byCurrency: { PTS: { amount: 1.5, approx: false }, USD: { amount: 2, approx: false } },
       unpriced: 1,
     })
   })
@@ -848,20 +959,20 @@ describe('prices keep the provider currency; conversion is an optional user sett
       estimateCost(banana(), { count: 2 }),
       estimateCost(banana(), { count: 1 }),
     ])
-    expect(t.byCurrency.PTC.amount).toBeCloseTo(1.05, 6)
-    expect(t.byCurrency.PTC.range?.[0]).toBeCloseTo(0.6, 6)
-    expect(t.byCurrency.PTC.range?.[1]).toBeCloseTo(1.5, 6)
-    expect(t.byCurrency.PTC.approx).toBe(true)
+    expect(t.byCurrency.PTS.amount).toBeCloseTo(1.05, 6)
+    expect(t.byCurrency.PTS.range?.[0]).toBeCloseTo(0.6, 6)
+    expect(t.byCurrency.PTS.range?.[1]).toBeCloseTo(1.5, 6)
+    expect(t.byCurrency.PTS.approx).toBe(true)
     // 一部分有区间、一部分没有：没有区间的按点估值计入上下界
-    const mixed = totalCosts([estimateCost(banana(), { count: 1 }), priced('PTC', 0.035)])
-    expect(mixed.byCurrency.PTC.range?.[0]).toBeCloseTo(0.235, 6)
-    expect(mixed.byCurrency.PTC.range?.[1]).toBeCloseTo(0.535, 6)
+    const mixed = totalCosts([estimateCost(banana(), { count: 1 }), priced('PTS', 0.035)])
+    expect(mixed.byCurrency.PTS.range?.[0]).toBeCloseTo(0.235, 6)
+    expect(mixed.byCurrency.PTS.range?.[1]).toBeCloseTo(0.535, 6)
   })
 
   it('does NOT convert by default', () => {
-    const totals = totalCosts([priced('PTC', 1.2)])
+    const totals = totalCosts([priced('PTS', 1.2)])
     expect(convertTotals(totals)).toEqual({
-      remaining: { PTC: { amount: 1.2, approx: false } },
+      remaining: { PTS: { amount: 1.2, approx: false } },
       unpriced: 0,
       isEstimate: true,
     })
@@ -870,12 +981,12 @@ describe('prices keep the provider currency; conversion is an optional user sett
 
   it('converts with a user-set rate, keeps currencies without a rate separate, and always flags an estimate', () => {
     const totals = totalCosts([
-      priced('PTC', 1.2),
+      priced('PTS', 1.2),
       priced('USD', 2),
       priced('CNY', 3),
       { priced: false, reason: 'x' },
     ])
-    const out = convertTotals(totals, { conversion: { targetCurrency: 'CNY', rates: { PTC: 7 } } })
+    const out = convertTotals(totals, { conversion: { targetCurrency: 'CNY', rates: { PTS: 7 } } })
     expect(out.converted).toMatchObject({ currency: 'CNY', approx: true })
     expect(out.converted?.amount).toBeCloseTo(1.2 * 7 + 3, 6) // 目标币种自身按 1:1
     expect(out.remaining).toEqual({ USD: { amount: 2, approx: false } }) // 没有汇率的不猜
@@ -885,11 +996,11 @@ describe('prices keep the provider currency; conversion is an optional user sett
 
   it('converts ranges and ignores non-positive rates', () => {
     const t = totalCosts([estimateCost(banana(), { count: 1 })])
-    const out = convertTotals(t, { conversion: { targetCurrency: 'CNY', rates: { PTC: 7 } } })
+    const out = convertTotals(t, { conversion: { targetCurrency: 'CNY', rates: { PTS: 7 } } })
     expect(out.converted?.range?.[0]).toBeCloseTo(1.4, 6)
     expect(out.converted?.range?.[1]).toBeCloseTo(3.5, 6)
-    const bad = convertTotals(t, { conversion: { targetCurrency: 'CNY', rates: { PTC: 0 } } })
+    const bad = convertTotals(t, { conversion: { targetCurrency: 'CNY', rates: { PTS: 0 } } })
     expect(bad.converted).toBeUndefined()
-    expect(bad.remaining.PTC).toBeDefined()
+    expect(bad.remaining.PTS).toBeDefined()
   })
 })
