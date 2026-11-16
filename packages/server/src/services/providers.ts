@@ -13,6 +13,9 @@ import {
   modelListRequest,
   PROVIDER_PRESETS,
   ProviderError,
+  RESULT_TEXT_FIELDS,
+  redactFields,
+  redactProviderError,
   sendRequest,
   speechDefaultVoiceOf,
   speechInputSupportOf,
@@ -42,20 +45,6 @@ export const secretRefFor = (providerId: string): string => `provider:${provider
 
 /** `providers.probe` 的入参（见 `@dramai/api` 的 `providerProbe`）。 */
 export type ProbeInput = ProviderProbeInput
-
-const REDACTED = '[redacted]'
-
-/** 把返回值里出现的草稿 Key（原样、URL 编码、JSON 转义三种写法）替换掉。没有 Key 时原样返回。 */
-function redactProbe(result: ProviderProbeResult, secret: string | undefined): ProviderProbeResult {
-  if (!secret) return result
-  const forms = [
-    ...new Set([secret, encodeURIComponent(secret), JSON.stringify(secret).slice(1, -1)]),
-  ]
-  const clean = (s: string) => forms.reduce((acc, f) => (f ? acc.split(f).join(REDACTED) : acc), s)
-  return JSON.parse(JSON.stringify(result), (_k, v) =>
-    typeof v === 'string' ? clean(v) : v,
-  ) as ProviderProbeResult
-}
 
 export interface ProviderServiceDeps {
   store: ServerStore
@@ -336,7 +325,7 @@ export class ProviderService {
       input.action === 'models'
         ? await this.probeModels(input.protocol, baseUrl, secret, extraHeaders)
         : await this.probeTest(input, baseUrl, secret)
-    return redactProbe(result, secret)
+    return redactFields(result, [secret], RESULT_TEXT_FIELDS)
   }
 
   private async probeTest(
@@ -488,11 +477,16 @@ export class ProviderService {
     }
     const req = modelListRequest(cfg.protocol, cfg.baseUrl, bearer, cfg.dialect?.extraHeaders)
     if (!req) throw conflict('MODEL_LIST_UNSUPPORTED', '这个服务商的协议没有模型列表')
-    const raw = await sendRequest(
-      { method: 'GET', url: req.url, headers: req.headers },
-      this.d.executor ?? {},
-      { timeoutMs: 20_000 },
-    )
+    let raw
+    try {
+      raw = await sendRequest(
+        { method: 'GET', url: req.url, headers: req.headers },
+        this.d.executor ?? {},
+        { timeoutMs: 20_000 },
+      )
+    } catch (err) {
+      throw redactProviderError(err, [bearer])
+    }
     if (raw.status < 200 || raw.status >= 300) {
       throw new HttpError(502, 'PROVIDER_REQUEST_FAILED', `服务商返回 HTTP ${raw.status}`, {
         status: raw.status,

@@ -67,13 +67,12 @@ describe('upstream shapes: probe and a saved provider see and do the same', () =
       const probeLog = mock.requests.slice(mid)
       // the same requests reached the mock, with the same headers
       expect(strip(probeLog)).toEqual(strip(savedLog))
+      // the answers are field-for-field the same, also when the upstream repeats the key: both redact it
+      expect(probeResult, shape).toEqual(savedResult)
       if (shape === 'echo-key') {
-        // the only difference: the saved test shows what the upstream said; the draft's answer never carries the key
-        expect(JSON.stringify(probeResult)).not.toContain(KEY)
-        expect(probeResult).toMatchObject({ outcome: 'failed', status: 401 })
+        expect(JSON.stringify([probeResult, savedResult])).not.toContain(KEY)
+        expect(probeResult).toMatchObject({ outcome: 'failed', status: 401, code: 'HTTP_401' })
         expect(JSON.stringify(probeResult)).toContain('[redacted]')
-      } else {
-        expect(probeResult).toEqual(savedResult)
       }
       if (shape === 'redirect') {
         // the redirect goes to another origin (localhost vs 127.0.0.1): fetch drops the Authorization header there

@@ -1,4 +1,5 @@
 import type { JobError } from '../jobs/types.ts'
+import { redactText } from '../util/redact.ts'
 
 export type ProviderErrorKind =
   | 'http' // 非 2xx
@@ -51,6 +52,28 @@ export class ProviderError extends Error {
     this.code =
       options.code ?? (options.status !== undefined ? `HTTP_${options.status}` : kind.toUpperCase())
   }
+}
+
+/**
+ * 上游的错误体可能把请求里的凭据原样回显（"Incorrect API key provided: sk-…"）。错误会进任务记录、事件、日志和界面，
+ * 所以在错误离开 provider 层之前把凭据去掉。没有变化时返回同一个对象（其余输出一字不变）。
+ */
+export function redactProviderError(
+  err: unknown,
+  secrets: ReadonlyArray<string | undefined>,
+): unknown {
+  if (!(err instanceof ProviderError)) return err
+  const message = redactText(err.message, secrets)
+  const body = err.body === undefined ? undefined : redactText(err.body, secrets)
+  if (message === err.message && body === err.body) return err
+  return new ProviderError(err.kind, message, {
+    status: err.status,
+    body,
+    submission: err.submission,
+    recoverable: err.recoverable,
+    code: err.code,
+    cause: err.cause,
+  })
 }
 
 /** 把执行器抛出的错误映射成 Job 的失败分类。 */

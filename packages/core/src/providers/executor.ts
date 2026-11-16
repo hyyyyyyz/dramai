@@ -1,5 +1,5 @@
 import { mergeHeaders } from '../util/merge.ts'
-import { ProviderError } from './errors.ts'
+import { ProviderError, redactProviderError } from './errors.ts'
 import type {
   AuthContext,
   GenerateParse,
@@ -423,6 +423,21 @@ export async function runGeneration<I>(
   input: I,
   deps: ExecutorDeps = {},
   options: GenerateOptions = {},
+): Promise<GenerateResult> {
+  try {
+    return await runGenerationUnredacted(protocol, auth, input, deps, options)
+  } catch (err) {
+    // 上游可能把凭据回显在错误体里：错误进任务记录、事件、日志之前去掉
+    throw redactProviderError(err, [auth.apiKey])
+  }
+}
+
+async function runGenerationUnredacted<I>(
+  protocol: MediaProtocol<I>,
+  auth: AuthContext,
+  input: I,
+  deps: ExecutorDeps,
+  options: GenerateOptions,
 ): Promise<GenerateResult> {
   const defaults = protocol.media === 'video' ? POLL_DEFAULTS.video : POLL_DEFAULTS.image
   let taskId = options.resumeTaskId

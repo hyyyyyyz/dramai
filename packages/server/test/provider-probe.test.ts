@@ -16,7 +16,7 @@ interface Seen {
   headers: Record<string, string>
   body?: string
 }
-type Responder = (url: string) => Response | Promise<Response>
+type Responder = (url: string, headers: Record<string, string>) => Response | Promise<Response>
 
 const json = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -31,6 +31,14 @@ const LIST = {
 }
 
 const RESPONDERS: Record<string, Responder> = {
+  // an upstream that repeats the credential it was given (whichever header carries it) in its error body
+  echoKey: (_url, h) =>
+    json(401, {
+      error: {
+        message: `Incorrect API key provided: ${(h.Authorization ?? '').replace(/^Bearer /, '') || h['x-api-key'] || h['x-goog-api-key'] || ''}`,
+        type: 'authentication_error',
+      },
+    }),
   ok: () => json(200, LIST),
   unauthorized: () =>
     json(401, { error: { message: 'Incorrect API key', code: 'invalid_api_key' } }),
@@ -60,7 +68,7 @@ async function boot(
           headers: { ...((init?.headers as Record<string, string> | undefined) ?? {}) },
           body: typeof init?.body === 'string' ? init.body : undefined,
         })
-        return responder(url)
+        return responder(url, { ...((init?.headers as Record<string, string> | undefined) ?? {}) })
       }) as never,
     },
     ...options,
@@ -201,6 +209,8 @@ describe('providers.probe · test: the same requests and the same result as prov
         const probeRequests = seen.splice(0)
         expect(probeRequests).toEqual(savedRequests)
         expect(probeResult).toEqual(savedResult)
+        // neither answer carries the key, even when the upstream repeats it (the saved test redacts it too)
+        expect(JSON.stringify([probeResult, savedResult])).not.toContain(KEY)
         // a connection test never sends anything but a read-only GET (nothing that generates, so nothing that costs)
         expect(probeRequests.every((r) => r.method === 'GET' && r.body === undefined)).toBe(true)
         if (NO_REQUEST.has(d.protocol)) {
@@ -289,6 +299,7 @@ describe('providers.probe · models: the same request as providers.models on a s
         const probe = await h.client.call('providers.probe', { body: body(d, 'models') })
         const probeRequests = seen.splice(0)
         expect(probeRequests).toEqual(savedRequests)
+        expect(JSON.stringify([probe, savedOutcome])).not.toContain(KEY)
         if (!savedOutcome.ok && savedOutcome.e.code === 'MODEL_LIST_UNSUPPORTED') {
           expect(probe.outcome).toBe('no_model_list')
           expect(probeRequests).toEqual([])

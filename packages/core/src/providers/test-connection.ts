@@ -1,4 +1,5 @@
 import { mergeHeaders } from '../util/merge.ts'
+import { RESULT_TEXT_FIELDS, redactFields } from '../util/redact.ts'
 import { ProviderError } from './errors.ts'
 import { sendRequest } from './executor.ts'
 import { modelListRequest } from './model-list.ts'
@@ -23,6 +24,21 @@ export async function testProvider(
   },
   apiKey: string | undefined,
   deps: ExecutorDeps & { signal?: AbortSignal } = {},
+): Promise<TestConnectionResult> {
+  // 上游的错误体可能把 Key（或登录方式下的访问令牌）回显出来：结果离开这里之前去掉
+  return redactFields(
+    await testProviderUnredacted(config, apiKey, deps),
+    [apiKey],
+    RESULT_TEXT_FIELDS,
+  )
+}
+
+async function testProviderUnredacted(
+  config: Pick<ProviderConfig, 'baseUrl' | 'protocol' | 'model'> & {
+    dialect?: Pick<NonNullable<ProviderConfig['dialect']>, 'extraHeaders'>
+  },
+  apiKey: string | undefined,
+  deps: ExecutorDeps & { signal?: AbortSignal },
 ): Promise<TestConnectionResult> {
   if (!config.baseUrl.trim())
     return { outcome: 'failed', code: 'BASE_URL_INVALID', error: 'Base URL 不能为空' }

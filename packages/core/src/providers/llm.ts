@@ -1,4 +1,5 @@
 import { ProviderError } from './errors.ts'
+import { redactText } from '../util/redact.ts'
 import type { ExecutorDeps } from './executor.ts'
 import { buildChatRequest, extractContentDelta, extractUsage } from './protocols/openai-chat.ts'
 import type { ChatInput, ChatResult } from './protocols/openai-chat.ts'
@@ -47,6 +48,7 @@ async function postStream(
   deps: LlmCallDeps,
   describeError: (status: number, bodyText: string) => ProviderError,
   meta?: { contentType?: string },
+  secret?: string,
 ): Promise<ReadableStream<Uint8Array>> {
   const doFetch = deps.fetch ?? fetch
   let res: Response
@@ -71,7 +73,8 @@ async function postStream(
     } catch {
       /* ignore */
     }
-    throw describeError(res.status, detail)
+    // 错误体可能把 Key 回显出来：描述错误之前去掉
+    throw describeError(res.status, redactText(detail, [secret]))
   }
   if (!res.body) throw new ProviderError('parse', 'LLM 响应为空（无 body 流）')
   if (meta) meta.contentType = res.headers.get('content-type') ?? ''
@@ -96,6 +99,8 @@ export async function* streamChat(
         status,
         body: detail,
       }),
+    undefined,
+    auth.apiKey,
   )
 
   let accumulated = ''
@@ -136,10 +141,16 @@ export async function* streamResponses(
 ): AsyncGenerator<ChatChunk, ChatResult, void> {
   const { spec, dropped } = buildResponsesRequest(auth, input)
   if (dropped.length > 0) deps.onDropped?.({ protocol: 'openai-responses', dropped })
-  const body = await postStream(spec, deps, (status, detail) => {
-    const parsed = parseResponsesErrorBody(detail)
-    return responsesProviderError(parsed, { status, where: 'http' })
-  })
+  const body = await postStream(
+    spec,
+    deps,
+    (status, detail) => {
+      const parsed = parseResponsesErrorBody(detail)
+      return responsesProviderError(parsed, { status, where: 'http' })
+    },
+    undefined,
+    auth.apiKey,
+  )
 
   let accumulated = ''
   let usage: ChatResult['usage']
@@ -191,8 +202,12 @@ export async function* streamAnthropic(
 ): AsyncGenerator<ChatChunk, ChatResult, void> {
   const { spec, dropped } = buildMessagesRequest(auth, input)
   if (dropped.length > 0) deps.onDropped?.({ protocol: 'anthropic-messages', dropped })
-  const body = await postStream(spec, deps, (status, detail) =>
-    anthropicProviderError(parseMessagesErrorBody(detail), status),
+  const body = await postStream(
+    spec,
+    deps,
+    (status, detail) => anthropicProviderError(parseMessagesErrorBody(detail), status),
+    undefined,
+    auth.apiKey,
   )
   let accumulated = ''
   let inputTokens: number | undefined
@@ -250,6 +265,7 @@ export async function* streamGemini(
     deps,
     (status, detail) => geminiProviderError(parseGeminiErrorBody(detail), status),
     meta,
+    auth.apiKey,
   )
 
   // 官方参考页没写 alt=sse 的格式：是 SSE 就按 SSE 读；不是（服务端返回 JSON 数组）就整个读完再解析
