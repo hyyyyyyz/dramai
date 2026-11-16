@@ -1,4 +1,5 @@
 import { mergeHeaders } from '../util/merge.ts'
+import { redactText } from '../util/redact.ts'
 import { ProviderError, redactProviderError } from './errors.ts'
 import type {
   AuthContext,
@@ -103,7 +104,16 @@ function withTimeout(signal: AbortSignal | undefined, ms: number): AbortSignal {
 export async function sendRequest(
   spec: HttpRequestSpec,
   deps: ExecutorDeps,
-  options: { signal?: AbortSignal; timeoutMs?: number; binary?: boolean } = {},
+  options: {
+    signal?: AbortSignal
+    timeoutMs?: number
+    binary?: boolean
+    /**
+     * 凭据（API Key、访问令牌）：上游可能把它回显在响应体里（错误信息、错误码、失败原因、200 里的业务错误……）。
+     * 给了就在响应体离开这里之前去掉——后面所有从响应体读出来的字符串（解析器、错误构造）看到的都是干净的。
+     */
+    redact?: ReadonlyArray<string | undefined>
+  } = {},
 ): Promise<RawResponse> {
   const doFetch = deps.fetch ?? fetch
   const init: RequestInit = {
@@ -137,13 +147,14 @@ export async function sendRequest(
       return { status: res.status, headers, text: '', bytes }
     }
     const text = await res.text()
+    const clean = options.redact ? redactText(text, options.redact) : text
     let json: unknown
     try {
-      json = text ? JSON.parse(text) : undefined
+      json = clean ? JSON.parse(clean) : undefined
     } catch {
       json = undefined
     }
-    return { status: res.status, headers, text, json }
+    return { status: res.status, headers, text: clean, json }
   } catch (err) {
     if (options.signal?.aborted) throw abortError()
     throw new ProviderError(
@@ -264,6 +275,7 @@ async function submit<I>(
       signal: options.signal,
       timeoutMs: options.requestTimeoutMs ?? protocol.requestTimeoutMs?.(auth),
       binary: protocol.responseType === 'binary',
+      redact: [auth.apiKey],
     })
   } catch (err) {
     if (err instanceof ProviderError && err.kind === 'network') {
@@ -349,6 +361,7 @@ async function pollUntilDone<I>(
         {
           signal: options.signal,
           timeoutMs: options.requestTimeoutMs,
+          redact: [auth.apiKey],
         },
       )
       if (raw.status >= 400 && raw.status < 500 && raw.status !== 429) {

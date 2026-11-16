@@ -75,6 +75,7 @@ async function testProviderUnredacted(
         config.model,
         deps,
         config.dialect?.extraHeaders,
+        apiKey,
       )
     }
     case 'anthropic-messages':
@@ -93,6 +94,7 @@ async function testProviderUnredacted(
         config.model,
         deps,
         config.dialect?.extraHeaders,
+        apiKey,
       )
     }
     default:
@@ -103,6 +105,7 @@ async function testProviderUnredacted(
         config.model,
         deps,
         config.dialect?.extraHeaders,
+        apiKey,
       )
   }
 }
@@ -114,6 +117,7 @@ async function probeList(
   model: string,
   deps: ExecutorDeps & { signal?: AbortSignal },
   extraHeaders?: Record<string, string>,
+  apiKey?: string,
 ): Promise<TestConnectionResult> {
   try {
     const raw = await sendRequest(
@@ -122,6 +126,8 @@ async function probeList(
       {
         signal: deps.signal,
         timeoutMs: 20_000,
+        // 上游的错误体（含错误码、类型）可能回显 Key：读出来之前就去掉
+        redact: [apiKey],
       },
     )
     if (raw.status < 200 || raw.status >= 300) {

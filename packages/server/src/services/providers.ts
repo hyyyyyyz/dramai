@@ -406,7 +406,8 @@ export class ProviderService {
       raw = await sendRequest(
         { method: 'GET', url: req.url, headers: req.headers },
         this.d.executor ?? {},
-        { timeoutMs: 20_000 },
+        // 上游的响应体（含错误码、类型）可能回显 Key：读出来之前就去掉
+        { timeoutMs: 20_000, redact: [bearer] },
       )
     } catch (err) {
       throw redactProviderError(err, [bearer])

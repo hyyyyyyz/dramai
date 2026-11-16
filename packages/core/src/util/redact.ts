@@ -63,6 +63,17 @@ export function redactText(text: string, secrets: ReadonlyArray<string | undefin
 }
 
 /**
+ * 对一个 JSON 形的值里**所有字符串值**做 `redactText`（字段名不动）。用在"整份来自上游的数据"上：上游响应体、流里的事件——
+ * 这些里的每个字符串（错误信息、错误码、错误类型、状态、失败原因……）都可能回显凭据。没有凭据 / 没出现时原样返回同一个对象。
+ */
+export function redactStrings<T>(value: T, secrets: ReadonlyArray<string | undefined>): T {
+  if (forms(secrets).length === 0) return value
+  return JSON.parse(JSON.stringify(value), (_k, v) =>
+    typeof v === 'string' ? redactText(v, secrets) : v,
+  ) as T
+}
+
+/**
  * 对一个 JSON 形的值里、名字在 `fields` 里的字符串**值**做 `redactText`（返回新值；没有凭据时原样返回同一个对象）。
  * 只动给人看的文字字段（`error` / `reason` / `message`）的值：字段名，以及 `outcome`、`code` 这类服务端自己生成的
  * 结构 / 枚举字段永远不碰，所以无论凭据是什么，结果的结构都不会被改坏。

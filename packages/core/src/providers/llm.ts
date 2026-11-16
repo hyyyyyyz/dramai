@@ -1,5 +1,5 @@
 import { ProviderError } from './errors.ts'
-import { redactText } from '../util/redact.ts'
+import { redactStrings, redactText } from '../util/redact.ts'
 import type { ExecutorDeps } from './executor.ts'
 import { buildChatRequest, extractContentDelta, extractUsage } from './protocols/openai-chat.ts'
 import type { ChatInput, ChatResult } from './protocols/openai-chat.ts'
@@ -26,6 +26,7 @@ import {
   parseGeminiErrorBody,
 } from './protocols/gemini-chat.ts'
 import { parseSseJson } from '../util/sse.ts'
+import type { SseFrame } from '../util/sse.ts'
 import { ThinkTagStripper } from '../util/think-tags.ts'
 
 export interface ChatChunk {
@@ -41,6 +42,19 @@ export type LlmCallDeps = ExecutorDeps & {
   signal?: AbortSignal
   /** 协议层因为鉴权方式不支持而丢弃了参数时调用（只含参数名和原因，不含内容和凭据）。 */
   onDropped?: (info: { protocol: ProtocolId; dropped: DroppedParam[] }) => void
+}
+
+/**
+ * 流里的事件（含错误事件）也可能回显凭据：每个事件的所有字符串在被读取、构造错误之前去掉凭据。
+ * 事件是完整的 JSON，所以凭据不会被切在两块之间。没有凭据时原样放行。
+ */
+async function* cleanFrames(
+  body: ReadableStream<Uint8Array>,
+  secret: string | undefined,
+): AsyncGenerator<SseFrame, void, void> {
+  for await (const frame of parseSseJson(body)) {
+    yield secret ? { ...frame, data: redactStrings(frame.data, [secret]) } : frame
+  }
 }
 
 async function postStream(
@@ -107,7 +121,7 @@ export async function* streamChat(
   let finishReason: string | null | undefined
   let usage: ChatResult['usage']
   const strip = new ThinkTagStripper()
-  for await (const frame of parseSseJson(body)) {
+  for await (const frame of cleanFrames(body, auth.apiKey)) {
     usage = extractUsage(frame.data) ?? usage
     const { delta: raw, finishReason: fr } = extractContentDelta(frame.data)
     if (fr !== undefined && fr !== null) finishReason = fr
@@ -155,7 +169,7 @@ export async function* streamResponses(
   let accumulated = ''
   let usage: ChatResult['usage']
   let completed = false
-  for await (const frame of parseSseJson(body)) {
+  for await (const frame of cleanFrames(body, auth.apiKey)) {
     const ev = parseResponsesEvent(frame.data, frame.event)
     switch (ev.kind) {
       case 'delta':
@@ -214,7 +228,7 @@ export async function* streamAnthropic(
   let outputTokens: number | undefined
   let stopReason: string | undefined
   let completed = false
-  for await (const frame of parseSseJson(body)) {
+  for await (const frame of cleanFrames(body, auth.apiKey)) {
     const ev = parseMessagesEvent(frame.data, frame.event)
     switch (ev.kind) {
       case 'start':
@@ -271,10 +285,10 @@ export async function* streamGemini(
   // 官方参考页没写 alt=sse 的格式：是 SSE 就按 SSE 读；不是（服务端返回 JSON 数组）就整个读完再解析
   async function* chunks(): AsyncGenerator<unknown, void, void> {
     if ((meta.contentType ?? '').includes('text/event-stream')) {
-      for await (const frame of parseSseJson(body)) yield frame.data
+      for await (const frame of cleanFrames(body, auth.apiKey)) yield frame.data
       return
     }
-    const text = await new Response(body).text()
+    const text = redactText(await new Response(body).text(), [auth.apiKey])
     let parsed: unknown
     try {
       parsed = JSON.parse(text)

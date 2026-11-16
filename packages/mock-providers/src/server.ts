@@ -286,6 +286,9 @@ export async function startMockProviders(options: StartOptions = {}): Promise<Mo
   // 把 `http://127.0.0.1:<port>/probe/<形态>` 当作接口地址，列表在它下面的 `/models`、`/v1/models`、`/v1beta/models`。
   //   unauthorized  → 401（OpenAI 形态的错误体）
   //   echo-key      → 401，错误体把收到的 Key 原样回显（Authorization / x-api-key / x-goog-api-key）
+  //   echo-code     → 401，错误体的 `code` / `type` / `status` / `message` 都是收到的 Key
+  //   echo-stream   → 文本请求（POST）返回 HTTP 200 的流，流里的错误事件回显 Key（四种文本协议各按自己的事件形态）
+  //   echo-business → 生图 / 配音请求（POST）返回 HTTP 200，但响应体里是业务错误，错误信息回显 Key
   //   redirect      → 302 到 `http://localhost:<port>/probe/internal/…`（换了主机名 = 换了源）
   //   internal      → 200，并记下收到的请求头
   //   not-json      → 200，但响应不是 JSON
@@ -303,6 +306,11 @@ export async function startMockProviders(options: StartOptions = {}): Promise<Mo
       record(c, { status, headers })
       return res
     }
+    const givenKey = () =>
+      (headers['authorization'] ?? '').replace(/^Bearer\s+/i, '') ||
+      headers['x-api-key'] ||
+      headers['x-goog-api-key'] ||
+      ''
     switch (shape) {
       case 'unauthorized':
         return answer(
@@ -324,6 +332,74 @@ export async function startMockProviders(options: StartOptions = {}): Promise<Mo
             { error: { message: `Incorrect API key provided: ${given}`, code: 'invalid_api_key' } },
             401,
           ),
+        )
+      }
+      case 'echo-code': {
+        const key = givenKey()
+        return answer(
+          401,
+          c.json(
+            { error: { message: `bad credential ${key}`, code: key, type: key, status: key } },
+            401,
+          ),
+        )
+      }
+      case 'echo-stream': {
+        if (c.req.method !== 'POST') return answer(200, c.json({ object: 'list', data: [] }))
+        const key = givenKey()
+        const path = c.req.path
+        const sse = (...events: string[]) =>
+          new Response(events.join(''), {
+            status: 200,
+            headers: { 'content-type': 'text/event-stream' },
+          })
+        const frame = (data: unknown, event?: string) =>
+          `${event ? `event: ${event}\n` : ''}data: ${JSON.stringify(data)}\n\n`
+        if (path.endsWith('/responses'))
+          return answer(
+            200,
+            sse(
+              frame({
+                type: 'response.failed',
+                response: { error: { code: key, message: `rejected ${key}` } },
+              }),
+            ),
+          )
+        if (path.endsWith('/v1/messages'))
+          return answer(
+            200,
+            sse(
+              frame({ type: 'error', error: { type: key, message: `rejected ${key}` } }, 'error'),
+            ),
+          )
+        if (path.includes(':streamGenerateContent'))
+          return answer(
+            200,
+            sse(frame({ error: { code: 401, status: key, message: `rejected ${key}` } })),
+          )
+        // openai-chat (…/chat/completions)
+        return answer(
+          200,
+          sse(
+            frame({ error: { message: `rejected ${key}`, code: key, type: key } }),
+            'data: [DONE]\n\n',
+          ),
+        )
+      }
+      case 'echo-business': {
+        if (c.req.method !== 'POST') return answer(200, c.json({ object: 'list', data: [] }))
+        const key = givenKey()
+        if (c.req.path.endsWith('/t2a_v2'))
+          return answer(
+            200,
+            c.json({
+              base_resp: { status_code: 1004, status_msg: `authentication failed ${key}` },
+            }),
+          )
+        // OpenAI Images: HTTP 200, `data[].error` says this image failed
+        return answer(
+          200,
+          c.json({ data: [{ error: { code: key, type: key, message: `rejected ${key}` } }] }),
         )
       }
       case 'redirect': {

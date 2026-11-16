@@ -3,6 +3,8 @@ import { ProviderError, redactProviderError } from '../src/providers/errors.ts'
 import { runGeneration } from '../src/providers/executor.ts'
 import { chatOnce } from '../src/providers/llm.ts'
 import { geminiImage } from '../src/providers/protocols/gemini-image.ts'
+import { aliyunVideo } from '../src/providers/protocols/aliyun-video.ts'
+import { minimaxT2a } from '../src/providers/protocols/minimax-t2a.ts'
 import { openaiImages } from '../src/providers/protocols/openai-images.ts'
 import { testProvider } from '../src/providers/test-connection.ts'
 import { REDACTED, RESULT_TEXT_FIELDS, redactFields, redactText } from '../src/util/redact.ts'
@@ -207,5 +209,117 @@ describe('every exit of the provider layer removes a credential the upstream rep
     expect(`${err!.message} ${err!.body ?? ''}`).not.toContain(KEY)
     expect(err!.message).toContain(REDACTED)
     expect(err).toMatchObject({ kind: 'http', status: 401, submission: 'rejected' })
+  })
+})
+
+describe('HTTP 200 answers and error codes that repeat the key', () => {
+  const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 })
+  const auth: AuthContext = {
+    baseUrl: 'https://x.example.test',
+    model: 'm',
+    apiKey: KEY,
+    method: 'api_key',
+  }
+  const fail = (run: () => Promise<unknown>) =>
+    run().then(
+      () => undefined,
+      (e: ProviderError) => e,
+    )
+  const clean = (err: ProviderError | undefined) => {
+    expect(err).toBeInstanceOf(ProviderError)
+    expect(`${err!.message} ${err!.body ?? ''} ${err!.code}`).not.toContain(KEY)
+  }
+
+  it('a per-image error inside a 200 (OpenAI Images)', async () => {
+    const err = await fail(() =>
+      runGeneration(
+        openaiImages as never,
+        auth,
+        { prompt: 'p', aspectRatio: '9:16', size: { width: 64, height: 64 } },
+        {
+          fetch: (async () =>
+            ok({ data: [{ error: { code: KEY, message: `no ${KEY}` } }] })) as never,
+        },
+      ),
+    )
+    clean(err)
+    expect(err!.message).toContain(REDACTED)
+  })
+
+  it('a business error inside a 200 (MiniMax speech)', async () => {
+    const err = await fail(() =>
+      runGeneration(
+        minimaxT2a as never,
+        auth,
+        { text: 'hi', voice: 'male-qn-qingse' },
+        {
+          fetch: (async () =>
+            ok({ base_resp: { status_code: 1004, status_msg: `denied ${KEY}` } })) as never,
+        },
+      ),
+    )
+    clean(err)
+    expect(err!.message).toContain(REDACTED)
+    expect(err!.code).toBe('MINIMAX_1004') // the server's own code is untouched
+  })
+
+  it('a failure reason in a polled task (aliyun-video)', async () => {
+    const fetch = (async (url: string) =>
+      url.includes('/tasks/')
+        ? ok({ output: { task_status: 'FAILED', message: `bad ${KEY}`, code: KEY } })
+        : ok({ output: { task_id: 'T1', task_status: 'PENDING' } })) as never
+    const err = await fail(() =>
+      runGeneration(
+        aliyunVideo as never,
+        auth,
+        {
+          prompt: 'p',
+          image: { bytes: new Uint8Array([1]), mime: 'image/png' },
+          durationSec: 5,
+          aspectRatio: '9:16',
+        },
+        { fetch, sleep: async () => {} },
+      ),
+    )
+    clean(err)
+    expect(err!.message).toContain(REDACTED)
+  })
+
+  it('a 401 whose error code / type / status is the key: testProvider keeps its own code and the upstream one is redacted', async () => {
+    const body = { error: { message: `bad ${KEY}`, code: KEY, type: KEY, status: KEY } }
+    const fetch = (async () => new Response(JSON.stringify(body), { status: 401 })) as never
+    for (const protocol of [
+      'openai-responses',
+      'anthropic-messages',
+      'gemini-chat',
+      'openai-chat',
+    ] as ProtocolId[]) {
+      const res = await testProvider(
+        { baseUrl: 'https://x.example.test/v1', protocol, model: 'm' },
+        KEY,
+        { fetch },
+      )
+      expect(JSON.stringify(res), protocol).not.toContain(KEY)
+      expect(res, protocol).toMatchObject({
+        outcome: 'failed',
+        status: 401,
+        code: protocol === 'openai-chat' ? 'HTTP_401' : REDACTED,
+      })
+    }
+  })
+
+  it('a key that equals a word the answer is made of changes nothing in the structure', async () => {
+    const fetch = (async () =>
+      new Response(JSON.stringify({ error: { message: 'bad', code: 'HTTP_401' } }), {
+        status: 401,
+      })) as never
+    for (const key of ['HTTP_401', 'outcome', 'failed']) {
+      const res = await testProvider(
+        { baseUrl: 'https://x.example.test/v1', protocol: 'openai-chat', model: 'm' },
+        key,
+        { fetch },
+      )
+      expect(res).toMatchObject({ outcome: 'failed', status: 401, code: 'HTTP_401' })
+    }
   })
 })
