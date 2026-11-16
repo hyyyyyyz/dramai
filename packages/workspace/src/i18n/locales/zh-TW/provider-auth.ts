@@ -10,13 +10,6 @@ export default {
     noneNote: '這個服務商不需要鑑權（比如本機執行的模型），請求不帶任何憑據，所以沒有 Key 要填',
     keyMissingNote: '這個服務商用 API Key，但還沒有填。填了才能測試和使用',
     loginFixed: '帳號登入的介面地址和協議是固定的，不能修改',
-    verification: {
-      tested: '已實測 · {{date}}',
-      documented: '按官方文件接入，未實測',
-      source: '出處',
-      note: '沒有在真實服務上測過，可能有細節不對。它不會自動成為當前選擇：試用確認沒問題後，再選用它',
-    },
-    preset: { documented: '未實測' },
     custom: {
       auth: '鑑權方式',
       apiKey: 'API Key',
@@ -28,8 +21,6 @@ export default {
     },
     added: {
       title: '已新增「{{name}}」',
-      unverified:
-        '它是按官方文件接入、還沒實測的，所以沒有自動設為使用。確認沒問題後，再自己選用它',
       use: '設為使用',
     },
   },
@@ -259,7 +250,7 @@ export default {
     },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: '介面地址不合規，登入令牌沒有發出',
-      body: '帳號登入的介面地址是固定的。請在設定裡刪掉這個服務商，重新用預設新增',
+      body: '帳號登入的介面地址是固定的。請在設定裡刪掉這個服務商，再用「帳號登入」重新新增',
     },
     subscription_sharing_usage_limit_exceeded: {
       title: '已達到用量上限',

@@ -1,4 +1,3 @@
-import { safeHttpUrl } from '@/lib/safe-url'
 import type { LoginStatusDto, ProviderConfigDto } from '@dramai/api'
 
 export type Auth = ProviderConfigDto['auth']
@@ -30,22 +29,6 @@ export function canTest(p: Pick<ProviderConfigDto, 'auth' | 'hasKey' | 'login'>)
     case 'account_login':
       return p.login?.state === 'signed_in' && p.login.planUsage !== false
   }
-}
-
-/** The one thing a provider card should say about where it came from. */
-export type VerificationView =
-  | { kind: 'tested'; date: string }
-  | { kind: 'documented'; source: string; link: boolean }
-  | undefined
-
-export function verificationView(
-  v: ProviderConfigDto['verification'],
-  legacyVerifiedAt?: string,
-): VerificationView {
-  if (v?.status === 'tested') return { kind: 'tested', date: v.testedAt }
-  if (v?.status === 'documented')
-    return { kind: 'documented', source: v.source, link: safeHttpUrl(v.source) !== undefined }
-  return legacyVerifiedAt ? { kind: 'tested', date: legacyVerifiedAt } : undefined
 }
 
 /** Which sign-in screen to show. */

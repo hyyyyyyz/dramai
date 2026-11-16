@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import type { ProviderConfigDto } from '@dramai/api'
@@ -75,6 +75,11 @@ function AddProviderForm({
   const [protocol, setProtocol] = useState<ProtocolId>(protocols[0]!)
   const [baseUrl, setBaseUrl] = useState('')
   const [model, setModel] = useState('')
+  // while signing in the model is the channel's own suggestion until the user types one; the model typed for API-key
+  // use is kept apart, so leaving sign-in gives it back untouched (the address box works the same way)
+  const [loginModel, setLoginModel] = useState<string>()
+  // one request at a time: a ref, because two submits in the same frame both see the same render
+  const sending = useRef(false)
   const [apiKey, setApiKey] = useState('')
   const [mode, setMode] = useState<AuthMode>('api_key')
   const [channel, setChannel] = useState<LoginChannel>()
@@ -85,7 +90,9 @@ function AddProviderForm({
     mode === 'login' ? (available.find((c) => c.channel === channel) ?? available[0]) : undefined
   const login = mode === 'login' && picked !== undefined
   const shownUrl = login ? picked.baseUrl : baseUrl
-  const valid = label.trim() !== '' && (login || addressSendable(baseUrl)) && model.trim() !== ''
+  const shownModel = login ? (loginModel ?? picked.model) : model
+  const valid =
+    label.trim() !== '' && (login || addressSendable(baseUrl)) && shownModel.trim() !== ''
   const addressMessage = useBaseUrlMessage(login ? '' : baseUrl, create.error)
 
   const chooseProtocol = (p: ProtocolId) => {
@@ -97,23 +104,16 @@ function AddProviderForm({
   const chooseMode = (m: AuthMode) => {
     setMode(m)
     create.reset()
-    if (m === 'login') {
-      const first = available[0]
-      if (first) {
-        setChannel(first.channel)
-        if (!model.trim()) setModel(first.model)
-      }
-    }
+    if (m === 'login' && available[0]) setChannel(available[0].channel)
   }
   const chooseChannel = (c: LoginChannel) => {
     setChannel(c)
-    const next = available.find((x) => x.channel === c)
-    if (next && !model.trim()) setModel(next.model)
     create.reset()
   }
 
   const submit = async () => {
-    if (!valid) return
+    if (!valid || sending.current) return
+    sending.current = true
     try {
       const p = await create.mutateAsync({
         body: {
@@ -121,7 +121,7 @@ function AddProviderForm({
           kind,
           protocol,
           baseUrl: shownUrl.trim(),
-          model: model.trim(),
+          model: shownModel.trim(),
           // saying it outright keeps "no key yet" and "needs no key" apart
           auth: login
             ? { type: 'account_login', channel: picked.channel }
@@ -133,6 +133,8 @@ function AddProviderForm({
       onAdded(p)
     } catch {
       /* shown in the dialog */
+    } finally {
+      sending.current = false
     }
   }
 
@@ -208,6 +210,8 @@ function AddProviderForm({
             value={mode}
             onValueChange={chooseMode}
             options={authOptions}
+            // on a phone the three choices go one above the other instead of wrapping inside their buttons
+            className="max-[480px]:w-full max-[480px]:flex-col max-[480px]:[&>button]:justify-center"
           />
         </Field>
         {mode === 'login' && (
@@ -240,7 +244,11 @@ function AddProviderForm({
         )}
         {mode === 'none' && <Hint>{t('providerAuth.custom.noneHint')}</Hint>}
         <Field label={t('providers.form.model')} required hint={t('providers.add.modelHint')}>
-          <Input mono value={model} onChange={(e) => setModel(e.target.value)} />
+          <Input
+            mono
+            value={shownModel}
+            onChange={(e) => (login ? setLoginModel(e.target.value) : setModel(e.target.value))}
+          />
         </Field>
         {/* an address problem is shown on the address input instead */}
         {create.isError && !baseUrlCodeOf(create.error) && <ErrorNotice error={create.error} />}

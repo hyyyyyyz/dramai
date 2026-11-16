@@ -87,16 +87,23 @@ describe('how a provider authenticates', () => {
     expect(within(keyed).getByText('API Key')).toBeInTheDocument()
   })
 
-  it('verification: tested shows its date, documented-only says not tested and shows the source', async () => {
+  it('no card shows a verification label: not the tested date, not “documented, not tested”, not its source', async () => {
+    // the data still carries `verification` / `verifiedAt`; the page just does not show them
     page({ providers: [makeKeyProvider(), makeLoginProvider()] })
-    expect(within(await card('DeepSeek')).getByText('已实测 · 2026-05-04')).toBeInTheDocument()
+    const tested = await card('DeepSeek')
+    expect(within(tested).queryByText(/已实测/)).toBeNull()
+    expect(within(tested).getByText('API Key')).toBeInTheDocument() // the auth chip is still there
     const doc = await card('OpenAI (ChatGPT sign-in)')
-    expect(within(doc).getByText('按官方文档接入，未实测')).toBeInTheDocument()
-    await userEvent.click(within(doc).getByRole('button', { name: /展开/ }))
+    expect(within(doc).queryByText(/未实测/)).toBeNull()
+    expect(within(doc).getByText('ChatGPT 账号登录')).toBeInTheDocument()
+    for (const c of [tested, doc]) {
+      await userEvent.click(within(c).getByRole('button', { name: /展开/ }))
+      expect(c.textContent).not.toMatch(/已实测|未实测|按官方文档接入|预设验证于|2026-05-04/)
+    }
     expect(
-      within(doc).getByRole('link', { name: 'https://developers.openai.com/siwc' }),
-    ).toHaveAttribute('href', 'https://developers.openai.com/siwc')
-    expect(within(doc).getByText(/它不会自动成为当前选择/)).toBeInTheDocument()
+      within(doc).queryByRole('link', { name: 'https://developers.openai.com/siwc' }),
+    ).toBeNull()
+    expect(within(doc).queryByText(/它不会自动成为当前选择/)).toBeNull()
   })
 
   it('an account-login provider shows no key field and a read-only address and protocol', async () => {

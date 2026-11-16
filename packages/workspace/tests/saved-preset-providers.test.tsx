@@ -56,12 +56,15 @@ function page() {
 const card = (name: string) => screen.findByRole('article', { name })
 
 describe('providers saved from presets that are no longer in the catalogue', () => {
-  it('each one is listed as an ordinary provider with its own label, model and verification status', async () => {
+  it('each one is listed as an ordinary provider with its own label, model and protocol, and no verification label', async () => {
     page()
-    for (const { dto, tested } of SAVED) {
+    for (const { dto } of SAVED) {
       const c = await card(dto.label)
-      if (tested) expect(within(c).getByText('已实测 · 2026-05-04')).toBeInTheDocument()
-      else expect(within(c).getByText('按官方文档接入，未实测')).toBeInTheDocument()
+      // their data still says tested / documented; the card does not
+      expect(c.textContent).not.toMatch(/已实测|未实测|按官方文档接入|预设验证于/)
+      expect(
+        within(c).getByText(new RegExp(dto.model.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))),
+      ).toBeInTheDocument()
       // a key is on file: shown the way every saved key is
       expect(within(c).getByText('API Key')).toBeInTheDocument()
     }
@@ -88,7 +91,7 @@ describe('providers saved from presets that are no longer in the catalogue', () 
     for (const line of wan.knownLimitations) expect(within(c).getByText(line)).toBeInTheDocument()
   })
 
-  it('the documented-only one is not made the current choice, and the tested ones are shown as saved', async () => {
+  it('none of them is made the current choice just by being listed', async () => {
     const { server } = page()
     await card(chat.label)
     const puts = server.calls.filter((c) => c.method === 'PUT' && c.path === '/api/settings')

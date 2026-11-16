@@ -599,7 +599,7 @@ describe('review leftovers', () => {
       expect(c.textContent).not.toMatch(/。\s+[^\s]/)
   })
 
-  it('a verification source that is not an http(s) address is plain text, not a link', async () => {
+  it('a verification source is never shown, whatever it is: no link, no text', async () => {
     pageWith([
       makeKeyProvider({
         id: 'prov_a',
@@ -614,12 +614,10 @@ describe('review leftovers', () => {
     ])
     const a = await expand('A')
     expect(within(a).queryByRole('link')).toBeNull()
-    expect(a).toHaveTextContent('javascript:alert(1)')
+    expect(a).not.toHaveTextContent('javascript:alert(1)')
     const b = await expand('B')
-    expect(within(b).getByRole('link', { name: 'https://docs.example.com/x' })).toHaveAttribute(
-      'href',
-      'https://docs.example.com/x',
-    )
+    expect(within(b).queryByRole('link')).toBeNull()
+    expect(b).not.toHaveTextContent('docs.example.com')
   })
 
   it('Traditional Chinese uses 文字, 帳 and 儲值 everywhere, not the Mainland 文本, 賬 and 充值', () => {

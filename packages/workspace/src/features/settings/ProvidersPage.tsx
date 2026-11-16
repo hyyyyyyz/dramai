@@ -9,7 +9,6 @@ import { ErrorNotice } from '@/features/common/error-text'
 import { AddProvider } from './AddProvider'
 import { ProviderCard } from './ProviderCard'
 import { KINDS, type ProviderKind } from './protocols'
-import { VerificationNote } from './ProviderBadges'
 import { VoiceSwitchNotice } from './VoiceSwitchNotice'
 
 /** 设置 · 服务商：四类服务（大模型、文生图、图生视频、配音），每类可有多个配置，选一个“使用中”。 */
@@ -120,16 +119,7 @@ export function ProvidersPage() {
                       {t('providerAuth.added.use')}
                     </Button>
                   }
-                >
-                  {p.verification?.status === 'documented' && (
-                    <>
-                      <span>{t('providerAuth.added.unverified')}</span>
-                      <div className="mt-1">
-                        <VerificationNote verification={p.verification} />
-                      </div>
-                    </>
-                  )}
-                </Notice>
+                />
               ))}
             {items.map((p) => (
               <ProviderCard

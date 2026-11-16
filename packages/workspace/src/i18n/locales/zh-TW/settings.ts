@@ -209,7 +209,6 @@ export default {
     pricing: '價格',
     pricingNote: '估算，不是帳單。批次生成前的預估費用用的是這張表，價格以服務商當前頁面為準',
     limitations: '已知限制',
-    verifiedAt: '預設驗證於 {{date}}',
     acceptedUnverified: '你已接受 {{count}} 項未驗證的能力，生成時不再為它們單獨確認',
     testSaveFirst: '先儲存修改，再測試連線',
     testNeedsKey: '先儲存 API Key，再測試連線',

@@ -10,13 +10,6 @@ export default {
     noneNote: '这个服务商不需要鉴权（比如本机运行的模型），请求不带任何凭据，所以没有 Key 要填',
     keyMissingNote: '这个服务商用 API Key，但还没有填。填了才能测试和使用',
     loginFixed: '账号登录的接口地址和协议是固定的，不能修改',
-    verification: {
-      tested: '已实测 · {{date}}',
-      documented: '按官方文档接入，未实测',
-      source: '出处',
-      note: '没有在真实服务上测过，可能有细节不对。它不会自动成为当前选择：试用确认没问题后，再选用它',
-    },
-    preset: { documented: '未实测' },
     custom: {
       auth: '鉴权方式',
       apiKey: 'API Key',
@@ -28,8 +21,6 @@ export default {
     },
     added: {
       title: '已添加「{{name}}」',
-      unverified:
-        '它是按官方文档接入、还没实测的，所以没有自动设为使用。确认没问题后，再自己选用它',
       use: '设为使用',
     },
   },
@@ -259,7 +250,7 @@ export default {
     },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: '接口地址不合规，登录令牌没有发出',
-      body: '账号登录的接口地址是固定的。请在设置里删掉这个服务商，重新用预设添加',
+      body: '账号登录的接口地址是固定的。请在设置里删掉这个服务商，再用“账号登录”重新添加',
     },
     subscription_sharing_usage_limit_exceeded: {
       title: '已达到用量上限',

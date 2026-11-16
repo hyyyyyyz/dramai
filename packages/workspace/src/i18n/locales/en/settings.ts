@@ -224,7 +224,6 @@ export default {
     pricingNote:
       'An estimate, not a bill. The cost shown before a batch uses this table; the provider’s current page is authoritative',
     limitations: 'Known limitations',
-    verifiedAt: 'Preset verified {{date}}',
     acceptedUnverified_one:
       'You accepted {{count}} unverified capability, so it isn’t confirmed separately when generating',
     acceptedUnverified_other:

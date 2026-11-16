@@ -15,13 +15,6 @@ export default {
     keyMissingNote:
       'This provider uses an API key and none is saved yet. Add one to test and use it',
     loginFixed: 'With account sign-in the base URL and protocol are fixed and can’t be changed',
-    verification: {
-      tested: 'Tested · {{date}}',
-      documented: 'Set up from the official docs, not tested',
-      source: 'Source',
-      note: 'It hasn’t been tried against the real service, so details may be off. It isn’t chosen automatically: try it, and use it once you’re satisfied',
-    },
-    preset: { documented: 'not tested' },
     custom: {
       auth: 'Authentication',
       apiKey: 'API key',
@@ -34,8 +27,6 @@ export default {
     },
     added: {
       title: 'Added “{{name}}”',
-      unverified:
-        'It was set up from the official docs and has not been tested, so it was not chosen automatically. Once you’re satisfied with it, choose it yourself',
       use: 'Use this',
     },
   },
@@ -269,7 +260,7 @@ export default {
     },
     LOGIN_ENDPOINT_NOT_ALLOWED: {
       title: 'The base URL isn’t allowed, so no sign-in token was sent',
-      body: 'The base URL for account sign-in is fixed. Delete this provider in Settings and add it again from the preset',
+      body: 'The base URL for account sign-in is fixed. Delete this provider in Settings and add it again with “Account sign-in”',
     },
     subscription_sharing_usage_limit_exceeded: {
       title: 'Usage limit reached',

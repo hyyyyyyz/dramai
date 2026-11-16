@@ -29,7 +29,7 @@ import { capabilitySummary } from './capability-summary'
 import { DialectSettings } from './DialectSettings'
 import { dialectChanged, dialectOf, dialectSupport, draftOf, draftValid } from './dialect-model'
 import { LoginPanel } from './LoginPanel'
-import { AuthChip, VerificationChip, VerificationNote } from './ProviderBadges'
+import { AuthChip } from './ProviderBadges'
 import { authState, canTest, loginChannelOf } from './provider-model'
 import { TestResult } from './TestConnection'
 import { LISTS_MODELS, PROTOCOLS_BY_KIND, protocolLabel, type ProtocolId } from './protocols'
@@ -78,10 +78,6 @@ export function ProviderCard({
           {!open && (
             <div className="mt-2 flex flex-wrap gap-2">
               <AuthChip provider={provider} />
-              <VerificationChip
-                verification={provider.verification}
-                verifiedAt={provider.verifiedAt}
-              />
               {cap.isPending && <Skeleton className="h-6 w-24" />}
               {summary.map((s) => (
                 <Chip key={s}>{s}</Chip>
@@ -302,7 +298,6 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
           {t('providerDialect.fixToSave')}
         </p>
       )}
-      <VerificationNote verification={provider.verification} />
       {cap.isPending && <Skeleton className="h-24" />}
       {cap.isError && <ErrorNotice error={cap.error} />}
       {cap.data && (
@@ -326,14 +321,7 @@ function ProviderForm({ provider }: { provider: ProviderConfigDto }) {
               </ul>
             </Notice>
           )}
-          {(cap.data.capability.verifiedAt ?? provider.verifiedAt) && (
-            <Hint>
-              {t('providers.verifiedAt', {
-                date: cap.data.capability.verifiedAt ?? provider.verifiedAt,
-              })}
-              {cap.data.provenance ? ` · ${cap.data.provenance}` : ''}
-            </Hint>
-          )}
+          {cap.data.provenance && <Hint>{cap.data.provenance}</Hint>}
         </>
       )}
       {(provider.acceptedUnverified?.length ?? 0) > 0 && (

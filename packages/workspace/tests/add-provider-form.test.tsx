@@ -322,7 +322,7 @@ describe('signing in with an account', () => {
   )
 
   it.each(['openai-chatgpt', 'openrouter'] as const)(
-    '%s: the request is the one the real server accepted, with the channel’s address and no key',
+    '%s: the request is the one the real server accepted: the channel’s own address and protocol, never one typed by the user, and no key',
     async (channel) => {
       const { request, stored } = recorded.logins[channel]
       const { server } = page({
@@ -333,13 +333,38 @@ describe('signing in with an account', () => {
       })
       const dialog = await dialogAt(request.protocol)
       await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
+      // an address typed before choosing sign-in must not reach the request
+      await type(
+        within(dialog).getByRole('textbox', { name: /Base URL/ }),
+        'https://typed.example.com/v1',
+      )
       await userEvent.click(within(dialog).getByRole('radio', { name: '账号登录' }))
       await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
       await waitFor(() => expect(posts(server)).toHaveLength(1))
       expect(posts(server)[0]!.body).toEqual(request)
       expect(posts(server)[0]!.body).not.toHaveProperty('apiKey')
+      expect(JSON.stringify(posts(server)[0]!.body)).not.toContain('typed.example.com')
     },
   )
+
+  it('leaving sign-in gives back the model typed before it, not the channel’s suggestion; a model typed while signed in stays with sign-in', async () => {
+    page()
+    const dialog = await dialogAt('openai-responses')
+    const model = () => within(dialog).getByRole('textbox', { name: /模型/ })
+    await userEvent.type(model(), 'my-typed-model')
+    await userEvent.click(within(dialog).getByRole('radio', { name: '账号登录' }))
+    expect(model()).toHaveValue(channelOf('openai-chatgpt').suggestedModel)
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'API Key' }))
+    expect(model()).toHaveValue('my-typed-model')
+    // nothing typed before: back to empty, not the suggestion
+    await userEvent.clear(model())
+    await userEvent.click(within(dialog).getByRole('radio', { name: '账号登录' }))
+    await type(model(), 'edited-in-sign-in')
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'API Key' }))
+    expect(model()).toHaveValue('')
+    await userEvent.click(within(dialog).getByRole('radio', { name: '账号登录' }))
+    expect(model()).toHaveValue('edited-in-sign-in')
+  })
 })
 
 describe('a key typed before choosing sign-in', () => {
@@ -354,6 +379,76 @@ describe('a key typed before choosing sign-in', () => {
     await waitFor(() => expect(posts(server)).toHaveLength(1))
     expect(posts(server)[0]!.body).toEqual(request)
     expect(JSON.stringify(posts(server)[0]!.body)).not.toContain('sk-typed')
+  })
+})
+
+describe('one request at a time', () => {
+  const fill = async (dialog: HTMLElement) => {
+    const { request } = PROVIDERS.llm
+    await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
+    await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
+    await type(within(dialog).getByRole('textbox', { name: /模型/ }), request.model)
+  }
+  const slowPage = () => {
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    const view = page({
+      routes: {
+        'POST /api/providers': async () => {
+          await gate
+          return PROVIDERS.llm.stored
+        },
+        [`GET /api/providers/${PROVIDERS.llm.stored.id}/capability`]: () => makeCapabilityView(),
+      },
+    })
+    return { ...view, release }
+  }
+
+  it('Enter pressed again and again while the first request is out sends exactly one', async () => {
+    const { server, release } = slowPage()
+    const dialog = await openForm()
+    await fill(dialog)
+    await userEvent.keyboard('{Enter}{Enter}{Enter}')
+    await waitFor(() => expect(posts(server)).toHaveLength(1))
+    await userEvent.keyboard('{Enter}{Enter}')
+    release()
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /添加服务商/ })).toBeNull())
+    expect(posts(server)).toHaveLength(1)
+  })
+
+  it('Enter and a click on Add in the same breath send exactly one', async () => {
+    const { server, release } = slowPage()
+    const dialog = await openForm()
+    await fill(dialog)
+    const form = dialog.querySelector('form')!
+    // two submits before React has rendered anything in between (a state flag alone would let both through)
+    form.requestSubmit()
+    form.requestSubmit()
+    form.requestSubmit()
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
+    release()
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /添加服务商/ })).toBeNull())
+    expect(posts(server)).toHaveLength(1)
+  })
+
+  it('after a failure the next submit goes through again', async () => {
+    let calls = 0
+    const { server } = page({
+      routes: {
+        'POST /api/providers': () => {
+          calls++
+          return calls === 1 ? apiError(500, 'INTERNAL') : PROVIDERS.llm.stored
+        },
+        [`GET /api/providers/${PROVIDERS.llm.stored.id}/capability`]: () => makeCapabilityView(),
+      },
+    })
+    const dialog = await openForm()
+    await fill(dialog)
+    await userEvent.keyboard('{Enter}')
+    await within(dialog).findByRole('alert')
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(posts(server)).toHaveLength(2))
   })
 })
 
