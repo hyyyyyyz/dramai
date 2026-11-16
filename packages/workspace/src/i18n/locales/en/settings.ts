@@ -274,6 +274,8 @@ export default {
         missing: 'Fill in {{what}} first to fetch the model list or test the connection',
         listed: '{{count}} models found. Pick one in the model box below, or type your own',
         listEmpty: 'The provider returned an empty model list. Type the model name yourself',
+        listEmptyKnown:
+          'The provider returned an empty model list. Pick from the suggestions below or type the model name yourself',
         noList: 'This interface type has no model-list endpoint. Type the model name yourself',
         noListKnown:
           'This interface type has no model-list endpoint. Pick from the suggestions below or type the model name yourself',

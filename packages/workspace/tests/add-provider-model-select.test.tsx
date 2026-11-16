@@ -104,6 +104,36 @@ describe('the model control', () => {
   })
 })
 
+describe('an empty list from the provider', () => {
+  it('says so and keeps the suggestions from the model data; with none, it is a plain box', async () => {
+    const empty = () => ({ ...P['llm.models'].response, items: [] })
+    page({ routes: { 'POST /api/providers/probe': empty } })
+    const image = await openForm('image')
+    await type(
+      within(image).getByRole('textbox', { name: /Base URL/ }),
+      'https://img.example.com/v1',
+    )
+    await userEvent.type(within(image).getByLabelText('API Key'), KEY)
+    await waitFor(() => expect(modelControl(image).tagName).toBe('SELECT'))
+    await userEvent.click(listButton(image))
+    expect(
+      await within(image).findByText(
+        '服务商返回的模型列表是空的，可以从下面的候选里选，或手动填写模型名',
+      ),
+    ).toBeInTheDocument()
+    expect(modelOptions(image)).toEqual(knownFor('image', 'openai-images').map((m) => m.id))
+    await userEvent.keyboard('{Escape}')
+    const llm = await openForm('llm')
+    await type(within(llm).getByRole('textbox', { name: /Base URL/ }), 'https://llm.example.com/v1')
+    await userEvent.type(within(llm).getByLabelText('API Key'), KEY)
+    await userEvent.click(listButton(llm))
+    expect(
+      await within(llm).findByText('服务商返回的模型列表是空的，请手动填写模型名'),
+    ).toBeInTheDocument()
+    expect(modelControl(llm).tagName).toBe('INPUT')
+  })
+})
+
 describe('typing a model that is not offered', () => {
   it('“手动输入…” turns it into a box with the focus in it, “从列表选择” turns it back, and what was typed is kept', async () => {
     const { server } = page({

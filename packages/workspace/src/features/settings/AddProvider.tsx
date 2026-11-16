@@ -175,7 +175,8 @@ function AddProviderForm({
   const fetched = list.result?.outcome === 'models' ? list.result.items : undefined
   // only the model id: it is the value that goes to the interface. Names the model data or the provider gives it
   // (display names carry vendor and product names) are not shown.
-  const candidates = (fetched ?? known.data?.items ?? []).map((m) => m.id)
+  // an empty answer says nothing: the suggestions stay
+  const candidates = (fetched?.length ? fetched : (known.data?.items ?? [])).map((m) => m.id)
 
   const chooseProtocol = (p: ProtocolId) => {
     setProtocol(p)
@@ -243,7 +244,13 @@ function AddProviderForm({
     if (!r) return null
     if (r.outcome === 'models')
       return r.items.length === 0 ? (
-        <Hint role="status">{t('providers.add.probe.listEmpty')}</Hint>
+        <Hint role="status">
+          {t(
+            known.data?.items.length
+              ? 'providers.add.probe.listEmptyKnown'
+              : 'providers.add.probe.listEmpty',
+          )}
+        </Hint>
       ) : (
         <Hint role="status">{t('providers.add.probe.listed', { count: r.items.length })}</Hint>
       )
