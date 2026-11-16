@@ -41,7 +41,7 @@ describe('a saved provider whose preset was removed', () => {
 
   it('gets the same cost estimate as with the region it used to have', () => {
     for (const s of saved) {
-      const profile = catalog.models.lookup({ protocol: s.protocol, model: s.model })
+      const profile = catalog.models.lookup({ protocol: s.protocol, model: s.model }).profile!
       expect(
         profile.pricing.some((p) => p.dimensions?.region),
         s.presetId,
