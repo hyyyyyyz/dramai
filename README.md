@@ -58,9 +58,9 @@ Open <http://127.0.0.1:8787>. Demo mode runs the whole studio on your machine wi
 pnpm webui
 ```
 
-This starts the local server, serves the workspace at <http://127.0.0.1:8787> and opens your browser. Add a provider in Settings → Providers, run "test connection", and make a project. Data lives in `~/.dramai`. Stop it with Ctrl+C. Options such as `--port`, `--data-dir` and `--no-open` are described under "More ways to run it" below.
+This starts the local server, serves the workspace at <http://127.0.0.1:8787> and opens your browser. Add a provider in Settings → Providers, enter its key, run "test connection" and choose "Use this", then make a project. Data lives in `~/.dramai`. Stop it with Ctrl+C. Options such as `--port`, `--data-dir` and `--no-open` are described under "More ways to run it" below.
 
-Providers are presets grouped by vendor, each labelled with what has been verified; see [Providers](#providers).
+Providers are presets grouped by vendor; see [Providers](#providers).
 
 ### 3. Desktop installer
 
@@ -99,9 +99,9 @@ The desktop app keeps your data in your user folder (for example `~/Library/Appl
 Newest first. **Source** entries are in the repository and run from source; **Release** entries are in the published `0.5.0-beta.1` installer. The full list is in the [changelog](./CHANGELOG.md).
 
 - **2026-11-14 · The introduction page.** <https://hyyyyyyz.github.io/dramai/> is the project's introduction page, in Chinese at the root and in English at [`/en/`](https://hyyyyyyz.github.io/dramai/en/). It replaces the v0.4 web app that was hosted at that address. The source is in `apps/site`; see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
-- **2026-11-13 · Source · Speech providers and narration voices.** Narration can use OpenAI, SiliconFlow, MiniMax or Alibaba CosyVoice, with six presets set up from the vendors' official documentation. A project's narration voice can carry a style instruction and a language hint where the provider takes them, and the check before generating covers the voice and the text length. See the [changelog](./CHANGELOG.md#unreleased).
-- **2026-11-13 · Source · Video providers and reference images.** Seedance (Volcengine and BytePlus), Kling 4.0 and Tongyi Wanxiang 3.0, with six presets set up from the official documentation. A task option, off by default, sends a shot's character, scene and prop sheets to the video model as reference images; where the documentation makes that exclusive with a first frame, the confirmation dialog says what is given up before anything is ordered. See the [changelog](./CHANGELOG.md#unreleased).
-- **2026-11-13 · Source · More text and image providers, account sign-in, a preset catalog by vendor.** New presets for language models and images, set up from the official documentation and grouped by vendor in Settings → Providers, each labelled with its status. Sign in with a ChatGPT account (text only) or an OpenRouter account instead of pasting a key. See [Providers](#providers) and the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-13 · Source · Speech providers and narration voices.** Narration can use OpenAI, SiliconFlow, MiniMax or Alibaba CosyVoice, with six presets. A project's narration voice can carry a style instruction and a language hint where the provider takes them, and the check before generating covers the voice and the text length. See the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-13 · Source · Video providers and reference images.** Seedance (Volcengine and BytePlus), Kling 4.0 and Tongyi Wanxiang 3.0, with six presets. A task option, off by default, sends a shot's character, scene and prop sheets to the video model as reference images; where the documentation makes that exclusive with a first frame, the confirmation dialog says what is given up before anything is ordered. See the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-13 · Source · More text and image providers, account sign-in, a preset catalog by vendor.** New presets for language models and images, grouped by vendor in Settings → Providers. Sign in with a ChatGPT account (text only) or an OpenRouter account instead of pasting a key. See [Providers](#providers) and the [changelog](./CHANGELOG.md#unreleased).
 - **2026-11-12 · Release · [`v0.5.0-beta.1`](https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0-beta.1) published as a pre-release.** The rewrite as a local server with a workspace, a desktop app and unsigned installers for macOS, Windows and Linux. See the [changelog](./CHANGELOG.md#050-beta1---2026-11-12).
 
 ## What is different
@@ -109,7 +109,7 @@ Newest first. **Source** entries are in the repository and run from source; **Re
 - **Local, with your keys.** A server on `127.0.0.1` does all the work. Projects are folders of ordinary files plus a SQLite database. Provider requests are made by that server, so there is no CORS limit and no relay in between.
 - **Long texts and serials.** A project holds episodes, episodes hold scenes, scenes hold shots. Long texts are split into episodes by chapter.
 - **A reusable library.** Characters, locations, props and costumes are assets that shots refer to. Each asset has one reference sheet that every shot using it is generated from. The visual style is chosen once, when the project is created.
-- **Many providers, each labelled with its source.** Language model, image, video and speech providers are presets from sixteen vendors; four have been run end to end and the rest are set up from the vendors' official documentation, and Settings shows which is which. A preset set up from the documentation is never selected for you.
+- **Many providers.** Language model, image, video and speech presets from fifteen vendors, grouped by vendor in Settings → Providers; you choose which one to use.
 - **Checks before paid generation.** Shots that refer to an unregistered asset, or one without a reference image, are blocked. A batch runs completely or not at all, a shot has at most one video task in flight, and for models with a price entry a cost estimate is shown before you confirm.
 - **A task queue that survives restarts.** Closing the browser does not stop work. After a restart, a video task that has an upstream task id resumes polling. One without it is marked "submission unconfirmed" and is never resubmitted automatically. Cancelling only affects tasks that are still queued.
 - **Versions kept.** Regenerating adds a version and does not overwrite the previous one. When something upstream changes, what depends on it is marked out of date, and nothing is regenerated on its own.
@@ -119,17 +119,14 @@ The workspace speaks English, Simplified Chinese and Traditional Chinese, in a l
 
 ## Providers
 
-Providers are presets in Settings → Providers, grouped by vendor. Each preset is labelled with how it was verified:
+Settings → Providers has 36 presets from 15 vendors, grouped by vendor, in four kinds:
 
-- **Run end to end** (4): DeepSeek for language models, Seedream and Nano Banana for images and Wan 2.2 Flash for video, the last three through 302.AI. They were run in v0.4 in May 2026, before the rewrite.
-- **Set up from the official documentation** (36): the address, protocol and model ids follow each vendor's published documentation. Settings → Providers marks each of them as set up from the official docs, and you choose one yourself: they never become the current choice on their own.
+- **Language models** (16): OpenAI, Anthropic, Google Gemini, DeepSeek, Alibaba Cloud Model Studio (China and international sites), Volcengine Ark, Zhipu, Moonshot Kimi, MiniMax, SiliconFlow and OpenRouter; Ollama and LM Studio for models on your own machine.
+- **Images** (8): OpenAI, Volcengine, MiniMax, Google Gemini, Alibaba Cloud Model Studio Qwen-Image (two sites), SiliconFlow and Kling.
+- **Video** (6): Volcengine and BytePlus Seedance, Kling 4.0 (two sites) and Alibaba Cloud Model Studio Wan 3.0 (two sites).
+- **Speech** (6): OpenAI, SiliconFlow (two sites), MiniMax (two sites) and Alibaba Cloud Model Studio CosyVoice (China site).
 
-That makes 40 presets from 16 vendors. By kind (run end to end + from the documentation):
-
-- **Language models** (1 + 16): DeepSeek (run end to end); OpenAI, Anthropic, Google Gemini, Alibaba Cloud Model Studio (China and international sites), Volcengine Ark, Zhipu, Moonshot Kimi, MiniMax, SiliconFlow, OpenRouter and 302.AI; Ollama and LM Studio for models on your own machine.
-- **Images** (2 + 8): Seedream and Nano Banana through 302.AI (run end to end); OpenAI, Volcengine, MiniMax, Google Gemini, Alibaba Cloud Model Studio Qwen-Image (two sites), SiliconFlow and Kling.
-- **Video** (1 + 6): Wan 2.2 Flash through 302.AI (run end to end); Volcengine and BytePlus Seedance, Kling 4.0 (two sites) and Alibaba Cloud Model Studio Wan 3.0 (two sites).
-- **Speech** (0 + 6): OpenAI, SiliconFlow (two sites), MiniMax (two sites) and Alibaba Cloud Model Studio CosyVoice (China site).
+Pick a preset, enter your key and test the connection. A preset whose address contains a placeholder, such as the workspace ID of Alibaba Cloud Model Studio, asks you to fill it in.
 
 Two presets sign in with an account instead of a key. **OpenAI**: you sign in with a ChatGPT account and text requests use your ChatGPT plan; it covers language models only, so images, video and speech still need API keys. **OpenRouter**: you sign in and OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.
 
@@ -191,7 +188,7 @@ In words: source text → episodes → scenes → shots → shot images → shot
 **What you can do today**
 
 - Run the whole workflow end to end: upload a text, plan episodes, break down shots, confirm characters and locations, generate images and video, compose, export. Demo mode does it with no key; the WebUI and the desktop app do it with the providers you connect (see [Providers](#providers)).
-- Choose from 40 provider presets from 16 vendors, covering language models, images, video and speech, and sign in with a ChatGPT or OpenRouter account. Four presets were run end to end; the rest are set up from the vendors' official documentation, and Settings → Providers labels each one. See [Providers](#providers).
+- Choose from 36 provider presets from 15 vendors, covering language models, images, video and speech, and sign in with a ChatGPT or OpenRouter account. See [Providers](#providers).
 - Render the cut with your own ffmpeg in 9:16, 16:9 or 1:1, with narration, soft or burned-in subtitles, SRT and VTT, and music. Transitions are hard cuts and there is one music track; the timeline preview plays picture and narration, and the rendered cut adds subtitles and music.
 - Install the desktop app as a `0.5.0-beta.1` pre-release on macOS, Windows and Linux, build and install it from source, or run the WebUI. The macOS Apple silicon installer has been tried on a real machine (the window loads, the server is healthy and authentication works); CI builds the desktop app on macOS (Apple silicon), Windows and Linux and runs a sandboxed install, start-up check and uninstall on each.
 - Rely on browser tests (Playwright) for that path, resuming a failed task, the English interface and keyboard-only use, and on automated tests for the provider protocols, the sign-in flows and the checks before generating.

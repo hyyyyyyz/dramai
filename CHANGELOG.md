@@ -10,8 +10,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 - **Account sign-in.** Two providers can be used with an account instead of
   an API key. **OpenAI**: "Sign in with ChatGPT", so text requests use your ChatGPT plan; it covers language models
-  only (the `openai-responses` protocol), and images, video and speech still need API keys. It was built from OpenAI's
-  official documentation only: dramai calls only the public `https://api.openai.com/v1` and never a ChatGPT back-end
+  only (the `openai-responses` protocol), and images, video and speech still need API keys. dramai calls only the public `https://api.openai.com/v1` and never a ChatGPT back-end
   endpoint. **OpenRouter**: OAuth with PKCE; OpenRouter hands dramai an API key of your own, which is stored and used
   like one you pasted, and usage is billed to your OpenRouter account. Its documentation describes no refresh and no
   revocation, so signing out clears the key on this computer and links to OpenRouter's page where you delete it.
@@ -19,31 +18,30 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   read); the authorisation comes back to a local address, so you have to sign in on the computer that runs dramai
   (from another machine sign-in is not offered); a callback with the wrong state is ignored; no token or key appears in a
   response, a log or a URL (a signed-in OpenRouter key is shown only as a mask). Settings → Providers has a sign-in panel per channel (`providers.login.*`).
-- **How a provider authenticates, and where a preset comes from.** A provider has an `auth` method: API key,
+- **How a provider authenticates.** A provider has an `auth` method: API key,
   account sign-in or none (a model on your own machine). Data saved before this is read as an API key when it holds
-  a key and as none otherwise, and nothing is rewritten until you save. Every preset carries a verification status:
-  tested (with the date) or set up from the official documentation. The four v0.4 presets stay marked tested
-  (2026-05-04); every preset added since is marked as set up from the documentation, in Settings and in the
-  add-provider catalog, and never becomes the current choice on its own.
-- **Text providers (set up from the vendors' official documentation).** Three new protocols, all streamed: `openai-responses`,
+  a key and as none otherwise, and nothing is rewritten until you save. Every preset carries a verification status
+  (tested with a date, or set up from the official documentation), shown in Settings and in the add-provider
+  catalog; a preset that has not been tested never becomes the current choice on its own.
+- **Text providers.** Three new protocols, all streamed: `openai-responses`,
   `anthropic-messages` and `gemini-chat`. `openai-chat` gains per-provider dialect options (a JSON object merged
   into the request body, extra request headers, the output-length field name `max_tokens` or `max_completion_tokens`,
   and the JSON output mode `json_object` or `prompt_only`) and now copes with the stream shapes vendors send: array
   content, reasoning fields (never put into the text), comment lines and inline `<think>` tags; an empty output cut
-  off by the length limit is a clear error. Without dialect options the request is unchanged, so the tested
-  DeepSeek preset behaves as before. Sixteen presets, connected from the official documentation: OpenAI (API key,
+  off by the length limit is a clear error. Without dialect options the request is unchanged, so existing
+  providers behave as before. Fifteen presets: OpenAI (API key,
   and ChatGPT sign-in), Anthropic, Google Gemini, Alibaba Cloud Model Studio (China and international sites),
-  Volcengine Ark, Zhipu, Moonshot, MiniMax, SiliconFlow, OpenRouter (API key, and sign-in), 302.AI, and Ollama and
+  Volcengine Ark, Zhipu, Moonshot, MiniMax, SiliconFlow, OpenRouter (API key, and sign-in), and Ollama and
   LM Studio (no authentication). The dialect options are under "Advanced" on a text provider, and a button lists the
   models of providers that can (OpenAI-style, Anthropic, Gemini).
-- **Image providers (set up from the vendors' official documentation).** New protocols `volcengine-images` (Seedream direct),
+- **Image providers.** New protocols `volcengine-images` (Seedream direct),
   `dashscope-image` (Qwen-Image), `siliconflow-images` and `kling-image`. `openai-images` now writes the request by
   model name: `gpt-image*` follows OpenAI's official reference (no `response_format` or `negative_prompt`, references
   through `/images/edits`), `MiniMax-H3-Image*` uses MiniMax's edit form, and every other name keeps the earlier
-  request unchanged, which the tested 302.AI Seedream preset relies on; the choice can be set explicitly with the
+  request unchanged, so existing OpenAI-compatible configurations are not affected; the choice can be set explicitly with the
   new `imageStyle` dialect option. `gemini-image` sends only `x-goog-api-key` to Google's official address. Eight
   presets (OpenAI GPT Image, Volcengine Seedream, MiniMax H3, Google Gemini, Alibaba Qwen-Image on the China and
-  international sites, SiliconFlow, Kling) and sixteen model profiles whose capabilities are each recorded as `unverified` until confirmed.
+  international sites, SiliconFlow, Kling) and sixteen model profiles (capabilities and limits per model).
   A model profile can carry a minimum total pixel count, and the output size is raised to it while keeping the
   ratio. A generated image is downloaded as soon as the job succeeds, with its address saved first, so a restart
   resumes the download.
@@ -68,10 +66,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   (which published the browser-only workspace) and can only be started by hand, with a confirmation box. The
   landing page is deployed at `https://hyyyyyyz.github.io/dramai/` (English at `/en/`) and replaces the v0.4
   browser-only workspace that was hosted there. See `docs/DEPLOYMENT.md`.
-- **Video providers (set up from the vendors' official documentation).** Three new video protocols: Volcengine Ark / BytePlus ModelArk Seedance (`ark-video`), Kling 4.0 and
+- **Video providers.** Three new video protocols: Volcengine Ark / BytePlus ModelArk Seedance (`ark-video`), Kling 4.0 and
   4.0 Flash (`kling-contents`) and Tongyi Wanxiang 3.0 (`dashscope-video`), with six presets
-  (documented, never selected automatically) and ten model profiles whose capabilities are each recorded as
-  `unverified` until confirmed. The existing video protocols and the tested 302.AI Wan2.2 Flash preset are unchanged.
+  (never selected automatically) and ten model profiles (capabilities and limits per model). The existing video
+  protocols are unchanged.
 - **Reference images for video (off by default).** A task option sends the shot's character, scene and prop
   sheets to the video model. Where the official docs make first frame and reference images mutually exclusive
   (Seedance, Wan 3.0) the shot image becomes reference image no. 1 and the strict first frame is given up; the
@@ -91,11 +89,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   on the timeline; clips that already had a video or that you changed are left alone, and the way a cut is
   composed is unchanged.
 
-- **Speech providers (set up from the vendors' official documentation).** Narration voice-over can now use MiniMax
+- **Speech providers.** Narration voice-over can now use MiniMax
   (new protocol `minimax-t2a`, synchronous), Alibaba CosyVoice (new protocol `dashscope-cosyvoice`, HTTP
-  non-streaming), SiliconFlow and OpenAI, with six presets (documented, never selected automatically) and
+  non-streaming), SiliconFlow and OpenAI, with six presets (never selected automatically) and
   profiles that list the preset voices, the single-request text limit and the price in the official unit per
-  site. All of it was built from the official documentation only. Requests of the existing `openai-tts`
+  site. Requests of the existing `openai-tts`
   protocol are unchanged.
 - Before any money is spent, the pre-flight check now stops a narration whose voice does not exist on the chosen
   speech provider (including a voice name carried over from another service after switching provider), whose
@@ -157,6 +155,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- The preset list was adjusted: the presets of one vendor that came with `0.5.0-beta.1` were removed. Providers
+  already saved from them keep working.
 - `docs/DEPLOYMENT.md` is rewritten for the landing page: what is deployed, how the deployment workflow is run, and
   what visitors of the old browser-only workspace see afterwards.
 - A price list now belongs to a site: the China-site CNY prices of Wan 3.0 no longer price the international

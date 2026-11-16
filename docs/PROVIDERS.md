@@ -23,7 +23,6 @@
 | 平台          | LLM Base URL                               |  CORS  | 备注                                                   |
 | ------------- | ------------------------------------------ | :----: | ------------------------------------------------------ |
 | OpenRouter    | `https://openrouter.ai/api/v1`             |   ✅   | 一个 key 调几乎所有主流模型；图片/视频生成需看具体模型 |
-| 302.AI        | `https://api.302.ai/v1`                    |   ✅   | LLM + 文生图 + 图生视频 + nano banana 等齐全           |
 | 词元 (CIYUAN) | `https://ciyuan.today/v1`                  |   ✅   | 国内可访问，含 GPT Image 2 / nano banana               |
 | 火山引擎      | `https://ark.cn-beijing.volces.com/api/v3` | 需配置 | 豆包 / 即梦                                            |
 | 智谱          | `https://open.bigmodel.cn/api/paas/v4`     | 需配置 | GLM-4.7 / CogView                                      |
@@ -64,18 +63,9 @@
       "apiKey": "sk-or-...",
       "model": "anthropic/claude-3.5-sonnet",
     },
-    {
-      "id": "302-image",
-      "label": "302.AI 文生图",
-      "kind": "text2image",
-      "baseUrl": "https://api.302.ai/v1",
-      "apiKey": "302-...",
-      "model": "gpt-image-1",
-    },
   ],
   "active": {
     "llm": "openrouter",
-    "text2image": "302-image",
   },
 }
 ```
