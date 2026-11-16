@@ -1,12 +1,14 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
-import type { ProviderConfigDto } from '@dramai/api'
+import type { CallInput, CallOutput, ProviderConfigDto } from '@dramai/api'
 import { Button, Field, Hint, Input, SegmentedControl, Select, iconProps } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
-import { useCall, usePresets } from '@/data/queries'
+import { useCall, useKnownModels, useLoginChannels as useLoginChannelConfigs } from '@/data/queries'
+import { useApi } from '@/data/use-api'
 import { ErrorNotice } from '@/features/common/error-text'
+import { TestResult } from './TestConnection'
 import { addressSendable, baseUrlCodeOf, useBaseUrlMessage } from './base-url'
 import type { LoginChannel } from './login-channels'
 import { PROTOCOLS_BY_KIND, protocolLabel, type ProtocolId, type ProviderKind } from './protocols'
@@ -33,29 +35,79 @@ export function AddProvider({
 }
 
 type AuthMode = 'api_key' | 'login' | 'none'
+type ProbeBody = CallInput<'providers.probe'>['body']
+type ProbeResult = CallOutput<'providers.probe'>
+type Settled = { fp: string; result: ProbeResult } | { fp: string; error: unknown }
 
 /**
  * A sign-in channel pins its own address and interface type (the server only sends a token to the channel's own
- * address). The API gives these through the sign-in entries it lists with the presets; the form reads them from there
- * and invents nothing.
+ * address). The API lists them (`providers.loginChannels`); the form invents nothing.
  */
 function useLoginChannels(kind: ProviderKind) {
-  const presets = usePresets()
+  const channels = useLoginChannelConfigs()
   return useMemo(() => {
     if (kind !== 'llm') return []
-    return (presets.data?.items ?? []).flatMap((p) =>
-      p.kind === 'llm' && p.auth.type === 'account_login'
-        ? [
-            {
-              channel: p.auth.channel as LoginChannel,
-              protocol: p.protocol as ProtocolId,
-              baseUrl: p.baseUrl,
-              model: p.suggestedModel,
-            },
-          ]
-        : [],
-    )
-  }, [presets.data, kind])
+    return (channels.data?.items ?? [])
+      .filter((c) => c.kind === 'llm')
+      .map((c) => ({
+        channel: c.channel as LoginChannel,
+        protocol: c.protocol as ProtocolId,
+        baseUrl: c.baseUrl,
+        model: c.suggestedModel ?? '',
+      }))
+  }, [channels.data, kind])
+}
+
+/**
+ * One of the two things the form can ask the server about the draft before anything is saved (`providers.probe`:
+ * list the models, test the connection). It creates nothing. `fp` says what the answer depends on; an answer is shown
+ * only while the draft still has that fingerprint, and one that arrives after the draft changed or the form closed is
+ * dropped (a request number and the mounted flag decide, not the order in which things happen to finish).
+ */
+function useDraftProbe(fp: string) {
+  const api = useApi()
+  const alive = useRef(true)
+  const current = useRef(fp)
+  const seq = useRef(0)
+  // the fingerprint of the request that is out: the same draft is never asked twice at once (a ref, so two clicks
+  // in one frame see the same thing)
+  const inflight = useRef<string | undefined>(undefined)
+  const [pending, setPending] = useState<string>()
+  const [settled, setSettled] = useState<Settled>()
+  useLayoutEffect(() => {
+    current.current = fp
+  }, [fp])
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+
+  const run = async (body: ProbeBody) => {
+    if (inflight.current === fp) return
+    const mine = fp
+    const id = ++seq.current
+    inflight.current = mine
+    setPending(mine)
+    const fresh = () => alive.current && id === seq.current && mine === current.current
+    try {
+      const result = await api.call('providers.probe', { body })
+      if (fresh()) setSettled({ fp: mine, result })
+    } catch (error) {
+      if (fresh()) setSettled({ fp: mine, error })
+    } finally {
+      if (inflight.current === mine) inflight.current = undefined
+      if (alive.current) setPending((p) => (p === mine ? undefined : p))
+    }
+  }
+  const answer = settled?.fp === fp ? settled : undefined
+  return {
+    run,
+    loading: pending === fp,
+    result: answer && 'result' in answer ? answer.result : undefined,
+    error: answer && 'error' in answer ? answer.error : undefined,
+  }
 }
 
 function AddProviderForm({
@@ -83,6 +135,8 @@ function AddProviderForm({
   const [apiKey, setApiKey] = useState('')
   const [mode, setMode] = useState<AuthMode>('api_key')
   const [channel, setChannel] = useState<LoginChannel>()
+  const candidatesId = useId()
+  const probeHintId = useId()
 
   // sign-in is offered only when a channel exists for the chosen interface type
   const available = channels.filter((c) => c.protocol === protocol)
@@ -93,7 +147,30 @@ function AddProviderForm({
   const shownModel = login ? (loginModel ?? picked.model) : model
   const valid =
     label.trim() !== '' && (login || addressSendable(baseUrl)) && shownModel.trim() !== ''
-  const addressMessage = useBaseUrlMessage(login ? '' : baseUrl, create.error)
+
+  // what the two optional questions to the server depend on
+  const keyed = mode === 'api_key' ? apiKey.trim() : ''
+  const listFp = JSON.stringify([kind, protocol, shownUrl.trim(), mode, keyed])
+  const testFp = JSON.stringify([listFp, shownModel.trim()])
+  const list = useDraftProbe(listFp)
+  const test = useDraftProbe(testFp)
+  const known = useKnownModels(kind, protocol)
+
+  // an address problem, from adding or from either question, is shown on the address input and nowhere else
+  const probeAddressError = [list.error, test.error].find((e) => e && baseUrlCodeOf(e))
+  const addressError = baseUrlCodeOf(create.error) ? create.error : probeAddressError
+  const addressMessage = useBaseUrlMessage(login ? '' : baseUrl, addressError)
+
+  const missing = [
+    ...(addressSendable(baseUrl) ? [] : [t('providers.add.probe.needAddress')]),
+    ...(mode === 'api_key' && keyed === '' ? [t('providers.add.probe.needKey')] : []),
+  ]
+  const canProbe = !login && missing.length === 0
+
+  const fetched = list.result?.outcome === 'models' ? list.result.items : undefined
+  const candidates: { id: string; label?: string }[] = fetched
+    ? fetched.map((m) => ({ id: m.id, label: m.label !== m.id ? m.label : undefined }))
+    : (known.data?.items ?? []).map((m) => ({ id: m.id, label: m.displayName }))
 
   const chooseProtocol = (p: ProtocolId) => {
     setProtocol(p)
@@ -110,6 +187,15 @@ function AddProviderForm({
     setChannel(c)
     create.reset()
   }
+
+  const probeBody = (action: 'models' | 'test'): ProbeBody => ({
+    action,
+    kind,
+    protocol,
+    baseUrl: shownUrl.trim(),
+    auth: mode === 'none' ? { type: 'none' } : { type: 'api_key', apiKey: keyed },
+    ...(action === 'test' && shownModel.trim() ? { model: shownModel.trim() } : {}),
+  })
 
   const submit = async () => {
     if (!valid || sending.current) return
@@ -146,6 +232,31 @@ function AddProviderForm({
     { value: 'none', label: t('providerAuth.custom.none') },
   ]
 
+  // the answer to "list the models", in words
+  const listNote = (() => {
+    const r = list.result
+    if (!r) return null
+    if (r.outcome === 'models')
+      return r.items.length === 0 ? (
+        <Hint role="status">{t('providers.add.probe.listEmpty')}</Hint>
+      ) : (
+        <Hint role="status">{t('providers.add.probe.listed', { count: r.items.length })}</Hint>
+      )
+    if (r.outcome === 'no_model_list')
+      return (
+        <Hint role="status">
+          {t(
+            known.data?.items.length
+              ? 'providers.add.probe.noListKnown'
+              : 'providers.add.probe.noList',
+          )}
+        </Hint>
+      )
+    if (r.outcome === 'login_after_save')
+      return <Hint role="status">{t('providers.add.probe.loginAfterSave')}</Hint>
+    return <TestResult result={r} />
+  })()
+
   return (
     <Modal
       open
@@ -155,6 +266,15 @@ function AddProviderForm({
       dismissOnBackdrop={false}
       footer={
         <>
+          <Button
+            variant="secondary"
+            disabled={!canProbe}
+            loading={test.loading}
+            aria-describedby={canProbe ? undefined : probeHintId}
+            onClick={() => void test.run(probeBody('test'))}
+          >
+            {t('providers.test.action')}
+          </Button>
           <Button variant="ghost" onClick={onClose}>
             {t('common.cancel')}
           </Button>
@@ -243,13 +363,70 @@ function AddProviderForm({
           </Field>
         )}
         {mode === 'none' && <Hint>{t('providerAuth.custom.noneHint')}</Hint>}
-        <Field label={t('providers.form.model')} required hint={t('providers.add.modelHint')}>
+
+        {/* optional: ask the provider for its models before adding. Nothing is created by it. */}
+        <div className="flex flex-col gap-2">
+          <div>
+            <Button
+              variant="secondary"
+              disabled={!canProbe}
+              loading={list.loading}
+              aria-describedby={canProbe ? undefined : probeHintId}
+              onClick={() => void list.run(probeBody('models'))}
+            >
+              {t('providerLogin.models.fetch')}
+            </Button>
+          </div>
+          {login ? (
+            <Hint id={probeHintId}>{t('providers.add.probe.loginAfterSave')}</Hint>
+          ) : (
+            missing.length > 0 && (
+              <Hint id={probeHintId}>
+                {t('providers.add.probe.missing', {
+                  what: missing.join(t('providerDialect.listSeparator')),
+                })}
+              </Hint>
+            )
+          )}
+          {listNote}
+          {list.error !== undefined && !baseUrlCodeOf(list.error) && (
+            <ErrorNotice error={list.error} />
+          )}
+        </div>
+
+        <Field
+          label={t('providers.form.model')}
+          required
+          hint={
+            candidates.length > 0
+              ? t('providers.add.probe.candidatesNote')
+              : t('providers.add.modelHint')
+          }
+        >
           <Input
             mono
+            list={candidates.length > 0 ? candidatesId : undefined}
+            autoComplete="off"
             value={shownModel}
             onChange={(e) => (login ? setLoginModel(e.target.value) : setModel(e.target.value))}
           />
         </Field>
+        {candidates.length > 0 && (
+          <datalist id={candidatesId}>
+            {candidates.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </datalist>
+        )}
+
+        {test.result && test.result.outcome !== 'models' && (
+          <TestOutcome result={test.result} loginNote={t('providers.add.probe.loginAfterSave')} />
+        )}
+        {test.error !== undefined && !baseUrlCodeOf(test.error) && (
+          <ErrorNotice error={test.error} />
+        )}
         {/* an address problem is shown on the address input instead */}
         {create.isError && !baseUrlCodeOf(create.error) && <ErrorNotice error={create.error} />}
         {/* lets Enter in a text field submit the form */}
@@ -257,4 +434,13 @@ function AddProviderForm({
       </form>
     </Modal>
   )
+}
+
+/** The answer to "test the connection" for a draft: the same words and look as on a saved provider's card. */
+function TestOutcome({ result, loginNote }: { result: ProbeResult; loginNote: string }) {
+  if (result.outcome === 'ok' || result.outcome === 'failed' || result.outcome === 'unverifiable')
+    return <TestResult result={result} />
+  if (result.outcome === 'login_after_save') return <Hint role="status">{loginNote}</Hint>
+  // a model list or "no list" is not an answer to a test
+  return null
 }

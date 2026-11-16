@@ -1,0 +1,846 @@
+{
+  "meta": {
+    "note": "Recorded from the real server by record-probe.mjs; the upstream is a stand-in fetch; keys are fake.",
+    "commit": "0c5e28f",
+    "providersStoredAfterAllProbes": 0,
+    "upstreamAsked": 11,
+    "keyAppearsInAnyResponse": false
+  },
+  "probes": {
+    "llm.models": {
+      "request": {
+        "action": "models",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://llm.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "models",
+        "items": [
+          {
+            "id": "text-model-1",
+            "label": "text-model-1"
+          },
+          {
+            "id": "text-model-2",
+            "label": "text-model-2"
+          }
+        ]
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "llm.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "llm.test": {
+      "request": {
+        "action": "test",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://llm.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        },
+        "model": "text-model-1"
+      },
+      "response": {
+        "outcome": "ok",
+        "modelCount": 2,
+        "detectedModels": ["text-model-1", "text-model-2"],
+        "modelListed": true
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "llm.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "llm.testModelMissing": {
+      "request": {
+        "action": "test",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://llm.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        },
+        "model": "not-in-the-list"
+      },
+      "response": {
+        "outcome": "ok",
+        "modelCount": 2,
+        "detectedModels": ["text-model-1", "text-model-2"],
+        "modelListed": false
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "llm.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "llm.models.none": {
+      "request": {
+        "action": "models",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "http://127.0.0.1:1234/v1",
+        "auth": {
+          "type": "none"
+        }
+      },
+      "response": {
+        "outcome": "models",
+        "items": [
+          {
+            "id": "text-model-1",
+            "label": "text-model-1"
+          },
+          {
+            "id": "text-model-2",
+            "label": "text-model-2"
+          }
+        ]
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "127.0.0.1",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "llm.models.unauthorized": {
+      "request": {
+        "action": "models",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://llm.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-bad-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "failed",
+        "error": "HTTP 401 · {\"error\":{\"message\":\"Incorrect API key provided: [redacted]\",\"type\":\"invalid_request_error\",\"code\":\"invalid_api_key\"}}",
+        "status": 401,
+        "code": "HTTP_401"
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "llm.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "llm.test.unauthorized": {
+      "request": {
+        "action": "test",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://llm.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-bad-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "failed",
+        "error": "HTTP 401 · {\"error\":{\"message\":\"Incorrect API key provided: [redacted]\",\"type\":\"invalid_request_error\",\"code\":\"invalid_api_key\"}}",
+        "status": 401,
+        "code": "HTTP_401"
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "llm.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "llm.models.network": {
+      "request": {
+        "action": "models",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://down.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "failed",
+        "error": "网络错误：fetch failed",
+        "code": "NETWORK"
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "down.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "llm.test.network": {
+      "request": {
+        "action": "test",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://down.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "failed",
+        "error": "网络错误：fetch failed",
+        "code": "NETWORK"
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "down.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "llm.models.timeout": {
+      "request": {
+        "action": "models",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://slow.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "failed",
+        "error": "请求超时",
+        "code": "TIMEOUT"
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "slow.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "image.models": {
+      "request": {
+        "action": "models",
+        "kind": "image",
+        "protocol": "openai-images",
+        "baseUrl": "https://img.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "no_model_list",
+        "message": "这个接口类型没有模型列表接口"
+      },
+      "upstreamAsked": []
+    },
+    "image.test": {
+      "request": {
+        "action": "test",
+        "kind": "image",
+        "protocol": "openai-images",
+        "baseUrl": "https://img.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        },
+        "model": "image-model-1"
+      },
+      "response": {
+        "outcome": "ok",
+        "modelCount": 2,
+        "detectedModels": ["text-model-1", "text-model-2"],
+        "modelListed": false
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "img.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "image.models.noList": {
+      "request": {
+        "action": "models",
+        "kind": "image",
+        "protocol": "kling-image",
+        "baseUrl": "https://kimg.example.com",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "no_model_list",
+        "message": "这个接口类型没有模型列表接口"
+      },
+      "upstreamAsked": []
+    },
+    "image.test.unverifiable": {
+      "request": {
+        "action": "test",
+        "kind": "image",
+        "protocol": "kling-image",
+        "baseUrl": "https://kimg.example.com",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "unverifiable",
+        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来实测。"
+      },
+      "upstreamAsked": []
+    },
+    "video.models.noList": {
+      "request": {
+        "action": "models",
+        "kind": "video",
+        "protocol": "kling-contents",
+        "baseUrl": "https://video.example.com",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "no_model_list",
+        "message": "这个接口类型没有模型列表接口"
+      },
+      "upstreamAsked": []
+    },
+    "video.test.unverifiable": {
+      "request": {
+        "action": "test",
+        "kind": "video",
+        "protocol": "kling-contents",
+        "baseUrl": "https://video.example.com",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "unverifiable",
+        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来实测。"
+      },
+      "upstreamAsked": []
+    },
+    "tts.models": {
+      "request": {
+        "action": "models",
+        "kind": "tts",
+        "protocol": "openai-tts",
+        "baseUrl": "https://tts.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "no_model_list",
+        "message": "这个接口类型没有模型列表接口"
+      },
+      "upstreamAsked": []
+    },
+    "tts.test": {
+      "request": {
+        "action": "test",
+        "kind": "tts",
+        "protocol": "openai-tts",
+        "baseUrl": "https://tts.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        },
+        "model": "voice-model-1"
+      },
+      "response": {
+        "outcome": "ok",
+        "modelCount": 2,
+        "detectedModels": ["text-model-1", "text-model-2"],
+        "modelListed": false
+      },
+      "upstreamAsked": [
+        {
+          "method": "GET",
+          "host": "tts.example.com",
+          "path": "/v1/models",
+          "body": false
+        }
+      ]
+    },
+    "tts.models.noList": {
+      "request": {
+        "action": "models",
+        "kind": "tts",
+        "protocol": "minimax-t2a",
+        "baseUrl": "https://mtts.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "no_model_list",
+        "message": "这个接口类型没有模型列表接口"
+      },
+      "upstreamAsked": []
+    },
+    "tts.test.unverifiable": {
+      "request": {
+        "action": "test",
+        "kind": "tts",
+        "protocol": "minimax-t2a",
+        "baseUrl": "https://mtts.example.com/v1",
+        "auth": {
+          "type": "api_key",
+          "apiKey": "sk-record-123456789012"
+        }
+      },
+      "response": {
+        "outcome": "unverifiable",
+        "reason": "该协议没有标准的模型列表端点，无法在测试连接里验证；请直接生成一次来实测。"
+      },
+      "upstreamAsked": []
+    },
+    "login.chatgpt.models": {
+      "request": {
+        "action": "models",
+        "kind": "llm",
+        "protocol": "openai-responses",
+        "baseUrl": "https://api.openai.com/v1",
+        "auth": {
+          "type": "account_login",
+          "channel": "openai-chatgpt"
+        }
+      },
+      "response": {
+        "outcome": "login_after_save",
+        "channel": "openai-chatgpt",
+        "message": "账号登录要先添加这个服务商，再在服务商卡片上登录；添加之前不能测试连接或获取模型列表"
+      },
+      "upstreamAsked": []
+    },
+    "login.chatgpt.test": {
+      "request": {
+        "action": "test",
+        "kind": "llm",
+        "protocol": "openai-responses",
+        "baseUrl": "https://api.openai.com/v1",
+        "auth": {
+          "type": "account_login",
+          "channel": "openai-chatgpt"
+        }
+      },
+      "response": {
+        "outcome": "login_after_save",
+        "channel": "openai-chatgpt",
+        "message": "账号登录要先添加这个服务商，再在服务商卡片上登录；添加之前不能测试连接或获取模型列表"
+      },
+      "upstreamAsked": []
+    },
+    "login.openrouter.models": {
+      "request": {
+        "action": "models",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "auth": {
+          "type": "account_login",
+          "channel": "openrouter"
+        }
+      },
+      "response": {
+        "outcome": "login_after_save",
+        "channel": "openrouter",
+        "message": "账号登录要先添加这个服务商，再在服务商卡片上登录；添加之前不能测试连接或获取模型列表"
+      },
+      "upstreamAsked": []
+    }
+  },
+  "refused": {
+    "insecure": {
+      "status": 400,
+      "code": "BASE_URL_INSECURE",
+      "upstreamAsked": 0
+    },
+    "invalid": {
+      "status": 400,
+      "code": "BASE_URL_INVALID",
+      "upstreamAsked": 0
+    },
+    "placeholder": {
+      "status": 400,
+      "code": "BASE_URL_PLACEHOLDER_UNFILLED",
+      "details": {
+        "placeholders": ["WorkspaceId"]
+      },
+      "upstreamAsked": 0
+    }
+  },
+  "known": {
+    "llm": [],
+    "image": [
+      {
+        "id": "MiniMax-H3-Image",
+        "kind": "image",
+        "protocols": ["openai-images"],
+        "displayName": "MiniMax H3 Image"
+      },
+      {
+        "id": "MiniMax-H3-Image-Highspeed",
+        "kind": "image",
+        "protocols": ["openai-images"],
+        "displayName": "MiniMax H3 Image Highspeed"
+      },
+      {
+        "id": "Qwen/Qwen-Image",
+        "kind": "image",
+        "protocols": ["siliconflow-images"],
+        "displayName": "Qwen-Image（硅基流动）"
+      },
+      {
+        "id": "Qwen/Qwen-Image-Edit",
+        "kind": "image",
+        "protocols": ["siliconflow-images"],
+        "displayName": "Qwen-Image-Edit（硅基流动）"
+      },
+      {
+        "id": "doubao-seedream-5-0-260128",
+        "kind": "image",
+        "protocols": ["volcengine-images"],
+        "displayName": "即梦 Seedream 5.0 lite（方舟直连）"
+      },
+      {
+        "id": "doubao-seedream-5-5-261028",
+        "kind": "image",
+        "protocols": ["volcengine-images"],
+        "displayName": "即梦 Seedream 5.5（方舟直连）"
+      },
+      {
+        "id": "gemini-3-pro-image",
+        "kind": "image",
+        "protocols": ["gemini-image"],
+        "displayName": "Nano Banana Pro（Gemini 3 Pro Image）"
+      },
+      {
+        "id": "gemini-3.1-flash-image",
+        "kind": "image",
+        "protocols": ["gemini-image"],
+        "displayName": "Nano Banana 2（Gemini 3.1 Flash Image）"
+      },
+      {
+        "id": "gemini-nano-banana-2.1",
+        "kind": "image",
+        "protocols": ["gemini-image"],
+        "displayName": "Nano Banana 2.1"
+      },
+      {
+        "id": "gpt-image-2.5-flare",
+        "kind": "image",
+        "protocols": ["openai-images"],
+        "displayName": "OpenAI GPT Image 2.5 Flare"
+      },
+      {
+        "id": "gpt-image-2.5-sunburst",
+        "kind": "image",
+        "protocols": ["openai-images"],
+        "displayName": "OpenAI GPT Image 2.5 Sunburst"
+      },
+      {
+        "id": "kling-image-o1",
+        "kind": "image",
+        "protocols": ["kling-image"],
+        "displayName": "可灵 图像 O1（Omni）"
+      },
+      {
+        "id": "kling-v3",
+        "kind": "image",
+        "protocols": ["kling-image"],
+        "displayName": "可灵 图像 3.0"
+      },
+      {
+        "id": "kling-v3-omni",
+        "kind": "image",
+        "protocols": ["kling-image"],
+        "displayName": "可灵 图像 3.0 Omni"
+      },
+      {
+        "id": "qwen-image-2.0",
+        "kind": "image",
+        "protocols": ["dashscope-image"],
+        "displayName": "通义 Qwen-Image 2.0"
+      },
+      {
+        "id": "qwen-image-2.0-pro",
+        "kind": "image",
+        "protocols": ["dashscope-image"],
+        "displayName": "通义 Qwen-Image 2.0 Pro"
+      }
+    ],
+    "video": [
+      {
+        "id": "doubao-seedance-2-0-260128",
+        "kind": "video",
+        "protocols": ["ark-video"],
+        "displayName": "即梦 Seedance 2.0（方舟）"
+      },
+      {
+        "id": "doubao-seedance-2-0-fast-260128",
+        "kind": "video",
+        "protocols": ["ark-video", "volcengine-video"],
+        "displayName": "即梦 Seedance 2.0 Fast（方舟）"
+      },
+      {
+        "id": "doubao-seedance-2-0-mini-260615",
+        "kind": "video",
+        "protocols": ["ark-video"],
+        "displayName": "即梦 Seedance 2.0 Mini（方舟）"
+      },
+      {
+        "id": "doubao-seedance-2-5-260628",
+        "kind": "video",
+        "protocols": ["ark-video"],
+        "displayName": "即梦 Seedance 2.5（方舟）"
+      },
+      {
+        "id": "dreamina-seedance-2-0-260128",
+        "kind": "video",
+        "protocols": ["ark-video"],
+        "displayName": "Dreamina Seedance 2.0（BytePlus）"
+      },
+      {
+        "id": "dreamina-seedance-2-5-260628",
+        "kind": "video",
+        "protocols": ["ark-video"],
+        "displayName": "Dreamina Seedance 2.5（BytePlus）"
+      },
+      {
+        "id": "kling-4.0",
+        "kind": "video",
+        "protocols": ["kling-contents"],
+        "displayName": "可灵 Kling 4.0"
+      },
+      {
+        "id": "kling-4.0-flash",
+        "kind": "video",
+        "protocols": ["kling-contents"],
+        "displayName": "可灵 Kling 4.0 Flash"
+      },
+      {
+        "id": "wan3.0-video",
+        "kind": "video",
+        "protocols": ["dashscope-video"],
+        "displayName": "通义万相 3.0"
+      },
+      {
+        "id": "wan3.0-video-prime",
+        "kind": "video",
+        "protocols": ["dashscope-video"],
+        "displayName": "通义万相 3.0 Prime"
+      }
+    ],
+    "tts": [
+      {
+        "id": "FunAudioLLM/CosyVoice2-0.5B",
+        "kind": "tts",
+        "protocols": ["openai-tts"],
+        "displayName": "硅基流动 CosyVoice2-0.5B"
+      },
+      {
+        "id": "cosyvoice-v2",
+        "kind": "tts",
+        "protocols": ["dashscope-cosyvoice"],
+        "displayName": "通义 CosyVoice v2"
+      },
+      {
+        "id": "cosyvoice-v3-flash",
+        "kind": "tts",
+        "protocols": ["dashscope-cosyvoice"],
+        "displayName": "通义 CosyVoice v3 Flash"
+      },
+      {
+        "id": "cosyvoice-v3-plus",
+        "kind": "tts",
+        "protocols": ["dashscope-cosyvoice"],
+        "displayName": "通义 CosyVoice v3 Plus"
+      },
+      {
+        "id": "cosyvoice-v3.5-flash",
+        "kind": "tts",
+        "protocols": ["dashscope-cosyvoice"],
+        "displayName": "通义 CosyVoice v3.5 Flash"
+      },
+      {
+        "id": "cosyvoice-v3.5-plus",
+        "kind": "tts",
+        "protocols": ["dashscope-cosyvoice"],
+        "displayName": "通义 CosyVoice v3.5 Plus"
+      },
+      {
+        "id": "fnlp/MOSS-TTSD-v0.5",
+        "kind": "tts",
+        "protocols": ["openai-tts"],
+        "displayName": "硅基流动 MOSS-TTSD v0.5"
+      },
+      {
+        "id": "gpt-4o-mini-tts",
+        "kind": "tts",
+        "protocols": ["openai-tts"],
+        "displayName": "OpenAI gpt-4o-mini-tts"
+      },
+      {
+        "id": "speech-02-hd",
+        "kind": "tts",
+        "protocols": ["minimax-t2a"],
+        "displayName": "MiniMax Speech 02 HD（历史型号）"
+      },
+      {
+        "id": "speech-02-turbo",
+        "kind": "tts",
+        "protocols": ["minimax-t2a"],
+        "displayName": "MiniMax Speech 02 Turbo（历史型号）"
+      },
+      {
+        "id": "speech-2.6-hd",
+        "kind": "tts",
+        "protocols": ["minimax-t2a"],
+        "displayName": "MiniMax Speech 2.6 HD（历史型号）"
+      },
+      {
+        "id": "speech-2.6-turbo",
+        "kind": "tts",
+        "protocols": ["minimax-t2a"],
+        "displayName": "MiniMax Speech 2.6 Turbo（历史型号）"
+      },
+      {
+        "id": "speech-2.8-hd",
+        "kind": "tts",
+        "protocols": ["minimax-t2a"],
+        "displayName": "MiniMax Speech 2.8 HD"
+      },
+      {
+        "id": "speech-2.8-turbo",
+        "kind": "tts",
+        "protocols": ["minimax-t2a"],
+        "displayName": "MiniMax Speech 2.8 Turbo"
+      }
+    ],
+    "image.openai-images": [
+      {
+        "id": "MiniMax-H3-Image",
+        "kind": "image",
+        "protocols": ["openai-images"],
+        "displayName": "MiniMax H3 Image"
+      },
+      {
+        "id": "MiniMax-H3-Image-Highspeed",
+        "kind": "image",
+        "protocols": ["openai-images"],
+        "displayName": "MiniMax H3 Image Highspeed"
+      },
+      {
+        "id": "gpt-image-2.5-flare",
+        "kind": "image",
+        "protocols": ["openai-images"],
+        "displayName": "OpenAI GPT Image 2.5 Flare"
+      },
+      {
+        "id": "gpt-image-2.5-sunburst",
+        "kind": "image",
+        "protocols": ["openai-images"],
+        "displayName": "OpenAI GPT Image 2.5 Sunburst"
+      }
+    ],
+    "tts.openai-tts": [
+      {
+        "id": "FunAudioLLM/CosyVoice2-0.5B",
+        "kind": "tts",
+        "protocols": ["openai-tts"],
+        "displayName": "硅基流动 CosyVoice2-0.5B"
+      },
+      {
+        "id": "fnlp/MOSS-TTSD-v0.5",
+        "kind": "tts",
+        "protocols": ["openai-tts"],
+        "displayName": "硅基流动 MOSS-TTSD v0.5"
+      },
+      {
+        "id": "gpt-4o-mini-tts",
+        "kind": "tts",
+        "protocols": ["openai-tts"],
+        "displayName": "OpenAI gpt-4o-mini-tts"
+      }
+    ],
+    "video.kling-contents": [
+      {
+        "id": "kling-4.0",
+        "kind": "video",
+        "protocols": ["kling-contents"],
+        "displayName": "可灵 Kling 4.0"
+      },
+      {
+        "id": "kling-4.0-flash",
+        "kind": "video",
+        "protocols": ["kling-contents"],
+        "displayName": "可灵 Kling 4.0 Flash"
+      }
+    ]
+  },
+  "loginChannels": [
+    {
+      "channel": "openai-chatgpt",
+      "kind": "llm",
+      "protocol": "openai-responses",
+      "baseUrl": "https://api.openai.com/v1",
+      "suggestedModel": "gpt-6.1-sol"
+    },
+    {
+      "channel": "openrouter",
+      "kind": "llm",
+      "protocol": "openai-chat",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "suggestedModel": "anthropic/claude-sonnet-5.5"
+    }
+  ]
+}

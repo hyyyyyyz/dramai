@@ -3,7 +3,10 @@ export const qk = {
   system: ['system'] as const,
   settings: ['settings'] as const,
   styles: ['styles'] as const,
-  presets: ['presets'] as const,
+  /** 账号登录通道的固定配置（地址、接口类型、建议型号）。 */
+  loginChannels: ['login-channels'] as const,
+  /** 模型资料里按类别（和接口类型）对得上的型号，只是候选。 */
+  knownModels: (kind: string, protocol: string) => ['known-models', kind, protocol] as const,
   providers: ['providers'] as const,
   providerLogin: (id: string) => ['providers', 'login', id] as const,
   providerModels: (id: string) => ['providers', 'models', id] as const,

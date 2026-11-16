@@ -1,18 +1,27 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ProvidersPage } from '@/features/settings/ProvidersPage'
 import { PROTOCOLS_BY_KIND } from '@/features/settings/protocols'
 import en from '@/i18n/locales/en'
 import zh from '@/i18n/locales/zh-CN'
 import zhTW from '@/i18n/locales/zh-TW'
-import { apiError, fakeServer } from './fixtures'
+import { apiError } from './fixtures'
 import { makeCapabilityView } from './fixtures-production'
-import { renderApp, useLocale } from './render'
+import { useLocale } from './render'
+import {
+  LOGIN_CHANNELS,
+  PROVIDERS,
+  noWrites,
+  openForm,
+  page,
+  posts,
+  recorded,
+  type,
+  type Kind,
+} from './add-provider-kit'
 
 // `useLocale` only switches the language; it is not a hook, so it may be called in a loop
 const setLocale = useLocale
-import recorded from './fixtures/add-provider/recorded.json'
 
 /**
  * "Add provider" opens one form, with no catalogue in front of it. Every response here is what the real server
@@ -34,50 +43,6 @@ beforeEach(async () => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-type Kind = 'llm' | 'image' | 'video' | 'tts'
-const SECTION: Record<Kind, RegExp> = {
-  llm: /大模型/,
-  image: /文生图/,
-  video: /图生视频/,
-  tts: /配音/,
-}
-const PROVIDERS = recorded.providers
-const LOGIN_PRESETS = recorded.loginPresets
-
-function page(
-  opts: {
-    providers?: unknown[]
-    presets?: unknown[]
-    routes?: Parameters<typeof fakeServer>[0]
-  } = {},
-) {
-  let list = opts.providers ?? []
-  const server = fakeServer({
-    'GET /api/providers': () => ({ items: list }),
-    'GET /api/settings': () => ({ activeProviders: {}, cost: {} }),
-    'PUT /api/settings': ({ body }) => body,
-    'GET /api/projects': () => ({ items: [] }),
-    'GET /api/presets': () => ({ items: opts.presets ?? LOGIN_PRESETS }),
-    ...opts.routes,
-  })
-  const view = renderApp(<ProvidersPage />, { client: server.client })
-  return { ...view, server, setList: (l: unknown[]) => (list = l) }
-}
-
-async function openForm(kind: Kind = 'llm') {
-  const section = await screen.findByRole('region', { name: SECTION[kind] })
-  await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-  return screen.findByRole('dialog', { name: /添加服务商/ })
-}
-const type = async (el: HTMLElement, text: string) => {
-  await userEvent.clear(el)
-  await userEvent.type(el, text)
-}
-const posts = (server: ReturnType<typeof page>['server']) =>
-  server.calls.filter((c) => c.method === 'POST' && c.path === '/api/providers')
-const noWrites = (server: ReturnType<typeof page>['server']) =>
-  server.calls.filter((c) => c.method !== 'GET')
-
 describe('the form opens at once, with nothing in front of it', () => {
   it('no catalogue: no search, no vendor groups, no second entry for a “custom” provider', async () => {
     page()
@@ -97,8 +62,8 @@ describe('the form opens at once, with nothing in front of it', () => {
     expect(within(dialog).getByText('地址见服务商的接口文档')).toBeInTheDocument()
   })
 
-  it('works when the preset list cannot be read: only the sign-in option goes away', async () => {
-    page({ routes: { 'GET /api/presets': () => apiError(500, 'INTERNAL') } })
+  it('works when the sign-in channels cannot be read: only the sign-in option goes away', async () => {
+    page({ routes: { 'GET /api/login-channels': () => apiError(500, 'INTERNAL') } })
     const dialog = await openForm()
     await userEvent.selectOptions(
       within(dialog).getByRole('combobox', { name: /API 协议/ }),
@@ -134,7 +99,7 @@ describe.each(['llm', 'image', 'video', 'tts'] as const)('adding a %s provider',
     await userEvent.selectOptions(protocol, request.protocol)
     await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
     await userEvent.type(within(dialog).getByLabelText('API Key'), request.apiKey!)
-    await type(within(dialog).getByRole('textbox', { name: /模型/ }), request.model)
+    await type(within(dialog).getByLabelText(/^模型/), request.model)
     await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
 
     await waitFor(() => expect(posts(server)).toHaveLength(1))
@@ -161,9 +126,9 @@ describe('required inputs', () => {
       'https://a.example.com/v1',
     )
     expect(add).toBeDisabled()
-    await userEvent.type(within(dialog).getByRole('textbox', { name: /模型/ }), 'm')
+    await userEvent.type(within(dialog).getByLabelText(/^模型/), 'm')
     expect(add).toBeEnabled()
-    await userEvent.clear(within(dialog).getByRole('textbox', { name: /模型/ }))
+    await userEvent.clear(within(dialog).getByLabelText(/^模型/))
     expect(add).toBeDisabled()
     expect(noWrites(server)).toEqual([])
   })
@@ -172,7 +137,7 @@ describe('required inputs', () => {
     const { server } = page()
     const dialog = await openForm()
     await userEvent.type(within(dialog).getByRole('textbox', { name: /名称/ }), 'X')
-    await userEvent.type(within(dialog).getByRole('textbox', { name: /模型/ }), 'm')
+    await userEvent.type(within(dialog).getByLabelText(/^模型/), 'm')
     const address = within(dialog).getByRole('textbox', { name: /Base URL/ })
     await userEvent.type(address, 'https://a.example.com/v1?key=1')
     expect(address).toHaveAttribute('aria-invalid', 'true')
@@ -195,7 +160,7 @@ describe('required inputs', () => {
         within(dialog).getByRole('textbox', { name: /Base URL/ }),
         'http://169.254.169.254/v1',
       )
-      await type(within(dialog).getByRole('textbox', { name: /模型/ }), 'm')
+      await type(within(dialog).getByLabelText(/^模型/), 'm')
       await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
       const address = within(dialog).getByRole('textbox', { name: /Base URL/ })
       await waitFor(() => expect(address).toHaveAttribute('aria-invalid', 'true'))
@@ -221,7 +186,7 @@ describe('required inputs', () => {
       within(dialog).getByRole('textbox', { name: /Base URL/ }),
       'https://%7BWorkspaceId%7D.example.com',
     )
-    await type(within(dialog).getByRole('textbox', { name: /模型/ }), 'm')
+    await type(within(dialog).getByLabelText(/^模型/), 'm')
     await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
     expect(
       await within(dialog).findByText(/还有没替换的占位符：\{WorkspaceId\}/),
@@ -233,30 +198,31 @@ describe('required inputs', () => {
   })
 })
 
-describe('the model is typed by hand', () => {
-  it('a plain text box with a hint, no list is asked for before there is a provider, and what is typed is sent as is', async () => {
+describe('the model can be typed by hand, and nothing new has to be used', () => {
+  it('only the required boxes and a typed model: the request is the one before the buttons existed, and nothing else is asked', async () => {
     const { server } = page({
       routes: { 'POST /api/providers': () => PROVIDERS.local.stored },
     })
     const dialog = await openForm()
-    expect(within(dialog).queryByRole('combobox', { name: /模型/ })).toBeNull()
     expect(within(dialog).getByText(/填服务商接口文档里的模型名/)).toBeInTheDocument()
-    expect(within(dialog).queryByRole('button', { name: '获取模型列表' })).toBeNull()
     const { request } = PROVIDERS.local
     await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
     await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
     await userEvent.click(within(dialog).getByRole('radio', { name: '无需鉴权' }))
     expect(within(dialog).queryByLabelText('API Key')).toBeNull()
-    await type(within(dialog).getByRole('textbox', { name: /模型/ }), request.model)
+    await type(within(dialog).getByLabelText(/^模型/), request.model)
     await userEvent.click(within(dialog).getByRole('button', { name: '添加' }))
     await waitFor(() => expect(posts(server)).toHaveLength(1))
     expect(posts(server)[0]!.body).toEqual(request) // `auth: none`, and no key
-    expect(server.calls.some((c) => c.path.endsWith('/models'))).toBe(false)
+    // no probe, no model list: the one write is the add
+    expect(server.calls.filter((c) => c.method !== 'GET').map((c) => c.path)).toEqual([
+      '/api/providers',
+    ])
   })
 })
 
 describe('signing in with an account', () => {
-  const channelOf = (c: string) => LOGIN_PRESETS.find((p) => p.auth.channel === c)!
+  const channelOf = (c: string) => LOGIN_CHANNELS.find((p) => p.channel === c)!
   const dialogAt = async (protocol: string) => {
     const dialog = await openForm()
     await userEvent.selectOptions(
@@ -311,9 +277,7 @@ describe('signing in with an account', () => {
         within(dialog).getByText('账号登录的接口地址和协议是固定的，不能修改'),
       ).toBeInTheDocument()
       expect(within(dialog).queryByLabelText('API Key')).toBeNull()
-      expect(within(dialog).getByRole('textbox', { name: /模型/ })).toHaveValue(
-        preset.suggestedModel,
-      )
+      expect(within(dialog).getByLabelText(/^模型/)).toHaveValue(preset.suggestedModel)
       // leaving sign-in gives the typed address back
       await userEvent.click(within(dialog).getByRole('radio', { name: 'API Key' }))
       expect(address).not.toHaveAttribute('readonly')
@@ -350,7 +314,7 @@ describe('signing in with an account', () => {
   it('leaving sign-in gives back the model typed before it, not the channel’s suggestion; a model typed while signed in stays with sign-in', async () => {
     page()
     const dialog = await dialogAt('openai-responses')
-    const model = () => within(dialog).getByRole('textbox', { name: /模型/ })
+    const model = () => within(dialog).getByLabelText(/^模型/)
     await userEvent.type(model(), 'my-typed-model')
     await userEvent.click(within(dialog).getByRole('radio', { name: '账号登录' }))
     expect(model()).toHaveValue(channelOf('openai-chatgpt').suggestedModel)
@@ -387,7 +351,7 @@ describe('one request at a time', () => {
     const { request } = PROVIDERS.llm
     await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
     await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
-    await type(within(dialog).getByRole('textbox', { name: /模型/ }), request.model)
+    await type(within(dialog).getByLabelText(/^模型/), request.model)
   }
   const slowPage = () => {
     let release!: () => void
@@ -460,7 +424,7 @@ describe('closing, cancelling and failing create nothing', () => {
       'https://a.example.com/v1',
     )
     await userEvent.type(within(dialog).getByLabelText('API Key'), 'sk-typed-123456')
-    await type(within(dialog).getByRole('textbox', { name: /模型/ }), 'm')
+    await type(within(dialog).getByLabelText(/^模型/), 'm')
   }
 
   it('Cancel, the close button and Esc each leave without a request, and the next form is empty', async () => {
@@ -531,14 +495,14 @@ describe('closing, cancelling and failing create nothing', () => {
       within(dialog).getByRole('textbox', { name: /Base URL/ }),
       'https://a.example.com/v1',
     )
-    await type(within(dialog).getByRole('textbox', { name: /模型/ }), 'm')
+    await type(within(dialog).getByLabelText(/^模型/), 'm')
     expect(within(dialog).getByRole('button', { name: '添加' })).toBeDisabled()
     expect(noWrites(server)).toEqual([])
   })
 })
 
 describe('keyboard', () => {
-  it('the whole form is filled and sent from the keyboard, in the order name, type, address, authentication, key, model, buttons', async () => {
+  it('the whole form is filled and sent from the keyboard, in the order name, type, address, authentication, key, model list, model, test, cancel, add', async () => {
     const { request, stored } = PROVIDERS.llm
     const { server } = page({ routes: { 'POST /api/providers': () => stored } })
     const dialog = await openForm()
@@ -558,8 +522,12 @@ describe('keyboard', () => {
     at(within(dialog).getByLabelText('API Key'))
     await userEvent.keyboard(request.apiKey!)
     await userEvent.tab()
-    at(field(/模型/))
+    at(within(dialog).getByRole('button', { name: '获取模型列表' }))
+    await userEvent.tab()
+    at(within(dialog).getByLabelText(/^模型/))
     await userEvent.keyboard(request.model)
+    await userEvent.tab()
+    at(within(dialog).getByRole('button', { name: '测试连接' }))
     await userEvent.tab()
     at(within(dialog).getByRole('button', { name: '取消' }))
     await userEvent.tab()
@@ -580,7 +548,7 @@ describe('keyboard', () => {
     const dialog = await openForm()
     await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
     await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
-    await type(within(dialog).getByRole('textbox', { name: /模型/ }), request.model)
+    await type(within(dialog).getByLabelText(/^模型/), request.model)
     await userEvent.keyboard('{Enter}')
     await waitFor(() => expect(posts(server)).toHaveLength(1))
   })

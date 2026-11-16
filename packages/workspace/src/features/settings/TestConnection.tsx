@@ -4,7 +4,8 @@ import type { CallOutput } from '@dramai/api'
 import { iconProps, cn } from '@dramai/ui/v2'
 import { ProviderErrorNotice } from '@/features/jobs/ProviderErrorNotice'
 
-type Result = CallOutput<'providers.test'>
+/** The three outcomes of a connection test; a draft probe answers with the same ones. */
+type Result = Extract<CallOutput<'providers.probe'>, { outcome: 'ok' | 'failed' | 'unverifiable' }>
 
 /**
  * “测试连接”的三种结果：

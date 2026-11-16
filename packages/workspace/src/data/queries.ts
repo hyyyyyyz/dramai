@@ -31,12 +31,28 @@ export function useStyles() {
   })
 }
 
-export function usePresets() {
+/** 账号登录通道的固定地址和接口类型（令牌只发往这里）：添加服务商的表单据此固定地址。 */
+export function useLoginChannels() {
   const api = useApi()
   return useQuery({
-    queryKey: qk.presets,
-    queryFn: () => api.call('presets.list'),
+    queryKey: qk.loginChannels,
+    queryFn: () => api.call('providers.loginChannels'),
     staleTime: Infinity,
+    retry: false,
+  })
+}
+
+/** 某类服务商（可再限定一个接口类型）在模型资料里对得上的型号，字母序。只是输入框的候选，不是白名单。 */
+export function useKnownModels(
+  kind: ProviderConfigDto['kind'],
+  protocol: ProviderConfigDto['protocol'],
+) {
+  const api = useApi()
+  return useQuery({
+    queryKey: qk.knownModels(kind, protocol),
+    queryFn: () => api.call('models.known', { query: { kind, protocol } }),
+    staleTime: Infinity,
+    retry: false,
   })
 }
 

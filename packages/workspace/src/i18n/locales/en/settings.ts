@@ -261,7 +261,21 @@ export default {
       addressPlaceholder: 'https://your-service-address/v1',
       addressHint: 'The address is in the provider’s API documentation',
       modelHint:
-        'Use the model name from the provider’s API documentation. After adding, you can fetch the model list on the provider card and pick from it',
+        'Use the model name from the provider’s API documentation, or fetch the model list above and pick from it',
+      probe: {
+        needAddress: 'the base URL',
+        needKey: 'the API key',
+        missing: 'Fill in {{what}} first to fetch the model list or test the connection',
+        listed: '{{count}} models found. Pick one in the model box below, or type your own',
+        listEmpty: 'The provider returned an empty model list. Type the model name yourself',
+        noList: 'This interface type has no model-list endpoint. Type the model name yourself',
+        noListKnown:
+          'This interface type has no model-list endpoint. Pick from the suggestions below or type the model name yourself',
+        loginAfterSave:
+          'Add the provider first, then sign in on its card and fetch the model list there',
+        candidatesNote:
+          'The suggestions are only a convenience, not a limit: you can type any model',
+      },
       create: 'Add',
     },
   },
