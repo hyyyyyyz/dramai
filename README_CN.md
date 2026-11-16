@@ -58,9 +58,9 @@ pnpm demo
 pnpm webui
 ```
 
-这会启动本地服务，在 <http://127.0.0.1:8787> 托管工作台，并打开浏览器。在 设置 → 服务商 里添加服务商，填上它的 Key，点“测试连接”和“设为使用”，然后建项目。数据放在 `~/.dramai`。按 Ctrl+C 停止。`--port`、`--data-dir`、`--no-open` 等选项见下面的“更多运行方式”。
+这会启动本地服务，在 <http://127.0.0.1:8787> 托管工作台，并打开浏览器。在 设置 → 服务商 → 添加服务商 里：选接口类型，填接口地址（例如 `https://你的服务地址/v1`）和 API Key，或者用账号登录，获取模型列表并选一个模型，点“测试连接”，然后添加并点“设为使用”。你用到的每一类（大模型、图片、视频、配音）各加一个，然后建项目。数据放在 `~/.dramai`。按 Ctrl+C 停止。`--port`、`--data-dir`、`--no-open` 等选项见下面的“更多运行方式”。
 
-服务商是按厂商分组的预设，见[服务商](#服务商)。
+服务商用一个表单添加，见[服务商](#服务商)。
 
 ### 3. 桌面端安装包
 
@@ -72,7 +72,7 @@ pnpm webui
 
 `SHA256SUMS.txt` 里是校验和。安装包不签名，所以 macOS 和 Windows 第一次打开时会给出警告；它们也不带 ffmpeg，不会自动更新。macOS Apple 芯片的安装包在真机上试过；CI 在 macOS（Apple 芯片）、Windows 和 Linux 上构建桌面端应用，并在各自的系统上跑一次沙箱里的安装、启动检查和卸载；发布工作流构建各系统的安装包，包括 macOS Intel。未签名的应用在各系统上怎么打开，见 [apps/desktop](./apps/desktop/README.md)。
 
-**安装包对应 `0.5.0-beta.1`。** 那之后新增的文本、图片、视频和配音服务商，OpenAI 和 OpenRouter 账号登录，按厂商分组的预设目录，视频的参考图，以及旁白音色选项，目前从源码运行：走第 1 或第 2 种方式，或者从源码构建桌面端（见下）。参见[动态](#动态)。
+**安装包对应 `0.5.0-beta.1`。** 那之后新增的文本、图片、视频和配音的接口类型，ChatGPT 和 OpenRouter 账号登录，添加服务商的表单，视频的参考图，以及旁白音色选项，目前从源码运行：走第 1 或第 2 种方式，或者从源码构建桌面端（见下）。参见[动态](#动态)。
 
 <details>
 <summary><strong>更多运行方式</strong>：WebUI 选项、从源码运行桌面端、数据位置</summary>
@@ -98,10 +98,11 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 
 按时间倒序。标为**源码**的在仓库里，从源码运行；标为**发布**的在已发布的 `0.5.0-beta.1` 安装包里。完整清单见[更新日志](./CHANGELOG.md)。
 
+- **2026-11-15 · 源码 · 添加服务商改成一个表单。** 设置 → 服务商 → 添加服务商：选接口类型，填接口地址，选 API Key 或账号登录，获取模型列表并选模型。四类的接口类型见 [docs/PROVIDERS.md](./docs/PROVIDERS.md)。见[更新日志](./CHANGELOG.md#unreleased)。
 - **2026-11-14 · 介绍页。** <https://hyyyyyyz.github.io/dramai/> 是项目的介绍页，中文在根路径，英文在 [`/en/`](https://hyyyyyyz.github.io/dramai/en/)。它取代了此前托管在这个地址上的 v0.4 网页应用。源码在 `apps/site`，见 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
-- **2026-11-13 · 源码 · 配音服务商和旁白音色。** 旁白可以用 OpenAI、硅基流动、MiniMax 或阿里 CosyVoice，共六个预设。项目的旁白音色在服务商支持时可以带风格指令和语言提示；生成前的检查会核对音色和文本长度。见[更新日志](./CHANGELOG.md#unreleased)。
-- **2026-11-13 · 源码 · 视频服务商和参考图。** 火山方舟与 BytePlus 的 Seedance、可灵 4.0、通义万相 3.0，共六个预设。一个默认关闭的任务选项，会把镜头引用的角色、场景和道具设定图作为参考图交给视频模型；文档里参考图与首帧互斥的模型，确认对话框会在下单之前说明放弃了什么。见[更新日志](./CHANGELOG.md#unreleased)。
-- **2026-11-13 · 源码 · 更多文本和图片服务商、账号登录、按厂商分组的预设目录。** 新增大模型和图片的预设，在 设置 → 服务商 里按厂商分组。可以用 ChatGPT 账号（只覆盖文本）或 OpenRouter 账号登录，不必再粘贴 Key。见[服务商](#服务商)和[更新日志](./CHANGELOG.md#unreleased)。
+- **2026-11-13 · 源码 · 配音服务商和旁白音色。** 旁白新增三种接口类型。项目的旁白音色在服务商支持时可以带风格指令和语言提示；生成前的检查会核对音色和文本长度。见[更新日志](./CHANGELOG.md#unreleased)。
+- **2026-11-13 · 源码 · 视频服务商和参考图。** 视频新增三种接口类型。一个默认关闭的任务选项，会把镜头引用的角色、场景和道具设定图作为参考图交给视频模型；文档里参考图与首帧互斥的模型，确认对话框会在下单之前说明放弃了什么。见[更新日志](./CHANGELOG.md#unreleased)。
+- **2026-11-13 · 源码 · 更多文本和图片服务商、账号登录。** 大模型和图片新增了接口类型。可以用 ChatGPT 账号（只覆盖文本）或 OpenRouter 账号登录，不必再粘贴 Key。见[服务商](#服务商)和[更新日志](./CHANGELOG.md#unreleased)。
 - **2026-11-12 · 发布 · [`v0.5.0-beta.1`](https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0-beta.1) 作为预发布公开。** 重写后的版本：本地服务加工作台、桌面端，以及 macOS、Windows 和 Linux 的未签名安装包。见[更新日志](./CHANGELOG.md#050-beta1---2026-11-12)。
 
 ## 有什么不同
@@ -109,7 +110,7 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 - **本地运行，Key 在你手里。** 一个监听 `127.0.0.1` 的服务完成所有工作。项目是普通文件加一个 SQLite 数据库。请求由这个服务直接发给服务商，没有 CORS 限制，中间也没有转发。
 - **长文本和连载。** 一个项目包含集，集包含场，场包含镜头。长文本按章节切分成集。
 - **可复用的资产库。** 角色、地点、道具和服装是资产，镜头通过引用使用它们。每个资产有一张设定图，所有用到它的镜头都以它为参考生成。画风在建项目时选定一次。
-- **服务商多。** 大模型、图片、视频和配音的预设来自十五个厂商，在 设置 → 服务商 里按厂商分组，由你选用哪一个。
+- **服务商由你选。** 大模型、图片、视频和配音的服务商用一个表单按接口类型和地址添加，由你选用哪一个。
 - **花钱之前先检查。** 引用了未登记资产、或没有参考图的资产的镜头会被拦下；一批任务要么整批执行，要么都不执行；一个镜头同一时间最多只有一个视频任务；有价目的模型在确认之前会给出费用预估。
 - **重启后不丢的任务队列。** 关掉浏览器不会中断工作。重启之后，有上游任务号的视频任务会继续轮询；没有的会标成“提交结果待确认”，**不会被自动重新提交**。取消只作用于还在排队的任务。
 - **保留版本。** 重新生成会新增一个版本，不覆盖旧的。上游内容变了，依赖它的产物会标为过期，但不会自动重新生成。
@@ -119,16 +120,13 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 
 ## 服务商
 
-设置 → 服务商 里有 36 个预设，来自 15 个厂商，按厂商分组，分四类：
+设置 → 服务商 → 添加服务商，大模型、图片、视频和配音四类各有一个表单。选接口类型，填接口地址和 API Key（或者用账号登录），获取模型列表并选一个模型，点“测试连接”，然后添加。
 
-- **大模型**（16 个）：OpenAI、Anthropic、Google Gemini、DeepSeek、阿里云百炼（国内站和国际站）、火山方舟、智谱 AI、Moonshot AI（Kimi）、MiniMax、硅基流动和 OpenRouter；还有在你自己机器上跑模型的 Ollama 和 LM Studio。
-- **图片**（8 个）：OpenAI、火山方舟、MiniMax、Google Gemini、阿里云百炼的 Qwen-Image（两个站点）、硅基流动和可灵。
-- **视频**（6 个）：火山方舟和 BytePlus 的 Seedance、可灵 4.0（两个站点）和阿里云百炼的通义万相 3.0（两个站点）。
-- **配音**（6 个）：OpenAI、硅基流动（两个站点）、MiniMax（两个站点）和阿里云百炼的 CosyVoice（国内站）。
+提供 OpenAI 兼容接口的服务，填上地址就可以接入。接口类型的下拉列表里还有若干模型公司自己的接口；全部类型、地址的规则，以及模型和价目怎么匹配，见 [docs/PROVIDERS.md](./docs/PROVIDERS.md)（英文）。
 
-选一个预设，填上 Key，测试连接即可。地址里带占位符的预设，例如阿里云百炼的工作空间 ID，需要你自己填上。
+有两种账号登录可以代替 Key。**ChatGPT 账号**：文本请求走你的 ChatGPT 订阅用量；它只覆盖大模型，图片、视频和配音仍然需要 API Key。**OpenRouter 账号**：登录之后 OpenRouter 会把你自己的一把 API Key 交给 dramai，之后和你粘贴的 Key 用法一样，用量记在你的 OpenRouter 账号上。登录必须在运行 dramai 的那台电脑上操作，因为授权结果会回到一个本地地址。
 
-有两个预设用账号登录代替 Key。**OpenAI**：用 ChatGPT 账号登录，文本请求走你的 ChatGPT 订阅用量；它只覆盖大模型，图片、视频和配音仍然需要 API Key。**OpenRouter**：登录之后 OpenRouter 会把你自己的一把 API Key 交给 dramai，之后和你粘贴的 Key 用法一样，用量记在你的 OpenRouter 账号上。登录必须在运行 dramai 的那台电脑上操作，因为授权结果会回到一个本地地址。
+Key 的保存：WebUI 里放在数据目录的 `secrets.json` 中，没有加密；macOS 和 Linux 上文件权限设为仅本人可读。桌面端在系统密钥库可用时用它加密保存。
 
 ## 一个项目怎么走
 
@@ -188,7 +186,7 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 **现在可以做的**
 
 - 端到端跑完整条流程：上传文本、规划分集、拆分镜头、确认角色和地点、生成图片和视频、合成、导出。演示模式不需要 Key；WebUI 和桌面端用你接入的服务商（见[服务商](#服务商)）。
-- 从 15 个厂商的 36 个服务商预设里选，覆盖大模型、图片、视频和配音，还可以用 ChatGPT 或 OpenRouter 账号登录。见[服务商](#服务商)。
+- 用一个表单添加大模型、图片、视频和配音的服务商，还可以用 ChatGPT 或 OpenRouter 账号登录。见[服务商](#服务商)。
 - 用你自己的 ffmpeg 渲染成片，支持 9:16、16:9、1:1，带旁白、软字幕或烧录字幕、SRT 和 VTT，以及配乐。转场是硬切，配乐一条；时间线预览播放画面和旁白，渲染出的成片再加上字幕和配乐。
 - 桌面端有 `0.5.0-beta.1` 预发布的 macOS、Windows 和 Linux 安装包，也可以从源码编译安装，或者运行 WebUI。macOS Apple 芯片的安装包在真机上试过（窗口能加载，服务健康，鉴权通过）；CI 在 macOS（Apple 芯片）、Windows 和 Linux 上构建桌面端应用，并在各自的系统上跑一次沙箱里的安装、启动检查和卸载。
 - 浏览器测试（Playwright）覆盖了这条路径、失败任务的恢复、英文界面和纯键盘操作；服务商协议、登录流程和生成前的检查有自动化测试。
@@ -197,7 +195,7 @@ pnpm webui --port 9000 --data-dir ~/dramai-data --no-open
 
 - npm 包和 Docker 镜像。
 
-设置 → 服务商 按厂商列出预设，并且可以测试连接。完整的改动清单见[更新日志](./CHANGELOG.md)。
+完整的改动清单见[更新日志](./CHANGELOG.md)。
 
 ## 从 v0.4 升级
 
@@ -209,11 +207,12 @@ v0.4 是纯浏览器应用，数据存在浏览器里，所以 0.5 不会自动�
 - [CHANGELOG.md](./CHANGELOG.md)：每个版本包含什么、`0.5.0-beta.1` 之后的改动、不兼容的变更和升级说明
 - [apps/webui](./apps/webui/README.md) · [apps/desktop](./apps/desktop/README.md)：启动服务，以及桌面端的三种形式
 - [packages/mock-providers](./packages/mock-providers/README.md)：演示模式和它内置的服务商
-- [packages/server](./packages/server/README.md) · [packages/api](./packages/api/README.md) · [packages/core](./packages/core/README.md) · [packages/workspace](./packages/workspace/README.md)：本地服务（含服务商预设和账号登录）、类型化接口、业务内核和工作台
+- [packages/server](./packages/server/README.md) · [packages/api](./packages/api/README.md) · [packages/core](./packages/core/README.md) · [packages/workspace](./packages/workspace/README.md)：本地服务（含服务商账号登录）、类型化接口、业务内核和工作台
+- [docs/PROVIDERS.md](./docs/PROVIDERS.md)：添加服务商表单的接口类型、鉴权方式、地址规则和模型（英文）
 - [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)：部署了什么（介绍页），以及为什么应用本身不托管
 - [docs/VERSIONING.md](./docs/VERSIONING.md) · [docs/RELEASING.md](./docs/RELEASING.md) · [docs/CI.md](./docs/CI.md)：版本号规则、发布流程、持续集成
 
-`docs/ARCHITECTURE.md`、`docs/PROVIDERS.md` 和 `docs/ROADMAP.md` 是 v0.4 的原始设计笔记，中文；当前的行为见上面的各包说明和更新日志。各包的说明中英文混杂。
+`docs/ARCHITECTURE.md` 和 `docs/ROADMAP.md` 是 v0.4 的原始设计笔记，中文；当前的行为见上面的各包说明和更新日志。各包的说明中英文混杂。
 
 ## 参与贡献
 

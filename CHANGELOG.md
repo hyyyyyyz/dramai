@@ -20,40 +20,32 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   response, a log or a URL (a signed-in OpenRouter key is shown only as a mask). Settings → Providers has a sign-in panel per channel (`providers.login.*`).
 - **How a provider authenticates.** A provider has an `auth` method: API key,
   account sign-in or none (a model on your own machine). Data saved before this is read as an API key when it holds
-  a key and as none otherwise, and nothing is rewritten until you save. Every preset carries a verification status
-  (tested with a date, or set up from the official documentation), shown in Settings and in the add-provider
-  catalog; a preset that has not been tested never becomes the current choice on its own.
+  a key and as none otherwise, and nothing is rewritten until you save.
 - **Text providers.** Three new protocols, all streamed: `openai-responses`,
   `anthropic-messages` and `gemini-chat`. `openai-chat` gains per-provider dialect options (a JSON object merged
   into the request body, extra request headers, the output-length field name `max_tokens` or `max_completion_tokens`,
   and the JSON output mode `json_object` or `prompt_only`) and now copes with the stream shapes vendors send: array
   content, reasoning fields (never put into the text), comment lines and inline `<think>` tags; an empty output cut
   off by the length limit is a clear error. Without dialect options the request is unchanged, so existing
-  providers behave as before. Fifteen presets: OpenAI (API key,
-  and ChatGPT sign-in), Anthropic, Google Gemini, Alibaba Cloud Model Studio (China and international sites),
-  Volcengine Ark, Zhipu, Moonshot, MiniMax, SiliconFlow, OpenRouter (API key, and sign-in), and Ollama and
-  LM Studio (no authentication). The dialect options are under "Advanced" on a text provider, and a button lists the
+  providers behave as before. The dialect options are under "Advanced" on a text provider, and a button lists the
   models of providers that can (OpenAI-style, Anthropic, Gemini).
 - **Image providers.** New protocols `volcengine-images` (Seedream direct),
   `dashscope-image` (Qwen-Image), `siliconflow-images` and `kling-image`. `openai-images` now writes the request by
   model name: `gpt-image*` follows OpenAI's official reference (no `response_format` or `negative_prompt`, references
   through `/images/edits`), `MiniMax-H3-Image*` uses MiniMax's edit form, and every other name keeps the earlier
   request unchanged, so existing OpenAI-compatible configurations are not affected; the choice can be set explicitly with the
-  new `imageStyle` dialect option. `gemini-image` sends only `x-goog-api-key` to Google's official address. Eight
-  presets (OpenAI GPT Image, Volcengine Seedream, MiniMax H3, Google Gemini, Alibaba Qwen-Image on the China and
-  international sites, SiliconFlow, Kling) and sixteen model profiles (capabilities and limits per model).
+  new `imageStyle` dialect option. `gemini-image` sends only `x-goog-api-key` to Google's official address. New model
+  profiles describe capabilities and limits per model.
   A model profile can carry a minimum total pixel count, and the output size is raised to it while keeping the
   ratio. A generated image is downloaded as soon as the job succeeds, with its address saved first, so a restart
   resumes the download.
-- **A preset catalog grouped by vendor.** Add provider now opens a catalog grouped by vendor (sixteen), with the
-  region (China, international, local) and the verification status of each preset, and a search by name, vendor and
-  address host. A preset with a `{placeholder}` in its address (for example Alibaba's `{WorkspaceId}`) or without a
-  suggested model gets a second step. `providers.fromPreset` creates the provider in one step and accepts a
-  `baseUrl` and a `model`; account-sign-in presets pin their address and only the model can be changed. Preset
-  names, notes and known limitations are localised (English and Traditional Chinese) as long as you have not edited
-  them. A failed `providers.test` carries a machine-readable `code` next to the unchanged `error` text.
-- **Provider addresses are checked.** On `providers.create`, `providers.fromPreset` and `providers.update` (when the
-  address changes) the address must be http or https without a user name, password, query string or fragment, with no
+- **Adding a provider is one form.** Settings → Providers → Add provider opens one form for each kind (language
+  model, image, video, speech): the interface type, the address, the authentication (API key or account sign-in),
+  the key and a model, chosen from the service's model list where the interface type can list models. There is no
+  catalog, no grouping and no search. A failed `providers.test` carries a machine-readable `code` next to the
+  unchanged `error` text.
+- **Provider addresses are checked.** When a provider is created and when `providers.update` changes its
+  address the address must be http or https without a user name, password, query string or fragment, with no
   unfilled `{placeholder}` (also percent-encoded), and plain http is accepted only for this machine and the local
   network, never for link-local addresses. Rows saved earlier are never rejected on read.
 - **Extra request headers on every kind of provider.** `dialect.extraHeaders` applies to text, image, video and
@@ -67,9 +59,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   landing page is deployed at `https://hyyyyyyz.github.io/dramai/` (English at `/en/`) and replaces the v0.4
   browser-only workspace that was hosted there. See `docs/DEPLOYMENT.md`.
 - **Video providers.** Three new video protocols: Volcengine Ark / BytePlus ModelArk Seedance (`ark-video`), Kling 4.0 and
-  4.0 Flash (`kling-contents`) and Tongyi Wanxiang 3.0 (`dashscope-video`), with six presets
-  (never selected automatically) and ten model profiles (capabilities and limits per model). The existing video
-  protocols are unchanged.
+  4.0 Flash (`kling-contents`) and Tongyi Wanxiang 3.0 (`dashscope-video`), with model profiles (capabilities and
+  limits per model). The existing video protocols are unchanged.
 - **Reference images for video (off by default).** A task option sends the shot's character, scene and prop
   sheets to the video model. Where the official docs make first frame and reference images mutually exclusive
   (Seedance, Wan 3.0) the shot image becomes reference image no. 1 and the strict first frame is given up; the
@@ -91,8 +82,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 - **Speech providers.** Narration voice-over can now use MiniMax
   (new protocol `minimax-t2a`, synchronous), Alibaba CosyVoice (new protocol `dashscope-cosyvoice`, HTTP
-  non-streaming), SiliconFlow and OpenAI, with six presets (never selected automatically) and
-  profiles that list the preset voices, the single-request text limit and the price in the official unit per
+  non-streaming), SiliconFlow and OpenAI, with
+  profiles that list the voices, the single-request text limit and the price in the official unit per
   site. Requests of the existing `openai-tts`
   protocol are unchanged.
 - Before any money is spent, the pre-flight check now stops a narration whose voice does not exist on the chosen
@@ -155,10 +146,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- The provider presets that came with `0.5.0-beta.1` no longer appear in the interface; providers saved from them
+  keep working.
+- `docs/PROVIDERS.md` is rewritten as a reference of the interface types in the add-provider form, how authentication
+  works, the address and header rules, and where model data comes from.
 - `docs/DEPLOYMENT.md` is rewritten for the landing page: what is deployed, how the deployment workflow is run, and
   what visitors of the old browser-only workspace see afterwards.
-- A price list now belongs to a site: the China-site CNY prices of Wan 3.0 no longer price the international
-  preset.
 - Protocols can declare request headers that user-supplied extra headers must not override.
 - GitHub Pages serves the landing page (`apps/site`) instead of the v0.4 browser-only workspace, which is taken down
   and not kept. Links into the old app land on the landing page's 404 page. Data the old workspace stored in a
