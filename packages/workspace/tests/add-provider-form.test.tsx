@@ -595,6 +595,25 @@ describe('keyboard', () => {
     await waitFor(() => expect(posts(server)).toHaveLength(1))
   })
 
+  it('a submit that comes from a drop-down (Enter after choosing in the list) is not “Add”; Enter in a text box still is', async () => {
+    const { server } = page({
+      routes: { 'POST /api/providers': () => PROVIDERS.llm.stored },
+    })
+    const dialog = await openForm()
+    const { request } = PROVIDERS.llm
+    await type(within(dialog).getByRole('textbox', { name: /名称/ }), request.label)
+    await type(within(dialog).getByRole('textbox', { name: /Base URL/ }), request.baseUrl)
+    await setModel(dialog, request.model)
+    const select = within(dialog).getByRole('combobox', { name: /API 协议/ })
+    select.focus()
+    dialog.querySelector('form')!.requestSubmit() // what the browser does after the list closes
+    await new Promise((r) => setTimeout(r, 50))
+    expect(posts(server)).toHaveLength(0)
+    await userEvent.click(within(dialog).getByRole('textbox', { name: /名称/ }))
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(posts(server)).toHaveLength(1))
+  })
+
   it('the authentication choice moves with the arrow keys, and Esc closes', async () => {
     page()
     const dialog = await openForm()

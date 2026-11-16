@@ -304,6 +304,9 @@ function AddProviderForm({
         className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault()
+          // Confirming a choice in a drop-down with Enter is not “Add”: Chrome submits the form after it closes the
+          // list, with the focus still on the select
+          if (document.activeElement instanceof HTMLSelectElement) return
           void submit()
         }}
       >
