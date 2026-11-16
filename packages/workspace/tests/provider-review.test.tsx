@@ -2,7 +2,6 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LoginStatusDto } from '@dramai/api'
-import { inputProblems } from '@/features/settings/catalog-model'
 import { LoginPanel } from '@/features/settings/LoginPanel'
 import { safeHttpUrl } from '@/lib/safe-url'
 import zhTW from '@/i18n/locales/zh-TW'
@@ -15,7 +14,6 @@ import {
   makeLogin,
   makeLoginProvider,
   makeOpenRouterProvider,
-  makePreset,
 } from './fixtures-providers'
 import { renderApp, useLocale } from './render'
 
@@ -100,170 +98,6 @@ describe('M1: OpenRouter’s card carries no OpenAI wording', () => {
     expect(within(card).getByText('ChatGPT 账号登录')).toBeInTheDocument()
     await userEvent.click(within(card).getByRole('button', { name: /展开/ }))
     expect(within(card).getByText('先用 ChatGPT 账号登录，再测试连接')).toBeInTheDocument()
-  })
-})
-
-const aliyun = () =>
-  makePreset({
-    id: 'al',
-    label: 'Aliyun',
-    vendor: { id: 'aliyun', label: '阿里云' },
-    // the real preset shape: the placeholder is in the host name
-    baseUrl: 'https://{WorkspaceId}.dashscope.aliyuncs.com/compatible-mode/v1',
-    baseUrlPlaceholders: ['WorkspaceId'],
-    verification: { status: 'documented', source: 'https://help.aliyun.com/x' },
-    verifiedAt: undefined,
-  })
-
-async function openFill(server: ReturnType<typeof page>['server']) {
-  void server
-  const section = await screen.findByRole('region', { name: /大模型/ })
-  await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-  const dialog = await screen.findByRole('dialog', { name: '添加服务商' })
-  await userEvent.click(await within(dialog).findByRole('button', { name: /Aliyun/ }))
-  return screen.findByRole('dialog', { name: '添加「Aliyun」' })
-}
-
-describe('M2: one call creates the provider', () => {
-  it('sends one POST with the address filled in, and never a second request', async () => {
-    const created = makeKeyProvider({ id: 'prov_new', label: 'Aliyun' })
-    const { server } = page({
-      providers: [],
-      presets: [aliyun()],
-      routes: { 'POST /api/providers/from-preset': () => created },
-    })
-    const fill = await openFill(server)
-    await userEvent.type(within(fill).getByRole('textbox', { name: /WorkspaceId/ }), 'ws-42')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    await waitFor(() =>
-      expect(
-        server.calls.filter((c) => c.method === 'POST' && c.path === '/api/providers/from-preset'),
-      ).toHaveLength(1),
-    )
-    expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
-      presetId: 'al',
-      baseUrl: 'https://ws-42.dashscope.aliyuncs.com/compatible-mode/v1',
-    })
-    expect(server.calls.some((c) => c.method === 'PATCH')).toBe(false)
-  })
-
-  it('a placeholder in the path works the same way', async () => {
-    const { server } = page({
-      providers: [],
-      presets: [makePreset({ ...aliyun(), baseUrl: 'https://api.example.com/{WorkspaceId}/v1' })],
-      routes: {
-        'POST /api/providers/from-preset': () =>
-          makeKeyProvider({ id: 'prov_new', label: 'Aliyun' }),
-      },
-    })
-    const fill = await openFill(server)
-    await userEvent.type(within(fill).getByRole('textbox', { name: /WorkspaceId/ }), 'ws-42')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    await waitFor(() =>
-      expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toMatchObject(
-        { baseUrl: 'https://api.example.com/ws-42/v1' },
-      ),
-    )
-  })
-
-  it('a failure leaves the dialog open and a retry does not create a second provider', async () => {
-    let calls = 0
-    const { server } = page({
-      providers: [],
-      presets: [aliyun()],
-      routes: {
-        'POST /api/providers/from-preset': () => {
-          calls++
-          return calls === 1
-            ? apiError(400, 'BASE_URL_INSECURE')
-            : makeKeyProvider({ id: 'prov_new', label: 'Aliyun' })
-        },
-      },
-    })
-    const fill = await openFill(server)
-    await userEvent.type(within(fill).getByRole('textbox', { name: /WorkspaceId/ }), 'ws-42')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    expect(await within(fill).findByText(/公网地址请用 https/)).toBeInTheDocument()
-    expect(server.calls.filter((c) => c.method === 'POST')).toHaveLength(1)
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    await waitFor(() => expect(calls).toBe(2))
-    // the provider list is read from the server; nothing was ever created by a half-finished first attempt
-    expect(server.calls.some((c) => c.method === 'PATCH')).toBe(false)
-  })
-
-  it('the server saying a placeholder is unfilled points at that input', async () => {
-    page({
-      providers: [],
-      presets: [aliyun()],
-      routes: {
-        'POST /api/providers/from-preset': () =>
-          apiError(400, 'BASE_URL_PLACEHOLDER_UNFILLED', { placeholders: ['WorkspaceId'] }),
-      },
-    })
-    const fill = await openFill({} as never)
-    await userEvent.type(within(fill).getByRole('textbox', { name: /WorkspaceId/ }), 'ws-42')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    const input = within(fill).getByRole('textbox', { name: /WorkspaceId/ })
-    await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'))
-    expect(within(fill).getByText(/要填写 WorkspaceId/)).toBeInTheDocument()
-  })
-
-  it('an account-login preset is created without ever sending an address', async () => {
-    const { server } = page({
-      providers: [],
-      presets: [
-        makePreset({
-          id: 'login',
-          label: 'OpenAI login',
-          vendor: { id: 'openai', label: 'OpenAI' },
-          protocol: 'openai-responses',
-          baseUrl: 'https://api.openai.com/v1',
-          auth: { type: 'account_login', channel: 'openai-chatgpt' },
-          verification: { status: 'documented', source: 'x' },
-          verifiedAt: undefined,
-        }),
-      ],
-      routes: { 'POST /api/providers/from-preset': () => makeLoginProvider() },
-    })
-    const section = await screen.findByRole('region', { name: /大模型/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    await userEvent.click(await screen.findByRole('button', { name: /OpenAI login/ }))
-    await waitFor(() =>
-      expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
-        presetId: 'login',
-      }),
-    )
-  })
-
-  it('the model is sent only when the user typed one', async () => {
-    const { server } = page({
-      providers: [],
-      presets: [
-        makePreset({
-          id: 'lm',
-          label: 'LM Studio',
-          vendor: { id: 'lmstudio', label: 'LM Studio' },
-          baseUrl: 'http://127.0.0.1:1234/v1',
-          suggestedModel: '',
-          auth: { type: 'none' },
-          verification: { status: 'documented', source: 'x' },
-          verifiedAt: undefined,
-        }),
-      ],
-      routes: { 'POST /api/providers/from-preset': () => makeKeyProvider({ id: 'prov_new' }) },
-    })
-    const section = await screen.findByRole('region', { name: /大模型/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    await userEvent.click(await screen.findByRole('button', { name: /LM Studio/ }))
-    const fill = await screen.findByRole('dialog', { name: '添加「LM Studio」' })
-    await userEvent.type(within(fill).getByRole('textbox', { name: /模型/ }), 'llama-3')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    await waitFor(() =>
-      expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
-        presetId: 'lm',
-        model: 'llama-3',
-      }),
-    )
   })
 })
 
@@ -508,54 +342,7 @@ describe('F1: a failed connection test explains itself with the same words a fai
   })
 })
 
-describe('F3: the four image protocols show up in the catalog and on the card', () => {
-  const imagePresets = [
-    makePreset({
-      id: 'kling-image',
-      kind: 'image',
-      label: '可灵 图像（Omni，API Key）',
-      vendor: { id: 'kling', label: '可灵' },
-      region: 'global',
-      protocol: 'kling-image',
-      baseUrl: 'https://api-singapore.klingai.com',
-      suggestedModel: 'kling-image-o1',
-      verification: { status: 'documented', source: 'https://kling.ai/document-api' },
-      verifiedAt: undefined,
-      knownLimitations: ['参考图是不带 data: 前缀的 base64'],
-    }),
-    makePreset({
-      id: 'volc-seedream',
-      kind: 'image',
-      label: '火山方舟 Seedream',
-      vendor: { id: 'volcengine', label: '火山引擎' },
-      region: 'cn',
-      protocol: 'volcengine-images',
-      baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
-      suggestedModel: 'doubao-seedream-4-0',
-    }),
-    makePreset({ id: 'llm-only', label: 'A text preset', vendor: { id: 'x', label: 'X' } }),
-  ]
-
-  it('the image catalog lists only image presets, with vendor, region and verification status', async () => {
-    page({ providers: [], presets: imagePresets })
-    const section = await screen.findByRole('region', { name: /文生图/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    const dialog = await screen.findByRole('dialog', { name: '添加服务商' })
-    const groups = await within(dialog).findAllByRole('region')
-    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['火山引擎', '可灵'])
-    const kling = within(dialog).getByRole('button', { name: /可灵 图像/ })
-    expect(kling).toHaveTextContent('国际站')
-    expect(kling).toHaveTextContent('按官方文档接入，未实测')
-    expect(within(dialog).queryByText('A text preset')).toBeNull()
-    // search by vendor id, the way a person would type it
-    await userEvent.type(within(dialog).getByRole('searchbox'), 'kling')
-    expect(
-      within(dialog)
-        .getAllByRole('region')
-        .map((g) => g.getAttribute('aria-label')),
-    ).toEqual(['可灵'])
-  })
-
+describe('F3: the four image protocols show up on the card', () => {
   it('a card shows the protocol name and what the capability grid claims, with the server’s note under it', async () => {
     const capability = makeCapabilityView()
     const view = {
@@ -589,15 +376,6 @@ describe('F3: the four image protocols show up in the catalog and on the card', 
 })
 
 describe('suggestions: values, links, focus and failures', () => {
-  it('placeholder values: dots, edge hyphens and separators are refused; real ids pass', () => {
-    const preset = aliyun() as unknown as Parameters<typeof inputProblems>[0]
-    const verdict = (v: string) => inputProblems(preset, { WorkspaceId: v }, '').length === 0
-    for (const bad of ['.', '..', '-a', 'a-', '.a', 'a.', 'a b', 'a/b', 'a@b', 'a:80', 'a?b'])
-      expect(verdict(bad), bad).toBe(false)
-    for (const ok of ['a', 'ws-42', 'my.ws', 'A1_b~c', '0123456789abcdef'])
-      expect(verdict(ok), ok).toBe(true)
-  })
-
   it('only http and https links from the server are ever used', () => {
     expect(safeHttpUrl('https://openrouter.ai/settings/keys')).toBe(
       'https://openrouter.ai/settings/keys',
@@ -659,13 +437,6 @@ describe('suggestions: values, links, focus and failures', () => {
     expect(screen.queryByRole('link')).toBeNull()
   })
 
-  it('moving to the second step puts the focus on its first field', async () => {
-    const { server } = page({ providers: [], presets: [aliyun()] })
-    const fill = await openFill(server)
-    const field = within(fill).getByRole('textbox', { name: /WorkspaceId/ })
-    await waitFor(() => expect(field).toHaveFocus())
-  })
-
   it('a failed sign-in status query shows the error and a retry, and the panel comes back', async () => {
     let fail = true
     const server = fakeServer({
@@ -706,7 +477,7 @@ describe('Traditional Chinese wording', () => {
       zhTW.providerAuth,
       zhTW.providerLogin,
       zhTW.providerErrors,
-      zhTW.providerCatalog,
+      zhTW.providers.add,
       zhTW.providerDialect,
     ])
     for (const wrong of ['許可權', '回撥', '賬', '文本', '響應', '反饋'])

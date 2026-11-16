@@ -482,7 +482,7 @@ function ModelField({
             ? t('providerLogin.models.fetchHint')
             : undefined
   return (
-    <Field className="col-span-full" label={t('providerCatalog.fill.model')} hint={hint}>
+    <Field className="col-span-full" label={t('providers.form.model')} hint={hint}>
       <div className="flex gap-2">
         <Input
           mono

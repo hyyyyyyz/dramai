@@ -9,7 +9,7 @@ import jobs from './jobs'
 import production from './production'
 import compose from './compose'
 import providerAuth from './provider-auth'
-import providerCatalog from './provider-catalog'
+import providerDialect from './provider-dialect'
 import exportPage from './export'
 
 /** 繁體中文：由 zh-CN 轉換而來（台灣用語），之後手工維護；鍵必須和 zh-CN 一致（tests/i18n.test.ts 逐鍵核對）。 */
@@ -25,6 +25,6 @@ export default {
   ...production,
   ...compose,
   ...providerAuth,
-  ...providerCatalog,
+  ...providerDialect,
   ...exportPage,
 }

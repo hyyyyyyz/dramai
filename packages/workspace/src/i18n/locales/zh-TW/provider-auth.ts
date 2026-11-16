@@ -22,6 +22,9 @@ export default {
       apiKey: 'API Key',
       none: '無需鑑權',
       noneHint: '給本機或內網的模型用：請求不帶任何憑據',
+      login: '帳號登入',
+      channel: '登入通道',
+      loginHint: '新增後在服務商卡片上完成登入；介面類型和位址由登入通道決定',
     },
     added: {
       title: '已新增「{{name}}」',

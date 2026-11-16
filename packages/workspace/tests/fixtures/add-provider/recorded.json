@@ -1,0 +1,279 @@
+{
+  "meta": {
+    "note": "Recorded from the real server by record.mjs; keys are fake; no upstream request was made.",
+    "commit": "47c5fa6",
+    "upstreamRequests": 0
+  },
+  "providers": {
+    "llm": {
+      "request": {
+        "label": "My text service",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://llm.example.com/v1",
+        "model": "text-model-1",
+        "auth": {
+          "type": "api_key"
+        },
+        "apiKey": "sk-record-123456789012"
+      },
+      "stored": {
+        "id": "prov_87d10da4dce8",
+        "label": "My text service",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://llm.example.com/v1",
+        "model": "text-model-1",
+        "enabled": true,
+        "auth": {
+          "type": "api_key"
+        },
+        "hasKey": true,
+        "keyMask": "sk-…9012"
+      }
+    },
+    "image": {
+      "request": {
+        "label": "My image service",
+        "kind": "image",
+        "protocol": "openai-images",
+        "baseUrl": "https://img.example.com/v1",
+        "model": "image-model-1",
+        "auth": {
+          "type": "api_key"
+        },
+        "apiKey": "sk-record-123456789012"
+      },
+      "stored": {
+        "id": "prov_e7260ddddca1",
+        "label": "My image service",
+        "kind": "image",
+        "protocol": "openai-images",
+        "baseUrl": "https://img.example.com/v1",
+        "model": "image-model-1",
+        "enabled": true,
+        "auth": {
+          "type": "api_key"
+        },
+        "hasKey": true,
+        "keyMask": "sk-…9012"
+      }
+    },
+    "video": {
+      "request": {
+        "label": "My video service",
+        "kind": "video",
+        "protocol": "kling-contents",
+        "baseUrl": "https://video.example.com",
+        "model": "video-model-1",
+        "auth": {
+          "type": "api_key"
+        },
+        "apiKey": "sk-record-123456789012"
+      },
+      "stored": {
+        "id": "prov_68f76955b093",
+        "label": "My video service",
+        "kind": "video",
+        "protocol": "kling-contents",
+        "baseUrl": "https://video.example.com",
+        "model": "video-model-1",
+        "enabled": true,
+        "auth": {
+          "type": "api_key"
+        },
+        "hasKey": true,
+        "keyMask": "sk-…9012"
+      }
+    },
+    "tts": {
+      "request": {
+        "label": "My voice service",
+        "kind": "tts",
+        "protocol": "openai-tts",
+        "baseUrl": "https://tts.example.com/v1",
+        "model": "voice-model-1",
+        "auth": {
+          "type": "api_key"
+        },
+        "apiKey": "sk-record-123456789012"
+      },
+      "stored": {
+        "id": "prov_92a5cb493bdd",
+        "label": "My voice service",
+        "kind": "tts",
+        "protocol": "openai-tts",
+        "baseUrl": "https://tts.example.com/v1",
+        "model": "voice-model-1",
+        "enabled": true,
+        "auth": {
+          "type": "api_key"
+        },
+        "hasKey": true,
+        "keyMask": "sk-…9012"
+      }
+    },
+    "local": {
+      "request": {
+        "label": "My local model",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "http://127.0.0.1:1234/v1",
+        "model": "local-model",
+        "auth": {
+          "type": "none"
+        }
+      },
+      "stored": {
+        "id": "prov_ed2ac1bc0031",
+        "label": "My local model",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "http://127.0.0.1:1234/v1",
+        "model": "local-model",
+        "enabled": true,
+        "auth": {
+          "type": "none"
+        },
+        "hasKey": false
+      }
+    }
+  },
+  "loginPresets": [
+    {
+      "id": "openai-responses-login",
+      "label": "OpenAI（账号登录 · 文本）",
+      "kind": "llm",
+      "protocol": "openai-responses",
+      "baseUrl": "https://api.openai.com/v1",
+      "suggestedModel": "gpt-6.1-sol",
+      "auth": {
+        "type": "account_login",
+        "channel": "openai-chatgpt"
+      },
+      "vendor": {
+        "id": "openai",
+        "label": "OpenAI"
+      },
+      "region": "global",
+      "notes": "用 ChatGPT 账号登录，调用公开的 Responses 接口，用量算在你的 ChatGPT 订阅里，不需要 API Key。按官方文档接入，未实测。模型名取自官方示例，登录后请从模型列表里选",
+      "verification": {
+        "status": "documented",
+        "source": "https://developers.openai.com/siwc/token-sharing-open-source"
+      },
+      "knownLimitations": [
+        "只覆盖文本，不含生图、视频和语音。",
+        "需要 ChatGPT 订阅：官方快速开始页写明符合条件的 Plus 和 Pro 用户可用，预览期具体支持哪些套餐文档未说明。",
+        "用量按 ChatGPT 套餐的限额计算（Plus 有五小时用量上限，在所有使用该订阅的应用之间共享），超限会在生成中途失败。",
+        "登录方式不接受 temperature、top_p、max_output_tokens 等参数，这些设置会被忽略。"
+      ]
+    },
+    {
+      "id": "openrouter-login",
+      "label": "OpenRouter（账号登录）",
+      "kind": "llm",
+      "protocol": "openai-chat",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "suggestedModel": "anthropic/claude-sonnet-5.5",
+      "auth": {
+        "type": "account_login",
+        "channel": "openrouter"
+      },
+      "vendor": {
+        "id": "openrouter",
+        "label": "OpenRouter"
+      },
+      "region": "global",
+      "notes": "用 OpenRouter 账号登录，授权后换回一把你自己的 OpenRouter API Key，存在本机，之后和 API Key 方式一样调用，不需要手动复制 Key。按官方文档接入，未实测。",
+      "verification": {
+        "status": "documented",
+        "source": "https://openrouter.ai/docs/guides/overview/auth/oauth"
+      },
+      "knownLimitations": [
+        "登录得到的是一把普通的 API Key，没有有效期和刷新；官方文档没有提供撤销接口，登出只清除本机的 Key，要作废它请到 OpenRouter 的 Key 管理页面。",
+        "费用走你的 OpenRouter 余额，需要有账号和余额。",
+        "授权回调用 localhost（官方文档只写了 localhost），登录只能在运行 dramai 的这台机器上完成。"
+      ]
+    }
+  ],
+  "logins": {
+    "openai-chatgpt": {
+      "request": {
+        "label": "Sign in openai-chatgpt",
+        "kind": "llm",
+        "protocol": "openai-responses",
+        "baseUrl": "https://api.openai.com/v1",
+        "model": "gpt-6.1-sol",
+        "auth": {
+          "type": "account_login",
+          "channel": "openai-chatgpt"
+        }
+      },
+      "stored": {
+        "id": "prov_878128457c00",
+        "label": "Sign in openai-chatgpt",
+        "kind": "llm",
+        "protocol": "openai-responses",
+        "baseUrl": "https://api.openai.com/v1",
+        "model": "gpt-6.1-sol",
+        "enabled": true,
+        "auth": {
+          "type": "account_login",
+          "channel": "openai-chatgpt"
+        },
+        "hasKey": false,
+        "login": {
+          "channel": "openai-chatgpt",
+          "state": "signed_out",
+          "availability": {
+            "available": true
+          }
+        }
+      }
+    },
+    "openrouter": {
+      "request": {
+        "label": "Sign in openrouter",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "model": "anthropic/claude-sonnet-5.5",
+        "auth": {
+          "type": "account_login",
+          "channel": "openrouter"
+        }
+      },
+      "stored": {
+        "id": "prov_b62b25127095",
+        "label": "Sign in openrouter",
+        "kind": "llm",
+        "protocol": "openai-chat",
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "model": "anthropic/claude-sonnet-5.5",
+        "enabled": true,
+        "auth": {
+          "type": "account_login",
+          "channel": "openrouter"
+        },
+        "hasKey": false,
+        "login": {
+          "channel": "openrouter",
+          "state": "signed_out",
+          "availability": {
+            "available": true
+          }
+        }
+      }
+    }
+  },
+  "refused": {
+    "insecure": {
+      "code": "BASE_URL_INSECURE",
+      "status": 400
+    },
+    "invalid": {
+      "code": "BASE_URL_INVALID",
+      "status": 400
+    }
+  }
+}

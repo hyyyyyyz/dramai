@@ -22,6 +22,9 @@ export default {
       apiKey: 'API Key',
       none: '无需鉴权',
       noneHint: '给本机或内网的模型用：请求不带任何凭据',
+      login: '账号登录',
+      channel: '登录通道',
+      loginHint: '添加后在服务商卡片上完成登录；接口类型和地址由登录通道决定',
     },
     added: {
       title: '已添加「{{name}}」',

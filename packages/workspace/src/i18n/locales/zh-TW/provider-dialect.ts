@@ -1,27 +1,4 @@
 export default {
-  providerCatalog: {
-    title: '新增服務商',
-    loading: '正在載入預設…',
-    search: '搜尋服務商',
-    empty: '這一類還沒有預設，可以新增自定義服務商',
-    noMatch: '沒有匹配“{{query}}”的預設。可以換個詞，或者新增自定義服務商',
-    region: { cn: '國內站', global: '國際站', local: '本機' },
-    localShort: '本機服務：要先在這臺電腦上啟動它',
-    localNote:
-      '這是本機執行的服務：先在這臺電腦上啟動它（並載入好模型），再回來測試連線。dramai 不會替你啟動',
-    needsInput: '新增時需要你填一點資訊',
-    limits: '已知限制（{{count}} 條）',
-    fill: {
-      title: '新增「{{name}}」',
-      back: '回傳',
-      placeholderHint: '把地址裡的 {{name}} 換成你自己的值（在這個服務商的控制台裡能找到）',
-      missing: '要填寫 {{name}}，不填的話這個服務商連不上',
-      invalid: '{{name}} 只能包含字母、數字和 . _ ~ -',
-      modelHint: '這個服務商沒有預設模型：填你在本機載入的那個模型名，新增後也可以從列表裡選',
-      model: '模型',
-      model_missing: '要填寫模型名',
-    },
-  },
   providerDialect: {
     title: '進階設定',
     listSeparator: '、',

@@ -1,29 +1,4 @@
 export default {
-  providerCatalog: {
-    title: 'Add a provider',
-    loading: 'Loading the presets…',
-    search: 'Search providers',
-    empty: 'There are no presets for this kind yet. You can add a custom provider',
-    noMatch: 'No preset matches “{{query}}”. Try another word, or add a custom provider',
-    region: { cn: 'China site', global: 'International site', local: 'On this machine' },
-    localShort: 'Runs on this machine: start it here first',
-    localNote:
-      'This runs on your own machine: start it here first (and load a model), then come back and test the connection. dramai doesn’t start it for you',
-    needsInput: 'Needs a little information from you when adding',
-    limits: 'Known limitations ({{count}})',
-    fill: {
-      title: 'Add “{{name}}”',
-      back: 'Back',
-      placeholderHint:
-        'Replace {{name}} in the address with your own value (you can find it in this provider’s console)',
-      missing: '{{name}} is required, otherwise this provider can’t be reached',
-      invalid: '{{name}} can only contain letters, digits and . _ ~ -',
-      modelHint:
-        'This provider has no default model: enter the name of the model you loaded locally. You can also pick it from a list after adding',
-      model: 'Model',
-      model_missing: 'The model name is required',
-    },
-  },
   providerDialect: {
     title: 'Advanced settings',
     listSeparator: ', ',

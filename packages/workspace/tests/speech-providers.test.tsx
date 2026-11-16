@@ -26,7 +26,7 @@ import zhTW from '@/i18n/locales/zh-TW'
 import zh from '@/i18n/locales/zh-CN'
 import { failedJob, fakeServer, makeJob } from './fixtures'
 import { makeCapabilityView, makePreflight, makeProvider, makeVerdict } from './fixtures-production'
-import { makeKeyProvider, makePreset } from './fixtures-providers'
+import { makeKeyProvider } from './fixtures-providers'
 import { renderApp, useLocale } from './render'
 
 const switchLocale = useLocale
@@ -206,56 +206,9 @@ describe('the two new speech protocols', () => {
   })
 })
 
-// ------------------------------------------------------------------ the catalog
+// ------------------------------------------------------------------ provider cards
 
-describe('speech presets in the catalog', () => {
-  const presets = [
-    makePreset({
-      id: 'openai-tts-key',
-      kind: 'tts',
-      label: 'OpenAI 语音',
-      vendor: { id: 'openai', label: 'OpenAI' },
-      region: 'global',
-      protocol: 'openai-tts',
-      baseUrl: 'https://api.openai.com/v1',
-      suggestedModel: 'gpt-4o-mini-tts',
-      verification: { status: 'documented', source: 'https://platform.openai.com/docs' },
-      verifiedAt: undefined,
-      knownLimitations: ['OpenAI 计划在 2027-01-06 关停 tts-1、tts-1-hd 和 gpt-4o-mini-tts'],
-    }),
-    makePreset({
-      id: 'minimax-tts-cn',
-      kind: 'tts',
-      label: 'MiniMax 语音（国内）',
-      vendor: { id: 'minimax', label: 'MiniMax' },
-      region: 'cn',
-      protocol: 'minimax-t2a',
-      baseUrl: 'https://api.minimax.chat/v1',
-      suggestedModel: 'speech-2.8-hd',
-      verification: { status: 'documented', source: 'https://platform.minimaxi.com/doc' },
-      verifiedAt: undefined,
-    }),
-  ]
-  it('shows vendor, region, status, and the retirement date of the OpenAI models', async () => {
-    const server = fakeServer({
-      'GET /api/providers': () => ({ items: [] }),
-      'GET /api/settings': () => ({ activeProviders: {}, cost: {} }),
-      'GET /api/projects': () => ({ items: [] }),
-      'GET /api/presets': () => ({ items: presets }),
-    })
-    renderApp(<ProvidersPage />, { client: server.client })
-    const section = await screen.findByRole('region', { name: /配音/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    const dialog = await screen.findByRole('dialog', { name: '添加服务商' })
-    const groups = await within(dialog).findAllByRole('region')
-    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['OpenAI', 'MiniMax'])
-    expect(within(dialog).getByRole('button', { name: /MiniMax 语音/ })).toHaveTextContent('国内站')
-    expect(within(dialog).getByRole('button', { name: /OpenAI 语音/ })).toHaveTextContent(
-      '按官方文档接入，未实测',
-    )
-    await userEvent.click(within(dialog).getAllByText(/已知限制/)[0]!)
-    expect(within(dialog).getByText(/2027-01-06/)).toBeInTheDocument()
-  })
+describe('speech provider cards', () => {
   it('a configured provider card shows the same limitation', async () => {
     const provider = ttsProvider({ knownLimitations: ['OpenAI 计划在 2027-01-06 关停 tts-1'] })
     const server = fakeServer({

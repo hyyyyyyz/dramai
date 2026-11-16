@@ -9,7 +9,7 @@ import jobs from './jobs'
 import production from './production'
 import compose from './compose'
 import providerAuth from './provider-auth'
-import providerCatalog from './provider-catalog'
+import providerDialect from './provider-dialect'
 import exportPage from './export'
 
 /** zh-CN 是文案的“源”：类型从这里推出来，en 必须有同样的键（tests/i18n.test.ts 逐键核对）。 */
@@ -25,6 +25,6 @@ export default {
   ...production,
   ...compose,
   ...providerAuth,
-  ...providerCatalog,
+  ...providerDialect,
   ...exportPage,
 }

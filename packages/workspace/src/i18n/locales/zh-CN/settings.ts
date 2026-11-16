@@ -196,7 +196,7 @@ export default {
     noKey: '还没有 API Key',
     expand: '展开 {{name}}',
     collapse: '收起 {{name}}',
-    form: { name: '名称', protocol: 'API 协议' },
+    form: { name: '名称', protocol: 'API 协议', model: '模型' },
     key: {
       saved: '已保存 · {{mask}}',
       replace: '替换',
@@ -232,8 +232,11 @@ export default {
     },
     add: {
       label: '添加服务商',
-      custom: '自定义服务商',
-      customTitle: '添加自定义服务商',
+      title: '添加服务商',
+      forKind: { llm: '大模型', image: '文生图', video: '图生视频', tts: '配音' },
+      addressPlaceholder: 'https://你的服务地址/v1',
+      addressHint: '地址见服务商的接口文档',
+      modelHint: '填服务商接口文档里的模型名；添加之后可以在服务商卡片上获取模型列表再选择',
       create: '添加',
     },
   },

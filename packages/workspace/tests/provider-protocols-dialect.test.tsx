@@ -3,14 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { protocolId, type LoginStatusDto } from '@dramai/api'
 import {
-  groupPresets,
-  inputProblems,
-  matchesQuery,
-  needsInput,
-  resolveBaseUrl,
-  type Preset,
-} from '@/features/settings/catalog-model'
-import {
   dialectChanged,
   dialectOf,
   dialectSupport,
@@ -32,13 +24,7 @@ import zh from '@/i18n/locales/zh-CN'
 import zhTW from '@/i18n/locales/zh-TW'
 import { fakeServer } from './fixtures'
 import { makeCapabilityView } from './fixtures-production'
-import {
-  OR_MANAGE,
-  makeKeyProvider,
-  makeLogin,
-  makeOpenRouterProvider,
-  makePreset,
-} from './fixtures-providers'
+import { OR_MANAGE, makeKeyProvider, makeLogin, makeOpenRouterProvider } from './fixtures-providers'
 import { renderApp, useLocale } from './render'
 
 const memoryStorage = () => {
@@ -55,51 +41,6 @@ beforeEach(async () => {
   await useLocale('zh-CN')
 })
 afterEach(() => vi.unstubAllGlobals())
-
-const p = (over: Record<string, unknown> = {}) => makePreset(over) as unknown as Preset
-const catalog: Preset[] = [
-  p({
-    id: 'a-doc',
-    label: 'Alpha Cloud',
-    baseUrl: 'https://api.alpha.example/v1',
-    vendor: { id: 'alpha', label: 'Alpha' },
-    region: 'global',
-    verification: { status: 'documented', source: 'https://alpha.example/docs' },
-    verifiedAt: undefined,
-  }),
-  p({ id: 'ds', label: 'DeepSeek', vendor: { id: 'deepseek', label: 'DeepSeek' }, region: 'cn' }),
-  p({
-    id: 'al-cn',
-    label: 'Aliyun CN',
-    vendor: { id: 'aliyun', label: '阿里云' },
-    region: 'cn',
-    baseUrl: 'https://{WorkspaceId}.dashscope.aliyuncs.com/compatible-mode/v1',
-    baseUrlPlaceholders: ['WorkspaceId'],
-    suggestedModel: 'qwen-plus',
-    verification: { status: 'documented', source: 'https://help.aliyun.com/x' },
-    verifiedAt: undefined,
-  }),
-  p({
-    id: 'al-gl',
-    label: 'Aliyun Intl',
-    baseUrl: 'https://dashscope-intl.aliyuncs.com/v1',
-    vendor: { id: 'aliyun', label: '阿里云' },
-    region: 'global',
-    verification: { status: 'documented', source: 'https://help.aliyun.com/y' },
-    verifiedAt: undefined,
-  }),
-  p({
-    id: 'lm',
-    label: 'LM Studio',
-    vendor: { id: 'lmstudio', label: 'LM Studio' },
-    region: 'local',
-    baseUrl: 'http://127.0.0.1:1234/v1',
-    suggestedModel: '',
-    auth: { type: 'none' },
-    verification: { status: 'documented', source: 'https://lmstudio.ai/docs' },
-    verifiedAt: undefined,
-  }),
-]
 
 describe('protocol names', () => {
   it('every protocol in the contract belongs to a kind and has a name in all three languages', () => {
@@ -119,45 +60,6 @@ describe('protocol names', () => {
   it('a protocol without copy shows its id instead of breaking the page', () => {
     const t = ((_k: string, o?: { defaultValue?: string }) => o?.defaultValue ?? _k) as never
     expect(protocolLabel(t, 'brand-new-protocol')).toBe('brand-new-protocol')
-  })
-})
-
-describe('catalog model', () => {
-  it('groups by vendor; vendors with a tested preset first; tested first, then region, inside a vendor', () => {
-    const groups = groupPresets(catalog)
-    expect(groups.map((g) => g.vendor.id)).toEqual(['deepseek', 'alpha', 'aliyun', 'lmstudio'])
-    expect(groups.find((g) => g.vendor.id === 'aliyun')!.presets.map((x) => x.id)).toEqual([
-      'al-cn',
-      'al-gl',
-    ])
-  })
-  it('searches name, vendor and address host, case-insensitively', () => {
-    expect(groupPresets(catalog, 'deep').map((g) => g.vendor.id)).toEqual(['deepseek'])
-    expect(groupPresets(catalog, '阿里').map((g) => g.vendor.id)).toEqual(['aliyun'])
-    expect(groupPresets(catalog, 'ALPHA').flatMap((g) => g.presets.map((x) => x.id))).toEqual([
-      'a-doc',
-    ])
-    expect(matchesQuery(catalog[1]!, 'deepseek.com')).toBe(true)
-    expect(groupPresets(catalog, 'zzz')).toEqual([])
-    expect(groupPresets(catalog, '  ')).toHaveLength(4)
-  })
-  it('knows which presets need the user: placeholders in the address, or no suggested model', () => {
-    expect(needsInput(catalog[2]!)).toBe(true)
-    expect(needsInput(catalog[4]!)).toBe(true)
-    expect(needsInput(catalog[1]!)).toBe(false)
-  })
-  it('validates the values and puts them into the address', () => {
-    const aliyun = catalog[2]!
-    expect(inputProblems(aliyun, {}, '')).toEqual([{ field: 'WorkspaceId', kind: 'missing' }])
-    expect(inputProblems(aliyun, { WorkspaceId: 'a b/c' }, '')).toEqual([
-      { field: 'WorkspaceId', kind: 'invalid' },
-    ])
-    expect(inputProblems(aliyun, { WorkspaceId: 'ws-123' }, '')).toEqual([])
-    expect(inputProblems(catalog[4]!, {}, ' ')).toEqual([{ field: 'model', kind: 'missing' }])
-    expect(resolveBaseUrl(aliyun.baseUrl, { WorkspaceId: ' ws-123 ' })).toBe(
-      'https://ws-123.dashscope.aliyuncs.com/compatible-mode/v1',
-    )
-    expect(resolveBaseUrl(aliyun.baseUrl, {})).toContain('{WorkspaceId}')
   })
 })
 
@@ -303,7 +205,7 @@ function page(opts: {
     'GET /api/settings': () => ({ activeProviders: opts.active ?? {}, cost: {} }),
     'PUT /api/settings': ({ body }) => body,
     'GET /api/projects': () => ({ items: [] }),
-    'GET /api/presets': () => ({ items: opts.presets ?? catalog }),
+    'GET /api/presets': () => ({ items: opts.presets ?? [] }),
     'GET /api/providers/prov_key/capability': () => makeCapabilityView(),
     'GET /api/providers/prov_new/capability': () => makeCapabilityView(),
     ...opts.routes,
@@ -311,158 +213,6 @@ function page(opts: {
   const view = renderApp(<ProvidersPage />, { client: server.client })
   return { ...view, server }
 }
-const openCatalog = async () => {
-  const section = await screen.findByRole('region', { name: /大模型/ })
-  await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-  return screen.findByRole('dialog', { name: '添加服务商' })
-}
-
-describe('the catalog dialog', () => {
-  it('groups presets by vendor with region and verification status on each', async () => {
-    page({ providers: [] })
-    const dialog = await openCatalog()
-    const groups = await within(dialog).findAllByRole('region')
-    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual([
-      'DeepSeek',
-      'Alpha',
-      '阿里云',
-      'LM Studio',
-    ])
-    const aliyun = within(dialog).getByRole('region', { name: '阿里云' })
-    expect(within(aliyun).getByRole('button', { name: /Aliyun CN/ })).toHaveTextContent('国内站')
-    expect(within(aliyun).getByRole('button', { name: /Aliyun Intl/ })).toHaveTextContent('国际站')
-    expect(within(dialog).getByRole('button', { name: /DeepSeek/ })).toHaveTextContent(
-      '已实测 · 2026-05-04',
-    )
-    expect(within(dialog).getByRole('button', { name: /Alpha Cloud/ })).toHaveTextContent(
-      '按官方文档接入，未实测',
-    )
-    expect(within(dialog).getByRole('button', { name: /LM Studio/ })).toHaveTextContent('本机')
-    expect(within(dialog).getByText('本机服务：要先在这台电脑上启动它')).toBeInTheDocument()
-  })
-
-  it('search narrows the list by name, and says so when nothing matches', async () => {
-    page({ providers: [] })
-    const dialog = await openCatalog()
-    await userEvent.type(
-      await within(dialog).findByRole('searchbox', { name: '搜索服务商' }),
-      'deep',
-    )
-    expect(
-      within(dialog)
-        .getAllByRole('region')
-        .map((g) => g.getAttribute('aria-label')),
-    ).toEqual(['DeepSeek'])
-    await userEvent.clear(within(dialog).getByRole('searchbox'))
-    await userEvent.type(within(dialog).getByRole('searchbox'), 'qqq')
-    expect(within(dialog).getByText(/没有匹配“qqq”的预设/)).toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: '自定义服务商' })).toBeInTheDocument()
-  })
-
-  it('a preset with a placeholder cannot be created until it is filled; the value ends up in the address', async () => {
-    const created = makeKeyProvider({
-      id: 'prov_new',
-      label: 'Aliyun CN',
-      baseUrl: 'https://{WorkspaceId}.dashscope.aliyuncs.com/compatible-mode/v1',
-      verification: { status: 'documented', source: 'x' },
-    })
-    const { server } = page({
-      providers: [],
-      routes: {
-        'POST /api/providers/from-preset': () => created,
-      },
-    })
-    const dialog = await openCatalog()
-    await userEvent.click(within(dialog).getByRole('button', { name: /Aliyun CN/ }))
-    const fill = await screen.findByRole('dialog', { name: '添加「Aliyun CN」' })
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    expect(await within(fill).findByText(/要填写 WorkspaceId/)).toBeInTheDocument()
-    expect(
-      server.calls.some((c) => c.method === 'POST' && c.path === '/api/providers/from-preset'),
-    ).toBe(false)
-    await userEvent.type(within(fill).getByRole('textbox', { name: /WorkspaceId/ }), 'ws-42')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    await waitFor(() =>
-      expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
-        presetId: 'al-cn',
-        baseUrl: 'https://ws-42.dashscope.aliyuncs.com/compatible-mode/v1',
-      }),
-    )
-    expect(server.calls.some((c) => c.method === 'PATCH')).toBe(false) // one call, not two
-  })
-
-  it('a bad placeholder value is refused with a reason', async () => {
-    page({ providers: [] })
-    const dialog = await openCatalog()
-    await userEvent.click(within(dialog).getByRole('button', { name: /Aliyun CN/ }))
-    const fill = await screen.findByRole('dialog', { name: '添加「Aliyun CN」' })
-    await userEvent.type(within(fill).getByRole('textbox', { name: /WorkspaceId/ }), 'a b')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    expect(await within(fill).findByText(/只能包含字母、数字/)).toBeInTheDocument()
-  })
-
-  it('a local preset with no suggested model asks for the model and says to start the service first', async () => {
-    const created = makeKeyProvider({
-      id: 'prov_new',
-      label: 'LM Studio',
-      auth: { type: 'none' },
-      hasKey: false,
-      model: '',
-    })
-    const { server } = page({
-      providers: [],
-      routes: {
-        'POST /api/providers/from-preset': () => created,
-      },
-    })
-    const dialog = await openCatalog()
-    await userEvent.click(within(dialog).getByRole('button', { name: /LM Studio/ }))
-    const fill = await screen.findByRole('dialog', { name: '添加「LM Studio」' })
-    expect(within(fill).getByText(/先在这台电脑上启动它/)).toBeInTheDocument()
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    expect(await within(fill).findByText('要填写模型名')).toBeInTheDocument()
-    await userEvent.type(within(fill).getByRole('textbox', { name: /模型/ }), 'llama-3')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    await waitFor(() =>
-      expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
-        presetId: 'lm',
-        model: 'llama-3',
-      }),
-    )
-  })
-
-  it('a preset that needs nothing is created at once, and a documented-only one is not made current', async () => {
-    const created = makeKeyProvider({
-      id: 'prov_new',
-      label: 'Alpha Cloud',
-      verification: { status: 'documented', source: 'https://alpha.example/docs' },
-    })
-    let list: unknown[] = []
-    const { server } = page({
-      providers: [],
-      routes: {
-        'GET /api/providers': () => ({ items: list }),
-        'POST /api/providers/from-preset': () => {
-          list = [created]
-          return created
-        },
-      },
-    })
-    const dialog = await openCatalog()
-    await userEvent.click(within(dialog).getByRole('button', { name: /Alpha Cloud/ }))
-    expect(await screen.findByText('已添加「Alpha Cloud」')).toBeInTheDocument()
-    expect(server.calls.some((c) => c.method === 'PUT' && c.path === '/api/settings')).toBe(false)
-    expect(server.calls.some((c) => c.method === 'PATCH')).toBe(false)
-  })
-
-  it('the custom provider dialog is still one click away', async () => {
-    page({ providers: [] })
-    const dialog = await openCatalog()
-    await userEvent.click(within(dialog).getByRole('button', { name: '自定义服务商' }))
-    expect(await screen.findByRole('dialog', { name: '添加自定义服务商' })).toBeInTheDocument()
-  })
-})
-
 describe('advanced settings (dialect)', () => {
   const card = async () => {
     const c = await screen.findByRole('article', { name: 'DeepSeek' })

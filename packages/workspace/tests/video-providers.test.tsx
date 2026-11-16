@@ -28,7 +28,7 @@ import {
   makeVerdict,
   slotWith,
 } from './fixtures-production'
-import { makeKeyProvider, makePreset } from './fixtures-providers'
+import { makeKeyProvider } from './fixtures-providers'
 import { renderApp, useLocale } from './render'
 
 const memoryStorage = () => {
@@ -48,7 +48,7 @@ beforeEach(async () => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-// ---------------------------------------------------------------- protocols, presets, errors
+// ---------------------------------------------------------------- protocols, errors
 
 describe('the three new video protocols', () => {
   const NEW = ['ark-video', 'kling-contents', 'dashscope-video'] as const
@@ -60,108 +60,6 @@ describe('the three new video protocols', () => {
       for (const dict of [zh, zhTW, en])
         expect((dict.protocol as Record<string, string>)[p], p).toBeTruthy()
     }
-  })
-})
-
-describe('video presets in the catalog', () => {
-  const vendor = (id: string, label: string) => ({ id, label })
-  const presets = [
-    makePreset({
-      id: 'byteplus-seedance',
-      kind: 'video',
-      label: 'BytePlus Seedance',
-      vendor: vendor('byteplus', 'BytePlus'),
-      region: 'global',
-      protocol: 'ark-video',
-      baseUrl: 'https://ark.ap-southeast.bytepluses.com/api/v3',
-      suggestedModel: 'dreamina-seedance-2-0-260128',
-      verification: { status: 'documented', source: 'https://docs.byteplus.com/x' },
-      verifiedAt: undefined,
-      knownLimitations: [
-        'Reference videos and audio are not sent yet',
-        'Real human faces are refused',
-      ],
-    }),
-    makePreset({
-      id: 'kling-video-cn',
-      kind: 'video',
-      label: 'Kling 4.0 (China)',
-      vendor: vendor('kling', 'Kling'),
-      region: 'cn',
-      protocol: 'kling-contents',
-      baseUrl: 'https://api-beijing.klingai.com',
-      suggestedModel: 'kling-4.0',
-      verification: { status: 'documented', source: 'https://kling.ai/doc' },
-      verifiedAt: undefined,
-    }),
-    makePreset({
-      id: 'aliyun-wan3-cn',
-      kind: 'video',
-      label: 'Wan 3.0 (China)',
-      vendor: vendor('aliyun', 'Alibaba Cloud'),
-      region: 'cn',
-      protocol: 'dashscope-video',
-      baseUrl: 'https://{WorkspaceId}.dashscope.aliyuncs.com/api/v1',
-      baseUrlPlaceholders: ['WorkspaceId'],
-      suggestedModel: 'wan3.0-video',
-      verification: { status: 'documented', source: 'https://help.aliyun.com/y' },
-      verifiedAt: undefined,
-    }),
-  ]
-  function page(routes: Parameters<typeof fakeServer>[0] = {}) {
-    const server = fakeServer({
-      'GET /api/providers': () => ({ items: [] }),
-      'GET /api/settings': () => ({ activeProviders: {}, cost: {} }),
-      'GET /api/projects': () => ({ items: [] }),
-      'GET /api/presets': () => ({ items: presets }),
-      ...routes,
-    })
-    const view = renderApp(<ProvidersPage />, { client: server.client })
-    return { ...view, server }
-  }
-  const openCatalog = async () => {
-    const section = await screen.findByRole('region', { name: /图生视频/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    return screen.findByRole('dialog', { name: '添加服务商' })
-  }
-
-  it('shows vendor groups, region, verification status and the known limitations', async () => {
-    page()
-    const dialog = await openCatalog()
-    const groups = await within(dialog).findAllByRole('region')
-    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual([
-      'BytePlus',
-      'Kling',
-      'Alibaba Cloud',
-    ])
-    const bp = within(dialog).getByRole('button', { name: /BytePlus Seedance/ })
-    expect(bp).toHaveTextContent('国际站')
-    expect(bp).toHaveTextContent('按官方文档接入，未实测')
-    expect(within(dialog).getByRole('button', { name: /Kling 4.0/ })).toHaveTextContent('国内站')
-    // the limitations are one click away, in the provider's own words
-    const summary = within(dialog).getByText('已知限制（2 条）')
-    await userEvent.click(summary)
-    expect(within(dialog).getByText('Real human faces are refused')).toBeInTheDocument()
-    expect(within(dialog).queryByText('已知限制（0 条）')).toBeNull()
-  })
-
-  it('a preset with a placeholder in the host is created in one call with the full address', async () => {
-    const { server } = page({
-      'POST /api/providers/from-preset': () => makeKeyProvider({ id: 'prov_new', kind: 'video' }),
-      'GET /api/providers/prov_new/capability': () => makeCapabilityView(),
-    })
-    const dialog = await openCatalog()
-    await userEvent.click(within(dialog).getByRole('button', { name: /Wan 3.0/ }))
-    const fill = await screen.findByRole('dialog', { name: /添加「Wan 3.0/ })
-    await userEvent.type(within(fill).getByRole('textbox', { name: /WorkspaceId/ }), 'ws-42')
-    await userEvent.click(within(fill).getByRole('button', { name: '添加' }))
-    await waitFor(() =>
-      expect(server.calls.some((c) => c.path === '/api/providers/from-preset')).toBe(true),
-    )
-    expect(server.calls.find((c) => c.path === '/api/providers/from-preset')?.body).toEqual({
-      presetId: 'aliyun-wan3-cn',
-      baseUrl: 'https://ws-42.dashscope.aliyuncs.com/api/v1',
-    })
   })
 })
 
@@ -678,33 +576,6 @@ describe('review leftovers', () => {
     await userEvent.click(within(card).getByRole('button', { name: /展开/ }))
     return card
   }
-
-  it('a preset that only lacks a model puts the focus in the model field, not on Close', async () => {
-    pageWith(
-      [],
-      [
-        makePreset({
-          id: 'lm',
-          label: 'LM Studio',
-          vendor: { id: 'lmstudio', label: 'LM Studio' },
-          region: 'local',
-          baseUrl: 'http://127.0.0.1:1234/v1',
-          suggestedModel: '',
-          auth: { type: 'none' },
-          verification: { status: 'documented', source: 'https://lmstudio.ai/docs' },
-          verifiedAt: undefined,
-        }),
-      ],
-    )
-    const section = await screen.findByRole('region', { name: /大模型/ })
-    await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    const dialog = await screen.findByRole('dialog', { name: '添加服务商' })
-    await userEvent.click(await within(dialog).findByRole('button', { name: /LM Studio/ }))
-    const fill = await screen.findByRole('dialog', { name: /添加「LM Studio」/ })
-    const model = within(fill).getByRole('textbox', { name: /模型/ })
-    await waitFor(() => expect(model).toHaveFocus())
-    expect(within(fill).getByRole('button', { name: '关闭' })).not.toHaveFocus()
-  })
 
   it('the advanced-settings text fits the kind of provider and has no stray space after a Chinese full stop', async () => {
     pageWith([

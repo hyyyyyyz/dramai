@@ -209,7 +209,7 @@ export default {
     noKey: 'No API key yet',
     expand: 'Expand {{name}}',
     collapse: 'Collapse {{name}}',
-    form: { name: 'Name', protocol: 'API protocol' },
+    form: { name: 'Name', protocol: 'API protocol', model: 'Model' },
     key: {
       saved: 'Saved · {{mask}}',
       replace: 'Replace',
@@ -252,8 +252,17 @@ export default {
     },
     add: {
       label: 'Add provider',
-      custom: 'Custom provider',
-      customTitle: 'Add a custom provider',
+      title: 'Add provider',
+      forKind: {
+        llm: 'Language model',
+        image: 'Text-to-image',
+        video: 'Image-to-video',
+        tts: 'Voice-over',
+      },
+      addressPlaceholder: 'https://your-service-address/v1',
+      addressHint: 'The address is in the provider’s API documentation',
+      modelHint:
+        'Use the model name from the provider’s API documentation. After adding, you can fetch the model list on the provider card and pick from it',
       create: 'Add',
     },
   },

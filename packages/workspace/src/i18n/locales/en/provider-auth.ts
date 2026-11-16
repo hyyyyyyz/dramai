@@ -27,6 +27,10 @@ export default {
       apiKey: 'API key',
       none: 'No authentication',
       noneHint: 'For a model on your own machine or network: requests carry no credentials',
+      login: 'Account sign-in',
+      channel: 'Sign-in channel',
+      loginHint:
+        'Sign in on the provider card after adding. The sign-in channel decides the interface type and address',
     },
     added: {
       title: 'Added “{{name}}”',

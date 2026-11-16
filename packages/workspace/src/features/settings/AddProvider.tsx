@@ -1,17 +1,17 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import type { ProviderConfigDto } from '@dramai/api'
 import { Button, Field, Hint, Input, SegmentedControl, Select, iconProps } from '@dramai/ui/v2'
 import { Modal } from '@/components/overlay'
 import { qk } from '@/data/keys'
-import { useCall } from '@/data/queries'
+import { useCall, usePresets } from '@/data/queries'
 import { ErrorNotice } from '@/features/common/error-text'
 import { addressSendable, baseUrlCodeOf, useBaseUrlMessage } from './base-url'
+import type { LoginChannel } from './login-channels'
 import { PROTOCOLS_BY_KIND, protocolLabel, type ProtocolId, type ProviderKind } from './protocols'
-import { PresetCatalog } from './PresetCatalog'
 
-/** Add a provider: open the catalog (presets grouped by vendor, with search), or fill in a custom one. */
+/** Add a provider: one form, opened straight from the button. No catalog, no suggestions. */
 export function AddProvider({
   kind,
   onAdded,
@@ -20,34 +20,45 @@ export function AddProvider({
   onAdded: (p: ProviderConfigDto) => void
 }) {
   const { t } = useTranslation()
-  const [catalog, setCatalog] = useState(false)
-  const [custom, setCustom] = useState(false)
-
+  const [open, setOpen] = useState(false)
   return (
     <>
-      <Button size="sm" variant="ghost" onClick={() => setCatalog(true)}>
+      <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
         <Plus {...iconProps} aria-hidden />
         {t('providers.add.label')}
       </Button>
-      {catalog && (
-        <PresetCatalog
-          kind={kind}
-          onClose={() => setCatalog(false)}
-          onCustom={() => {
-            setCatalog(false)
-            setCustom(true)
-          }}
-          onAdded={onAdded}
-        />
-      )}
-      {custom && (
-        <CustomProviderDialog kind={kind} onClose={() => setCustom(false)} onAdded={onAdded} />
-      )}
+      {open && <AddProviderForm kind={kind} onClose={() => setOpen(false)} onAdded={onAdded} />}
     </>
   )
 }
 
-function CustomProviderDialog({
+type AuthMode = 'api_key' | 'login' | 'none'
+
+/**
+ * A sign-in channel pins its own address and interface type (the server only sends a token to the channel's own
+ * address). The API gives these through the sign-in entries it lists with the presets; the form reads them from there
+ * and invents nothing.
+ */
+function useLoginChannels(kind: ProviderKind) {
+  const presets = usePresets()
+  return useMemo(() => {
+    if (kind !== 'llm') return []
+    return (presets.data?.items ?? []).flatMap((p) =>
+      p.kind === 'llm' && p.auth.type === 'account_login'
+        ? [
+            {
+              channel: p.auth.channel as LoginChannel,
+              protocol: p.protocol as ProtocolId,
+              baseUrl: p.baseUrl,
+              model: p.suggestedModel,
+            },
+          ]
+        : [],
+    )
+  }, [presets.data, kind])
+}
+
+function AddProviderForm({
   kind,
   onClose,
   onAdded,
@@ -59,14 +70,48 @@ function CustomProviderDialog({
   const { t } = useTranslation()
   const create = useCall('providers.create', { invalidate: [qk.providers] })
   const protocols = PROTOCOLS_BY_KIND[kind]
+  const channels = useLoginChannels(kind)
   const [label, setLabel] = useState('')
   const [protocol, setProtocol] = useState<ProtocolId>(protocols[0]!)
   const [baseUrl, setBaseUrl] = useState('')
   const [model, setModel] = useState('')
   const [apiKey, setApiKey] = useState('')
-  const [auth, setAuth] = useState<'api_key' | 'none'>('api_key')
-  const valid = label.trim() && addressSendable(baseUrl) && model.trim()
-  const addressMessage = useBaseUrlMessage(baseUrl, create.error)
+  const [mode, setMode] = useState<AuthMode>('api_key')
+  const [channel, setChannel] = useState<LoginChannel>()
+
+  // sign-in is offered only when a channel exists for the chosen interface type
+  const available = channels.filter((c) => c.protocol === protocol)
+  const picked =
+    mode === 'login' ? (available.find((c) => c.channel === channel) ?? available[0]) : undefined
+  const login = mode === 'login' && picked !== undefined
+  const shownUrl = login ? picked.baseUrl : baseUrl
+  const valid = label.trim() !== '' && (login || addressSendable(baseUrl)) && model.trim() !== ''
+  const addressMessage = useBaseUrlMessage(login ? '' : baseUrl, create.error)
+
+  const chooseProtocol = (p: ProtocolId) => {
+    setProtocol(p)
+    // a channel belongs to one interface type: leaving it leaves sign-in
+    if (!channels.some((c) => c.protocol === p)) setMode((m) => (m === 'login' ? 'api_key' : m))
+    create.reset()
+  }
+  const chooseMode = (m: AuthMode) => {
+    setMode(m)
+    create.reset()
+    if (m === 'login') {
+      const first = available[0]
+      if (first) {
+        setChannel(first.channel)
+        if (!model.trim()) setModel(first.model)
+      }
+    }
+  }
+  const chooseChannel = (c: LoginChannel) => {
+    setChannel(c)
+    const next = available.find((x) => x.channel === c)
+    if (next && !model.trim()) setModel(next.model)
+    create.reset()
+  }
+
   const submit = async () => {
     if (!valid) return
     try {
@@ -75,24 +120,35 @@ function CustomProviderDialog({
           label: label.trim(),
           kind,
           protocol,
-          baseUrl: baseUrl.trim(),
+          baseUrl: shownUrl.trim(),
           model: model.trim(),
           // saying it outright keeps "no key yet" and "needs no key" apart
-          auth: { type: auth },
-          ...(auth === 'api_key' && apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+          auth: login
+            ? { type: 'account_login', channel: picked.channel }
+            : { type: mode === 'none' ? 'none' : 'api_key' },
+          ...(mode === 'api_key' && apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
         },
       })
       onClose()
       onAdded(p)
     } catch {
-      /* 显示在对话框里 */
+      /* shown in the dialog */
     }
   }
+
+  const authOptions: { value: AuthMode; label: string }[] = [
+    { value: 'api_key', label: t('providerAuth.custom.apiKey') },
+    ...(available.length > 0
+      ? [{ value: 'login' as const, label: t('providerAuth.custom.login') }]
+      : []),
+    { value: 'none', label: t('providerAuth.custom.none') },
+  ]
+
   return (
     <Modal
       open
       onClose={onClose}
-      title={t('providers.add.customTitle')}
+      title={`${t('providers.add.title')} · ${t(`providers.add.forKind.${kind}`)}`}
       closeLabel={t('common.close')}
       dismissOnBackdrop={false}
       footer={
@@ -106,14 +162,20 @@ function CustomProviderDialog({
         </>
       }
     >
-      <div className="flex flex-col gap-4">
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void submit()
+        }}
+      >
         <Field label={t('providers.form.name')} required>
           <Input value={label} onChange={(e) => setLabel(e.target.value)} data-autofocus />
         </Field>
         <Field label={t('providers.form.protocol')}>
           <Select
             value={protocol}
-            onChange={(e) => setProtocol(e.target.value as ProtocolId)}
+            onChange={(e) => chooseProtocol(e.target.value as ProtocolId)}
             disabled={protocols.length < 2}
           >
             {protocols.map((p) => (
@@ -123,33 +185,49 @@ function CustomProviderDialog({
             ))}
           </Select>
         </Field>
-        <Field label="Base URL" required error={addressMessage}>
+        <Field
+          label={'Base URL'}
+          required
+          error={addressMessage}
+          hint={login ? t('providerAuth.loginFixed') : t('providers.add.addressHint')}
+        >
           <Input
             mono
-            value={baseUrl}
+            value={shownUrl}
+            readOnly={login}
             onChange={(e) => {
               setBaseUrl(e.target.value)
               create.reset()
             }}
-            placeholder="https://api.example.com/v1"
+            placeholder={t('providers.add.addressPlaceholder')}
           />
-        </Field>
-        <Field label={t('providerCatalog.fill.model')} required>
-          <Input mono value={model} onChange={(e) => setModel(e.target.value)} />
         </Field>
         <Field label={t('providerAuth.custom.auth')}>
           <SegmentedControl
             aria-label={t('providerAuth.custom.auth')}
-            value={auth}
-            onValueChange={setAuth}
-            options={[
-              { value: 'api_key', label: t('providerAuth.custom.apiKey') },
-              { value: 'none', label: t('providerAuth.custom.none') },
-            ]}
+            value={mode}
+            onValueChange={chooseMode}
+            options={authOptions}
           />
         </Field>
-        {auth === 'api_key' ? (
-          <Field label="API Key" hint={t('providers.key.hint')}>
+        {mode === 'login' && (
+          <Field label={t('providerAuth.custom.channel')}>
+            <Select
+              value={picked?.channel ?? ''}
+              onChange={(e) => chooseChannel(e.target.value as LoginChannel)}
+              disabled={available.length < 2}
+            >
+              {available.map((c) => (
+                <option key={c.channel} value={c.channel}>
+                  {t(`providerAuth.chip.channels.${c.channel}`)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
+        {mode === 'login' && <Hint>{t('providerAuth.custom.loginHint')}</Hint>}
+        {mode === 'api_key' && (
+          <Field label={'API Key'} hint={t('providers.key.hint')}>
             <Input
               mono
               type="password"
@@ -159,12 +237,16 @@ function CustomProviderDialog({
               onChange={(e) => setApiKey(e.target.value)}
             />
           </Field>
-        ) : (
-          <Hint>{t('providerAuth.custom.noneHint')}</Hint>
         )}
+        {mode === 'none' && <Hint>{t('providerAuth.custom.noneHint')}</Hint>}
+        <Field label={t('providers.form.model')} required hint={t('providers.add.modelHint')}>
+          <Input mono value={model} onChange={(e) => setModel(e.target.value)} />
+        </Field>
         {/* an address problem is shown on the address input instead */}
         {create.isError && !baseUrlCodeOf(create.error) && <ErrorNotice error={create.error} />}
-      </div>
+        {/* lets Enter in a text field submit the form */}
+        <button type="submit" hidden tabIndex={-1} aria-hidden />
+      </form>
     </Modal>
   )
 }

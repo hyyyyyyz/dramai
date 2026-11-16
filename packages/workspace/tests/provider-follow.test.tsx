@@ -209,8 +209,7 @@ describe('address errors from the server show on the address input', () => {
     const view = page({ providers: [], routes })
     const section = await screen.findByRole('region', { name: /大模型/ })
     await userEvent.click(within(section).getByRole('button', { name: '添加服务商' }))
-    await userEvent.click(await screen.findByRole('button', { name: '自定义服务商' }))
-    const dialog = await screen.findByRole('dialog', { name: /自定义/ })
+    const dialog = await screen.findByRole('dialog', { name: /添加服务商/ })
     await userEvent.type(within(dialog).getAllByRole('textbox')[0]!, 'Mine')
     return { dialog, ...view }
   }
