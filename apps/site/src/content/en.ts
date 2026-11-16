@@ -108,7 +108,7 @@ export const en: Content = {
         icon: 'link',
         title: 'Connect a provider with one form',
         tag: 'Source',
-        text: 'Settings → Providers → Add provider: in one form you pick the interface type, enter the address and an API key, then fetch the model list and pick a model. Any service that offers an OpenAI-compatible interface can be connected by its address. A ChatGPT account or an OpenRouter account can also sign in instead of pasting a key.',
+        text: 'Settings → Providers → Add provider: in one form you pick the API protocol, enter the Base URL and an API key, click “Get model list” and pick a model from the Model drop-down, or type one in. Any service that offers an OpenAI-compatible interface can be connected by its Base URL. A ChatGPT account or an OpenRouter account can also sign in instead of pasting a key.',
       },
     ],
     locales:
@@ -116,27 +116,29 @@ export const en: Content = {
     providers: {
       sourceTag: 'Source',
       title: 'Connect a provider with one form',
-      lead: `Click “Add provider” in Settings → Providers. Language models, images, video and speech are each added the same way, with the same form. Items marked “Source” were added after ${PUBLISHED_VERSION}; the published installers match ${PUBLISHED_VERSION}, so to use them run from source first.`,
+      lead: `Click “Add provider” in Settings → Providers. Language model, Text-to-image, Image-to-video and Voice-over are each added the same way, with the same form. Items marked “Source” were added after ${PUBLISHED_VERSION}; the published installers match ${PUBLISHED_VERSION}, so to use them run from source first.`,
       stepsTitle: 'Four steps',
       steps: [
-        'Pick the interface type',
-        'Enter the address',
-        'Choose how to authenticate (API key or account sign-in) and enter the key',
-        'Click “Fetch model list”, pick a model, test the connection and add it',
+        'Enter a Name and pick the API protocol',
+        'Enter the Base URL',
+        'Choose the Authentication (API key, Account sign-in or No authentication) and enter the API key',
+        'Click “Get model list” and pick a Model from the drop-down, or type one in; click “Test connection” if you like, then “Add”',
       ],
+      probeNote:
+        '“Get model list” and “Test connection” work before you add anything and save nothing; Test connection sends no generation request. Model is a drop-down: protocols that can list models fill it from the list, the others offer known models as suggestions, and “Type it in…” lets you enter any model yourself.',
       rangeNote:
-        'Any service that offers an OpenAI-compatible interface can be connected by entering its address. Interface types of several model companies are built in as well; you choose them in the “Interface type” list when adding.',
-      docsLabel: 'Interface type reference: docs/PROVIDERS.md',
+        'Any service that offers an OpenAI-compatible interface can be connected by entering its Base URL. API protocols of several model companies are built in as well; you choose them in the “API protocol” list.',
+      docsLabel: 'API protocol reference: docs/PROVIDERS.md',
       accountTitle: 'Account sign-in',
       accountLead:
-        'Instead of pasting a key. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.',
+        'Instead of pasting a key: choose “Account sign-in” as the Authentication and pick a Sign-in channel; after adding, sign in on the provider card. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address. With account sign-in the Base URL and API protocol are fixed by the channel.',
       account: [
         {
-          name: 'ChatGPT account',
+          name: 'ChatGPT account sign-in',
           text: 'After signing in, text requests use your ChatGPT plan. It covers language models; images, video and speech use API keys.',
         },
         {
-          name: 'OpenRouter account',
+          name: 'OpenRouter account sign-in',
           text: 'After signing in, OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account.',
         },
       ],
@@ -347,7 +349,7 @@ export const en: Content = {
       note: `Only ${PUBLISHED_VERSION} is published, and it is marked as a Pre-release on the Releases page. \`SHA256SUMS.txt\` on the release lists the checksums. The installers are about 115 to 150 MB.`,
       snapshotTitle: `The installers match ${PUBLISHED_VERSION}`,
       snapshot:
-        'What was added afterwards runs from source first: the additional interface types, sign-in with a ChatGPT account and an OpenRouter account, the new add-provider form, reference images for video and the narration voice options. Use the WebUI below from source, or build the desktop app on your machine (`pnpm desktop:install`); both include everything.',
+        'What was added afterwards runs from source first: the additional API protocols, sign-in with a ChatGPT account and an OpenRouter account, the new add-provider form, reference images for video and the narration voice options. Use the WebUI below from source, or build the desktop app on your machine (`pnpm desktop:install`); both include everything.',
       unsignedTitle: 'Opening an installer for the first time',
       unsigned: [
         'The installers are not code-signed, so macOS and Windows show a system prompt the first time; follow the steps below to open them',
@@ -401,8 +403,8 @@ export const en: Content = {
       providers: {
         title: 'Providers',
         items: [
-          'Settings → Providers → Add provider, one form: pick the interface type, enter the address and an API key, fetch the model list and pick a model',
-          'Any service with an OpenAI-compatible interface can be connected by its address; language models, images, video and speech are each added',
+          'Settings → Providers → Add provider, one form: enter a Name, pick the API protocol, enter the Base URL, choose the Authentication, click “Get model list” and pick a Model from the drop-down, or type one in',
+          'Any service with an OpenAI-compatible interface can be connected by its Base URL; Language model, Text-to-image, Image-to-video and Voice-over are each added',
           'Sign-in with a ChatGPT account (language models) or an OpenRouter account instead of pasting a key',
           'Reference images for video (off by default) and narration voice options',
         ],
@@ -450,9 +452,9 @@ export const en: Content = {
       {
         q: 'How do I connect a provider?',
         a: [
-          'Click “Add provider” in Settings → Providers and use the one form: pick the interface type, enter the address and an API key (or sign in with an account), click “Fetch model list” and pick a model. Language models, images, video and speech are each added this way.',
-          'Any service that offers an OpenAI-compatible interface can be connected by entering its address; interface types of several model companies are built in too, and you choose them in the “Interface type” list. The repository’s `docs/PROVIDERS.md` is the reference for the interface types.',
-          'You can also sign in with an account instead of pasting a key: a ChatGPT account uses your plan and covers text only, with images, video and speech using API keys; an OpenRouter account hands dramai an API key of your own. Sign in on the computer that runs dramai. The form and account sign-in were added after 0.5.0-beta.1, so run from source first. dramai uses only public interfaces and never a ChatGPT back-end endpoint.',
+          'Click “Add provider” in Settings → Providers and use the one form: enter a Name, pick the API protocol, enter the Base URL, choose the Authentication (API key, Account sign-in or No authentication) and enter the API key, click “Get model list” and pick a Model from the drop-down, or type one in. Language model, Text-to-image, Image-to-video and Voice-over are each added this way. “Get model list” and “Test connection” work before you add anything and save nothing; Test connection sends no generation request.',
+          'Any service that offers an OpenAI-compatible interface can be connected by entering its Base URL; API protocols of several model companies are built in too, and you choose them in the “API protocol” list. The repository’s `docs/PROVIDERS.md` is the reference for the API protocols.',
+          'You can also sign in with an account instead of pasting a key: choose “Account sign-in” as the Authentication, and after adding sign in on the provider card. A ChatGPT account uses your plan and covers text only, with images, video and speech using API keys; an OpenRouter account hands dramai an API key of your own. Sign in on the computer that runs dramai. The form and account sign-in were added after 0.5.0-beta.1, so run from source first. dramai uses only public interfaces and never a ChatGPT back-end endpoint.',
         ],
       },
       {
@@ -487,7 +489,7 @@ export const en: Content = {
         q: 'What should I know about the installers?',
         a: [
           'The installers are not code-signed, so macOS and Windows show a system prompt the first time; the steps to open them are in the Install section above. You can also build and install from source with `pnpm desktop:install`, which has no download warnings.',
-          `The published installers match ${PUBLISHED_VERSION}; what was added afterwards (the added interface types, account sign-in, the new add-provider form, reference images for video and the narration voice options) runs from source first.`,
+          `The published installers match ${PUBLISHED_VERSION}; what was added afterwards (the added API protocols, account sign-in, the new add-provider form, reference images for video and the narration voice options) runs from source first.`,
         ],
       },
       {

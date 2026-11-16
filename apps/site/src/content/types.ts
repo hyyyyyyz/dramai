@@ -109,6 +109,7 @@ export interface Content {
       lead: string
       stepsTitle: string
       steps: string[]
+      probeNote: string
       rangeNote: string
       docsLabel: string
       accountTitle: string

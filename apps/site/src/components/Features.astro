@@ -47,21 +47,13 @@ const pv = f.providers
               <li>{t}</li>
             ))}
           </ol>
+          <p class="range">{pv.probeNote}</p>
           <p class="range">{pv.rangeNote}</p>
           <p class="range">
             <a class="textlink" href={PROVIDERS_DOC}>
               {pv.docsLabel}
             </a>
           </p>
-          <h4 class="second">{pv.optionsTitle}</h4>
-          <dl class="notes">
-            {pv.options.map((o) => (
-              <div>
-                <dt>{o.title}</dt>
-                <dd>{o.text}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
         <div>
           <h4>{pv.accountTitle}</h4>
@@ -71,6 +63,15 @@ const pv = f.providers
               <div>
                 <dt>{a.name}</dt>
                 <dd>{a.text}</dd>
+              </div>
+            ))}
+          </dl>
+          <h4 class="second">{pv.optionsTitle}</h4>
+          <dl class="notes">
+            {pv.options.map((o) => (
+              <div>
+                <dt>{o.title}</dt>
+                <dd>{o.text}</dd>
               </div>
             ))}
           </dl>

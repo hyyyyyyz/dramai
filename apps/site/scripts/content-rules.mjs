@@ -25,6 +25,8 @@ export async function loadProviderNames() {
   }
   // Brand and product names that must not appear even though core no longer lists them as vendors.
   for (const extra of [
+    'DeepSeek',
+    'Wan Flash',
     'Seedream',
     'Seedance',
     'Nano Banana',
