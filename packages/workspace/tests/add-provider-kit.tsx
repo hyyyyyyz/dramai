@@ -69,7 +69,7 @@ export const noWrites = (server: ReturnType<typeof page>['server']) =>
 
 /** The model control: a drop-down while there are choices, a box when there are none (or after “Type it in”). */
 export const modelControl = (d: HTMLElement) => within(d).getByLabelText(/^模型/)
-/** The model ids the drop-down offers (not the placeholder, not “Type it in”). */
+/** The model ids the drop-down offers (not the placeholder). */
 export const modelOptions = (d: HTMLElement): string[] => {
   const c = modelControl(d)
   if (c.tagName !== 'SELECT') return []
@@ -77,7 +77,7 @@ export const modelOptions = (d: HTMLElement): string[] => {
     .map((o) => o.getAttribute('value') ?? '')
     .filter((v) => v !== '' && !v.startsWith('__dramai'))
 }
-/** Put a model in, the way a person would: choose it if it is offered, else switch to “Type it in” and type it. */
+/** Put a model in, the way a person would: choose it if it is offered, else click “Type it in” and type it. */
 export async function setModel(d: HTMLElement, text: string) {
   let c = modelControl(d)
   if (c.tagName === 'SELECT') {
@@ -85,7 +85,7 @@ export async function setModel(d: HTMLElement, text: string) {
       await userEvent.selectOptions(c, text)
       return
     }
-    await userEvent.selectOptions(c, within(c).getByRole('option', { name: /手动输入|Type it in/ }))
+    await userEvent.click(within(d).getByRole('button', { name: /手动输入|Type it in/ }))
     c = modelControl(d)
   }
   await type(c, text)

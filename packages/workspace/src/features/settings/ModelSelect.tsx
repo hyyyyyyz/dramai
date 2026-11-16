@@ -2,11 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Field, Input, Select } from '@dramai/ui/v2'
 
-const MANUAL = '__dramai_manual__'
 /** From this many choices on, a box above the list narrows it (a provider can answer with hundreds of models). */
 const FILTER_FROM = 30
 
 /**
+ * Enter and this control. A drop-down never adds the provider (the form ignores a submit that comes from a select). The
+ * box that “Type it in” turns it into does not either until the user has typed in it: an Enter right after switching
+ * is not “Add”. Every other text box adds on Enter, as before.
+ *
+ * “Type it in” is a button next to the drop-down, not one of its options: the browser's type-ahead in a native list
+ * jumps between options by their first letters, and it would otherwise land on it halfway through typing a model id.
+ *
  * The model of a provider being added: a visible drop-down when there are choices (what the provider listed, or the
  * suggestions from the model data), a plain box when there are none. The choices are not a whitelist: "Type it in"
  * turns the drop-down into a box, and the link under the box goes back. Only the model id is shown, in the order it
@@ -26,6 +32,7 @@ export function ModelSelect({
 }) {
   const { t } = useTranslation()
   const [manual, setManual] = useState(false)
+  const [justSwitched, setJustSwitched] = useState(false)
   const [filter, setFilter] = useState('')
   const box = useRef<HTMLInputElement>(null)
   const focusBox = useRef(false)
@@ -45,7 +52,13 @@ export function ModelSelect({
           mono
           autoComplete="off"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            setJustSwitched(false)
+            onChange(e.target.value)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && justSwitched) e.preventDefault()
+          }}
         />
         {hasOptions && (
           <div>
@@ -54,6 +67,7 @@ export function ModelSelect({
               variant="ghost"
               onClick={() => {
                 setManual(false)
+                setJustSwitched(false)
                 setFilter('')
               }}
             >
@@ -80,16 +94,7 @@ export function ModelSelect({
           onChange={(e) => setFilter(e.target.value)}
         />
       )}
-      <Select
-        mono
-        value={value}
-        onChange={(e) => {
-          if (e.target.value === MANUAL) {
-            focusBox.current = true
-            setManual(true)
-          } else onChange(e.target.value)
-        }}
-      >
+      <Select mono value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">{t('providers.add.model.placeholder')}</option>
         {value !== '' && !options.includes(value) && <option value={value}>{value}</option>}
         {shown.map((o) => (
@@ -97,8 +102,20 @@ export function ModelSelect({
             {o}
           </option>
         ))}
-        <option value={MANUAL}>{t('providers.add.model.manual')}</option>
       </Select>
+      <div>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            focusBox.current = true
+            setJustSwitched(true)
+            setManual(true)
+          }}
+        >
+          {t('providers.add.model.manual')}
+        </Button>
+      </div>
     </Field>
   )
 }

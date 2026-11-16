@@ -264,7 +264,7 @@ export default {
         'Use the model name from the provider’s API documentation, or fetch the model list above and pick from it',
       model: {
         placeholder: 'Choose a model',
-        manual: 'Type it in…',
+        manual: 'Type it in',
         backToList: 'Choose from the list',
         filter: 'Filter models',
       },
@@ -282,7 +282,7 @@ export default {
         loginAfterSave:
           'Add the provider first, then sign in on its card and fetch the model list there',
         candidatesNote:
-          'The choices are only a convenience, not a limit: pick “Type it in” to enter another model',
+          'The choices are only a convenience, not a limit: click “Type it in” to enter another model',
       },
       create: 'Add',
     },

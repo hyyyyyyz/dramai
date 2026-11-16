@@ -44,7 +44,7 @@ async function askForList(d: HTMLElement, name: keyof typeof P = 'llm.models') {
 const listed = (name: keyof typeof P) => () => P[name].response
 
 describe('the model control', () => {
-  it('with a list from the provider: a drop-down named “模型”, “请选择” first, the ids in the order given, “手动输入…” last, nothing chosen', async () => {
+  it('with a list from the provider: a drop-down named “模型”, “请选择” first, then the ids in the order given, nothing chosen, and “手动输入” as a button beside it, not as an option', async () => {
     page({ routes: { 'POST /api/providers/probe': listed('llm.models') } })
     const d = await openForm('llm')
     expect(modelControl(d).tagName).toBe('INPUT') // nothing to choose from yet
@@ -55,7 +55,8 @@ describe('the model control', () => {
     const names = within(select)
       .getAllByRole('option')
       .map((o) => o.textContent)
-    expect(names).toEqual(['请选择', 'text-model-1', 'text-model-2', '手动输入…'])
+    expect(names).toEqual(['请选择', 'text-model-1', 'text-model-2'])
+    expect(within(d).getByRole('button', { name: '手动输入' })).toBeInTheDocument()
   })
 
   it('with suggestions only (no list): the same drop-down, from the model data', async () => {
@@ -135,7 +136,7 @@ describe('an empty list from the provider', () => {
 })
 
 describe('typing a model that is not offered', () => {
-  it('“手动输入…” turns it into a box with the focus in it, “从列表选择” turns it back, and what was typed is kept', async () => {
+  it('“手动输入” turns it into a box with the focus in it, “从列表选择” turns it back, and what was typed is kept', async () => {
     const { server } = page({
       routes: {
         'POST /api/providers/probe': listed('llm.models'),
@@ -145,10 +146,7 @@ describe('typing a model that is not offered', () => {
     const d = await openForm('llm')
     await type(within(d).getByRole('textbox', { name: /名称/ }), 'Mine')
     await askForList(d)
-    await userEvent.selectOptions(
-      modelControl(d),
-      within(modelControl(d)).getByRole('option', { name: '手动输入…' }),
-    )
+    await userEvent.click(within(d).getByRole('button', { name: '手动输入' }))
     const box = modelControl(d)
     expect(box.tagName).toBe('INPUT')
     expect(box).toHaveFocus()
@@ -158,10 +156,7 @@ describe('typing a model that is not offered', () => {
     expect(modelControl(d).tagName).toBe('SELECT')
     expect(modelControl(d)).toHaveValue('my-own-model')
     await userEvent.selectOptions(modelControl(d), 'text-model-1')
-    await userEvent.selectOptions(
-      modelControl(d),
-      within(modelControl(d)).getByRole('option', { name: '手动输入…' }),
-    )
+    await userEvent.click(within(d).getByRole('button', { name: '手动输入' }))
     expect(modelControl(d)).toHaveValue('text-model-1') // the box starts from the current choice
     await setModel(d, 'typed-again')
     await userEvent.click(within(d).getByRole('button', { name: '添加' }))
@@ -176,6 +171,57 @@ describe('typing a model that is not offered', () => {
     await askForList(d)
     expect(modelControl(d)).toHaveValue('typed-first')
     expect(modelOptions(d)).toEqual(['typed-first', 'text-model-1', 'text-model-2'])
+  })
+})
+
+describe('Enter and the model control', () => {
+  it('the box that “手动输入” turns it into does not add on the first Enter, and adds once something was typed in it', async () => {
+    const { server } = page({
+      routes: {
+        'POST /api/providers/probe': listed('llm.models'),
+        'POST /api/providers': () => PROVIDERS.llm.stored,
+      },
+    })
+    const d = await openForm('llm')
+    await type(within(d).getByRole('textbox', { name: /名称/ }), 'Mine')
+    await askForList(d)
+    await userEvent.selectOptions(modelControl(d), 'text-model-1') // a valid form: everything is filled
+    await userEvent.click(within(d).getByRole('button', { name: '手动输入' }))
+    expect(modelControl(d)).toHaveFocus()
+    await userEvent.keyboard('{Enter}') // right after switching: not “Add”
+    await new Promise((r) => setTimeout(r, 50))
+    expect(posts(server)).toHaveLength(0)
+    await userEvent.keyboard('-edited{Enter}') // the user typed: Enter adds, with what was typed
+    await waitFor(() => expect(posts(server)).toHaveLength(1))
+    expect(posts(server)[0]!.body).toMatchObject({ model: 'text-model-1-edited' })
+  })
+
+  it('a drop-down never adds: a submit that comes from it is ignored', async () => {
+    const { server } = page({
+      routes: {
+        'POST /api/providers/probe': listed('llm.models'),
+        'POST /api/providers': () => PROVIDERS.llm.stored,
+      },
+    })
+    const d = await openForm('llm')
+    await type(within(d).getByRole('textbox', { name: /名称/ }), 'Mine')
+    await askForList(d)
+    await userEvent.selectOptions(modelControl(d), 'text-model-2')
+    modelControl(d).focus()
+    await userEvent.keyboard('{Enter}')
+    d.querySelector('form')!.requestSubmit()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(posts(server)).toHaveLength(0)
+  })
+
+  it('typing letters in the drop-down can only land on models: there is nothing else in it to land on', async () => {
+    page({ routes: { 'POST /api/providers/probe': listed('llm.models') } })
+    const d = await openForm('llm')
+    await askForList(d)
+    for (const o of within(modelControl(d)).getAllByRole('option')) {
+      const v = o.getAttribute('value') ?? ''
+      expect(v === '' || modelOptions(d).includes(v), `${o.textContent}`).toBe(true)
+    }
   })
 })
 

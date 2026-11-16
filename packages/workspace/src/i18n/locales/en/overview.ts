@@ -140,7 +140,7 @@ export default {
     formatBad:
       'This may not be the right form: SiliconFlow voices are written “model:voice” (or a speech:… address from an uploaded reference audio)',
     documented:
-      'The voice list comes from the official documentation and hasn’t been tested; the provider’s own list is what counts',
+      'The voice list comes from the official documentation; the provider’s own list is what counts',
     notInList:
       'The voice “{{voice}}” stored in the project isn’t in {{model}}’s list. Whether to change it is up to you: if you don’t, generation will be blocked on the official address and will most likely fail elsewhere',
     unlisted:

@@ -74,11 +74,10 @@ function useDraftProbe(fp: string) {
   const api = useApi()
   const alive = useRef(true)
   const current = useRef(fp)
-  const seq = useRef(0)
-  // the fingerprint of the request that is out: the same draft is never asked twice at once (a ref, so two clicks
-  // in one frame see the same thing)
-  const inflight = useRef<string | undefined>(undefined)
-  const [pending, setPending] = useState<string>()
+  // the drafts that have a request out: the same draft is never asked twice at once, however the form was edited in
+  // between (A → B → A included). A ref, so two clicks in one frame see the same thing.
+  const inflight = useRef(new Set<string>())
+  const [pending, setPending] = useState<readonly string[]>([])
   const [settled, setSettled] = useState<Settled>()
   useLayoutEffect(() => {
     current.current = fp
@@ -91,26 +90,26 @@ function useDraftProbe(fp: string) {
   }, [])
 
   const run = async (body: ProbeBody) => {
-    if (inflight.current === fp) return
+    if (inflight.current.has(fp)) return
     const mine = fp
-    const id = ++seq.current
-    inflight.current = mine
-    setPending(mine)
-    const fresh = () => alive.current && id === seq.current && mine === current.current
+    inflight.current.add(mine)
+    setPending((p) => [...p, mine])
+    // an answer is for the draft it was asked for: shown while the form still says that, dropped otherwise
+    const fresh = () => alive.current && mine === current.current
     try {
       const result = await api.call('providers.probe', { body })
       if (fresh()) setSettled({ fp: mine, result })
     } catch (error) {
       if (fresh()) setSettled({ fp: mine, error })
     } finally {
-      if (inflight.current === mine) inflight.current = undefined
-      if (alive.current) setPending((p) => (p === mine ? undefined : p))
+      inflight.current.delete(mine)
+      if (alive.current) setPending((p) => p.filter((x) => x !== mine))
     }
   }
   const answer = settled?.fp === fp ? settled : undefined
   return {
     run,
-    loading: pending === fp,
+    loading: pending.includes(fp),
     result: answer && 'result' in answer ? answer.result : undefined,
     error: answer && 'error' in answer ? answer.error : undefined,
   }
@@ -284,6 +283,7 @@ function AddProviderForm({
             variant="secondary"
             disabled={!canProbe}
             loading={test.loading}
+            keepFocusWhenLoading
             aria-describedby={canProbe ? undefined : probeHintId}
             onClick={() => void test.run(probeBody('test'))}
           >
@@ -293,7 +293,13 @@ function AddProviderForm({
             <Button variant="ghost" onClick={onClose}>
               {t('common.cancel')}
             </Button>
-            <Button variant="primary" disabled={!valid} loading={create.isPending} onClick={submit}>
+            <Button
+              variant="primary"
+              disabled={!valid}
+              loading={create.isPending}
+              keepFocusWhenLoading
+              onClick={submit}
+            >
               {t('providers.add.create')}
             </Button>
           </div>
@@ -390,6 +396,7 @@ function AddProviderForm({
               variant="secondary"
               disabled={!canProbe}
               loading={list.loading}
+              keepFocusWhenLoading
               aria-describedby={canProbe ? undefined : probeHintId}
               onClick={() => void list.run(probeBody('models'))}
             >

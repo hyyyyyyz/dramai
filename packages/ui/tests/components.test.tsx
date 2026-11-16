@@ -58,6 +58,31 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveAttribute('type', 'button')
   })
 
+  it('keepFocusWhenLoading：loading 时不禁用（焦点不丢），用 aria-disabled 标记并忽略点击', async () => {
+    const onClick = vi.fn()
+    const { rerender } = render(
+      <Button keepFocusWhenLoading onClick={onClick}>
+        提交
+      </Button>,
+    )
+    const b = screen.getByRole('button', { name: '提交' })
+    b.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(onClick).toHaveBeenCalledTimes(1)
+    rerender(
+      <Button keepFocusWhenLoading loading onClick={onClick}>
+        提交
+      </Button>,
+    )
+    expect(b).not.toBeDisabled()
+    expect(b).toHaveFocus()
+    expect(b).toHaveAttribute('aria-disabled', 'true')
+    expect(b).toHaveAttribute('aria-busy', 'true')
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(b)
+    expect(onClick).toHaveBeenCalledTimes(1)
+  })
+
   it('IconButton 用 label 作为可访问名称', () => {
     render(<IconButton label="删除">x</IconButton>)
     expect(screen.getByRole('button', { name: '删除' })).toBeInTheDocument()

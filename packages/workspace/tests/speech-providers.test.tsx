@@ -298,13 +298,15 @@ describe('choosing the narration voice', () => {
     })
   })
 
-  it('open list without a note: still says honestly that the list is from the documentation and untested', async () => {
+  it('open list without a note: still says that the list is from the documentation and that the provider’s own list is what counts', async () => {
     const cap = speechCap({
       voices: { support: 'unverified', value: MINIMAX_VOICES },
       defaultVoice: 'male-qn-qingse',
     })
     openSettings({ cap, provider: { protocol: 'minimax-t2a', model: 'speech-2.8-hd' } })
-    expect(await screen.findByText(/音色清单来自官方文档，没有实测过/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/音色清单来自官方文档；以服务商实际支持的为准/),
+    ).toBeInTheDocument()
   })
 
   it('no system voices: a typed field only, with no list', async () => {

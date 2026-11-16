@@ -479,32 +479,56 @@ describe('an answer belongs to the draft it was asked for', () => {
     expect(listButton(d)).toBeEnabled()
   })
 
-  it('an old answer that arrives after a newer one does not overwrite it', async () => {
-    const first = gate(() => P['llm.models'].response)
+  it('A → B → A while the first answer is out: the same draft is not asked twice, and each answer shows only for its own draft', async () => {
+    const forA = gate(() => P['llm.models'].response)
+    const forB = gate(() => ({ outcome: 'models', items: [{ id: 'b-model', label: 'b-model' }] }))
     let n = 0
     const { server } = page({
       routes: {
-        'POST /api/providers/probe': () => {
-          n++
-          return n === 1
-            ? first.answer()
-            : { outcome: 'models', items: [{ id: 'b-model', label: 'b-model' }] }
-        },
+        'POST /api/providers/probe': () => (++n === 1 ? forA.answer() : forB.answer()),
       },
     })
     const d = await openForm('llm')
     await fill(d, base)
-    await userEvent.click(listButton(d)) // asked for draft A, held back
     const address = within(d).getByRole('textbox', { name: /Base URL/ })
+    await userEvent.click(listButton(d)) // draft A: out
     await userEvent.type(address, '/b')
-    await userEvent.click(listButton(d)) // asked for draft B, answered at once
-    await waitFor(() => expect(modelOptions(d)).toEqual(['b-model']))
-    await userEvent.type(address, '{Backspace}{Backspace}') // back to draft A
-    first.release()
-    await new Promise((r) => setTimeout(r, 50))
-    // A's answer is the older request: it must not replace anything or show for a draft it no longer matches
+    await userEvent.click(listButton(d)) // draft B: out
+    await waitFor(() => expect(probeCalls(server)).toHaveLength(2))
+    await userEvent.type(address, '{Backspace}{Backspace}') // draft A again
+    await userEvent.click(listButton(d)) // A is already out: nothing more is sent
     expect(probeCalls(server)).toHaveLength(2)
-    expect(modelOptions(d)).not.toEqual(['text-model-1', 'text-model-2'])
+    forB.release() // B's answer arrives while the form says A: it is not shown
+    await new Promise((r) => setTimeout(r, 50))
+    expect(modelOptions(d)).toEqual([])
+    forA.release() // A's answer is for the draft that is in the form now: shown
+    await within(d).findByText(/取到 2 个模型/)
+    expect(modelOptions(d)).toEqual(['text-model-1', 'text-model-2'])
+    expect(probeCalls(server)).toHaveLength(2)
+  })
+
+  it('the same for the test: A → B → A sends the test once per draft, and an answer is shown only for its draft', async () => {
+    const forA = gate(() => P['llm.test'].response)
+    const forB = gate(() => P['llm.test.unauthorized'].response)
+    let n = 0
+    const { server } = page({
+      routes: { 'POST /api/providers/probe': () => (++n === 1 ? forA.answer() : forB.answer()) },
+    })
+    const d = await openForm('llm')
+    await fill(d, { ...base, model: 'text-model-1' })
+    const address = within(d).getByRole('textbox', { name: /Base URL/ })
+    await userEvent.click(testButton(d))
+    await userEvent.type(address, '/b')
+    await userEvent.click(testButton(d))
+    await waitFor(() => expect(probeCalls(server)).toHaveLength(2))
+    await userEvent.type(address, '{Backspace}{Backspace}')
+    await userEvent.click(testButton(d))
+    expect(probeCalls(server)).toHaveLength(2)
+    forB.release()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(within(d).queryByRole('alert')).toBeNull() // B's failure is not shown for draft A
+    forA.release()
+    expect(await within(d).findByText('连接成功')).toBeInTheDocument()
   })
 
   it('closing the form drops everything: the key, the list, the test result; the next form is empty, and a late answer goes nowhere', async () => {
@@ -652,6 +676,53 @@ describe('one request at a time, each by itself', () => {
     g.release()
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /添加服务商/ })).toBeNull())
     expect(posts(server)).toHaveLength(1)
+  })
+})
+
+describe('the focus stays where the keyboard user put it', () => {
+  const base = { url: 'https://llm.example.com/v1', key: KEY, model: 'text-model-1' }
+
+  it.each([
+    ['Get model list', listButton, 'llm.models', /取到 2 个模型/],
+    ['Test connection', testButton, 'llm.test', /连接成功/],
+  ] as const)(
+    '%s: activated from the keyboard, the button keeps the focus while the request is out and after, and it is marked busy, not removed',
+    async (_n, button, name, done) => {
+      const g = gate(() => P[name].response)
+      const { server } = page({ routes: { 'POST /api/providers/probe': g.answer } })
+      const d = await openForm('llm')
+      await fill(d, base)
+      const b = button(d)
+      b.focus()
+      await userEvent.keyboard('{Enter}')
+      await waitFor(() => expect(probeCalls(server)).toHaveLength(1))
+      expect(b).toHaveFocus()
+      expect(b).toHaveAttribute('aria-busy', 'true')
+      expect(b).toHaveAttribute('aria-disabled', 'true')
+      await userEvent.keyboard('{Enter}{Enter}')
+      expect(probeCalls(server)).toHaveLength(1) // pressing it again while busy does nothing
+      g.release()
+      await within(d).findByText(done)
+      expect(b).toHaveFocus()
+      expect(b).not.toHaveAttribute('aria-disabled')
+    },
+  )
+
+  it('Add, while the request is out, keeps the focus too, and does not send a second one', async () => {
+    const g = gate(() => PROVIDERS.llm.stored)
+    const { server } = page({ routes: { 'POST /api/providers': g.answer } })
+    const d = await openForm('llm')
+    await fill(d, base)
+    await type(within(d).getByRole('textbox', { name: /名称/ }), 'Mine')
+    const add = within(d).getByRole('button', { name: '添加' })
+    add.focus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(posts(server)).toHaveLength(1))
+    expect(add).toHaveFocus()
+    expect(add).toHaveAttribute('aria-disabled', 'true')
+    await userEvent.keyboard('{Enter}')
+    expect(posts(server)).toHaveLength(1)
+    g.release()
   })
 })
 
