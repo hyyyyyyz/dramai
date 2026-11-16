@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { createClient } from '@dramai/api'
 import type { ProviderConfig } from '@dramai/core'
 import { cleanupAll, startServer } from './helpers.ts'
 import type { Harness } from './helpers.ts'
@@ -74,6 +75,22 @@ describe('providers saved from presets that are no longer in the catalogue: read
       expect(dto.presetId).toBe(id)
       const cap = await h.client.call('providers.capability', { params: { providerId: dto.id } })
       expect(cap.capability, id).toBeDefined()
+    }
+  })
+
+  it('in every language the saved text is shown as saved, like any text the user wrote (no preset to translate it from)', async () => {
+    const h = await startServer({ startWorker: false })
+    await seed(h)
+    for (const locale of ['zh-CN', 'zh-TW', 'en']) {
+      const c = createClient({ baseUrl: h.server.url, token: h.server.token, locale })
+      const list = (await c.call('providers.list')).items
+      for (const id of IDS) {
+        const { dto } = FIXTURES[id]
+        const got = list.find((p) => p.id === dto.id)!
+        expect(got.label, `${id}/${locale}`).toBe(dto.label)
+        expect(got.notes, `${id}/${locale}`).toBe(dto.notes)
+        expect(got.knownLimitations, `${id}/${locale}`).toEqual(dto.knownLimitations)
+      }
     }
   })
 
