@@ -25,9 +25,9 @@ import type {
  *
  * 写法有三种，缺省（方言选项 `imageStyle: 'auto'`）按**模型名**判断，可以在方言选项里显式指定：
  *
- * - **compat**（缺省，所有别的模型名）：以 OpenAI Images API 为最小公约数，容忍 302.AI 这类聚合平台的扩展——
+ * - **compat**（缺省，所有别的模型名）：以 OpenAI Images API 为最小公约数，容忍聚合平台的扩展——
  *   参考图以 data URL 同时填 `image` / `image_url` / `reference_images`，总是要 `b64_json`，会发 `negative_prompt`。
- *   **这一支和原来逐字相同**（302.AI 的 Seedream 预设是实测过的，不能变）。
+ *   **这一支和原来逐字相同**（这条路径在 v0.4 实测过，不能变）。
  * - **openai**（`gpt-image*`、`chatgpt-image*`，OpenAI 官方）：官方说 GPT image 系列不支持 `response_format`
  *   （始终返回 base64）、没有 `negative_prompt`；尺寸 `WxH`（边长 16 的倍数，新模型）或 `auto`；质量
  *   `low|medium|high|auto`；`output_format` 缺省 png。**多参考图走 `POST /images/edits`**，multipart，重复的

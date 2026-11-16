@@ -330,7 +330,7 @@ export interface VideoGenInput {
   withAudio?: boolean
 }
 
-/** 旧四个视频协议（302.AI 透传 / 旧版）的输入：必须有首帧。运行时请求与改动前逐字节相同。 */
+/** 旧四个视频协议（聚合平台透传 / 旧版）的输入：必须有首帧。运行时请求与改动前逐字节相同。 */
 export type ImageToVideoInput = VideoGenInput & { image: BinaryImage }
 
 export interface SpeechInput {

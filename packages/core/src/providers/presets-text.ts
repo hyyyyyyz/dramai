@@ -538,43 +538,6 @@ export const TEXT_PRESETS: readonly ProviderPreset[] = [
     },
   }),
   def({
-    id: '302ai-chat',
-    vendor: '302ai',
-    region: 'global',
-    protocol: 'openai-chat',
-    baseUrl: 'https://api.302.ai/v1',
-    suggestedModel: 'gpt-4o-mini',
-    source: 'https://doc.302.ai/147522039e0.md',
-    zh: {
-      label: '302.AI（对话）',
-      notes: '聚合平台，模型名透传各家上游。和已有的 302.AI 生图、视频预设用同一个账号。',
-      limits: [
-        '默认模型名只是官方文档里的示例，请在 302.AI 的模型列表里换成你要用的文本模型。',
-        '文本主力模型清单、关思考写法和 JSON 输出支持都随上游模型而异，官方文档没有逐一说明。',
-        '国内环境用 api.302ai.com，Key 是否与海外互通文档没写。',
-      ],
-    },
-    hant: {
-      label: '302.AI（對話）',
-      notes: '聚合平台，模型名稱透傳各家上游。和已有的 302.AI 生圖、影片預設用同一個帳號。',
-      limits: [
-        '預設模型名稱只是官方文件裡的範例，請在 302.AI 的模型清單裡換成你要用的文字模型。',
-        '文字主力模型清單、關閉思考的寫法和 JSON 輸出支援都隨上游模型而異，官方文件沒有逐一說明。',
-        '中國環境用 api.302ai.com，Key 是否與海外互通文件沒寫。',
-      ],
-    },
-    en: {
-      label: '302.AI (chat)',
-      notes:
-        'An aggregator: model names pass through to the upstream vendors. Uses the same account as the existing 302.AI image and video presets.',
-      limits: [
-        'The default model name is only the example from the official docs; replace it with the text model you want from the 302.AI model list.',
-        'The main text models, how to turn thinking off and JSON support all depend on the upstream model, and the docs do not list them.',
-        'The China environment uses api.302ai.com; the docs do not say whether keys are shared with the overseas one.',
-      ],
-    },
-  }),
-  def({
     id: 'ollama-local',
     vendor: 'ollama',
     region: 'local',

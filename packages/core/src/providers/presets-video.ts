@@ -4,7 +4,6 @@ import type { ProviderPreset } from './presets.ts'
 /**
  * 视频生成服务商预设（P3c 第一批）：火山方舟 Seedance、BytePlus Seedance、可灵 4.0、通义万相 3.0。
  * 和文本 / 生图预设一样：**全部是"按官方文档接入、未实测"**，带官方文档出处，不会自动成为当前选择。
- * 已实测的 302.AI 通义万相 Wan2.2 Flash 预设（`302-i2v-wan-flash`）一字不改。
  * 依据：设计文档 research/VIDEO_PROTOCOL_DESIGN.md，实现前逐家再读了官方页面（2026-11-13）。
  * 每个建议型号在 `data/models/models.json` 里都有画像：没实测过的能力一律标"未验证"。
  */

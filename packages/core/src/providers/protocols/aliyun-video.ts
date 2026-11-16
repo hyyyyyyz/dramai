@@ -15,7 +15,7 @@ import type { MediaProtocol, OutputRef, ImageToVideoInput } from '../types.ts'
 const DEFAULT_DURATIONS = [3, 4, 5, 10, 15]
 
 /**
- * 阿里云通义万相（DashScope）图生视频，经 302.AI 透传（2026-05 验证）。
+ * 阿里云通义万相（DashScope）图生视频，经聚合平台透传（2026-05 验证）。
  *
  *   POST {baseUrl}/aliyun/api/v1/services/aigc/video-generation/video-synthesis
  *     header: X-DashScope-Async: enable

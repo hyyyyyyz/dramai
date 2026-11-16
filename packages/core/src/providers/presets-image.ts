@@ -3,7 +3,7 @@ import type { ProviderPreset } from './presets.ts'
 
 /**
  * 生图（文生图 / 图生图 / 多参考图）服务商预设，第一批。和文本预设一样：**全部是"按官方文档接入、未实测"**，
- * 带官方文档出处，不会自动成为当前选择。已实测的只有 v0.4 的 302.AI 三个预设（行为不变）。
+ * 带官方文档出处，不会自动成为当前选择。
  * 依据：research/PROVIDER_SURVEY.md 第三部分，并逐家再读了官方文档（2026-11）。每个建议型号在
  * `data/models/models.json` 里都有画像：没实测过的能力一律标"未验证"，带官方声称的值。
  */
@@ -70,7 +70,6 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: '火山方舟 · 即梦 Seedream（直连）',
       notes: `方舟官方图片生成接口。参考图用 image 字段传 data URI（最多 10 张，5.0 lite / 4.5 最多 14 张）。填接入点 ID（ep-…）时无法从名字判断是哪个模型，最小像素数按默认值（92.16 万）处理；5.0 lite 和 4.5 的下限更高（368.64 万），请直接填模型名。${SIZE_NOTE_ZH}`,
       limits: [
-        '这是方舟直连，和已实测的 302.AI Seedream 预设不是同一条路径：直连接受 data URI 参考图，302 的 /doubao 路径期望 URL。',
         '官方：不支持 n（一次一张），没有 quality / negative_prompt；水印默认开，这里显式关闭。',
         '提示词建议少于约 300 个汉字；限流 500 IPM。',
         '国际版 BytePlus 的官方文档页正文读不到，这里不预置国际站。',
@@ -80,7 +79,6 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: '火山方舟 · 即夢 Seedream（直連）',
       notes: `方舟官方圖片生成介面。參考圖用 image 欄位傳 data URI（最多 10 張，5.0 lite / 4.5 最多 14 張）。填接入點 ID（ep-…）時無法從名稱判斷是哪個模型，最小像素數依預設值（92.16 萬）處理；5.0 lite 和 4.5 的下限更高（368.64 萬），請直接填模型名稱。${SIZE_NOTE_HANT}`,
       limits: [
-        '這是方舟直連，和已實測的 302.AI Seedream 預設不是同一條路徑：直連接受 data URI 參考圖，302 的 /doubao 路徑期望網址。',
         '官方：不支援 n（一次一張），沒有 quality / negative_prompt；浮水印預設開啟，這裡明確關閉。',
         '提示詞建議少於約 300 個漢字；限流 500 IPM。',
         '國際版 BytePlus 的官方文件頁正文讀不到，這裡不預置國際站。',
@@ -90,7 +88,6 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
       label: 'Volcengine Ark · Seedream (direct)',
       notes: `The official Ark image API. References go in the image field as data URIs (up to 10; up to 14 for 5.0 lite / 4.5). When you enter an endpoint ID (ep-…) the model cannot be told from the name, so the minimum pixel count uses the default (0.92 MP); 5.0 lite and 4.5 have a higher floor (3.69 MP), so enter the model name directly. ${SIZE_NOTE_EN}`,
       limits: [
-        'This is the direct Ark route, not the tested 302.AI Seedream preset: direct accepts data-URI references, while the 302 /doubao path expects URLs.',
         'Official: no n (one image per call), no quality or negative_prompt; the watermark is on by default and is switched off here.',
         'Keep prompts under about 300 Chinese characters; the rate limit is 500 IPM.',
         'The BytePlus international docs page body could not be read, so no international preset is included.',
@@ -156,7 +153,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
         '官方当前的生图指南只写了 Interactions API，generateContent 被称为 legacy 但"完全支持"；这里用 generateContent，图片请求的字段名在官方当前页面没有确认，是未验证的。',
         '输出带 SynthID 水印，输出张数可能与请求不符，没有 seed。',
         '建议型号取自官方图像生成页（2026-11-13）：gemini-nano-banana-2.1 是官方对新项目的推荐；gemini-3.1-flash-image 是上一代，gemini-3-pro-image 带思考。',
-        '已有的 302.AI Nano Banana 预设（已实测）不受影响。国内网络通常需要自备代理。',
+        '国内网络通常需要自备代理。',
       ],
     },
     hant: {
@@ -166,7 +163,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
         '官方目前的生圖指南只寫了 Interactions API，generateContent 被稱為 legacy 但「完全支援」；這裡用 generateContent，圖片請求的欄位名稱在官方目前頁面沒有確認，是未驗證的。',
         '輸出帶 SynthID 浮水印，輸出張數可能與請求不符，沒有 seed。',
         '建議型號取自官方圖像生成頁（2026-11-13）：gemini-nano-banana-2.1 是官方對新專案的建議；gemini-3.1-flash-image 是上一代，gemini-3-pro-image 帶思考。',
-        '已有的 302.AI Nano Banana 預設（已實測）不受影響。在部分地區可能需要自備代理。',
+        '在部分地區可能需要自備代理。',
       ],
     },
     en: {
@@ -176,7 +173,7 @@ export const IMAGE_PRESETS: readonly ProviderPreset[] = [
         'The current official image guide only describes the Interactions API; generateContent is called legacy but "fully supported". This uses generateContent, and its image request field names are not confirmed on the current official pages, so they are unverified.',
         'Output carries a SynthID watermark, the number of images can differ from the request, and there is no seed.',
         'The suggested model comes from the official image-generation page (2026-11-13): gemini-nano-banana-2.1 is the official recommendation for new projects; gemini-3.1-flash-image is the previous generation and gemini-3-pro-image thinks.',
-        'The existing tested 302.AI Nano Banana preset is unaffected. In some regions you may need your own proxy.',
+        'In some regions you may need your own proxy.',
       ],
     },
   }),

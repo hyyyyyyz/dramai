@@ -16,8 +16,8 @@ import type { ImageGenInput, MediaProtocol, OutputRef } from '../types.ts'
  *   body: { contents:[{parts:[{text},{inline_data:{mime_type,data}}...]}],
  *           generationConfig:{ responseModalities:["IMAGE"], imageConfig:{aspectRatio} } }
  *
- * 适用：Google AI Studio 直连 / Vertex / 302.AI 透传 / 部分聚合平台。
- * 302.AI 上 base URL 应为 `https://api.302.ai`（**不带 /v1**），同时发 Authorization 与 x-goog-api-key 两个头；
+ * 适用：Google AI Studio 直连 / Vertex / 聚合平台透传。
+ * 聚合平台上 base URL 通常**不带 /v1**，同时发 Authorization 与 x-goog-api-key 两个头；
  * Google 官方直连（`https://generativelanguage.googleapis.com`）只发 `x-goog-api-key`。
  *
  * **官方文档现状**：当天的生图指南页只写了 Interactions API，generateContent 官方称"legacy 但完全支持"，
@@ -49,7 +49,7 @@ export const geminiImage: MediaProtocol<ImageGenInput> = {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (auth.apiKey) {
       // Google 官方地址只认 `x-goog-api-key`（官方示例唯一的方式）：API Key 放进 Authorization: Bearer 会被当成
-      // OAuth 令牌而被拒。聚合平台（302.AI 等）两个头都发，覆盖更多兼容场景。
+      // OAuth 令牌而被拒。聚合平台两个头都发，覆盖更多兼容场景。
       if (!isGoogleHost(auth.baseUrl)) headers.Authorization = `Bearer ${auth.apiKey}`
       headers['x-goog-api-key'] = auth.apiKey
     }

@@ -11,7 +11,7 @@ import {
 import type { MediaProtocol, OutputRef, ImageToVideoInput } from '../types.ts'
 
 /**
- * 火山方舟（Volcengine）即梦 Seedance 系列图生视频，经 302.AI 透传（2026-05 验证）。
+ * 火山方舟（Volcengine）即梦 Seedance 系列图生视频，经聚合平台透传（2026-05 验证）。
  *
  *   POST {baseUrl}/volcengine/api/v3/contents/generations/tasks
  *     body: { model, content:[{type:"text",text},{type:"image_url",image_url:{url}}],

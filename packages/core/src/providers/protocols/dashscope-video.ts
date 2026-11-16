@@ -13,9 +13,9 @@ import { videoModeOf } from '../video-input.ts'
 import { capabilityError, dataUrlOf } from './content-array.ts'
 
 /**
- * 通义万相 3.0（`wan3.0-video` / `wan3.0-video-prime`）新接口，百炼原生路径（没有 302.AI 的 `/aliyun` 前缀）。
+ * 通义万相 3.0（`wan3.0-video` / `wan3.0-video-prime`）新接口，百炼原生路径（没有聚合平台的 `/aliyun` 前缀）。
  * 依据：百炼"万相 3.0 视频生成 API 参考"和错误码页（2026-11-13 核对，北京地域示例；新加坡地域写法与生图预设一致，
- * 没有单独打开）。**未实测。** 旧版 `aliyun-video`（302.AI 透传）不变。
+ * 没有单独打开）。**未实测。** 旧版 `aliyun-video`（聚合平台透传）不变。
  *
  *   POST {baseUrl}/api/v1/services/aigc/video-generation/video-synthesis        头 X-DashScope-Async: enable
  *     { model, input:{ prompt, media:[{ type, url }] }, parameters:{ resolution, ratio, duration, audio, … } }

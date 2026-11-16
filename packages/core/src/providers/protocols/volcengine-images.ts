@@ -8,7 +8,7 @@ import { parseImagesData } from './openai-images.ts'
  * `https://ark.cn-beijing.volces.com/api/v3`，`Authorization: Bearer`（长效 API Key）。
  * 依据：官方图片生成 API（docs 82379/1541523）和 Seedream 教程（82379/1824121），2026-11 核对。
  *
- * 和 302.AI 的 `/doubao` 子路径（`openai-images` 协议，实测过）**不是一回事**：
+ * 和聚合平台的 `/doubao` 子路径（`openai-images` 协议，实测过）**不是一回事**：
  * - 参考图只用 `image` 字段，值是 data URI（`data:image/<格式>;base64,…`）字符串（一张）或数组（多张）；
  *   官方接受 URL 和 data URI。302 路径期望的是 URL，所以那边参考图当前不通；直连没有这个限制。
  * - **不支持 `n`**（一次一张图；组图靠 `sequential_image_generation`，这里不用），不发 `quality` / `negative_prompt`；

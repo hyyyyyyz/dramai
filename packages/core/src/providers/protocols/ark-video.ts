@@ -8,7 +8,7 @@ import { buildContentArray, capabilityError, dataUrlOf } from './content-array.t
  * 依据：方舟官方"创建 / 查询视频生成任务"页（docs.volcengine.com/docs/ark/…，2026-11-13 核对）、错误码页，
  * BytePlus 人像素材指南页（国际站地址与同一套请求体）。**未实测。**
  *
- * 和经 302.AI 透传的 `volcengine-video`（实测过）**不是一回事**：那个带 `/volcengine` 路径前缀、总是带首帧、
+ * 和经聚合平台透传的 `volcengine-video`（实测过）**不是一回事**：那个带 `/volcengine` 路径前缀、总是带首帧、
  * `generate_audio` 默认 false、比例直接用项目画幅。本协议的差别都来自官方文档：
  *
  *   POST {baseUrl}/contents/generations/tasks        baseUrl 到 `/api/v3`

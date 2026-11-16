@@ -48,7 +48,7 @@
           "unit": "per_image",
           "amount": 0.35,
           "range": [0.2, 0.5],
-          "note": "302.AI 页面给的是 0.2–0.5 PTC/张的区间，amount 取中值"
+          "note": "价格页给的是 0.2–0.5 PTC/张的区间，amount 取中值"
         }
       ],
       "prompt": {
@@ -60,7 +60,7 @@
         "画幅通过 generationConfig.imageConfig.aspectRatio 显式传出，不传时服务商给默认比例。",
         "指令跟随比 Seedream 更精准，但更贵（预设备注，2026-05）。"
       ],
-      "provenance": "文生图的协议与价格来自 v0.4 预设备注（302.AI，2026-05 端到端验证）；图生图 / 参考图 / 画幅未验证。"
+      "provenance": "文生图的协议与价格来自 v0.4 预设备注（2026-05 端到端验证）；图生图 / 参考图 / 画幅未验证。"
     },
     {
       "id": "doubao-seedream-5-0-260128",
@@ -76,7 +76,7 @@
         "refImages": {
           "support": "unsupported",
           "value": 0,
-          "note": "经 302.AI 的 /doubao 子路径，锁定角色参考图当前不通：服务商期望参考图是 URL 而不是 base64（2026-05 实测）"
+          "note": "经 openai-images 协议的 /doubao 子路径，锁定角色参考图当前不通：服务商期望参考图是 URL 而不是 base64（2026-05 实测）"
         },
         "refVideos": {
           "support": "unsupported",
@@ -115,9 +115,9 @@
         "suffixFloor": []
       },
       "quirks": [
-        "经 302.AI 的 /doubao 子路径调用时，锁定角色参考图当前不通：服务商期望参考图是 URL 而不是 base64（2026-05 实测）。因此这里标为不支持 i2i；需要多参考图一致性时，准入检查会显式失败而不是静默降级为纯文生图。"
+        "经 openai-images 协议的 /doubao 子路径调用时，锁定角色参考图当前不通：服务商期望参考图是 URL 而不是 base64（2026-05 实测）。因此这里标为不支持 i2i；需要多参考图一致性时，准入检查会显式失败而不是静默降级为纯文生图。"
       ],
-      "provenance": "v0.4 预设备注（302.AI，2026-05 验证）。画幅未验证。"
+      "provenance": "v0.4 预设备注（2026-05 验证）。画幅未验证。"
     },
     {
       "id": "wan2.2-i2v-flash",
@@ -189,7 +189,7 @@
         "时长固定 5 秒（预设备注）。",
         "输出比例跟随输入的起始帧，所以起始帧必须已经是项目画幅。"
       ],
-      "provenance": "v0.4 预设备注与协议注释（302.AI，2026-05 验证）。480P 来自价目表，只有 720P 是端到端跑过的。"
+      "provenance": "v0.4 预设备注与协议注释（2026-05 验证）。480P 来自价目表，只有 720P 是端到端跑过的。"
     },
     {
       "id": "wan2.2-i2v-plus",
@@ -257,7 +257,7 @@
         "suffixFloor": []
       },
       "quirks": [],
-      "provenance": "价格来自 v0.4 协议注释（302.AI，2026-05）；能力项均未在本项目验证。"
+      "provenance": "价格来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证。"
     },
     {
       "id": "wan2.5-i2v-preview",
@@ -333,7 +333,7 @@
         "suffixFloor": []
       },
       "quirks": ["协议注释写明支持音频，但当前适配器还没有发送音频参数。"],
-      "provenance": "价格来自 v0.4 协议注释（302.AI，2026-05）；能力项均未在本项目验证。"
+      "provenance": "价格来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证。"
     },
     {
       "id": "wan2.7-i2v",
@@ -401,7 +401,7 @@
         "suffixFloor": []
       },
       "quirks": [],
-      "provenance": "价格来自 v0.4 协议注释（302.AI，2026-05）；能力项均未在本项目验证。"
+      "provenance": "价格来自 v0.4 协议注释（2026-05）；能力项均未在本项目验证。"
     },
     {
       "id": "doubao-seedance-2-0-fast-260128",
@@ -434,7 +434,7 @@
             "min": 4,
             "max": 15
           },
-          "note": "来自 302.AI 产品页 OpenAPI 规格，未在本项目验证"
+          "note": "来自产品页 OpenAPI 规格，未在本项目验证"
         },
         "resolutions": {
           "support": "unverified",
@@ -457,7 +457,7 @@
         "generate_audio 默认开启时模型会自带人声：与独立 TTS 旁白并存会出现两层人声，发声归属见 voice.ts（阶段 5）。",
         "首尾帧、全能参考等模式未在本项目验证，这里不声明。"
       ],
-      "provenance": "时长范围、分辨率档位与 generate_audio 取自 v0.4 协议注释（302.AI，2026-05），均未在本项目验证；未定价。"
+      "provenance": "时长范围、分辨率档位与 generate_audio 取自 v0.4 协议注释（2026-05），均未在本项目验证；未定价。"
     },
     {
       "id": "gpt-image-2.5-sunburst",
@@ -756,7 +756,7 @@
         "官方：不支持 n（一次一张图），没有 quality / negative_prompt，4.0 以上没有 seed / guidance_scale。",
         "官方：watermark 默认 true（右下角\"AI 生成\"），本协议显式关掉。",
         "官方：size 总像素 921,600~4,624,220，宽高比 [1/16, 16]；提示词建议少于约 300 汉字。",
-        "和 302.AI 的 /doubao 子路径不同：直连的 image 字段接受 data URI，不需要 URL；那条路径的参考图限制不适用这里（未实测）。",
+        "和 openai-images 协议的 /doubao 子路径不同：直连的 image 字段接受 data URI，不需要 URL；那条路径的参考图限制不适用这里（未实测）。",
         "官方：结果 URL 24 小时有效，这里要 b64_json，不依赖 URL；限流 500 IPM；Seedance 视频对真人人脸有输入审核，生图人脸走同厂商组合更稳（调研）。"
       ],
       "provenance": "官方文档：www.volcengine.com/docs/82379/1541523（图片生成 API）与 82379/1824121（Seedream 教程），2026-11 核对，未实测。 单价官方页指向\"模型价格\"页，没读到，留空。"
@@ -816,7 +816,7 @@
       "quirks": [
         "官方：5.0 lite 的 size 总像素 3,686,400~16,777,216（默认 2048x2048），小于下限的尺寸本协议会按比例放大。",
         "官方：不支持 n；watermark 默认 true，本协议关掉；支持组图 sequential_image_generation（本协议不用）。",
-        "这是方舟直连的型号条目；302.AI 的 /doubao 子路径用的是 openai-images 协议下的同名型号，两条路径的画像互不影响。"
+        "这是方舟直连的型号条目；openai-images 协议下的 /doubao 子路径用的是同名型号，两条路径的画像互不影响。"
       ],
       "provenance": "官方文档：www.volcengine.com/docs/82379/1541523（图片生成 API）与 82379/1824121（Seedream 教程），2026-11 核对，未实测。 价格没读到，留空。"
     },
