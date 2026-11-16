@@ -1,0 +1,49 @@
+{
+  "stored": {
+    "id": "prov_e7daa2b1b40b",
+    "label": "302.AI · 即梦 Seedream 5.0 (字节，便宜)",
+    "kind": "image",
+    "protocol": "openai-images",
+    "baseUrl": "https://api.302.ai/doubao",
+    "model": "doubao-seedream-5-0-260128",
+    "auth": {
+      "type": "api_key"
+    },
+    "secretRef": "provider:prov_e7daa2b1b40b",
+    "enabled": true,
+    "presetId": "302-image-seedream",
+    "notes": "约 0.035 PTC/张。验证 2026-05。注意：locked character 参考图当前不通——doubao 期望参考图是 URL 不是 base64",
+    "verification": {
+      "status": "tested",
+      "testedAt": "2026-05-04"
+    },
+    "verifiedAt": "2026-05-04",
+    "knownLimitations": [
+      "参考图（角色一致性）经此路径不生效：服务商期望参考图是 URL 而不是 base64。需要多参考图一致性时请换用 Nano Banana。"
+    ]
+  },
+  "dto": {
+    "id": "prov_e7daa2b1b40b",
+    "label": "302.AI · 即梦 Seedream 5.0 (字节，便宜)",
+    "kind": "image",
+    "protocol": "openai-images",
+    "baseUrl": "https://api.302.ai/doubao",
+    "model": "doubao-seedream-5-0-260128",
+    "enabled": true,
+    "auth": {
+      "type": "api_key"
+    },
+    "presetId": "302-image-seedream",
+    "notes": "约 0.035 PTC/张。验证 2026-05。注意：locked character 参考图当前不通——doubao 期望参考图是 URL 不是 base64",
+    "verifiedAt": "2026-05-04",
+    "verification": {
+      "status": "tested",
+      "testedAt": "2026-05-04"
+    },
+    "knownLimitations": [
+      "参考图（角色一致性）经此路径不生效：服务商期望参考图是 URL 而不是 base64。需要多参考图一致性时请换用 Nano Banana。"
+    ],
+    "hasKey": true,
+    "keyMask": "sk-…-key"
+  }
+}

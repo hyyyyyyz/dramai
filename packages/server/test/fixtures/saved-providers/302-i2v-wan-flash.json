@@ -1,0 +1,51 @@
+{
+  "stored": {
+    "id": "prov_714ea8f16148",
+    "label": "⭐ 302.AI · 通义万相 Wan2.2 Flash (最便宜 · 阿里)",
+    "kind": "video",
+    "protocol": "aliyun-video",
+    "baseUrl": "https://api.302ai.cn",
+    "model": "wan2.2-i2v-flash",
+    "auth": {
+      "type": "api_key"
+    },
+    "secretRef": "provider:prov_714ea8f16148",
+    "enabled": true,
+    "presetId": "302-i2v-wan-flash",
+    "notes": "🟢 性价比之王：5 秒 720P 仅约 0.2 PTC，6 个分镜 ≈ 1.2 PTC（¥8 左右）；duration 固定 5 秒。验证 2026-05",
+    "verification": {
+      "status": "tested",
+      "testedAt": "2026-05-04"
+    },
+    "verifiedAt": "2026-05-04",
+    "knownLimitations": [
+      "时长固定 5 秒；不支持首尾帧；不带人声。",
+      "输出比例跟随起始帧。"
+    ]
+  },
+  "dto": {
+    "id": "prov_714ea8f16148",
+    "label": "⭐ 302.AI · 通义万相 Wan2.2 Flash (最便宜 · 阿里)",
+    "kind": "video",
+    "protocol": "aliyun-video",
+    "baseUrl": "https://api.302ai.cn",
+    "model": "wan2.2-i2v-flash",
+    "enabled": true,
+    "auth": {
+      "type": "api_key"
+    },
+    "presetId": "302-i2v-wan-flash",
+    "notes": "🟢 性价比之王：5 秒 720P 仅约 0.2 PTC，6 个分镜 ≈ 1.2 PTC（¥8 左右）；duration 固定 5 秒。验证 2026-05",
+    "verifiedAt": "2026-05-04",
+    "verification": {
+      "status": "tested",
+      "testedAt": "2026-05-04"
+    },
+    "knownLimitations": [
+      "时长固定 5 秒；不支持首尾帧；不带人声。",
+      "输出比例跟随起始帧。"
+    ],
+    "hasKey": true,
+    "keyMask": "sk-…-key"
+  }
+}

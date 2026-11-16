@@ -1,0 +1,49 @@
+{
+  "stored": {
+    "id": "prov_bb1bdc20e5eb",
+    "label": "302.AI · Nano Banana (Gemini 文生图)",
+    "kind": "image",
+    "protocol": "gemini-image",
+    "baseUrl": "https://api.302.ai",
+    "model": "gemini-2.5-flash-image",
+    "auth": {
+      "type": "api_key"
+    },
+    "secretRef": "provider:prov_bb1bdc20e5eb",
+    "enabled": true,
+    "presetId": "302-image-nano-banana",
+    "notes": "⚠️ base URL 不带 /v1（Gemini 协议自己的路径就是 /v1beta/models/{model}:generateContent）。约 0.2-0.5 PTC/张，比 Seedream 贵但指令跟随更精准。验证 2026-05",
+    "verification": {
+      "status": "tested",
+      "testedAt": "2026-05-04"
+    },
+    "verifiedAt": "2026-05-04",
+    "knownLimitations": [
+      "单价是 0.2–0.5 PTC 的区间，成本估算只能给出区间。"
+    ]
+  },
+  "dto": {
+    "id": "prov_bb1bdc20e5eb",
+    "label": "302.AI · Nano Banana (Gemini 文生图)",
+    "kind": "image",
+    "protocol": "gemini-image",
+    "baseUrl": "https://api.302.ai",
+    "model": "gemini-2.5-flash-image",
+    "enabled": true,
+    "auth": {
+      "type": "api_key"
+    },
+    "presetId": "302-image-nano-banana",
+    "notes": "⚠️ base URL 不带 /v1（Gemini 协议自己的路径就是 /v1beta/models/{model}:generateContent）。约 0.2-0.5 PTC/张，比 Seedream 贵但指令跟随更精准。验证 2026-05",
+    "verifiedAt": "2026-05-04",
+    "verification": {
+      "status": "tested",
+      "testedAt": "2026-05-04"
+    },
+    "knownLimitations": [
+      "单价是 0.2–0.5 PTC 的区间，成本估算只能给出区间。"
+    ],
+    "hasKey": true,
+    "keyMask": "sk-…-key"
+  }
+}
