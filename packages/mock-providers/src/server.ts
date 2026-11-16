@@ -19,6 +19,8 @@ export interface RequestLogEntry {
   kind?: MockKind
   fault?: FaultKind
   status: number
+  /** 只有 `/probe/…` 的请求会带：收到的请求头（名字小写），用来核对"没有把 Key 发到别处"。 */
+  headers?: Record<string, string>
 }
 
 export interface MockProviders {
@@ -278,6 +280,82 @@ export async function startMockProviders(options: StartOptions = {}): Promise<Mo
     return new Response(stream, {
       headers: { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' },
     })
+  })
+
+  // --- 探测形态：列模型 / 测试连接遇到的各种上游（"添加服务商"在保存之前探测用） ---
+  // 把 `http://127.0.0.1:<port>/probe/<形态>` 当作接口地址，列表在它下面的 `/models`、`/v1/models`、`/v1beta/models`。
+  //   unauthorized  → 401（OpenAI 形态的错误体）
+  //   echo-key      → 401，错误体把收到的 Key 原样回显（Authorization / x-api-key / x-goog-api-key）
+  //   redirect      → 302 到 `http://localhost:<port>/probe/internal/…`（换了主机名 = 换了源）
+  //   internal      → 200，并记下收到的请求头
+  //   not-json      → 200，但响应不是 JSON
+  const probeHeaders = (c: Context) => {
+    const headers: Record<string, string> = {}
+    c.req.raw.headers.forEach((v, k) => {
+      headers[k.toLowerCase()] = v
+    })
+    return headers
+  }
+  app.all('/probe/:shape/*', async (c) => {
+    const shape = c.req.param('shape')
+    const headers = probeHeaders(c)
+    const answer = (status: number, res: Response) => {
+      record(c, { status, headers })
+      return res
+    }
+    switch (shape) {
+      case 'unauthorized':
+        return answer(
+          401,
+          c.json(
+            { error: { message: 'Incorrect API key provided', code: 'invalid_api_key' } },
+            401,
+          ),
+        )
+      case 'echo-key': {
+        const given =
+          (headers['authorization'] ?? '').replace(/^Bearer\s+/i, '') ||
+          headers['x-api-key'] ||
+          headers['x-goog-api-key'] ||
+          ''
+        return answer(
+          401,
+          c.json(
+            { error: { message: `Incorrect API key provided: ${given}`, code: 'invalid_api_key' } },
+            401,
+          ),
+        )
+      }
+      case 'redirect': {
+        const host = (c.req.header('host') ?? '').replace(/^127\.0\.0\.1/, 'localhost')
+        const rest = c.req.path.replace(/^\/probe\/redirect/, '')
+        return answer(
+          302,
+          new Response(null, {
+            status: 302,
+            headers: { location: `http://${host}/probe/internal${rest}` },
+          }),
+        )
+      }
+      case 'not-json':
+        return answer(
+          200,
+          new Response('<html>not an API</html>', {
+            status: 200,
+            headers: { 'content-type': 'text/html' },
+          }),
+        )
+      default:
+        // internal 以及其它：一份正常的列表
+        return answer(
+          200,
+          c.json({
+            object: 'list',
+            data: [{ id: 'probe-model', object: 'model' }],
+            models: [{ name: 'models/probe-model' }],
+          }),
+        )
+    }
   })
 
   // 测试连接用的模型列表
