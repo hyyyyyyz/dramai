@@ -40,10 +40,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   ratio. A generated image is downloaded as soon as the job succeeds, with its address saved first, so a restart
   resumes the download.
 - **Adding a provider is one form.** Settings → Providers → Add provider opens one form for each kind (language
-  model, image, video, speech): the interface type, the address, the authentication (API key or account sign-in),
-  the key and a model, chosen from the service's model list where the interface type can list models. There is no
-  catalog, no grouping and no search. A failed `providers.test` carries a machine-readable `code` next to the
-  unchanged `error` text.
+  model, text-to-image, image-to-video, voice-over): name, API protocol, Base URL, authentication (API key, account
+  sign-in or none), API key and model. The model is a drop-down of the list the service returns, or of the models
+  dramai has data for, with "Type it in…" as the way out; a filter box appears from 30 choices. Get model list and
+  Test connection work on the unsaved draft and create nothing; Test connection sends only the read-only list
+  request, or says the connection cannot be verified automatically. Account sign-in is completed on the provider's
+  card after adding. There is no catalog, no grouping and no search. A failed `providers.test` carries a
+  machine-readable `code` next to the unchanged `error` text.
+- **Asking before adding.** `providers.probe` lists the models or tests the connection of a provider that is not
+  saved yet (nothing is created or stored), `models.known` lists the model ids dramai has data for per kind and
+  protocol, and `providers.loginChannels` serves the fixed configuration of the sign-in channels (address, protocol,
+  suggested model).
+- **Model lists for images and speech.** `openai-images`, `gemini-image` and `openai-tts` can list their models, so
+  the model list works for seven protocols in all; the form and the card use one implementation.
 - **Provider addresses are checked.** When a provider is created and when `providers.update` changes its
   address the address must be http or https without a user name, password, query string or fragment, with no
   unfilled `{placeholder}` (also percent-encoded), and plain http is accepted only for this machine and the local
@@ -117,6 +126,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- A key or login token that an upstream service repeats in an error body is removed from connection-test results,
+  from text and generation errors, and from task records, events and logs.
 - A poll response that carries an explicit error and no task state (`{ code: non-zero, message }`,
   `{ output: { code, message } }`, `{ error }`) now fails the task at once with that message, instead of waiting for
   the whole poll timeout; this covers the Kling, DashScope, Volcengine and generic video protocols too. Success
@@ -147,9 +158,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Changed
 
 - The provider presets that came with `0.5.0-beta.1` no longer appear in the interface; providers saved from them
-  keep working.
-- `docs/PROVIDERS.md` is rewritten as a reference of the interface types in the add-provider form, how authentication
-  works, the address and header rules, and where model data comes from.
+  keep working. The provider card no longer shows the line "Preset verified {date}".
+- The add-provider form no longer offers the video protocols `aliyun-video`, `volcengine-video` and `kling-video`,
+  whose requests are shaped for relay services. Providers saved with them are shown, edited, tested and used as
+  before.
+- Model profiles that carried a price in a relay platform's point currency are unpriced now, so the cost estimate of
+  those models shows "Can't be estimated". Admission decisions are unchanged.
+- The simulated providers of demo mode have neutral display names ("Demo · LLM", "Demo · Image (reference images
+  supported)", "Demo · Video (silent)" and so on). Behaviour, capabilities and model ids are unchanged.
+- `docs/PROVIDERS.md` is rewritten as a reference of the API protocols in the add-provider form, how authentication
+  works, the address and header rules, where model data comes from, and what Test connection sends.
 - `docs/DEPLOYMENT.md` is rewritten for the landing page: what is deployed, how the deployment workflow is run, and
   what visitors of the old browser-only workspace see afterwards.
 - Protocols can declare request headers that user-supplied extra headers must not override.

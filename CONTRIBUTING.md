@@ -9,7 +9,7 @@ For contributors who prefer English, scroll to the bottom.
 - 提议特性：[Feature Issue 模板](https://github.com/hyyyyyyz/dramai/issues/new?template=feature_request.yml)
 - 提交 PR：见下文工作流
 - 文档/翻译：欢迎补充 `docs/` 与 `README_CN.md`
-- 补充或更正服务商接口类型的说明：见 [docs/PROVIDERS.md](./docs/PROVIDERS.md)（内容以 `packages/` 里的代码为准）
+- 补充或更正服务商 API 协议的说明：见 [docs/PROVIDERS.md](./docs/PROVIDERS.md)（内容以 `packages/` 里的代码为准）
 
 ## 🛠️ 本地开发流程
 

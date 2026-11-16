@@ -58,7 +58,7 @@ Open <http://127.0.0.1:8787>. Demo mode runs the whole studio on your machine wi
 pnpm webui
 ```
 
-This starts the local server, serves the workspace at <http://127.0.0.1:8787> and opens your browser. Add a provider in Settings → Providers → Add provider: choose the interface type, enter the address (for example `https://your-provider.example/v1`) and an API key, or sign in with an account, fetch the model list and choose a model, run "test connection", then add it and choose "Use this". Add one for each kind you use (language model, image, video, speech), then make a project. Data lives in `~/.dramai`. Stop it with Ctrl+C. Options such as `--port`, `--data-dir` and `--no-open` are described under "More ways to run it" below.
+This starts the local server, serves the workspace at <http://127.0.0.1:8787> and opens your browser. Add a provider in Settings → Providers → Add provider: choose the API protocol, enter the Base URL (for example `https://your-service-address/v1`) and an API key, get the model list and choose a model (where there is no list, choose from the suggestions or type the model name), optionally test the connection, then add it and choose "Use this". Account sign-in is chosen the same way and completed on the provider's card after adding. Add one for each kind you use (language model, image, video, speech), then make a project. Data lives in `~/.dramai`. Stop it with Ctrl+C. Options such as `--port`, `--data-dir` and `--no-open` are described under "More ways to run it" below.
 
 Providers are added with one form; see [Providers](#providers).
 
@@ -72,7 +72,7 @@ Download from [GitHub Releases](https://github.com/hyyyyyyz/dramai/releases). On
 
 `SHA256SUMS.txt` lists the checksums. The installers are unsigned, so macOS and Windows warn the first time you open one, and they do not include ffmpeg or update themselves. The macOS Apple silicon installer has been tried on a real machine; CI builds the desktop app on macOS (Apple silicon), Windows and Linux and runs a sandboxed install, start-up check and uninstall on each, and the release workflow builds the installers for every system, macOS Intel included. How to open an unsigned app on each system is in [apps/desktop](./apps/desktop/README.md).
 
-**The installer corresponds to `0.5.0-beta.1`.** The features added since, further interface types for text, images, video and speech, sign-in with ChatGPT and OpenRouter accounts, the add-provider form, reference images for video and the narration voice options, currently run from source: take path 1 or 2, or build the desktop app from source (below). See [News](#news).
+**The installer corresponds to `0.5.0-beta.1`.** The features added since, further API protocols for text, images, video and speech, sign-in with ChatGPT and OpenRouter accounts, the add-provider form, reference images for video and the narration voice options, currently run from source: take path 1 or 2, or build the desktop app from source (below). See [News](#news).
 
 <details>
 <summary><strong>More ways to run it</strong>: WebUI options, desktop from source, where data lives</summary>
@@ -98,11 +98,11 @@ The desktop app keeps your data in your user folder (for example `~/Library/Appl
 
 Newest first. **Source** entries are in the repository and run from source; **Release** entries are in the published `0.5.0-beta.1` installer. The full list is in the [changelog](./CHANGELOG.md).
 
-- **2026-11-15 · Source · Adding a provider is one form.** Settings → Providers → Add provider: choose an interface type, enter the address, choose an API key or account sign-in, fetch the model list and choose a model. The interface types of the four kinds are listed in [docs/PROVIDERS.md](./docs/PROVIDERS.md). See the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-15 · Source · Adding a provider is one form.** Settings → Providers → Add provider: choose an API protocol, enter the Base URL, choose an API key or account sign-in, get the model list and choose a model; the model list and the connection test work before anything is saved. The API protocols of the four kinds are listed in [docs/PROVIDERS.md](./docs/PROVIDERS.md). See the [changelog](./CHANGELOG.md#unreleased).
 - **2026-11-14 · The introduction page.** <https://hyyyyyyz.github.io/dramai/> is the project's introduction page, in Chinese at the root and in English at [`/en/`](https://hyyyyyyz.github.io/dramai/en/). It replaces the v0.4 web app that was hosted at that address. The source is in `apps/site`; see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
-- **2026-11-13 · Source · Speech providers and narration voices.** Three interface types for narration. A project's narration voice can carry a style instruction and a language hint where the provider takes them, and the check before generating covers the voice and the text length. See the [changelog](./CHANGELOG.md#unreleased).
-- **2026-11-13 · Source · Video providers and reference images.** Three more interface types for video. A task option, off by default, sends a shot's character, scene and prop sheets to the video model as reference images; where the documentation makes that exclusive with a first frame, the confirmation dialog says what is given up before anything is ordered. See the [changelog](./CHANGELOG.md#unreleased).
-- **2026-11-13 · Source · More text and image providers, account sign-in.** Further interface types for language models and images. Sign in with a ChatGPT account (text only) or an OpenRouter account instead of pasting a key. See [Providers](#providers) and the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-13 · Source · Speech providers and narration voices.** Two new API protocols for narration. A project's narration voice can carry a style instruction and a language hint where the provider takes them, and the check before generating covers the voice and the text length. See the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-13 · Source · Video providers and reference images.** Three more API protocols for video. A task option, off by default, sends a shot's character, scene and prop sheets to the video model as reference images; where the documentation makes that exclusive with a first frame, the confirmation dialog says what is given up before anything is ordered. See the [changelog](./CHANGELOG.md#unreleased).
+- **2026-11-13 · Source · More text and image providers, account sign-in.** Further API protocols for language models and images, and model lists for image and speech providers that can give one. Sign in with a ChatGPT account (text only) or an OpenRouter account instead of pasting a key. See [Providers](#providers) and the [changelog](./CHANGELOG.md#unreleased).
 - **2026-11-12 · Release · [`v0.5.0-beta.1`](https://github.com/hyyyyyyz/dramai/releases/tag/v0.5.0-beta.1) published as a pre-release.** The rewrite as a local server with a workspace, a desktop app and unsigned installers for macOS, Windows and Linux. See the [changelog](./CHANGELOG.md#050-beta1---2026-11-12).
 
 ## What is different
@@ -110,7 +110,7 @@ Newest first. **Source** entries are in the repository and run from source; **Re
 - **Local, with your keys.** A server on `127.0.0.1` does all the work. Projects are folders of ordinary files plus a SQLite database. Provider requests are made by that server, so there is no CORS limit and no relay in between.
 - **Long texts and serials.** A project holds episodes, episodes hold scenes, scenes hold shots. Long texts are split into episodes by chapter.
 - **A reusable library.** Characters, locations, props and costumes are assets that shots refer to. Each asset has one reference sheet that every shot using it is generated from. The visual style is chosen once, when the project is created.
-- **Your choice of providers.** Language model, image, video and speech providers are added with one form, by interface type and address, and you choose which one to use.
+- **Your choice of providers.** Language model, image, video and speech providers are added with one form, by API protocol and Base URL, and you choose which one to use.
 - **Checks before paid generation.** Shots that refer to an unregistered asset, or one without a reference image, are blocked. A batch runs completely or not at all, a shot has at most one video task in flight, and for models with a price entry a cost estimate is shown before you confirm.
 - **A task queue that survives restarts.** Closing the browser does not stop work. After a restart, a video task that has an upstream task id resumes polling. One without it is marked "submission unconfirmed" and is never resubmitted automatically. Cancelling only affects tasks that are still queued.
 - **Versions kept.** Regenerating adds a version and does not overwrite the previous one. When something upstream changes, what depends on it is marked out of date, and nothing is regenerated on its own.
@@ -120,11 +120,13 @@ The workspace speaks English, Simplified Chinese and Traditional Chinese, in a l
 
 ## Providers
 
-Settings → Providers → Add provider opens one form for each of the four kinds: language model, image, video and speech. Choose the interface type, enter the address and an API key (or sign in with an account), fetch the model list and choose a model, run "test connection" and add it.
+Settings → Providers → Add provider opens one form for each of the four kinds: language model, text-to-image, image-to-video and voice-over. Choose the API protocol, enter the Base URL and an API key (or choose account sign-in), get the model list and choose a model, optionally test the connection, and add it.
 
-Any service that offers an OpenAI-compatible interface can be added by its address. The interface-type list also holds interfaces of several model companies; all of them are in [docs/PROVIDERS.md](./docs/PROVIDERS.md), together with the address rules and how models and prices are matched.
+Any service that offers an OpenAI-compatible interface can be added by its address. The API-protocol list also holds the interfaces of several model companies; all of them are in [docs/PROVIDERS.md](./docs/PROVIDERS.md), together with the address rules and how models and prices are matched.
 
-Two account sign-ins replace a key. **ChatGPT account**: text requests use your ChatGPT plan; it covers language models only, so images, video and speech still need API keys. **OpenRouter account**: you sign in and OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.
+Get model list and Test connection work before anything is saved and create nothing. For seven API protocols the form can ask the service for its models, and Test connection sends the same read-only request; for the other protocols no request is sent, the connection cannot be verified automatically, and the model is chosen from the suggestions dramai has data for or typed in. Test connection never sends a generation request.
+
+Two account sign-ins replace a key; the provider is added first and the sign-in is completed on its card. **ChatGPT account**: text requests use your ChatGPT plan; it covers language models only, so images, video and speech still need API keys. **OpenRouter account**: you sign in and OpenRouter hands dramai an API key of your own, which is then used like a key you pasted; usage is billed to your OpenRouter account. Sign-in must be done on the computer that runs dramai, because the authorisation comes back to a local address.
 
 Keys: in the WebUI they are kept in `secrets.json` in the data directory, not encrypted; on macOS and Linux the file permissions limit it to you. The desktop app encrypts them with the operating system's key store where one exists.
 
@@ -208,7 +210,7 @@ v0.4 was a browser-only app and kept its data in the browser, so version 0.5 doe
 - [apps/webui](./apps/webui/README.md) · [apps/desktop](./apps/desktop/README.md): Starting the server, and the three desktop forms
 - [packages/mock-providers](./packages/mock-providers/README.md): Demo mode and its built-in providers
 - [packages/server](./packages/server/README.md) · [packages/api](./packages/api/README.md) · [packages/core](./packages/core/README.md) · [packages/workspace](./packages/workspace/README.md): The local server (including provider sign-in), its typed API, the engine and the workspace
-- [docs/PROVIDERS.md](./docs/PROVIDERS.md): The interface types of the add-provider form, authentication, address rules and models
+- [docs/PROVIDERS.md](./docs/PROVIDERS.md): The API protocols of the add-provider form, authentication, address rules and models
 - [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md): What is deployed (the introduction page) and why the app is not hosted
 - [docs/VERSIONING.md](./docs/VERSIONING.md) · [docs/RELEASING.md](./docs/RELEASING.md) · [docs/CI.md](./docs/CI.md): Version numbers, releasing, continuous integration
 
