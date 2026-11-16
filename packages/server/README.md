@@ -71,6 +71,23 @@ WebUI / 容器场景没有系统加密可用，靠文件权限和数据目录隔
 
 **Preset verification.** Every preset carries `verification`: `{ status: 'tested', testedAt }` or `{ status: 'documented', source }` (connected from official documentation, not tested). Documented presets never become the current choice automatically. The four v0.4 presets stay `tested` (2026-05-04). The OpenAI preset (`openai-responses-login`) is `documented`, text only, and its limitations say so.
 
+## Trying a provider before it is saved, known models, sign-in channels (English)
+
+**`providers.probe`** (`POST /api/providers/probe`) lists models or tests the connection for a draft that has not been saved. Body: `{ action: 'models' | 'test', kind, protocol, baseUrl, auth, model?, dialect? }` where `auth` is `{ type: 'api_key', apiKey? }`, `{ type: 'none' }` or `{ type: 'account_login', channel }`. Result, by `outcome`:
+
+- `ok` / `failed` / `unverifiable`: exactly the shapes of `providers.test` (`failed` has `error`, `status?`, `code?`), for both actions. A model-list request that fails is also `failed` (HTTP 200 from the route), not an error response.
+- `models`: `{ items: [{ id, label }] }`, from the same request `providers.models` sends.
+- `no_model_list`: the protocol has no model list endpoint (image, video and speech protocols other than the ones below). Nothing was sent; use `models.known` or let the user type the model.
+- `login_after_save`: the draft uses account sign-in. The token lives on a saved provider, so add the provider first and sign in on it. Nothing was sent. The refusals of `providers.create` for sign-in (`AUTH_NOT_ALLOWED`: wrong protocol or address for the channel, or not a text provider) apply first.
+
+The connection test is the code `providers.test` runs (`testProvider`), fed from the draft instead of the store: for `openai-chat`, `openai-responses`, `openai-images` and `openai-tts` it is `GET {baseUrl}/models` with a Bearer key; `anthropic-messages` `GET {baseUrl}/v1/models?limit=1000`; `gemini-chat` `GET {baseUrl}/v1beta/models`; `gemini-image` `GET {baseUrl}/v1beta/models` (`x-goog-api-key` only on Google's own address, both headers elsewhere). The 13 protocols without a cheap read-only endpoint (every video protocol, `kling-image`, `dashscope-image`, `volcengine-images`, `siliconflow-images`, `minimax-t2a`, `dashscope-cosyvoice`) send nothing and answer `unverifiable`. No connection test ever sends a generation request, so none of them costs money. Without `model` the result has no `modelListed`.
+
+Nothing is stored: no provider, no setting, no entry in `secrets.json`, no event, no log line. The address goes through the same `checkBaseUrl` as `providers.create` (same `BASE_URL_*` codes, 400) before any request is made; timeouts, redirect handling (the platform default, which drops `Authorization` on a cross-origin hop), and the protected request headers are the ones of `providers.test`. The draft's key is removed from every string of the answer (`[redacted]`) in case the upstream echoes it. Access control is the same as for every other route (token, `Host` and `Origin` checks).
+
+**`models.known`** (`GET /api/models/known?kind=&protocol=`) returns `{ items: [{ id, kind, protocols, displayName? }] }`: the model ids in the bundled and user model data (`models/*.json`) that belong to the kind (`image`, `video`, `audio` profiles map to `image`, `video`, `tts`) and, when given, the protocol, in alphabetical order. A profile with `candidate: false` is not listed (it keeps working for providers that already use it). Text models have no profiles, so `kind=llm` is empty: ask the provider with `providers.probe`. These are suggestions only; `providers.create` accepts any model name.
+
+**`providers.loginChannels`** (`GET /api/login-channels`) returns `{ items: [{ channel, kind: 'llm', protocol, baseUrl, suggestedModel? }] }`, the pinned address and protocol of each sign-in channel (`LOGIN_CHANNEL_ENDPOINTS`).
+
 ## Creating a provider from a preset in one step (English)
 
 `providers.fromPreset({ presetId, apiKey?, label?, baseUrl?, model? })` creates the provider with the address and model already filled in. The effective address (override or the preset's own) is validated before anything is stored, and every failure is a 400:
@@ -248,6 +265,7 @@ core 的业务错误是 `DomainError`（`code` + `kind`：not_found / conflict /
 | GET    | `/api/providers`                                 | `providers.list`                         |
 | POST   | `/api/providers`                                 | `providers.create`                       |
 | POST   | `/api/providers/from-preset`                     | `providers.fromPreset`                   |
+| POST   | `/api/providers/probe`                           | `providers.probe`                        |
 | GET    | `/api/providers/:providerId`                     | `providers.get`                          |
 | PATCH  | `/api/providers/:providerId`                     | `providers.update`                       |
 | DELETE | `/api/providers/:providerId`                     | `providers.delete`                       |
@@ -256,6 +274,8 @@ core 的业务错误是 `DomainError`（`code` + `kind`：not_found / conflict /
 | POST   | `/api/providers/:providerId/test`                | `providers.test`                         |
 | GET    | `/api/providers/:providerId/capability`          | `providers.capability`                   |
 | PUT    | `/api/providers/:providerId/accepted-unverified` | `providers.acceptUnverified`             |
+| GET    | `/api/models/known`                              | `models.known`                           |
+| GET    | `/api/login-channels`                            | `providers.loginChannels`                |
 | GET    | `/api/projects`                                  | `projects.list`                          |
 | POST   | `/api/projects`                                  | `projects.create`                        |
 | GET    | `/api/projects/:projectId`                       | `projects.get`                           |

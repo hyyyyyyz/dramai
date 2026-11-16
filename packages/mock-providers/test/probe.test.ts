@@ -48,7 +48,8 @@ const probe = (d: ReturnType<typeof draft>, action: 'models' | 'test') =>
   api.call('providers.probe', {
     body: { action, ...d, auth: { type: 'api_key', apiKey: KEY } },
   })
-const strip = (l: MockProviders['requests']) => l.map(({ at: _at, ...r }) => r)
+const strip = (l: MockProviders['requests']) =>
+  l.map((r) => ({ method: r.method, path: r.path, status: r.status, headers: r.headers }))
 
 describe('upstream shapes: probe and a saved provider see and do the same', () => {
   it.each(['internal', 'unauthorized', 'redirect', 'not-json', 'echo-key'])(

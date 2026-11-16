@@ -48,7 +48,9 @@ const REDACTED = '[redacted]'
 /** 把返回值里出现的草稿 Key（原样、URL 编码、JSON 转义三种写法）替换掉。没有 Key 时原样返回。 */
 function redactProbe(result: ProviderProbeResult, secret: string | undefined): ProviderProbeResult {
   if (!secret) return result
-  const forms = [...new Set([secret, encodeURIComponent(secret), JSON.stringify(secret).slice(1, -1)])]
+  const forms = [
+    ...new Set([secret, encodeURIComponent(secret), JSON.stringify(secret).slice(1, -1)]),
+  ]
   const clean = (s: string) => forms.reduce((acc, f) => (f ? acc.split(f).join(REDACTED) : acc), s)
   return JSON.parse(JSON.stringify(result), (_k, v) =>
     typeof v === 'string' ? clean(v) : v,
@@ -324,7 +326,8 @@ export class ProviderService {
       return {
         outcome: 'login_after_save',
         channel: auth.channel,
-        message: '账号登录要先添加这个服务商，再在服务商卡片上登录；添加之前不能测试连接或获取模型列表',
+        message:
+          '账号登录要先添加这个服务商，再在服务商卡片上登录；添加之前不能测试连接或获取模型列表',
       }
     }
     const secret = auth.type === 'api_key' ? auth.apiKey : undefined
